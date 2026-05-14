@@ -1,0 +1,25 @@
+{
+  "name": "@ellul.ai/pqc-types",
+  "version": "0.1.0",
+  "description": "Post-quantum cryptography type definitions for Ellul.ai",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@noble/post-quantum": "0.5.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  },
+  "license": "BUSL-1.1"
+}

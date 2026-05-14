@@ -1,0 +1,129 @@
+{
+  "webDocs": {
+    "meta": {
+      "title": "Documentation: agent workstations, gates, infrastructure",
+      "description": "Mission, getting started, use cases, and security capabilities for ellul. Understand the architecture: Foundry execution, Sovereign Shield gating, and Studio."
+    },
+    "layout": {
+      "title": "Docs | ellul",
+      "description": "Get started with ellul. Learn about sovereign cloud development, AI agents, and deploying from your browser."
+    },
+    "mission": {
+      "heading": "Documentation",
+      "p1": "Ellul is the security infrastructure for autonomous agents. We provide the isolation spectrum (OCI namespaces to dedicated bare-metal) and the FIDO2 gate system that ensures agents cannot act without explicit, hardware-backed permission.",
+      "p2": "Whether you are securing a single AI coding agent or embedding hardware-backed governance into a multi-tenant platform, Ellul provides the compute, the proxy, and the cryptographic ceremonies to make it work."
+    },
+    "gettingStarted": {
+      "heading": "Getting Started",
+      "intro": "Go from zero to a running, gate-protected environment in under 60 seconds.",
+      "steps": {
+        "create-account": {
+          "step": "1",
+          "title": "Create an account",
+          "desc": "Sign up with a FIDO2 passkey. Your biometric or hardware key is the root of every approval. No passwords to leak."
+        },
+        "launch-sandbox": {
+          "step": "2",
+          "title": "Launch a sandbox",
+          "desc": "Pick a plan (Hobby or Pro). Your encrypted sandbox provisions automatically in EU. LUKS2 volume, namespace isolation, managed Postgres."
+        },
+        "build-with-ai": {
+          "step": "3",
+          "title": "Build with AI in the browser",
+          "desc": "Open the web terminal and run Claude Code, Codex, Cursor, or OpenCode. Every privileged action like git push, database write, or secret access pauses for your passkey."
+        }
+      },
+      "ctaPrimary": "Get Started Free"
+    },
+    "useCases": {
+      "heading": "Use Cases",
+      "items": {
+        "agent-security": {
+          "title": "Agent security",
+          "desc": "Gate-protect any AI coding agent (Claude Code, Codex, Cursor, OpenCode). Prevent unauthorized git pushes, database writes, and secret exfiltration."
+        },
+        "financial-isolation": {
+          "title": "Financial agent isolation",
+          "desc": "Run agents that hold wallet keys or API credentials on dedicated bare-metal. No co-tenancy, no side-channel exposure."
+        },
+        "platform-embedding": {
+          "title": "Platform embedding",
+          "desc": "Use the Headless Trust API to add hardware-backed authorization to your own agent platform. Zero-knowledge secret provisioning included."
+        },
+        "compliance": {
+          "title": "Compliance workloads",
+          "desc": "Hash-chained audit logs, FIDO2 ceremonies for every privileged action, single-tenant kernels. SOC 2-ready by design."
+        }
+      }
+    },
+    "security": {
+      "heading": "Security features",
+      "intro": "Capabilities your server advertises on every heartbeat.",
+      "items": {
+        "capability-report": {
+          "name": "Capability reporting",
+          "desc": "The mechanism that powers every capability gate in the dashboard. Each release declares its feature set in the central registry and reports it via liveness ping.",
+          "capabilityId": "com.ellul.ai.enforcer.capability.capability-report.v1"
+        },
+        "liveness-ping": {
+          "name": "Liveness ping",
+          "desc": "Unconditional 60s heartbeat channel. Drives the online/stale/offline indicator and surfaces server presence even when nothing is changing.",
+          "capabilityId": "com.ellul.ai.enforcer.capability.liveness-ping.v1"
+        },
+        "manual-mode": {
+          "name": "Manual update mode",
+          "desc": "Lets the operator hold the server on a verified version and approve each update manually via the Update Now button. Implemented via signed apply-pending-update commands on the existing command queue.",
+          "capabilityId": "com.ellul.ai.enforcer.capability.manual-mode.v1"
+        },
+        "self-hash-attest": {
+          "name": "Runtime self-hash attestation",
+          "desc": "The running enforcer computes its own binary sha256 on every ping and stamps the first 12 hex chars into the agentVersion field. Unforgeable proof that the code actually executing matches the build that was signed and shipped.",
+          "capabilityId": "com.ellul.ai.enforcer.capability.self-hash-attest.v1"
+        },
+        "self-test": {
+          "name": "Pre-flight self-test",
+          "desc": "Before the self-updating enforcer flips its own symlink it runs the staged binary in --self-test mode and requires exit code 0. Catches broken binaries before they can replace the live enforcer.",
+          "capabilityId": "com.ellul.ai.enforcer.capability.self-test.v1"
+        },
+        "sha256-drift-check": {
+          "name": "sha256 drift detection",
+          "desc": "On every sync tick the on-disk binary sha256 is checked against the manifest. A mismatch forces re-download, so a code change republished under the same version is detected and re-applied automatically.",
+          "capabilityId": "com.ellul.ai.enforcer.capability.sha256-drift-check.v1"
+        },
+        "signed-manifest": {
+          "name": "Signed manifest + hash chain",
+          "desc": "Every platform manifest is ML-DSA-65 post-quantum signed and verified on the VPS before any bytes are applied. Hash-chain anti-replay refuses manifests whose previousVersion doesn't match the local state.",
+          "capabilityId": "com.ellul.ai.enforcer.capability.signed-manifest.v1"
+        }
+      }
+    },
+    "architecture": {
+      "heading": "Architecture Overview",
+      "intro": "Ellul is built on three pillars:",
+      "items": {
+        "foundry": {
+          "component": "Ellul Foundry (Execution)",
+          "desc": "Compute across a spectrum of isolation: OCI namespaces (Standard), Firecracker MicroVMs (Secure), and dedicated bare-metal (Sovereign). On wholesale hardware, not hyperscaler resale."
+        },
+        "control": {
+          "component": "Ellul Control (Governance)",
+          "desc": "Sovereign Shield reverse proxy sits between agent and all privileged operations. Every gate requires FIDO2 passkey confirmation. Credentials exist only in Shield's process memory."
+        },
+        "studio": {
+          "component": "Ellul Studio (Application)",
+          "desc": "Browser-native workspace with web terminal, code browser, agent chat, and gate dashboard. Upgrade from Standard to Sovereign from the dashboard with zero code changes."
+        },
+        "core-invariant": {
+          "component": "Core Invariant",
+          "desc": "Agents cannot act without explicit, hardware-backed permission. This is enforced at the kernel level (DAC, namespaces, ptrace), not the application level."
+        }
+      }
+    },
+    "cta": {
+      "heading": "Ready to start?",
+      "sub": "Create a free account and have a gate-protected environment in under a minute.",
+      "ctaPrimary": "Get Started Free",
+      "ctaSecondary": "View Pricing"
+    }
+  }
+}

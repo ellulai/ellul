@@ -1,0 +1,156 @@
+## What is Cursor MCP?
+
+Cursor MCP is the way Cursor (both the editor and the standalone CLI) connects to <Term slug="mcp">Model Context Protocol</Term> servers. It isn't a separate Cursor product. It's the same MCP wire format every other compliant client speaks, with Cursor as the client and a chosen set of MCP servers providing tools, resources, and prompts.
+
+What makes Cursor MCP its own topic is the configuration surface. Cursor's editor reads MCP servers from `~/.cursor/mcp.json` globally, or from `.cursor/mcp.json` per project. The CLI follows the same files. The wire protocol is open, but the file layout is Cursor-specific, and the operational story changes when those servers run on an <Term slug="agent-workstation">agent workstation</Term> instead of on your laptop.
+
+This page covers what's different about running Cursor's MCP integration on Ellul: how the editor still works, where the servers actually run, and what the workstation runtime adds.
+
+## How Cursor talks to MCP servers
+
+Cursor is an MCP client. When the editor or the CLI starts a session, it reads its `mcp.json`, spawns the listed servers, and queries each for the tools it exposes. Those tools become callable from the agent's reasoning loop. Ask Cursor's agent to "open the GitHub issue and summarize the recent comments", and under the hood it calls a GitHub MCP server's `get_issue` tool with the right arguments.
+
+There are two transport modes. **Stdio servers** run as subprocesses of the Cursor client, with JSON-RPC over the subprocess's stdin and stdout. **SSE/HTTP servers** run as long-lived processes the client connects to over a network socket. The wire format is the same; the lifecycle differs. Stdio servers die when Cursor's session ends. SSE servers stay running.
+
+On a laptop the difference is marginal. On a workstation that's meant to host long-running agents, it matters. SSE servers persist between sessions the same way the agent itself does, so a warm Playwright browser or a database connection pool stays put across reconnects.
+
+<Callout type="note" title="Where Cursor reads its MCP config">
+Global servers go in `~/.cursor/mcp.json`. Project-scoped overrides go in `<project>/.cursor/mcp.json`. Ellul workstations ship with both files in their default state, and you edit them like any other config.
+</Callout>
+
+## Step-by-step: install MCP servers in a Cursor session on Ellul
+
+The shortest path from a fresh workstation to Cursor's agent panel calling Ellul's gate tools and a GitHub MCP server.
+
+**1. Provision the workstation.** From the Ellul console, create one and pick "Cursor" as the agent. The CLI is preinstalled and the editor's remote-connect URL is generated for you.
+
+**2. Open the workstation's MCP config.** SSH into the workstation, or use the in-browser code surface, and open the project-local file:
+
+```bash
+nano <project>/.mcp.json
+```
+
+It ships with Ellul's own MCP server already wired in:
+
+```json
+{
+  "mcpServers": {
+    "ellul": { "command": "ellul-mcp", "args": [], "env": {} }
+  }
+}
+```
+
+The `ellul-mcp` binary exposes `ellul_exec`, `ellul_gate_request`, `ellul_gate_status`, `ellul_list_guardrails`, `ellul_env_read`, `ellul_env_import`, and `ellul_scan`. Those are the tools that let the agent run commands behind gates, request approvals, and read tree-sitter guardrail rules.
+
+**3. Add a second MCP server.** For the Anthropic-published GitHub MCP:
+
+```json
+{
+  "mcpServers": {
+    "ellul": { "command": "ellul-mcp", "args": [], "env": {} },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"]
+    }
+  }
+}
+```
+
+The PAT lives in `.ellul/secrets.db`, encrypted at rest. The agent imports it once via `ellul_env_import` and the daemon injects it into the GitHub server's environment when the server is launched through `ellul_exec`. You never paste the token into `mcp.json`.
+
+**4. Reload Cursor's client.** From the editor: command palette, then "Reload MCP Servers". From the CLI: `cursor mcp reload`. The new servers show up in the agent's tool list within a couple of seconds.
+
+**5. Verify.** Open the agent panel. Ask it to list the open issues on the repo. The agent calls the GitHub server's `list_issues`. Results come back. You're done.
+
+<CodeTabs>
+
+**macOS laptop, Cursor connecting to a workstation:**
+
+```bash
+ssh workstation 'nano <project>/.mcp.json'
+```
+
+**Linux laptop, same flow:**
+
+```bash
+ssh workstation 'nano <project>/.mcp.json'
+```
+
+</CodeTabs>
+
+The path is identical because Cursor's config layout doesn't depend on the host OS.
+
+## Common patterns
+
+**Filesystem MCP for bounded read-only access.** A sub-agent that should read a tree but not modify it. The Ellul preset scopes the server to the project namespace, so a compromised filesystem MCP can't escape into another project's files.
+
+**GitHub MCP for issue and PR operations.** Read calls (list, get, search) flow through. Writes (comment, merge, close) pause for <Term slug="passkey-approval">passkey approval</Term>. The PAT itself stays in `.ellul/secrets.db` and gets injected only when needed.
+
+**Custom internal MCPs.** Any MCP-compliant server runs on the workstation. Drop the binary in, add the entry to `mcp.json`, point Cursor at it. Same wire format, same security envelope.
+
+**Multiple servers per session.** Cursor handles N servers in parallel. A Playwright server, a database server, and a GitHub server in the same `mcp.json` is normal, and the agent uses them composably.
+
+## Security: gate-aware installs and secret handling
+
+The default failure mode of MCP is **credentials in the server's environment**. Most public tutorials walk you through dropping a PAT or API key into a `.env` file, the server reads it at startup, and it sits there unencrypted in the agent's process for the whole session. That works, and it's how the protocol was designed; it's also exactly what the workstation runtime is built to avoid.
+
+On Ellul, the substitution is:
+
+- Secrets live in `.ellul/secrets.db`, encrypted with a key derived per project.
+- The agent imports them via `ellul_env_import` and reads names (not values) via `ellul_env_read`.
+- When the agent runs a command via `ellul_exec`, the daemon injects the secrets into the child's environment for that one call, and redacts them from streamed output before the agent ever sees them.
+- The daemon runs as a separate process. The agent can't read its memory, can't attach to it, and can't read the encrypted blobs without the project's derived key.
+
+<Callout type="warning" title="Don't paste secrets into mcp.json">
+The most common mistake on a fresh workstation is putting `"env": { "GITHUB_TOKEN": "ghp_..." }` directly in `mcp.json` to "test something quick". Don't. That puts the token in a file the agent process reads at startup and keeps in memory for the whole session. Use `ellul_env_import` once; the daemon takes it from there.
+</Callout>
+
+New MCP server entries trigger a passkey approval before the runtime starts the server. The agent can edit `mcp.json`, but the workstation won't actually launch the new binary until you tap. That blocks the "agent silently adds an attacker-controlled MCP server" path.
+
+## How this composes with Cursor's editor
+
+The typical Cursor + Ellul setup:
+
+- **Editor** runs on your laptop. Inline completions, command-K, codebase indexing, all local. Keyboard ergonomics intact.
+- **Workstation** runs the agent panel's CLI (`cursor agent`) and the MCP servers. Long-lived, persistent, namespace-isolated.
+- **Editor connects to workstation** via Cursor's remote-connect feature over SSH. The agent panel's tool calls hit the workstation's MCP servers; your laptop never sees the secrets.
+
+You don't lose anything by moving the agent off your laptop. Cursor's agent panel works the same way; it just talks to MCP servers that don't restart every time the lid closes.
+
+## FAQ
+
+### Does Cursor's editor support MCP?
+
+Yes. Cursor's editor and CLI both speak MCP. On Ellul, the MCP servers run on the workstation; Cursor connects to them remotely with the workstation as the runtime.
+
+### Can I use Cursor's free tier with MCP on Ellul?
+
+Yes. MCP is a wire-protocol feature and works on every Cursor tier. The Ellul piece is the workstation runtime, which is billed separately.
+
+### How do I move my laptop's MCP server list to a workstation?
+
+Copy `~/.cursor/mcp.json` over. Replace any `"env": { "TOKEN": "..." }` blocks by importing the same values once via `ellul_env_import`. The wire format doesn't change.
+
+### What happens to MCP server state when my Cursor session ends?
+
+SSE-mode servers keep running. State persists. When you reconnect, the agent re-attaches, and warm caches, browser contexts, and connection pools are preserved. Stdio servers don't persist; that's the protocol, not Ellul.
+
+### Where are the references for the wire format itself?
+
+See the [Model Context Protocol specification](https://spec.modelcontextprotocol.io) for the protocol, [Anthropic's MCP documentation](https://docs.anthropic.com/en/docs/agents-and-tools/mcp) for the rationale, and [Cursor's MCP docs](https://docs.cursor.com/context/model-context-protocol) for client-specific configuration.
+
+## Where to go next
+
+- [MCP setup on Ellul](/mcp/setup) for the end-to-end walkthrough
+- [GitHub MCP](/mcp/github) for the most common first server
+- [Database MCP](/mcp/database) for Postgres access with classified gates
+- [Cursor on Ellul](/agents/cursor) for agent-side capabilities and limits
+- [The MCP hub](/mcp) for what MCP is in one page
+
+## References
+
+- [Model Context Protocol specification](https://spec.modelcontextprotocol.io)
+- [Anthropic: Introducing MCP](https://www.anthropic.com/news/model-context-protocol)
+- [Cursor MCP docs](https://docs.cursor.com/context/model-context-protocol)
+
+<FAQ />

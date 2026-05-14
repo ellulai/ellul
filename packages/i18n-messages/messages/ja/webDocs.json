@@ -1,0 +1,129 @@
+{
+  "webDocs": {
+    "meta": {
+      "title": "ドキュメント：エージェントワークステーション、ゲート、インフラ",
+      "description": "ellulのミッション、はじめに、ユースケース、セキュリティ機能。アーキテクチャを理解する：Foundry実行、Sovereign Shieldゲート、Studio。"
+    },
+    "layout": {
+      "title": "ドキュメント | ellul",
+      "description": "ellulをはじめましょう。Sovereignクラウド開発、AIエージェント、ブラウザからのデプロイについて学べます。"
+    },
+    "mission": {
+      "heading": "ドキュメント",
+      "p1": "Ellulは、自律的エージェントのためのセキュリティインフラです。隔離スペクトル（OCI名前空間から専用ベアメタルまで）と、ハードウェア裏付けの明示的な許可なしにエージェントが行動できないようにするFIDO2ゲートシステムを提供します。",
+      "p2": "1台のAIコーディングエージェントを保護する場合でも、マルチテナントプラットフォームにハードウェア裏付けのガバナンスを組み込む場合でも、Ellulはコンピュート、プロキシ、暗号セレモニーを提供してそれを実現します。"
+    },
+    "gettingStarted": {
+      "heading": "はじめに",
+      "intro": "60秒以内に、ゲートで保護された環境をゼロから稼働状態にします。",
+      "steps": {
+        "create-account": {
+          "step": "1",
+          "title": "アカウントを作成",
+          "desc": "FIDO2パスキーでサインアップ。生体認証またはハードウェアキーがすべての承認のルートになります。漏えいするパスワードはありません。"
+        },
+        "launch-sandbox": {
+          "step": "2",
+          "title": "サンドボックスを起動",
+          "desc": "プランを選択（個人またはプロ）。暗号化されたサンドボックスがEUで自動プロビジョニング。LUKS2ボリューム、名前空間隔離、マネージドPostgres。"
+        },
+        "build-with-ai": {
+          "step": "3",
+          "title": "ブラウザでAIと一緒に作る",
+          "desc": "Web端末を開いてClaude Code、Codex、Cursor、OpenCodeを動かします。git push、データベース書き込み、シークレットアクセスのような特権アクションはすべてパスキーで停止します。"
+        }
+      },
+      "ctaPrimary": "無料ではじめる"
+    },
+    "useCases": {
+      "heading": "ユースケース",
+      "items": {
+        "agent-security": {
+          "title": "エージェントセキュリティ",
+          "desc": "任意のAIコーディングエージェント（Claude Code、Codex、Cursor、OpenCode）をゲートで保護。許可されないgit push、データベース書き込み、シークレットの持ち出しを防ぎます。"
+        },
+        "financial-isolation": {
+          "title": "金融エージェントの隔離",
+          "desc": "ウォレットキーやAPIクレデンシャルを保持するエージェントを専用ベアメタル上で動かします。コテナンシなし、サイドチャネル露出なし。"
+        },
+        "platform-embedding": {
+          "title": "プラットフォーム組み込み",
+          "desc": "Headless Trust APIを使い、自分のエージェントプラットフォームにハードウェア裏付けの認可を追加。ゼロ知識のシークレットプロビジョニングを含みます。"
+        },
+        "compliance": {
+          "title": "コンプライアンスワークロード",
+          "desc": "ハッシュチェーン化された監査ログ、すべての特権アクションに対するFIDO2セレモニー、シングルテナントカーネル。設計上SOC 2対応。"
+        }
+      }
+    },
+    "security": {
+      "heading": "セキュリティ機能",
+      "intro": "サーバが各ハートビートで通知する機能群。",
+      "items": {
+        "capability-report": {
+          "name": "機能レポート",
+          "desc": "ダッシュボード上のすべての機能ゲートを駆動するメカニズム。各リリースは中央レジストリに機能セットを宣言し、liveness pingで通知します。",
+          "capabilityId": "com.ellul.ai.enforcer.capability.capability-report.v1"
+        },
+        "liveness-ping": {
+          "name": "Liveness ping",
+          "desc": "無条件の60秒ハートビートチャネル。オンライン/スタール/オフライン表示を駆動し、何も変化がなくてもサーバの存在を示します。",
+          "capabilityId": "com.ellul.ai.enforcer.capability.liveness-ping.v1"
+        },
+        "manual-mode": {
+          "name": "手動更新モード",
+          "desc": "オペレータが検証済みバージョンでサーバを保持し、Update Nowボタンから各更新を手動で承認できます。既存のコマンドキュー上の署名済みapply-pending-updateコマンドで実装されます。",
+          "capabilityId": "com.ellul.ai.enforcer.capability.manual-mode.v1"
+        },
+        "self-hash-attest": {
+          "name": "ランタイム自己ハッシュ証明",
+          "desc": "稼働中のenforcerが各pingで自身のバイナリのsha256を計算し、最初の12文字のhexをagentVersionフィールドにスタンプします。実行中のコードが署名され出荷されたビルドと一致することの偽造不能な証明。",
+          "capabilityId": "com.ellul.ai.enforcer.capability.self-hash-attest.v1"
+        },
+        "self-test": {
+          "name": "起動前セルフテスト",
+          "desc": "自己更新するenforcerが自身のシンボリックリンクを切り替える前に、ステージされたバイナリを--self-testモードで動かし終了コード0を要求します。壊れたバイナリが稼働中のenforcerを置き換える前に検出します。",
+          "capabilityId": "com.ellul.ai.enforcer.capability.self-test.v1"
+        },
+        "sha256-drift-check": {
+          "name": "sha256ドリフト検出",
+          "desc": "各同期ティックで、ディスク上のバイナリのsha256をマニフェストと照合します。不一致は再ダウンロードを強制し、同じバージョン下で再公開されたコード変更も自動的に検出・再適用されます。",
+          "capabilityId": "com.ellul.ai.enforcer.capability.sha256-drift-check.v1"
+        },
+        "signed-manifest": {
+          "name": "署名済みマニフェスト＋ハッシュチェーン",
+          "desc": "すべてのプラットフォームマニフェストはML-DSA-65耐量子署名され、バイトを適用する前にVPS上で検証されます。ハッシュチェーンのアンチリプレイは、previousVersionがローカル状態と一致しないマニフェストを拒否します。",
+          "capabilityId": "com.ellul.ai.enforcer.capability.signed-manifest.v1"
+        }
+      }
+    },
+    "architecture": {
+      "heading": "アーキテクチャ概要",
+      "intro": "Ellulは3つの柱の上に構築されています：",
+      "items": {
+        "foundry": {
+          "component": "Ellul Foundry（実行）",
+          "desc": "隔離のスペクトラム上のコンピュート：OCI名前空間（標準）、Firecracker MicroVM（セキュア）、専用ベアメタル（Sovereign）。ハイパースケーラの再販ではなくホールセールハードウェア上で動作します。"
+        },
+        "control": {
+          "component": "Ellul Control（ガバナンス）",
+          "desc": "Sovereign Shieldリバースプロキシがエージェントとすべての特権操作の間に位置します。すべてのゲートはFIDO2パスキー確認を必要とします。クレデンシャルはShieldのプロセスメモリ内にのみ存在します。"
+        },
+        "studio": {
+          "component": "Ellul Studio（アプリケーション）",
+          "desc": "Web端末、コードブラウザ、エージェントチャット、ゲートダッシュボードを備えたブラウザネイティブのワークスペース。ダッシュボードからコード変更ゼロでStandardからSovereignへアップグレードできます。"
+        },
+        "core-invariant": {
+          "component": "コア不変条件",
+          "desc": "エージェントは、ハードウェア裏付けの明示的な許可なしには行動できません。これはアプリケーションレベルではなく、カーネルレベル（DAC、名前空間、ptrace）で強制されます。"
+        }
+      }
+    },
+    "cta": {
+      "heading": "はじめる準備はできましたか？",
+      "sub": "無料アカウントを作成して、1分以内にゲートで保護された環境を手にしてください。",
+      "ctaPrimary": "無料ではじめる",
+      "ctaSecondary": "料金を見る"
+    }
+  }
+}

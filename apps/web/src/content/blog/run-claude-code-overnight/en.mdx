@@ -1,0 +1,179 @@
+Running Claude Code overnight is the pattern that pays for an agent workstation. Kick off a long task at 11pm (a 6-hour refactor, a dependency upgrade across a monorepo, a test-suite migration), close your laptop, sleep, and wake up to a draft PR waiting for your passkey approval. Eight hours of engineer-time produced while you weren't there.
+
+This is a practical walkthrough. We'll set up Claude Code to run unattended, route privileged actions through a passkey gate, and cover the three failure modes that actually show up at 3am. We'll also be honest about cost: the model bill, the workstation rent, and where the math stops working.
+
+For background on Claude Code itself, our [/agents/claude-code](/agents/claude-code) page covers the agent's properties. For the broader category, the [always-on AI agent pillar](/concepts/always-on-ai-agent) and the [long-running-agent glossary](/glossary/long-running-agent) are the canonical references.
+
+## Why overnight matters
+
+The work that benefits most from running overnight is the work that's painful to babysit. Three patterns we see in practice.
+
+Long refactors. A 4 to 8 hour pass through a codebase converting one pattern to another. Renaming a hot path. Migrating a test framework. Replacing a dependency with a fork. The agent handles 80% autonomously; the remaining 20% needs a human eye in the morning.
+
+Dependency upgrade passes. "Upgrade every minor version that has a CVE, run the test suite for each, open a PR per package." A long task with a clear stopping condition, exactly what unattended runs are good for.
+
+Test-suite migrations. Switching from Mocha to Vitest, or Jest to Vitest, or RSpec to Minitest. The agent rewrites tests in batches, runs the migrated batch, fixes failures, opens a PR per chunk.
+
+The shape that doesn't fit overnight is anything where a single bad move is unrecoverable. We'll come back to that. The runtime can stop the unrecoverable mid-flight if it's set up right.
+
+## The laptop sleep problem
+
+Why this is hard on a laptop, in case the constraint isn't obvious. Your laptop sleeps. Claude Code is a process running in your shell. When the laptop sleeps, the process is suspended (and may be killed, depending on power settings). When you wake the laptop, the process either resumes mid-thought or has died. Neither outcome is "the work continued for six hours."
+
+Network changes compound the problem. Coffee shop WiFi to home WiFi to phone hotspot. Each transition has the potential to drop the agent's API calls, MCP server connections, or shell sessions. Claude Code retries; the model API does too. The cumulative reliability of "agent runs for 6 hours through 3 network changes" is meaningfully lower than "agent runs for 6 hours on a stable connection."
+
+The fix is moving the agent off the laptop. Anywhere durable works: a Linux box you have at home, a cloud VM, a dedicated workstation. We use [Ellul's agent workstations](/concepts/agent-workstation) because that's what we built; the principle generalizes to any persistent runtime.
+
+## The walkthrough
+
+You need a Linux box that stays on. Self-hosted, cloud VM, or [an Ellul workstation](https://console.ellul.ai/sign-up). Assume Ubuntu 24.04 LTS, your repo cloned at `~/work/repo`, `claude` installed in `$PATH`, and a way to receive a passkey approval (phone, hardware key, registered laptop).
+
+On Ellul, this is "create a workstation, point a sandbox at your GitHub repo, install Claude Code from the agent picker." The setup ships with the [Sovereign Shield](/glossary/sovereign-shield) and passkey gates already wired up.
+
+### Configure Claude Code for unattended use
+
+Two flags matter:
+
+<CodeTabs>
+
+```bash
+# The aggressive end of unattended. The agent does not pause
+# for non-privileged confirmations. Use ONLY when the runtime
+# already gates privileged actions out of process.
+claude code \
+  --dangerously-skip-permissions \
+  "refactor src/auth to use the new TokenProvider pattern from the design doc"
+```
+
+```bash
+# The conservative end. The agent pauses for any uncertain action.
+# Better when you're trying overnight runs for the first time.
+claude code \
+  --max-turns 200 \
+  "refactor src/auth to use the new TokenProvider pattern from the design doc"
+```
+
+</CodeTabs>
+
+The `--dangerously-skip-permissions` flag is named that way for a reason. On a runtime without out-of-process privileged-action gates, it's exactly as dangerous as it sounds. On a runtime where git push, deploy, and secret reads are gated outside the agent's process, the flag becomes safe; the agent can run uninterrupted through file edits and test runs, and stops at the gate when something privileged is needed. That's the design point.
+
+### Wrap the run with timeouts and budgets
+
+Belt and suspenders. The wrapper:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd ~/work/repo
+
+# 8-hour wall clock cap.
+timeout 8h \
+  claude code \
+    --dangerously-skip-permissions \
+    --max-turns 400 \
+    "$@"
+
+# Always exit 0. The timeout exit code is 124, which we treat as
+# an expected stop, not a failure.
+exit 0
+```
+
+Use this as `~/run-overnight.sh`. The `timeout 8h` is the wall-clock guard; `--max-turns 400` is the agent's internal step limit. Either trips and the run ends cleanly. Without these, an agent stuck in a loop can burn through your entire model budget while you sleep.
+
+### Kick off the run before bed
+
+Connect to the workstation, start the agent in a long-running session that survives your disconnect:
+
+<CodeTabs>
+
+```bash
+# Persistent session via tmux. Ctrl+b then d to detach.
+ssh agent.workstation
+tmux new -s overnight
+~/run-overnight.sh "upgrade all minor versions in package.json with CVE coverage, run the test suite for each, open a PR per package"
+# Ctrl+b d to detach
+```
+
+```bash
+# Or via the workstation's built-in agent UI.
+# (On Ellul, the chat panel runs the agent inside a persistent
+# namespace that survives your browser tab closing.)
+```
+
+</CodeTabs>
+
+If you're using Ellul, the chat panel handles this for you. The agent runs inside a persistent namespace, so closing the browser tab does not stop the agent.
+
+### Wake up to passkey-gated approval
+
+The agent works overnight. Every privileged action (`git push`, `vercel deploy`, `pnpm publish`, secret reads) pauses at the [passkey gate](/glossary/passkey-approval). When you wake up, your phone or laptop has notifications:
+
+- "Claude Code wants to push branch `auth-refactor` to origin. Approve?"
+- "Claude Code wants to read secret `STRIPE_SECRET_KEY`. Approve?"
+- "Claude Code wants to deploy to staging. Approve?"
+
+You tap each one with Touch ID or Face ID. The action proceeds. The PR opens. The deploy goes out. The agent completes.
+
+If the agent did something unexpected, the gate caught it. You see the unexpected request, deny it, and read the audit log to figure out why the agent went there.
+
+## The cost model
+
+Honest accounting, with numbers from a real overnight run we did last week.
+
+The model. At Anthropic API pricing, an 8-hour Claude Code run that aggressively reads context typically lands between $5 and $30. The variation is mostly about how big the project is and how often the agent re-reads files. A medium-sized refactor on a 50k-LOC repo lands around $15. A "upgrade every minor version" pass on a monorepo with 200 packages lands closer to $30.
+
+The workstation. $20/mo for an Ellul Hobby workstation, $50/mo for Pro. Both run 24/7, so the workstation cost is a flat monthly rent regardless of how many overnight runs you do. Three overnight runs per week amortizes to roughly $1.50 to $4 of workstation cost per run.
+
+Net. A typical overnight run costs $7 to $35 all-in (model plus amortized workstation). It produces work that would have taken you 4 to 8 hours of engineer time during the day. Even with junior-engineer rates, the math works out almost immediately. With senior-engineer rates, it's not close.
+
+Where the math breaks. If your overnight runs consistently fail to produce useful PRs (the agent goes off the rails, the verification step is weak, the dependency you're upgrading turns out to need human input on every step), you're paying model-token cost for negative output. The fix is better verification and better task scoping, not abandoning the pattern. We've found roughly 80% of overnight runs ship a useful PR; 20% need human re-prompting in the morning.
+
+## Failure modes at 3am
+
+Three things that actually go wrong, with how to detect and fix them.
+
+<Callout variant="warn" title="API rate limits">
+The agent burns through Anthropic's per-minute rate limits and starts retrying with backoff. The run keeps going but slows to a crawl. Detection: the agent's progress output shows long pauses; total run time stretches past the 8-hour cap. Fix: provision a higher rate-limit tier with Anthropic, or split the work across multiple agents on separate workstations (each with its own rate-limit pool).
+</Callout>
+
+<Callout variant="warn" title="OOM">
+A long-running Claude Code session eventually accumulates state. On a small workstation (1 to 2GB RAM), a long run can hit OOM and kill the agent. Detection: the run dies before the timeout, with no clean exit. Fix: bigger workstation (4GB+ is comfortable for most overnight runs), or split the work into shorter sessions with intermediate checkpoints.
+</Callout>
+
+<Callout variant="warn" title="Infinite loops">
+The agent gets stuck on a problem it can't solve and re-tries the same approach forever. Detection: progress output shows repetitive cycles; the agent never reaches the verification step. Fix: `--max-turns` cap (we use 400 for 8-hour runs, lower for shorter ones); the timeout cap as a backstop. The audit log shows you what the agent was trying when the cap tripped, so you can re-prompt with more context in the morning.
+</Callout>
+
+The pattern that catches all three is a wrapper with explicit caps plus a runtime with out-of-process gates. The caps stop runaway agents; the gates stop unintended actions. Without either, overnight runs are roulette.
+
+## When overnight runs aren't the right tool
+
+Honesty: overnight runs are great for tasks with clear stopping conditions and tolerable retry costs. They're worse for production-critical hot-fixes (you want a human in the loop), tasks requiring human judgment mid-flight ("pick the better of two refactor approaches" needs you), and brand-new agent setups (the first time you try Claude Code on a project, run it during the day).
+
+The pattern is "low-stakes, well-scoped, verifiable." That's a lot of engineering work, but not all of it.
+
+---
+
+## FAQ
+
+<Faq />
+
+---
+
+## References
+
+- Anthropic, *Claude Code documentation*, [docs.anthropic.com/en/docs/claude-code](https://docs.anthropic.com/en/docs/claude-code)
+- Anthropic, *API rate limits*, [docs.anthropic.com](https://docs.anthropic.com/)
+- Karpathy, *Lessons from running coding agents*, [karpathy.medium.com](https://karpathy.medium.com/)
+- Cognition, *Long-running agent benchmarks*, [cognition.ai](https://www.cognition.ai)
+
+<Cta
+  eyebrow="Run Claude Code while you sleep"
+  body="Ellul gives Claude Code a persistent workstation that doesn't close, with passkey-gated git push and deploy. Kick off the work before bed; wake up to a PR. $20/mo Hobby, $50/mo Pro."
+  primary={{ href: "https://console.ellul.ai/sign-up", label: "Get a workstation" }}
+  links={[
+    { href: "/agents/claude-code", label: "Claude Code on Ellul →" },
+    { href: "/concepts/always-on-ai-agent", label: "Always-on AI agent →" },
+  ]}
+/>

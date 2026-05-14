@@ -1,0 +1,132 @@
+---
+title: "The Console"
+description: "The ellul console is where you sign in, create sandboxes, and work inside them."
+section: "Getting Started"
+order: 3
+---
+
+The console is the web application at [console.ellul.ai](https://console.ellul.ai). It hosts everything you do day to day: dashboard, sandbox workspaces, account settings, billing.
+
+## Layout
+
+The console has three top-level views:
+
+<Steps>
+  <Step number={1} title="Dashboard">
+    Lists every sandbox on your workstation. Search, sort, create, delete.
+  </Step>
+  <Step number={2} title="Workspace">
+    The view for one sandbox. Opens when you click any sandbox from the dashboard.
+  </Step>
+  <Step number={3} title="Account">
+    Server-level settings, billing, security tier, custom domains, audit log.
+  </Step>
+</Steps>
+
+## Dashboard
+
+The dashboard is the home page after sign-in. You see:
+
+- A list of all your sandboxes.
+- A **New Sandbox** button.
+- Per-sandbox metadata: detected framework (Next.js, Vite, Astro, Express, FastAPI, and others), git status if linked, deployment status if deployed.
+- Search and sort controls.
+
+Clicking a sandbox opens its workspace.
+
+## Workspace
+
+The workspace is structured as a tabbed interface. Tabs are grouped into areas in the sidebar.
+
+### Workspace area
+
+| Tab | Purpose |
+|-----|---------|
+| **Chat** | Talk to your AI agent. Switch between Shell, OpenCode, Claude, Codex, Cursor, ZeroClaw sessions. |
+| **Code** | File browser and read-only viewer. Files refresh in real time as the agent edits. |
+| **Preview** | The running preview server for this sandbox, with a public URL. |
+
+### Database area
+
+| Tab | Purpose |
+|-----|---------|
+| **Tables** | Browse the per-sandbox database. View rows, schemas, and indexes. |
+| **SQL** | Run ad-hoc queries against the database. |
+| **Bin** | Recently dropped tables, recoverable for a short window. |
+| **Settings** | Configure the database (connection string, role permissions). |
+
+### Observability area
+
+| Tab | Purpose |
+|-----|---------|
+| **Health** | High-level status. Service uptime, recent errors. |
+| **Gates** | Active and pending permission requests. Approve or deny here. |
+| **Development** | Application development logs in real time. |
+| **ZeroClaw** | The autonomous agent runtime: its state, recent actions, retries. |
+
+### Settings area
+
+| Tab | Purpose |
+|-----|---------|
+| **Context** | Manage the durable context the agent receives at the start of each conversation (project conventions, instructions). |
+| **Secrets** | Store and manage application secrets. The agent reads them only when you approve an `env` gate. |
+| **Security** | Permission rules per gate type, audit log, and session controls. |
+
+### Vault area (release-gated)
+
+When enabled for your account, the Vault area exposes:
+
+- **Notes.** Knowledge documents the agent can refer to.
+- **Graph.** A visual graph of how notes link.
+- **Scopes.** Access controls for shared notes.
+
+Vault is a newer feature being rolled out gradually.
+
+### Integrations area
+
+Per-integration tabs appear when you connect external services. Each integration manages its own surface (logs, configuration, status).
+
+## Account
+
+The account section is reachable from the top right of the console. It contains:
+
+| Section | Purpose |
+|---------|---------|
+| **Server** | The Linux workstation backing your account. Status, region, plan, custom domain, security tier, encryption mode. |
+| **Billing** | Current plan, payment method, usage, history. |
+| **Security** | Account-level passkeys, SSH keys, audit log, recovery codes. |
+| **Profile** | Email, name, account preferences. |
+
+## Server settings
+
+Open the server settings to manage:
+
+- **Custom domain.** Wire your own domain to your sandboxes.
+- **SSH keys.** Add public keys for terminal access (Pro plan).
+- **Security tier.** Move between Standard, Web Locked, and Private Locked.
+- **Region.** View the geographic location of your data.
+- **Server actions.** Rebuild, rollback, or delete the workstation.
+- **Agent updates.** Choose between automatic and manual update mode.
+
+## Where things happen
+
+| If you want to... | Go to... |
+|-------------------|----------|
+| Create a sandbox | Dashboard > New Sandbox |
+| Talk to an agent | Workspace > Chat |
+| Browse files | Workspace > Code |
+| View running preview | Workspace > Preview |
+| Approve a permission | Workspace > Observability > Gates |
+| Add a secret | Workspace > Settings > Secrets |
+| Set permission defaults | Workspace > Settings > Security |
+| Read the audit log | Workspace > Settings > Security > Audit |
+| Add a custom domain | Account > Server > Domains |
+| Add an SSH key | Account > Server > SSH Keys |
+| Change security tier | Account > Server > Security |
+| Add a passkey | Account > Security |
+
+## Where to go next
+
+- [The Sovereign Model](/concepts/sovereign-model) explains the trust philosophy.
+- [Permission Gates](/permissions/overview) explains the privilege boundary.
+- [Sandboxes](/concepts/sandboxes) explains kernel-level project isolation.

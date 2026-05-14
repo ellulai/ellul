@@ -1,0 +1,53 @@
+---
+title: "Preview Servers"
+description: "Per-sandbox preview deployments for development."
+section: "Deployment"
+order: 1
+---
+
+Each sandbox has a preview deployment that runs your application during development. The preview tab in the workspace shows its URL and status.
+
+## How previews work
+
+When you (or your agent) start a development server, the platform allocates a per-sandbox preview port and a public preview URL. The URL has the form:
+
+```
+<id>-dev.ellul.app
+```
+
+Visiting the URL hits a reverse proxy on your workstation that forwards to your running development server.
+
+## Starting a preview
+
+The agent typically starts the preview as part of scaffolding a project (running `npm run dev`, `pnpm dev`, or the equivalent). You can also start one manually from a Shell session.
+
+The preview tab updates within a moment of the server becoming available.
+
+## Stopping a preview
+
+From the preview tab, click **Stop**. The server is terminated and the port is freed.
+
+## Detected frameworks
+
+The platform recognises common frameworks (Next.js, Vite, Remix, Astro, Express, FastAPI, and others) and shows the framework label in the dashboard. Detection is based on the manifest file in your sandbox (`package.json`, `pyproject.toml`, etc.).
+
+## Preview vs production
+
+The preview URL is intended for development. It is reachable on the public internet, but it is not a production deployment:
+
+- The URL changes with the sandbox identifier.
+- The server stops if the sandbox stops.
+- Authentication uses the workstation's auth layer.
+
+For a stable production deployment, use a custom domain. See [Custom Domains](/deployment/custom-domains).
+
+## Sharing a preview link
+
+The preview URL is shareable. Anyone with the link can view the running app. If your application has its own auth, only authenticated users see protected routes.
+
+If you want only authenticated console users to view the preview, configure your application to require auth headers and rely on the workstation's session model.
+
+## Where to go next
+
+- [Custom Domains](/deployment/custom-domains) for stable production URLs.
+- [Deploying Apps](/deployment/deploying-apps) for the deploy gate flow.

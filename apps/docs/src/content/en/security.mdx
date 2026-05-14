@@ -1,0 +1,280 @@
+---
+title: "Security Whitepaper"
+description: "How the platform makes 8-hour unattended agent runs safe to leave alone."
+section: "Security"
+order: 1
+---
+
+## Why this exists
+
+ellul lets your agent run overnight. Eight-hour unattended sessions. Multiple agents in parallel on one workstation. The agent has shell access, package-manager access, and network access. None of that is safe by default.
+
+The architecture in this document is what makes it safe to leave running. Every privileged action pauses for your passkey. Credentials never sit on your laptop. Agent traffic is jailed at the kernel level. Updates are signed by a key we cannot access ourselves.
+
+Security is not the headline. Autonomy is. This document explains what makes the autonomy survivable.
+
+## The Managed Sovereign Model
+
+The cryptographic authority over your data lives on **your workstation** and **your device**. ellul handles billing, hardware, and runtime updates. We do not hold the keys.
+
+In Web Locked tier, your authentication private keys live in your device's secure enclave and never leave it. In Private Locked tier, the encryption key for your storage volume is removed from the volume itself; we cannot decrypt it.
+
+If we disappear tomorrow, your server keeps running. If we get breached tonight, your data stays untouched.
+
+## The Core Promise: Don't Trust Us. Trust the Math.
+
+Traditional platforms require you to trust a chain of people: the ops team, the support staff, the database admin, the vendor's vendor. ellul replaces human trust with cryptographic guarantees wherever possible.
+
+### Chain of Trust
+
+| What | Trust the Vendor | Trust the Math |
+|------|:---:|:---:|
+| **Billing & Payments** | &#10003; | |
+| **Initial Server Setup** | &#10003; | |
+| **DNS Routing** | &#10003; | |
+| **Your Identity** | | &#10003; WebAuthn + PoP |
+| **Command Integrity** | | &#10003; HMAC SHA-256 |
+| **Code Updates** | | &#10003; Post-quantum signatures |
+| **Data Access** | | &#10003; Zero-Knowledge |
+| **Command Execution** | | &#10003; Proof of Possession |
+| **Session Continuity** | | &#10003; Continuous PoP Challenges |
+
+The left column is what every platform requires. The right column is what we moved out of our hands and into yours.
+
+## The Four Locks
+
+ellul's security architecture is built on four independent cryptographic guarantees. Each one eliminates an entire class of attack, not by making it harder, but by making it mathematically impossible.
+
+<LockCard
+  number={1}
+  title="Identity. WebAuthn plus Continuous Proof of Possession"
+  tech="Non-extractable ECDSA P-256 keys in device secure enclave. PoP signatures over timestamp, method, path, body hash, and nonce on every request. Continuous challenge-response on long-lived connections."
+  benefit="Phishing is impossible. Session hijacking is impossible. Even if our database is breached, your server cannot be accessed."
+>
+
+**The Problem:** Traditional platforms authenticate you with passwords or session tokens stored in their database. If that database is breached, an attacker can impersonate you.
+
+**Our Solution:** ellul's Web Locked mode uses **WebAuthn passkeys**, the same technology behind Face ID and Touch ID. Your private key is generated inside your device's secure enclave and **never leaves it** (`extractable: false`).
+
+Every request is signed by a **Proof of Possession** layer: a Service Worker intercepts all same-origin requests and adds ECDSA signatures over `timestamp|method|path|bodyHash|nonce`. The workstation independently verifies every signature.
+
+For long-lived connections (chat, code browser, observability streams), the server issues **PoP challenges every five minutes**. Random bytes that the browser must sign with its non-extractable key. Two consecutive failures terminate the connection. This provides SSH-equivalent continuous authentication.
+
+<ul>
+  <li>**Phishing is impossible.** WebAuthn is domain-bound. Your passkey only works on the real ellul.ai domain.</li>
+  <li>**Session hijacking is impossible.** Stolen cookies are worthless without the hardware key. The key cannot be extracted from the browser.</li>
+  <li>**A full platform breach cannot compromise your server.** There is nothing in our database to steal.</li>
+  <li>**Long-lived connections are continuously authenticated.** Unlike most web apps that authenticate once at connection time, we re-verify every five minutes.</li>
+</ul>
+
+</LockCard>
+
+<LockCard
+  number={2}
+  title="Integrity. Deterministic Body Hashing"
+  tech="SHA-256 canonical body hash with recursive key sorting, embedded in PoP signature."
+  benefit="The 'Bait and Switch' defense. It is mathematically impossible for anyone to modify your command between your browser and the server."
+>
+
+**The Problem:** Even with strong authentication, a man-in-the-middle (or a compromised platform) could alter the *content* of your request after you authenticate it. You confirm "restart my server" but the platform sends "delete my server."
+
+**Our Solution:** Every sensitive request is bound to its payload using **deterministic SHA-256 body hashing**. The hash is computed over canonicalized JSON (recursively sorted keys) and embedded in the PoP signature. The workstation recomputes the hash independently. If a single parameter was changed by anyone, including us, the operation is rejected.
+
+<ul>
+  <li>**TOCTOU protection.** Parameters cannot change between confirmation and execution.</li>
+  <li>**Three-way integrity chain.** During provisioning, the API hashes the cloud-init payload, your browser independently computes the same hash, and the server verifies it on first boot. All three must agree.</li>
+</ul>
+
+</LockCard>
+
+<LockCard
+  number={3}
+  title="Supply Chain. Cryptographically Signed Updates"
+  tech="Post-quantum signature scheme. Signing key held in a hardware security module. Hash chain prevents downgrade attacks."
+  benefit="We cannot push a backdoor to your server. Your workstation independently verifies every update against a key holder we cannot compromise."
+>
+
+**The Problem:** If an attacker compromises a platform's CI/CD pipeline, they can push a backdoored update to every server. A single point of failure affecting all users simultaneously.
+
+**Our Solution:** Your workstation independently verifies every update against a cryptographic signature. The verification happens on *your server*, not on our infrastructure.
+
+| Check | What It Prevents |
+|-------|-----------------|
+| **Signature Verification** | Unsigned or tampered releases |
+| **Key Pinning** | Swapped signing keys |
+| **Hash Chain** | Downgrade to vulnerable older versions |
+| **Manifest Validation** | Path traversal or injection via release manifests |
+
+<Callout type="success" title="The Signing Key Lives Outside Our Infrastructure">
+  The update signing key is held in a hardware security module. A rogue employee with full access to our infrastructure still cannot sign a release, because the signing key has never touched a networked machine.
+</Callout>
+
+</LockCard>
+
+<LockCard
+  number={4}
+  title="Containment. Workstation-Served Interfaces"
+  tech="All UI served from the workstation. Nonce-based Content Security Policy. No external JavaScript dependencies."
+  benefit="Even if the ellul platform is fully compromised, an attacker cannot inject scripts into your server's interfaces. Your chat, code browser, and observability views are self-contained."
+>
+
+**The Problem:** Most web management interfaces load JavaScript from CDNs, platform servers, or third-party dependencies. If any of those sources are compromised, an attacker can inject malicious code into your management session.
+
+**Our Solution:** The interfaces hosted on your workstation are **self-contained applications served from your VPS** at build time. Zero external JavaScript at runtime. The HTML is served directly by your workstation with a unique **cryptographic nonce** on every page load.
+
+| Defense | What It Prevents |
+|---------|-----------------|
+| **Nonce-based CSP** | `script-src 'nonce-...'`. Only scripts with the per-request nonce execute. Injected `<script>` tags are blocked. |
+| **No external JS** | No CDN compromise vector. No supply chain risk from npm at runtime. |
+| **Workstation-served HTML** | The platform cannot modify what your browser receives. The binary on your workstation is the source of truth. |
+| **`frame-ancestors` CSP** | Prevents clickjacking by restricting who can embed the interfaces. |
+
+<Callout type="success" title="The SSH Parallel">
+  This mirrors how SSH works: the terminal client talks directly to the server binary. No intermediary can inject code into the session. Our workstation interfaces achieve the same property. The browser talks to workstation-served HTML that the platform cannot tamper with.
+</Callout>
+
+</LockCard>
+
+## The "Bus Factor". What If ellul Disappears?
+
+This is the question every developer should ask their hosting provider. Most cannot give you a good answer. Here's ours.
+
+<Callout type="principle" title="Break Glass Protocol">
+  Your workstation is a standard Linux server on a major cloud provider. ellul is a management layer on top, not a proprietary container, not a locked-down image, not a walled garden.
+</Callout>
+
+If ellul goes offline, whether from an outage, a shutdown, or the heat death of the universe:
+
+<Steps>
+  <Step number={1} title="Your server keeps running">
+    All your applications, data, and configurations continue to operate. Nothing depends on our API for runtime functionality.
+  </Step>
+  <Step number={2} title="The local enforcer enters fail-safe mode">
+    After several missed heartbeats, the on-server enforcer reduces external access as a precaution while continuing to poll for recovery.
+  </Step>
+  <Step number={3} title="You SSH in and take over">
+    Disable the agent, open SSH permanently, and your server is a standard Linux machine. All your data, apps, and configs are intact.
+  </Step>
+  <Step number={4} title="Keep your server forever">
+    Transfer billing to your own cloud provider account. ellul is fully out of the picture.
+  </Step>
+</Steps>
+
+```bash
+# The full takeover. Five minutes of work.
+sudo systemctl stop ellul-enforcer
+sudo systemctl disable ellul-enforcer
+sudo ufw allow 22/tcp
+# Done. Standard Linux server.
+```
+
+<Callout type="success" title="We lock ourselves out, not you.">
+  There is no kill switch, no remote wipe, no dead-man trigger. The worst case scenario for ellul going away is five minutes of terminal commands.
+</Callout>
+
+## Identity Pinning. The Anti-Takeover Defense
+
+During initial provisioning, your user ID is written to an immutable lockfile on the workstation. The lockfile is made immutable at the filesystem level. Not even root can modify or delete it without first removing the immutable flag.
+
+**Every heartbeat**, the local enforcer checks whether the user ID reported by the API matches this lockfile.
+
+<Callout type="danger" title="Attack scenario: database takeover">
+  An attacker compromises the database and runs `UPDATE servers SET userId='hacker'`. The next heartbeat detects the mismatch against the lockfile. Soft Lockdown activates instantly. The attacker cannot issue commands despite "owning" the database record. When the database is corrected, the enforcer auto-recovers. No manual intervention, no support ticket.
+</Callout>
+
+## Compliance & Privacy
+
+### Data Residency
+
+ellul supports strict region selection with EU-compliant datacenters. EU-region workstations are provisioned exclusively in EU datacenters. Your data stays in the jurisdiction you choose.
+
+### Abuse Prevention. The Liability Straitjacket
+
+<Callout type="warning" title="Blocked by default on every workstation">
+  **SMTP** (25, 465, 587). Prevents spam relay. **Mining pools and Stratum ports.** Prevents cryptojacking. **Outbound SYN flood protection.** Prevents DDoS participation. **Tunnel services.** Blocked by DNS and SNI inspection.
+</Callout>
+
+A clean IP means your legitimate services work reliably. Platforms that don't enforce these rules end up on blocklists, and so do you.
+
+### Encryption at Rest
+
+All secrets stored in the ellul database are encrypted with **AES-256-GCM** before storage. Initialization vectors are unique per record. Auth tags prevent tampering. Token hashes use **SHA-256** with **timing-safe comparison** to prevent length oracle attacks.
+
+The on-workstation encrypted volume uses LUKS2. Three modes (Standard, Enhanced, Sovereign) determine who holds the unlock key. See [Volume Encryption](/lifecycle/volume-encryption) for details.
+
+## The Audit Trail
+
+Every security-relevant action is recorded in a **hash-chained audit log**. Each entry includes a SHA-256 hash of the previous entry, creating a tamper-evident append-only chain. If any entry is modified or deleted, the chain breaks and the tampering is detectable.
+
+The system tracks security events across five categories:
+
+| Category | Example Events |
+|----------|---------------|
+| **Authentication** | Login, logout, failed auth attempts, PoP key binding |
+| **Workstation Operations** | Create, delete, rebuild, rollback |
+| **Security Changes** | Tier changes, passkey registration, SSH key management |
+| **Anomaly Detection** | Replay attempts, nonce reuse, fingerprint mismatches |
+| **System Events** | Lockdown triggers, recovery events, heartbeat failures |
+
+Sensitive data (keys, tokens, credentials) is automatically redacted before logging. Destructive operations capture raw PoP signatures for **hardware non-repudiation**. Cryptographic proof that the operation was authorized by the specific device.
+
+### Hostile Red Team Audit
+
+The system has been subjected to adversarial testing covering four domains:
+
+| Audit Domain | What Was Tested |
+|-------------|----------------|
+| **Data Sovereignty** | Can the platform access user data? Can a database breach expose workstation contents? |
+| **Credential Isolation** | Does Web Locked mode remain safe under full platform compromise? |
+| **Localhost Bypass Prevention** | Can internal services be reached by circumventing authentication layers? |
+| **Ghost Port Detection** | Do disabled services leave residual open ports or listening sockets? |
+
+## ellul vs. Traditional Platforms
+
+<ComparisonTable rows={[
+  { label: "Who holds the keys?", paas: "The platform", vps: "You (manage everything)", ellul: "You (we manage the rest)" },
+  { label: "Platform breach = your breach?", paas: "Yes", vps: "N/A", ellul: "No (Web Locked mode)" },
+  { label: "Can the vendor read your data?", paas: "Usually yes", vps: "N/A", ellul: "No" },
+  { label: "Can the vendor push code?", paas: "Yes", vps: "N/A", ellul: "No (signature verification)" },
+  { label: "Survive vendor shutdown?", paas: "No (proprietary runtime)", vps: "Yes", ellul: "Yes (standard Linux server)" },
+  { label: "Command integrity?", paas: "No", vps: "N/A", ellul: "Yes (HMAC body hashing)" },
+  { label: "Phishing-resistant auth?", paas: "Rarely", vps: "N/A", ellul: "Yes (WebAuthn)" },
+  { label: "Continuous auth on connections?", paas: "No", vps: "Yes (SSH)", ellul: "Yes (PoP challenges)" },
+  { label: "Setup complexity", paas: "Low", vps: "High", ellul: "Low" },
+]} />
+
+## FAQ for Skeptics
+
+<FaqSection>
+  <FaqItem question="You say you can't access my server. How do I know that's true?">
+    Because there's no mechanism to. In Web Locked mode, the only way in is with a WebAuthn passkey whose private component lives in your device's secure enclave. It cannot be exported. Every request requires a Proof of Possession signature from a non-extractable ECDSA key. We don't have a backdoor, an admin override, or an emergency access protocol. We architecturally cannot build one without breaking the signed update chain.
+  </FaqItem>
+
+  <FaqItem question="What if I lose my passkey device?">
+    During initial passkey registration, you receive a small set of one-time recovery codes. Each is hashed and can only be used once. If you lose your device and your recovery codes, you can access the underlying VPS through the cloud provider's emergency console. We intentionally limit our own recovery capabilities, because any recovery path we offer is a recovery path an attacker can exploit.
+  </FaqItem>
+
+  <FaqItem question="What stops a rogue ellul employee from pushing a malicious update?">
+    Signature verification. Every update must be signed with a key held in a hardware security module. The workstation verifies the signature and the chain reference locally. A rogue employee with full access to our infrastructure still cannot sign a release, because the signing key has never touched a networked machine.
+  </FaqItem>
+
+  <FaqItem question="How is this different from just renting a VPS myself?">
+    Three things: automated provisioning (your workstation is ready in minutes), managed security defaults (firewall rules, abuse prevention, hardened configs), and the tiered security model (WebAuthn, PoP signatures, body hashing, nonce-based CSP) that would take significant engineering effort to implement yourself. You get self-managed sovereignty without the self-managed overhead.
+  </FaqItem>
+
+  <FaqItem question="What data do you actually store about me?">
+    Your account info (email, OAuth tokens for login), workstation metadata (IP, region, plan, security tier), and encrypted secrets (SSH public keys, wrapped storage keys in tiers below Sovereign). We do *not* store: your workstation's contents, your application data, your SSH private keys, or your WebAuthn private keys.
+  </FaqItem>
+
+  <FaqItem question="Can you read my chat sessions?">
+    In Standard mode, chat traffic is proxied through our infrastructure. So theoretically, yes. In Web Locked or Private Locked mode, your interfaces are served directly from your workstation, authenticated end-to-end with passkeys and PoP signatures. The platform never sees the traffic. If chat privacy matters, enable Web Locked mode.
+  </FaqItem>
+
+  <FaqItem question="What happens to my data if I delete my account?">
+    Workstation deletion is handled at the cloud provider level. The VPS and all its data are destroyed. Your account data is deleted from our database. If you want to keep your server, disable the ellul agent via SSH and transfer billing to your own provider account before deleting.
+  </FaqItem>
+
+  <FaqItem question="Has this been independently audited?">
+    The system has undergone internal adversarial testing covering data sovereignty, credential isolation, localhost bypass prevention, and ghost port detection. We publish our security architecture transparently so you can audit the design yourself. Independent third-party audits are conducted on a periodic basis; please contact us if you need attestation for a specific compliance requirement.
+  </FaqItem>
+</FaqSection>

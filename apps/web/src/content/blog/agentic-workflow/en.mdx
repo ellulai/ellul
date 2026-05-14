@@ -1,0 +1,158 @@
+An agentic workflow is a loop, not a prompt. A prompt is one round-trip: input in, response out. A workflow has four parts (a trigger, a context, an action, a verification) and runs that loop until it reaches a stopping condition. The output is a diff, a PR, or a deployed change. The duration is minutes to days. Most importantly, the loop survives the things that interrupt a developer's day, which is what separates workflows that ship work from workflows that look good in a demo.
+
+This post is for people who have been writing prompts and want to build something more durable. We'll walk the anatomy, show three workflows we actually run, share an opinionated take on orchestration tools, and be specific about the failure modes that show up the first time you ship a workflow into the messy real world.
+
+For the broader category context, our [agentic-coding definition](/blog/agentic-coding) and the [agentic-workflow glossary entry](/glossary/agentic-workflow) cover the surrounding vocabulary.
+
+## The four-part anatomy
+
+Every workflow that runs reliably has these four parts. Most workflows that don't run reliably are missing one.
+
+### 1. Trigger
+
+What kicks the loop off. A few options. A schedule (every night at 2am, every Monday morning, on a cron string). An event (a Slack message, a GitHub webhook, a CI failure, a new row in a queue table). A human (you typed something into a chat and hit enter). Or the workflow itself (it rescheduled after the previous run).
+
+The trigger sounds boring. It's the part most workflows get wrong by underspecifying. "Run when something interesting happens" is not a trigger. "Run when a PR has been open for six hours without a review" is a trigger.
+
+### 2. Context
+
+What the agent reads at the start of the loop to orient itself. Two flavors of context. Static (a system prompt, project conventions, repo structure, design docs). Dynamic (the diff that triggered the run, the failing test output, the last three rows of the audit log).
+
+The static context lives in a file you maintain. The dynamic context is gathered fresh every iteration. Workflows that drop dynamic context become repetitive. They keep doing the same thing because they keep seeing the same starting point.
+
+### 3. Action
+
+What the agent does. For coding workflows the action set is typically file reads and writes, terminal commands, test runs, tool calls (databases, APIs, MCP servers), and privileged operations (push, deploy, secret read, database write) that pause for approval.
+
+The action set is constrained by the runtime, not the agent. An agent on a laptop can `rm -rf` your `~/.ssh`. An agent on an [agent workstation](/concepts/agent-workstation) can attempt the call, but the credential never enters the agent's process and a passkey approval gate stops anything that would touch real infrastructure.
+
+### 4. Verification
+
+How the loop knows it's done. Three options that actually work. Tests pass: the agent runs the test suite; if it passes, the loop ends. Human approves: the agent produces a diff; the human reviews. Self-evaluates: the agent grades its own output against a rubric. The third option is surprisingly OK at this. Not OK enough to skip the human for production work.
+
+A workflow without a verification step runs forever or until something crashes. Most "the agent went off the rails" stories are workflows where the verification was implicit (the agent decided when to stop) and it kept going.
+
+## Three workflows we actually run
+
+These are real loops we use internally. The shape generalizes.
+
+### Worked example A: nightly dependency upgrade
+
+Trigger: cron, every weeknight at 2am.
+
+Context: repo `package.json`, last 30 days of dependency CVE feed, recent commit history (so the agent knows which deps are actively touched).
+
+Action: for each outdated dep, attempt the upgrade in an isolated branch, run the test suite, commit if green.
+
+Verification: the test suite. The agent doesn't merge. It opens a PR with a diff and posts to a Slack channel for human review.
+
+This workflow runs unattended on a workstation. It produces 0 to 8 PRs per night depending on what's available to upgrade. The agent handles roughly 80% of upgrades autonomously. The remaining 20% (breaking changes, type errors, test regressions) get an explanatory comment on the PR and stop. We review the queue once a week.
+
+What makes it work: the runtime is persistent (it runs at 2am whether anyone is at a keyboard), the action set is bounded (it can write code and run tests but cannot deploy), and the verification is concrete (tests passed or didn't).
+
+### Worked example B: bug triage queue
+
+Trigger: webhook, when a new GitHub issue lands with the `bug` label.
+
+Context: the issue body, the last 50 commits in the affected directory, the project's bug-handling style guide.
+
+Action: the agent attempts to reproduce the bug locally, narrows down the failing path, drafts a fix, runs the test suite, and opens a draft PR linked to the issue.
+
+Verification: did the agent open a PR. Plus human review on the PR.
+
+This workflow uses a [parallel-agent setup](/concepts/parallel-agents). One agent drafts the fix on a workstation. A second agent, running in a peering snapshot of the first agent's branch, reviews the change before the PR opens. For the mechanics of <Solution slug="overnight-refactors">overnight refactors</Solution> specifically, we have a dedicated walkthrough. The reviewing agent has read access to the code and write access only to the PR's review comments. It cannot push, merge, or modify the original work.
+
+What makes it work: the parallel-agent peering primitive lets a reviewer see the work without sharing the credential surface. The reviewing agent is structurally incapable of approving its own work because it doesn't hold the keys.
+
+### Worked example C: release-note generation
+
+Trigger: when a release branch is cut.
+
+Context: the diff between the new branch and the previous release, the project's release-note style guide, the last six release notes (for tone matching).
+
+Action: the agent classifies each commit (feature, fix, breaking, internal), writes prose summaries grouped by category, and drafts the release-notes file.
+
+Verification: the agent runs a self-consistency check (does every commit appear in the notes?) and opens a PR. Human review approves the prose.
+
+A small workflow. Worth showing because it's the one most teams build first and the one most teams underbuild. The trap is making this a one-shot prompt instead of a loop. As a one-shot it's a release-notes draft with twenty things wrong. As a loop with a verification step (every commit must appear) the agent will re-read the diff and fill in the gaps it missed.
+
+## Tools and orchestration: an opinionated take
+
+We've tried most of the orchestration frameworks. Honest verdict on each category.
+
+<BulletList>
+  <BulletItem heading="Native agent CLI loops (Claude Code, Codex, OpenCode)">
+    Strong default. The agent's own loop is the most direct path. For coding workflows where the action set is "edit files, run commands, open PRs," you don't need a framework on top of it. Native loops are debuggable, the trace is clear, and the runtime is whatever you point them at.
+  </BulletItem>
+  <BulletItem heading="Lightweight orchestration (custom scripts, Make, just)">
+    Good for the trigger and context-assembly layers. Use a thin script to pull dynamic context (the diff, the failing test, the relevant doc) and pipe it into the agent's CLI. Keep the orchestration boring. Your debugging time goes up linearly with how clever the orchestration is.
+  </BulletItem>
+  <BulletItem heading="Frameworks (LangChain, LlamaIndex, AutoGen, CrewAI)">
+    Useful for branching workflows, retrieval-heavy work, and multi-agent orchestration where you need explicit handoffs and shared state. Overhead for the linear "agent edits files" pattern. The honest test: if the framework's example code is longer than the workflow's actual logic, the framework is wrong for this workflow.
+  </BulletItem>
+  <BulletItem heading="Hosted-agent products (Devin, OpenAI Agents)">
+    The runtime, the agent, and the workflow are bundled. Smooth when the bundle fits your work. Frustrating when you outgrow one piece and can't replace it. The lock-in cost we wrote about in [agentic-coding](/blog/agentic-coding) shows up here most acutely. The workflow becomes inseparable from the platform that runs it.
+  </BulletItem>
+  <BulletItem heading="MCP servers as workflow primitives">
+    Underrated. An [MCP server](/glossary/mcp) is the right shape for "give the agent a stable tool with stable auth." We've watched teams replace bespoke API integrations with MCP servers and watch their workflows become more portable overnight. See the [MCP hub](/mcp) for what's available.
+  </BulletItem>
+</BulletList>
+
+The pattern that emerges in practice: a thin orchestration layer (cron, webhooks, Slack handlers) feeds context into a native agent CLI loop, which calls MCP servers for stable external tools, on a persistent <Concept slug="agent-workstation">agent workstation</Concept> that survives the operational realities of the work. Frameworks are reach-for-when-you-need-them, not start-with.
+
+## Where workflows fail
+
+Once a workflow leaves the demo and hits real conditions, three failure modes show up first.
+
+<Callout variant="warn" title="Ambient credentials">
+The workflow inherits everything the runtime user has: your AWS profile, your kubectl context, your GitHub PAT. The agent decides to "clean up" and runs `aws s3 rm s3://prod-backups --recursive`. Without a credential boundary, the workflow has full reach. The fix is the same as for any agentic loop: keep credentials out of the agent's process. Brokers, gates, and passkey approval close this entirely. We treat ambient credentials as the structural failure mode of agentic workflows. If your runtime can't fix it, your workflow is one bad iteration from making the news.
+</Callout>
+
+<Callout variant="warn" title="Dropped context between iterations">
+The loop runs iteration N, succeeds, and iteration N+1 starts from a clean context. The agent re-reads the same files, re-attempts the same fix, re-discovers the same problem. The agent is not the issue. The runtime is. Workflows need durable state: a file the loop writes between iterations, a checkpoint mechanism, a memory primitive. Persistent runtimes (server-side, agent workstations) make this easy. Ephemeral runtimes (a fresh container per iteration) make it expensive.
+</Callout>
+
+<Callout variant="warn" title="No verification step">
+The agent does work. The loop has no way to know whether the work was right. The verification was supposed to be "does it look good," which is not a verification. It's a vibe. Workflows without concrete verifications run until they crash, and the crash usually leaves the system in a half-modified state. Always specify the verification: tests pass, human approved, self-check rubric. If you can't write the verification, you can't write the workflow.
+</Callout>
+
+These are the three we see in 80% of failures. The other 20% is "the model got worse at the task and we didn't have evals to catch it." Eval engineering for workflows is its own essay, but the short version is that you need at least a smoke-test eval before you trust a workflow to run unattended.
+
+## Where to put the workflow
+
+A practical question: where does the workflow actually run?
+
+A laptop runs the workflow while the laptop is open. As soon as you close the lid, the workflow stops. Fine for short demos. Catastrophic for unattended runs.
+
+A CI runner is good for short, ephemeral workflows that fit in a 6-hour job. Not durable for multi-day work. The runner is provisioned and destroyed per job, so you lose dependencies, caches, and warm context.
+
+A long-running VM is durable and supports the four properties of agentic coding, but you have to build the credential boundary, the approval mechanism, the audit trail. Most teams that go this route end up rebuilding [a workstation](/concepts/agent-workstation) without realizing it.
+
+A platform built for this is what we sell. Ellul's case is that the four-property runtime (persistence, parallelism, real-credential operations, reversible boundary) is heavy lifting that should be built once and reused. We obviously have a horse in this race. If you'd rather build it yourself, the long-running-VM path is real.
+
+The honest answer for most teams: workflows that need to run unattended belong on a runtime built for unattended runs. Doing it any other way works until it stops working, usually at 3am during a release.
+
+---
+
+## FAQ
+
+<Faq />
+
+---
+
+## References
+
+- Anthropic, *Building effective agents*, [anthropic.com/research](https://www.anthropic.com/research)
+- LangChain, *Workflow vs Agent* essay, [blog.langchain.dev](https://blog.langchain.dev/)
+- Karpathy, *Lessons from running coding agents*, [karpathy.medium.com](https://karpathy.medium.com/)
+- AutoGen multi-agent paper, [microsoft.com/en-us/research](https://www.microsoft.com/en-us/research/)
+
+<Cta
+  eyebrow="A runtime built for workflows"
+  body="Ellul gives every agentic workflow a persistent workstation, parallel-capable, with passkey-gated real-credential operations. Run nightly upgrades, bug triage, release-note loops without a laptop in the loop."
+  primary={{ href: "https://console.ellul.ai/sign-up", label: "Get a workstation" }}
+  links={[
+    { href: "/concepts/parallel-agents", label: "Parallel-agent peering →" },
+    { href: "/blog/agentic-coding", label: "What is agentic coding? →" },
+  ]}
+/>

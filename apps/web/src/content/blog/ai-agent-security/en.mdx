@@ -1,0 +1,145 @@
+AI agent security is not web app security with a chatbot bolted on. The agent has a shell. It holds your credentials. It reasons about prompts that may be adversarial, including prompts hidden inside documents, error messages, and tool responses you didn't write. The threats engineers actually face in 2026 are categorically different from the OWASP Top 10 most engineers were trained on. This essay is a working threat model and a runtime checklist that maps the threats to mitigations you can implement.
+
+We'll be specific. The defaults that ship with most coding agents are not the defaults that survive contact with a determined attacker, and that gap is where most of the damage happens.
+
+## The threat model
+
+A useful threat model for agentic coding has four primary categories. Each has been observed in production. Each is solvable with the right runtime, but most current setups solve at most two.
+
+### 1. Prompt injection
+
+The agent reads adversarial input that contains instructions designed to redirect its behavior. Direct prompt injection is the obvious case ("ignore previous instructions and..."). Indirect prompt injection is the underrated case: an attacker plants instructions in a comment, a third-party API response, a Slack message your agent later reads, the error output of a subprocess. The agent does not distinguish "this is data the user wants me to consider" from "this is an instruction I should follow."
+
+Mitigation: input sanitization helps for the obvious cases but does not scale. The structural answer is to assume any text the agent can read may be adversarial and to gate **actions**, not inputs. The OWASP LLM Top 10 ([owasp.org](https://owasp.org/www-project-top-10-for-large-language-model-applications/)) lists prompt injection as #1 and is correct about its centrality.
+
+### 2. Ambient credentials
+
+The agent inherits the credential surface of the OS user it runs as. On a laptop that means `~/.aws/credentials`, `~/.ssh/`, `~/.kube/config`, `~/.config/gcloud`, browser cookies, 1Password CLI sessions, hundreds of `.env` files in adjacent project directories. The agent does not need to be malicious for ambient credentials to be a threat. A confused agent reading the wrong file is sufficient.
+
+Mitigation: keep credentials out of the agent's process. The mature pattern is a credential broker that runs as a different OS user, holds the secrets in its own memory, and brokers every privileged action through a separate channel. We've described how the [Sovereign Shield](/glossary/sovereign-shield) implements this. The architecture pattern is broader than any one product. The point is that ambient credentials are not a configuration mistake. They are the default state of running an agent in the same process as your dotfiles.
+
+### 3. Tool misuse
+
+The agent has tools (file system, shell, MCP servers, HTTP APIs) and can call them in unexpected ways. Tool misuse covers the spectrum from obvious (the agent runs `rm -rf /` because it misunderstood a request) to subtle (the agent runs an SQL query that reads a column it shouldn't see, the agent makes an HTTP request to an API that prices per call, the agent enumerates secrets via shell wildcards because a tool description was ambiguous).
+
+Mitigation: bound the tool surface and gate each action class. Bounding the tool surface means the agent's namespace cannot reach tools you didn't authorize: kernel-level egress controls, AppArmor profiles, seccomp filters. Gating each action class means the agent can attempt the call but the result of the call is mediated. This is what we mean by the [Ironclad tier](/glossary/ironclad-tier): kernel-level boundaries that close at multiple layers, so a single misclassification doesn't cascade.
+
+### 4. Exfiltration
+
+The agent reads sensitive data (code, secrets, customer rows from a database) and exfiltrates it via a side channel. Exfiltration vectors are remarkably creative. The agent opens a "support" issue with the data in the body. The agent embeds the data in a commit message. The agent calls an external API with the data as a parameter. The agent renders the data into an image alt text that gets indexed. Anywhere the agent can write that you don't control is an exfiltration channel.
+
+Mitigation: egress controls and audit. Egress controls block the network paths an attacker would use to extract data. Audit logs (durable, tamper-evident, your own) let you detect exfiltration attempts that bypass controls. The pair is necessary. Either alone is insufficient. Egress controls without audit make exfiltration silent when controls fail. Audit without egress controls makes exfiltration loud but unstoppable.
+
+## The "agent has a shell" problem
+
+Every threat above gets worse because of one structural property: the agent has a shell. It can run arbitrary commands. It can read arbitrary files (if the runtime permits). It can launch subprocesses (if the runtime permits). This is what makes coding agents useful and what makes them categorically more dangerous than chatbots.
+
+The implication that surprises most security teams: privilege boundaries inside the agent's process are fictional. A permission prompt inside the agent ("the agent wants to run `git push`, allow?") runs in the same address space as the agent's reasoning. A sufficiently clever prompt injection can talk the agent into rendering the action as routine, or into framing the prompt itself as something to bypass. A confused agent can run the dangerous action while the user is approving an unrelated routine action. The prompt is not a boundary. It is a UI.
+
+Real boundaries live outside the agent's process. Different OS user. Different namespace. Different network. Kernel-level controls (`ptrace_scope=1`, `seccomp`, `AppArmor`) that prevent the agent from inspecting the gate process or attaching to its subprocesses. The gate is a separate program with separate memory, talking to the agent only through a defined IPC channel. This is harder to build than a permission prompt. It's also the only thing that works.
+
+## Real-credential operations done right
+
+If the agent must touch real credentials, and any non-toy agentic coding workflow eventually does, the runtime needs to keep the credential out of the agent and gate every use.
+
+The pattern, abstracted from the [Sovereign Shield](/glossary/sovereign-shield) but applicable elsewhere:
+
+<NumberedList>
+  <NumberedItem heading="Credentials live in a broker process">
+    The credential broker is a long-lived process running as a separate OS user with its own group memberships. The agent process cannot read the broker's memory, environment, or git subprocess credentials. Kernel-level ptrace restrictions enforce this even for processes running as the same uid.
+  </NumberedItem>
+  <NumberedItem heading="Every privileged action is classified">
+    The broker classifies actions into gate types: `git_push`, `deploy`, `db_write`, `secret_read`, `db_migrate`. Each gate has its own per-class TTL and its own approval requirements. A push approval doesn't auto-approve a deploy. A deploy approval doesn't auto-approve a database migration.
+  </NumberedItem>
+  <NumberedItem heading="Approvals are FIDO2 / WebAuthn">
+    A [passkey approval](/glossary/passkey-approval) is a hardware-backed cryptographic confirmation, not a software prompt. The agent cannot synthesize the user's biometric. The agent cannot replay a recently-cleared cache without the user's hardware. The approval is bound to a specific action class and a specific TTL. When it expires, the agent has to ask again.
+  </NumberedItem>
+  <NumberedItem heading="The audit log is yours">
+    Every privileged action (attempted, approved, rejected, expired) is in a log you keep. The log includes the action class, the timestamp, the device that approved (if any), the agent's claim about what it was doing, and the result. Tamper-evident in the right setup. Worst case, immutable enough to be useful.
+  </NumberedItem>
+  <NumberedItem heading="The model never sees the secret">
+    BYOK with [zero-knowledge encryption](/blog/zero-knowledge-byok) means even the model API key, the most sensitive credential the agent uses, is encrypted at rest with a passkey-derived secret. The platform stores ciphertext. The model gets the request, but the platform never sees the key in plaintext.
+  </NumberedItem>
+</NumberedList>
+
+The compounding effect: an attacker who fully compromises the agent's reasoning still cannot complete a privileged action without your fingerprint.
+
+## A runtime checklist
+
+If you're evaluating an AI coding tool's security posture, run it against these.
+
+<BulletList>
+  <BulletItem heading="Where does the agent run?">
+    Your machine (high credential exposure, low isolation), the vendor's machine (you have no audit trail), or a workstation runtime you control (medium credential exposure, high isolation, your audit). The third option is the only one that scales.
+  </BulletItem>
+  <BulletItem heading="Where do credentials live?">
+    In the agent's memory (worst), in a separate process on the same machine (better), in a separate process with kernel-level isolation from the agent (best). "Encrypted at rest" is necessary and not sufficient. Credentials are at rest most of the time but the threat is when they're in use.
+  </BulletItem>
+  <BulletItem heading="What gates privileged actions?">
+    Nothing (the agent runs whatever it can call), in-process permission prompts (helps the easy cases), or out-of-process passkey gates (real boundary). The first is the default for laptop-native agents. The second is most coding-agent products. The third is rare and is what you want for production work.
+  </BulletItem>
+  <BulletItem heading="Is the action audit log inspectable and yours to keep?">
+    A vendor's "you can request your logs" policy is not the same as having the logs. Logs you can't query are not audit. Logs you don't own are not yours.
+  </BulletItem>
+  <BulletItem heading="Who sees prompts in flight?">
+    The model API by definition. The platform (the wrapper between you and the model) may also see them. Read the retention policy. If the platform retains prompts for "improving the service," your prompts are training data unless you opt out.
+  </BulletItem>
+  <BulletItem heading="What is the boundary if the agent is compromised?">
+    Process (weakest), user, namespace, machine, hardware (strongest). Multi-layer is the goal. A compromise that breaks through one layer should hit another. The [Ironclad tier](/glossary/ironclad-tier) is our take on multi-layer. The principle generalizes.
+  </BulletItem>
+</BulletList>
+
+A vendor that can answer all six clearly has thought about this. A vendor that hand-waves any of them is not where you should be running production agents. For the runtime that checks all six, see <Concept slug="agent-workstation">the agent workstation concept</Concept>.
+
+## The threat model that's coming
+
+Looking forward, three threat patterns are showing up in incident reports often enough that they deserve attention now rather than after they hit you.
+
+Cross-agent collusion. Two agents with peering access can exchange information through the read-only channel. If the peering primitive doesn't filter aggressively, the read-only side can ask the read-write side to write data into a shared file. The mitigation is what our docs describe for [cross-sandbox sharing](https://docs.ellul.ai/projects/sharing-projects). Peering is a curated source-code-only snapshot with secrets and config files filtered out, with scope checks at four layers so the writing agent cannot be tricked into modifying a peer.
+
+Supply-chain through MCP servers. [MCP](/glossary/mcp) is a standardization win and a new attack surface. A malicious or compromised MCP server can capture every tool call routed through it. The mitigation is the same as for any package supply chain: pin versions, audit code, run them inside the same boundary as the agent rather than ambient on the host.
+
+Agent-to-agent prompt injection. Multi-agent setups where one agent's output becomes another's input are vulnerable to instructions an attacker plants in agent A's output specifically to manipulate agent B. The mitigation is treating inter-agent communication as untrusted input and applying the same gating rules.
+
+## The honest summary
+
+Security for AI coding agents is a runtime problem. The model matters less than where it runs. The strongest model on a default laptop runtime is less secure than a middling model on a hardened runtime. The reverse pattern (a model upgrade fixing runtime gaps) does not exist.
+
+The runtime properties that matter, in order of impact:
+
+1. Credentials live outside the agent's process, in a broker the agent cannot read.
+2. Privileged actions pause for hardware-backed user approval.
+3. The agent runs in a kernel-level boundary (separate user, namespace, network).
+4. Egress is controlled and audited.
+5. The audit log is yours and tamper-evident.
+
+A runtime that does all five is the bar. A runtime that does the first three plus an honest plan for four and five is acceptable. A runtime that does fewer is a demo.
+
+If you take one thing away: the agent will at some point do something you didn't expect. Your protection is not that the agent is perfectly aligned. Your protection is that the runtime is. Build for that.
+
+---
+
+## FAQ
+
+<Faq />
+
+---
+
+## References
+
+- OWASP, *Top 10 for Large Language Model Applications* (2025), [owasp.org](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
+- Anthropic, *Trust and safety for agents*, [anthropic.com/news](https://www.anthropic.com/news)
+- NIST, *AI Risk Management Framework*, [nist.gov/itl/ai-risk-management-framework](https://www.nist.gov/itl/ai-risk-management-framework)
+- Greshake et al., *Indirect Prompt Injection in LLM-Integrated Applications*, [arxiv.org/abs/2302.12173](https://arxiv.org/abs/2302.12173)
+- WebAuthn specification (FIDO2), [w3.org/TR/webauthn](https://www.w3.org/TR/webauthn/)
+- MITRE ATLAS, adversarial threat landscape for AI systems, [atlas.mitre.org](https://atlas.mitre.org/)
+
+<Cta
+  eyebrow="Build the runtime, not the prompt"
+  body="Ellul moves credentials out of the agent's process, gates every privileged action with a passkey, and runs each agent inside a kernel-level boundary. The runtime properties that determine whether prompt injection is containable or catastrophic, built once, used by every agent."
+  primary={{ href: "https://console.ellul.ai/sign-up", label: "Get a workstation" }}
+  links={[
+    { href: "/glossary/sovereign-shield", label: "How the Shield works →" },
+    { href: "/glossary/ironclad-tier", label: "The Ironclad tier →" },
+  ]}
+/>

@@ -1,0 +1,69 @@
+An <Term slug="agent-workstation">agent workstation</Term> is the persistent, isolated computer that an AI coding agent lives on. It is always on. It has its own filesystem, processes, and network. Privileged actions are gated at the boundary, which means the agent must request human approval before touching anything that matters. The agent does its work there, not on a developer's laptop.
+
+That sentence is doing a lot. Let's unpack it, because the category is new enough that the words don't yet carry their weight.
+
+## What it is, and what it isn't
+
+An agent workstation is **not** a cloud IDE. Cloud IDEs (Codespaces, Daytona, Coder) were built so a human can write code in a browser. The architecture optimizes for keystroke latency, terminal fidelity, and live-share collaboration between humans. There is no concept of an agent that runs unattended, no read-only peering primitive between agents, no passkey-gated boundary on privileged actions.
+
+An agent workstation is **not** a sandbox. Sandboxes (E2B, Modal) are ephemeral execution environments where short-lived code runs and dies. They are excellent for running snippets, evaluating LLM-generated code, or providing a sandbox API to other products. They are not where an agent lives for days at a time, picking up context from a previous session, with persistent installed dependencies and long-running MCP servers.
+
+An agent workstation **is** a persistent computer assembled around the assumption that the agent is the primary user. Always on. Isolated from the human's machine. Gated by the human's passkey. Composable with other agent workstations on the side.
+
+## The three structural problems it solves
+
+The motivation for the category becomes obvious once you list the things that don't work when an agent runs on a laptop.
+
+<Callout type="warn" title="The lid problem">
+Your laptop sleeps when you close it. Anything the agent was doing (a long refactor, a multi-step migration, an end-to-end test suite) stops. If the agent has to finish in one continuous session at your keyboard, you are bounded by your own attention and battery. Most useful agentic work is longer than that.
+</Callout>
+
+<Callout type="warn" title="The credential problem">
+The agent inherits your laptop's permissions. Your SSH keys are in `~/.ssh`. Your AWS credentials are in `~/.aws`. Your browser cookies for production-grade tools are in your browser profile. Every process the agent launches inherits ambient access to all of it. The first time the agent gets confused and runs the wrong command against the wrong target, you discover this the hard way.
+</Callout>
+
+<Callout type="warn" title="The parallelism problem">
+You can run one agent at a time. Two agents sharing a single laptop fight over ports, file locks, working directories, package managers, and credentials. Anyone who has tried to run two `npm install` processes against the same `node_modules` knows the failure mode. <Term slug="parallel-agents">Parallel agents</Term> on a single laptop is a recipe for state corruption.
+</Callout>
+
+A persistent, isolated, gated workstation per agent fixes all three. The agent doesn't share your laptop's lifecycle. It doesn't share your credentials. And another agent can sit on its own workstation next door without colliding.
+
+## What "gated at the boundary" means
+
+Most security-conscious agent setups try to constrain what the agent can do at the application layer: prompt injection guards, allow-listed commands, output filters. Those are useful, but they share a fundamental flaw: the boundary is inside the same process that an attacker (or a confused agent) is trying to escape from.
+
+Ellul's <Term slug="sovereign-shield">Sovereign Shield</Term> moves the gate **outside** the agent's process. The shield runs as a separate system user with its own group memberships, holds session keys and OAuth tokens in its own memory, and forces every privileged action (`git push`, `vercel deploy`, secret reads, database writes) to flow through it. Kernel-level controls (ptrace restrictions, seccomp, AppArmor) prevent the agent from inspecting the shield's memory or attaching to its subprocesses.
+
+When a privileged action arrives at the shield, the action pauses. The user's passkey-registered devices receive a notification. The user taps Touch ID, Face ID, or a hardware key to approve. The shield then brokers the action against the real credential, which the agent never sees.
+
+This is a structurally different security model from "the agent has access and you trust it." The agent has access to the **request**; the shield has access to the **credential**. Even an agent that has been fully compromised by prompt injection cannot complete a `git push` without your fingerprint.
+
+## What you can do that you couldn't before
+
+A handful of operational patterns become normal once the agent has its own computer:
+
+1. **Overnight runs.** Kick off a refactor, close your laptop, sleep eight hours, wake up to a draft PR.
+2. **Phone-as-keyboard.** Open the console on your phone in the subway. Read the agent's progress. Tap to approve a deploy. Walk off the train.
+3. **<Term slug="parallel-agents">Parallel agents</Term> with division of labor.** Coding agent on one workstation. Reviewing agent on the next. Documenting agent on a third. The reviewing agent reads from the coder's branch via read-only peering. There is no path for the reviewer to push, edit, or escalate.
+4. **Real credentials with real safety.** The agent can hold real GitHub tokens, real production database access, real deploy keys, because the credential never enters the agent's process and every use is passkey-gated.
+5. **MCP servers with persistence.** Long-lived <Term slug="mcp">MCP</Term> processes that index your codebase, your documentation, your design system, running on the workstation alongside the agent, no cold start.
+
+Each of these is technically possible without an agent workstation. None of them are pleasant. The category exists because doing all of them at once, on infrastructure designed for it, is qualitatively different from cobbling together a screen session and a VPN.
+
+## When this is the wrong tool
+
+If your agent work is genuinely bounded (short refactors that you watch, one-shot completions, no production credentials, no multi-hour runs) you don't need an agent workstation. Cursor or Claude Code on your laptop is enough, and the architecture overhead isn't worth it.
+
+The shape of the category target: anyone running an agent for more than a few hours at a time, anyone running multiple agents at once, anyone whose agent ever needs to touch infrastructure where a mistake costs money. The line is roughly "this stops being a fun side-tool and starts being how I ship work."
+
+## See also
+
+- [Cursor on your laptop vs Cursor on Ellul →](/vs/cursor)
+- [Claude Code locally vs Claude Code on a workstation →](/vs/claude-code)
+- [How Ellul differs from Codespaces →](/vs/codespaces)
+- [Run Claude Code in the cloud →](/solutions/run-claude-code-in-cloud)
+- [Cursor remote agents →](/solutions/cursor-remote-agents)
+- [Always-on AI agent →](/concepts/always-on-ai-agent)
+- [Parallel agents →](/concepts/parallel-agents)
+
+<FAQ />

@@ -1,0 +1,158 @@
+# Ellul — Full Reference
+
+> Ellul is the always-on workstation for your AI agent. Cursor and Claude Code run on your laptop today — they stop when you close the lid, they have ambient access to your SSH keys and AWS credentials, and they can only run one agent at a time. Ellul runs the agent on a persistent computer that never closes, lets multiple agents work in parallel without stepping on each other, and gates every privileged action (git push, database write, deploy) behind a passkey tap. Your laptop stays clean. Your agent keeps working.
+
+---
+
+## What Ellul Is
+
+Ellul Cloud is a per-user, isolated Linux workstation provisioned for your AI agent.
+
+It includes:
+- An AI agent chat surface running inside the sandbox (Claude Code by default; Codex, OpenCode, Gemini also available).
+- A file browser and code editor for the user.
+- A live preview URL for dev servers running in the sandbox.
+- Scoped test infrastructure: local PostgreSQL, test secrets, framework scaffolding for Next.js, Vite, Hono, FastAPI, Rails, and others.
+- Passkey-gated privileged actions: git push, secret access, deploys, real-database writes pause mid-execution and require a FIDO2 approval.
+- Integrations with the user's real infrastructure: GitHub, Vercel, Fly, Railway, Neon, Supabase. Production credentials never touch the user's laptop. They live in a vault and are injected only at approval time. The agent never sees them.
+
+What Ellul does *not* do: host production apps, serve production traffic, or run a customer's main database. Ellul sits upstream of Vercel, Neon, and Railway. It is where the agent *works*, not where the app *runs*.
+
+## The Three Pillars
+
+### 1. Autonomy — Agents That Don't Stop
+
+Close your laptop. The agent keeps working. Wake up to a finished feature, a reviewed PR, a drafted document. Check in from your phone. Everything that previously required your machine to stay open now runs on a workstation that never sleeps.
+
+Most AI coding agents today are tethered to a user's laptop. They stop when the lid closes. They crash when WiFi drops. They lose state when the user switches contexts. Ellul breaks that tether.
+
+### 2. Composition — Agents That Can See, But Can't Touch
+
+Run three agents in parallel. One writes code. One reviews it. One drafts the documentation.
+
+Each agent has its own workstation. They can read each other's work — read-only peering — but they cannot break each other's state. This is the composition primitive. It makes "agent team" a concrete thing instead of an aspirational phrase.
+
+The peering model: an agent in workstation A grants read-only access to a snapshot of its source code (excluding secrets, credentials, and configuration). Agents in workstation B and C can read that snapshot. They cannot edit it. They cannot push it. They cannot escalate it.
+
+### 3. Safety as Enabler — Yes Means Yes
+
+All of the autonomy is only possible because every privileged action pauses for a passkey approval. Git push. Production database write. Domain change. Deploy. Each pauses, waits for a FIDO2 biometric tap, and only then proceeds.
+
+This is how an agent runs unsupervised for eight hours overnight without setting fire to anything. Security is not the reason to buy Ellul. It is the reason the autonomy is safe to use.
+
+---
+
+## What Ellul Replaces
+
+| If you currently run | And feel | Ellul replaces it with |
+|---|---|---|
+| Cursor on a laptop | "It stops when I close the lid." | Cursor on a workstation that never closes |
+| Claude Code on a laptop | "I can't run more than one agent at a time." | Claude Code with multiple parallel sessions |
+| Cursor + Copilot + Vercel + 1Password CLI on a laptop | "All my credentials are ambient on my machine." | The same agents, with credentials gated behind a passkey, never reaching the agent process |
+| GitHub Codespaces | "There's no agent UX, no gates, no per-agent isolation." | An agent-native cloud workstation |
+| E2B / Daytona / Modal sandboxes | "Those are infrastructure SDKs, not products." | The product layer above the infrastructure |
+| Replit | "Shared runtime, no real isolation, not built for agents." | A per-user VPS with real isolation and a composition primitive |
+
+## How It Differs From Adjacent Products
+
+**vs Cursor.** Cursor is the agent's editor on your laptop. Ellul is the agent's *computer*. The agent runs on Ellul; you can still use Cursor as a thin client to talk to it.
+
+**vs Claude Code (local).** Claude Code is the agent. Ellul is where the agent lives. Anthropic's "Remote Control" feature connects to a *local* Claude Code session on your laptop. Ellul runs Claude Code on a persistent server you don't have to keep open.
+
+**vs Sprites.dev.** Sprites provides stateful sandboxes for AI coding agents. Ellul is the user-facing product layer — chat, file browser, gates, integrations — with stateful sandboxes as the substrate. Sprites is infrastructure; Ellul is the product an engineer signs up for.
+
+**vs E2B.** E2B is an SDK for ephemeral code-execution sandboxes (max 24 hours on Pro). Ellul is a per-user persistent workstation. The user signs up. The workstation is theirs until they cancel.
+
+**vs Daytona.** Daytona is a workspace primitive — its docs target platform engineers building developer environments. Ellul is the assembled, opinionated agent workstation that uses workspace primitives internally.
+
+**vs GitHub Codespaces.** Codespaces is a cloud dev environment built for human developers. It has no agent UX, no gating, no peering, and no agent-aware isolation. Ellul is built for the agent first, the human second.
+
+**vs Replit.** Replit is a shared cloud runtime where users host both their dev environment and their app. Ellul is a per-user VPS with strict isolation; the app deploys to wherever the user wants — Vercel, Fly, Railway.
+
+---
+
+## Pricing
+
+- **Hobby — $20/month.** One sandbox. Designed for an engineer trying Ellul on a side project.
+- **Pro — $50/month.** Multiple parallel sandboxes, persistent state, integrations. Daily driver.
+
+No free tier (we attract the wrong users with one). No enterprise tier yet (we'll come back to that at 200+ customers).
+
+---
+
+## FAQ
+
+### What is an agent workstation?
+
+An agent workstation is a persistent, isolated computer that exists for an AI agent to work on. It is always on. It has its own file system, its own processes, its own network. It is gated at the boundary so that privileged actions require human approval. Agents run there, not on your laptop.
+
+### Why not just run the agent on my laptop?
+
+Three reasons. First, the agent stops when you close the laptop — anything taking more than a few hours is impractical. Second, the agent has ambient access to everything on your machine: SSH keys, AWS credentials, browser cookies, kubectl context. Third, you can only run one agent at a time without state collisions. An agent workstation fixes all three by moving the agent off the laptop into a place built for it.
+
+### Does Ellul replace Cursor or Claude Code?
+
+No. Ellul runs Cursor or Claude Code (or Codex, OpenCode, Gemini). The agent stays the same. The computer it lives on changes. You can still talk to your agent through any client you like; the agent just no longer lives on your laptop.
+
+### How do parallel agents work?
+
+Each agent gets its own workstation. They run independently. When you want one agent to read another agent's output, you grant a read-only snapshot of the source code — secrets and credentials are excluded. The reading agent can analyze, summarize, or generate documentation from the snapshot, but it cannot edit, push, or escalate.
+
+### What does "passkey-gated" mean in practice?
+
+Privileged actions — git push, deploy, database writes, secret access — pause mid-execution. The agent's terminal shows a "waiting for passkey" state. You receive a notification. You tap your passkey (Touch ID, Face ID, security key) to approve or decline. The agent only proceeds if you approve.
+
+### Can the agent leak my credentials?
+
+No. Credentials live in a server-side vault. They are never written to the agent's process environment, never sent to the agent's chat history, never logged. When a privileged action needs them, the action is paused, you approve via passkey, and the action is brokered through a separate process that the agent cannot read or attach to.
+
+### How long can an agent run unattended?
+
+Indefinitely. The workstation is always on. The agent restarts on crash. We've seen customer agents run uninterrupted for multiple days through long refactors, test suites, and migration scripts.
+
+### Is this open source?
+
+The agent runtime, sandbox primitives, and a portion of the security architecture are open source. The orchestration layer, gate system, and product surface are proprietary. See [github.com/joeetdev/ellul.ai-vps](https://github.com/joeetdev/ellul.ai-vps).
+
+### How is Ellul different from Sprites.dev?
+
+Sprites provides stateful sandboxes as infrastructure that other companies build on. Ellul is the assembled product an engineer signs up for. Different layer of the stack.
+
+### How is Ellul different from E2B?
+
+E2B is for ephemeral code execution. Sandboxes typically last minutes to hours. Ellul is for persistent agent work. Workstations last as long as the user has an account.
+
+### How is Ellul different from GitHub Codespaces?
+
+Codespaces was built for humans writing code in a browser. It has no agent gating, no parallel-agent primitive, no passkey integration. Ellul was built for the agent first.
+
+### Where does the app deploy?
+
+Anywhere you want — Vercel, Fly.io, Railway, Cloudflare Pages, your own infra. Ellul is upstream of hosting; it is where the agent works, not where the app runs.
+
+### What if I lose my passkey?
+
+You configure backup passkeys (multiple devices). If you lose all of them, account recovery requires a verified secondary email and a 7-day delay (no instant recovery — that would defeat the gate model).
+
+---
+
+## Documentation
+
+Full technical documentation lives at https://docs.ellul.ai.
+
+Key pages:
+- Quick start: https://docs.ellul.ai/getting-started/quick-start
+- Sovereign model (how gating works): https://docs.ellul.ai/concepts/sovereign-model
+- Security whitepaper: https://docs.ellul.ai/security
+- Tier comparison: https://docs.ellul.ai/reference/tier-comparison
+
+## Source
+
+- Marketing site: https://ellul.ai
+- Docs: https://docs.ellul.ai
+- Console: https://console.ellul.ai
+- GitHub: https://github.com/joeetdev/ellul.ai-vps
+
+---
+
+*Last updated: 2026-04-30.*

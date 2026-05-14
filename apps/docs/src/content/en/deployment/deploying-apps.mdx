@@ -1,0 +1,96 @@
+---
+title: "Deploying Apps"
+description: "Promoting a sandbox from preview to a production deployment, with the deploy gate."
+section: "Deployment"
+order: 3
+---
+
+A sandbox in development serves a preview URL. A deployed sandbox serves a stable production URL (often a custom domain) with persistent storage and dependable lifecycle.
+
+Deploy is a privileged action. It requires explicit approval through the `deploy` permission gate.
+
+## What deploy does
+
+Deploying a sandbox:
+
+- Builds the application using the framework's standard build command.
+- Switches the production traffic for the sandbox's domain to the new build.
+- Records a deployment entry with timestamp, commit hash (if git-linked), and operator.
+
+The previous deployment remains available for rollback.
+
+## Triggering a deploy
+
+You can trigger a deploy in several ways:
+
+<Steps>
+  <Step number={1} title="From the preview tab">
+    Click **Deploy** in the preview tab. The platform shows the deploy popup.
+  </Step>
+  <Step number={2} title="From the agent">
+    Ask the agent to deploy. It will request the `deploy` permission gate. You approve and the agent runs the deploy.
+  </Step>
+  <Step number={3} title="From a CLI session">
+    Run the standard deploy command for your framework (or a custom script). It triggers the deploy gate the same way.
+  </Step>
+</Steps>
+
+In every case, the gate flow is the same: request, popup, approval (or denial), single-use token, deploy executes, audit-logged.
+
+## What you see in the gate popup
+
+- The sandbox being deployed.
+- The framework detected.
+- The build command that will run.
+- The target domain (custom domain if set, default subdomain otherwise).
+- A warning callout flagging deploy as a high-risk operation.
+
+Click **Approve** to proceed or **Deny** to refuse.
+
+## Single-use tokens
+
+The `deploy` gate issues a one-time token consumed by the deploy operation. The token expires within minutes of issuance. If the deploy fails or is cancelled, the token is invalidated; a new approval is needed for the next attempt.
+
+This means: if you approve a deploy and walk away, the gate cannot be reused later. You will not return to find a stale gate active.
+
+## Rollback
+
+Each deployment is recorded with a deployment ID. To rollback:
+
+<Steps>
+  <Step number={1} title="Open the deployment history">
+    From **Account > Server**, scroll to **Deployments**.
+  </Step>
+  <Step number={2} title="Pick the previous deployment">
+    Click the deployment you want to revert to.
+  </Step>
+  <Step number={3} title="Confirm the rollback">
+    The platform switches production traffic to the older build. This is also a privileged action and goes through a gate flow.
+  </Step>
+</Steps>
+
+## Build environment
+
+Deploys run in the sandbox's namespace, with the same isolation as development. The build process has access to:
+
+- The application's source code.
+- The per-sandbox database (read-only by default; write access requires `db_write`).
+- Application secrets, but only when accessed via an `env` gate.
+
+The build does not have access to:
+
+- Other sandboxes.
+- Your account-level secrets.
+- The control plane.
+
+## Logs
+
+Deploy logs stream to **Observability > Development** in real time. After the deploy completes, the full log is preserved and searchable.
+
+If a deploy fails, the previous deployment continues to serve traffic. The failed deploy is recorded with the error message.
+
+## Where to go next
+
+- [Custom Domains](/deployment/custom-domains) for production URLs.
+- [Permission Gates](/permissions/overview) for the gate model.
+- [Audit Log](/concepts/sovereign-model#audit-trail) for the deploy history.

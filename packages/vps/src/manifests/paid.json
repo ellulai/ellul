@@ -1,0 +1,58 @@
+{
+  "_comment": "ellul-namespaced manifest source for the PAID tier. Same security-load-bearing mounts as free; tier name is matched by the daemon against /etc/ellul/billing-tier.",
+  "manifestVersion": 1,
+  "appliesToTier": "paid",
+  "projectSlugRegex": "^sbx-[a-z0-9]{7}$",
+  "hostIdRegex": ".*",
+  "validForDays": 30,
+  "mounts": [
+    {
+      "targetTemplate": "/etc/ellul/shield-data",
+      "kind": "blackhole",
+      "mandatory": true,
+      "postCheckFstype": "tmpfs",
+      "flags": ["EMPTY"],
+      "optionsRequired": []
+    },
+    {
+      "targetTemplate": "/var/lib/ellul-shielded",
+      "kind": "blackhole",
+      "mandatory": true,
+      "postCheckFstype": "tmpfs",
+      "flags": ["EMPTY"],
+      "optionsRequired": []
+    },
+    {
+      "targetTemplate": "/run/shield",
+      "kind": "blackhole",
+      "mandatory": true,
+      "postCheckFstype": "tmpfs",
+      "flags": ["EMPTY"],
+      "optionsRequired": []
+    },
+    {
+      "targetTemplate": "/proc",
+      "kind": "proc",
+      "mandatory": true,
+      "postCheckFstype": "proc",
+      "flags": [],
+      "optionsRequired": ["hidepid=2"]
+    },
+    {
+      "targetTemplate": "/tmp",
+      "kind": "tmpfs",
+      "mandatory": true,
+      "postCheckFstype": "tmpfs",
+      "flags": [],
+      "optionsRequired": []
+    },
+    {
+      "targetTemplate": "{home}/projects",
+      "kind": "tmpfs",
+      "mandatory": true,
+      "postCheckFstype": "tmpfs",
+      "flags": [],
+      "optionsRequired": []
+    }
+  ]
+}

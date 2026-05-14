@@ -1,0 +1,145 @@
+The M4 Mac mini is $599. Plug it into a wall, install Claude Code, point your laptop at it via SSH, and you have an always-on agent runtime for the price of one month of cloud, paid once. The pitch writes itself. It's also the most-asked question we get, and the math is less clean than it looks.
+
+We're not neutral. We sell cloud agent runtime. We've also run Mac mini servers for years and know the failure modes from the inside.
+
+## The Mac mini pitch, charitably
+
+A base M4 Mac mini at $599 has 16 GB unified memory, eight performance cores, four efficiency cores, and idles around 5 watts. It runs Claude Code, cursor-agent, codex, opencode, and anything else you can `brew install`, all day, without breaking a sweat. Boots in under ten seconds. Stays up for months at a time. After two years, you own the hardware.
+
+If your work fits the shape (you SSH into the mini from your laptop while you're at home, you don't need parallel agents, you don't need to reach the agent from your phone on a different network, and you don't mind being the one to maintain it), the Mac mini is a real product. We've talked to engineers happily running this setup. They aren't wrong.
+
+This post is mostly about the engineers for whom the setup quietly becomes painful and they don't notice for a few months.
+
+## What the pitch leaves out
+
+Five categories, in rough order of how often they kick in.
+
+<BulletList>
+  <BulletItem heading="Network reachability">
+    A Mac mini in your apartment sits on your home network. That network has a residential ISP, a residential router, and (in most markets) no static IP. From your laptop on the same network, fine. From your phone on cellular, you need port forwarding, dynamic DNS, an ngrok tunnel, or a Tailscale account. Each is solvable. Each also breaks at 3am when you're trying to approve a deploy from the airport.
+  </BulletItem>
+  <BulletItem heading="Power and uptime">
+    Residential power dies. Not often, but it dies. When it dies, your agent dies mid-task. There's no UPS in the $599 budget. There's no redundant network either. Your home internet is what it is. A mini at home gets roughly 98% uptime. A cloud workstation gets roughly 99.9%. The difference compounds when the agent is meant to run overnight.
+  </BulletItem>
+  <BulletItem heading="No passkey gate">
+    The cloud workstation we sell pauses every privileged action (git push, deploy, database write) until your passkey approves. The Mac mini in your apartment runs as you, with your SSH keys and your credentials, and any agent process can use them. The agent's blast radius on a Mac mini is the size of your filesystem. The agent's blast radius on a gated workstation is the size of one passkey-approved action.
+  </BulletItem>
+  <BulletItem heading="No parallel-agent primitive">
+    Two coding agents on one Mac mini fight over `node_modules`, `.git/index.lock`, and ports 3000 and 8080. You can fix this with multiple users and named volumes, but at that point you've built a worse version of an [agent workstation](/concepts/agent-workstation), and built it yourself in the spare time you don't have.
+  </BulletItem>
+  <BulletItem heading="Operational time">
+    OS updates that reboot in the middle of an overnight run. macOS Background Task Manager prompts that block automation. xcode-select prompts after every Xcode update. SSH key management when you switch laptops. Disk full warnings when the model cache fills up. None catastrophic alone. Together, around 30 minutes a month of the work you bought the agent to avoid doing.
+  </BulletItem>
+</BulletList>
+
+These aren't show-stoppers. They're the difference between "I have a server" and "I have a product."
+
+## What does the math actually look like?
+
+Concrete arithmetic with assumptions you can substitute.
+
+**Mac mini path, two years all-in:**
+
+<BulletList>
+  <BulletItem heading="Hardware">
+    Base M4 Mac mini (16 GB, 256 GB SSD): $599 once.
+  </BulletItem>
+  <BulletItem heading="Power">
+    5 watts idle, around 30 watts under load, at residential US rates of about $0.18 per kWh. Roughly $30 over two years.
+  </BulletItem>
+  <BulletItem heading="Remote access">
+    Tailscale Personal is free. ngrok Pro is around $15 a month. Range across two years: $0 to $360.
+  </BulletItem>
+  <BulletItem heading="Maintenance">
+    Around 30 minutes a month at $75 an hour: roughly $900 over two years.
+  </BulletItem>
+  <BulletItem heading="Power-failure lost runs">
+    Estimated: $50.
+  </BulletItem>
+  <BulletItem heading="Two-year total">
+    Roughly $1,580 to $1,940.
+  </BulletItem>
+</BulletList>
+
+**Cloud path (Ellul), two years:**
+
+<BulletList>
+  <BulletItem heading="Hobby tier">
+    $20 a month, $480 over two years.
+  </BulletItem>
+  <BulletItem heading="Pro tier">
+    $50 a month, $1,200 over two years.
+  </BulletItem>
+  <BulletItem heading="Power, network, maintenance">
+    $0. Included.
+  </BulletItem>
+  <BulletItem heading="Passkey gate, parallel agents, phone access">
+    Included.
+  </BulletItem>
+</BulletList>
+
+These numbers price different things. The Mac mini gives you ownership of the hardware. The cloud gives you ownership-free always-on-ness, gating, and parallelism. Both have real value. The dollars don't tell you which one matches your use.
+
+## Where does the math actually flip?
+
+Worked scenarios.
+
+<NumberedList>
+  <NumberedItem heading="Single engineer, home only, light use">
+    The agent runs an hour a day while you work, no parallel sessions, no production access. Mac mini wins clean. The TCO is dominated by the $599 hardware and the maintenance time you'll happily eat as a hobby.
+  </NumberedItem>
+  <NumberedItem heading="Single engineer, mobile and home, occasional overnight runs">
+    You want to approve a deploy from your phone in the subway. You sometimes kick off long jobs before bed. Cloud wins on capability before it wins on price. Phone-as-keyboard is hard to build well on residential networking. Hobby tier ($20 a month) is the cleanest answer.
+  </NumberedItem>
+  <NumberedItem heading="Parallel agents on real credentials">
+    Two or three agents in flight, real production access, passkey-gated deploys. The Mac mini path requires you to build a parallel-agent isolation layer and a passkey-gated boundary yourself. You can do it. It will take two months. Pro tier ($50 a month) is cheaper than the two months even at low hourly rates.
+  </NumberedItem>
+  <NumberedItem heading="Small team (two to five engineers)">
+    The Mac mini path doesn't compose. You don't want everyone SSH'ing into the same mini. The cloud path scales linearly with engineers. At team scale, the cloud answer dominates by a lot, even before shared MCP servers and shared peering between teammates' agents.
+  </NumberedItem>
+</NumberedList>
+
+The tipping point: if you're alone, at home, mostly synchronous, and you enjoy the hobby, the Mac mini is real. If any of those conditions break, cloud takes over before the price comparison gets close.
+
+## The philosophical case for self-hosting (worth taking seriously)
+
+A real argument exists for self-hosting that has nothing to do with price.
+
+You own the hardware. The agent's filesystem is on a disk in your home. No one but you (and whoever you give SSH access to) reads it. There's no cloud vendor to pivot, change pricing, get acquired, or retire your account. The data sovereignty argument here is real.
+
+We respect this argument. The counterpoint is that "a Mac mini in your apartment" isn't intrinsically more sovereign than "a cloud workstation gated by your passkey." Both are trust configurations with different tradeoffs. If the failure mode you worry about is "vendor reads my data," self-hosting wins. The cloud version of the answer is end-to-end encryption and audited isolation. If the failure mode is "vendor goes away," self-hosting wins decisively. If the failure mode is "I lose my hardware in a flood, the building burns down, or I get robbed," cloud wins. None of these are theoretical.
+
+The longer version lives in our [sovereign AI](/blog/sovereign-ai) piece. The Mac mini is one shape of that argument. The [agent workstation](/concepts/agent-workstation) is a different shape with different tradeoffs.
+
+## So which one should I buy?
+
+The setup we see often, and the one to default to if you don't have a strong opinion: laptop for inline editing during the day, Mac mini at home for tinkering and synchronous agentic work, cloud workstation for long-running jobs, parallel agents, and production-credential operations. The three compose. None does everything alone.
+
+If you're starting from zero with $599, buy the Mac mini. It's real, it's yours, and running your own agent server teaches you what you actually need from the next layer. If you're hitting the reachability, parallelism, or credential walls, the cloud workstation isn't a replacement. It's the next layer.
+
+If you're impatient, $20 a month for Hobby buys you the always-on, parallel, passkey-gated answer in five minutes. The Mac mini will be there next year.
+
+---
+
+## FAQ
+
+<Faq />
+
+---
+
+## References
+
+- [Apple Mac mini (M4) specs and pricing](https://www.apple.com/shop/buy-mac/mac-mini)
+- [Tailscale Personal pricing](https://tailscale.com/pricing)
+- [ngrok pricing](https://ngrok.com/pricing)
+- Internal: [Agent workstation](/concepts/agent-workstation), [Sovereign AI](/blog/sovereign-ai), [Always-on AI agent](/concepts/always-on-ai-agent)
+
+<Cta
+  eyebrow="The cloud version of the answer"
+  body="Always-on, parallel, passkey-gated. No power failures, no maintenance hours, no port forwarding. Twenty dollars a month for Hobby, fifty for Pro."
+  primary={{ href: "https://console.ellul.ai/sign-up", label: "Get a workstation" }}
+  links={[
+    { href: "/concepts/agent-workstation", label: "Agent workstation" },
+    { href: "/concepts/always-on-ai-agent", label: "Always-on AI agent" },
+  ]}
+/>

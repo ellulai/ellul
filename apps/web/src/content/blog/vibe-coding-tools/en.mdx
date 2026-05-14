@@ -1,0 +1,127 @@
+Vibe coding is the development style where a human describes intent in natural language and an AI agent implements, tests, and iterates without the human writing code line by line. Karpathy coined it in early 2025; by 2026 the category has split into two distinct flavors with very different tools, and choosing badly between them is one of the most common mistakes we see. This is a field guide.
+
+For the canonical [vibe-coding glossary entry](/glossary/vibe-coding), the short version is in there. This essay is about the tools and the tradeoffs.
+
+## The two flavors
+
+Vibe coding looks like one activity from the outside. From the inside it has split along a fault line that's worth naming.
+
+Flavor A is laptop IDE with AI. You're in your editor (Cursor, Windsurf, Zed, VS Code with Copilot). You describe what you want; the agent edits files in front of you; you review the diff; you run the result locally. The vibe is real but the runtime is your laptop. This flavor inherits all the laptop-runtime properties (good and bad) we've written about in [claude-code-vs-cursor](/blog/claude-code-vs-cursor) and [agentic-coding](/blog/agentic-coding).
+
+Flavor B is persistent agent on a cloud runtime. You're in a browser. You type "build me a Twitter clone with auth." The agent provisions a workspace, writes the code, deploys it, and shows you a URL. The vibe is even more pronounced; there's no editor at all most of the time. The runtime is the vendor's. You have a chat panel and a deploy button. Lovable, Bolt, Base44, Replit Agent all sit here.
+
+These are the same activity (describe intent, accept implementation, review result) on opposite ends of the runtime spectrum. They are good for different things, fail in different ways, and lock you in differently.
+
+## Flavor A: laptop IDE with AI
+
+The tools, with honest takes.
+
+<BulletList>
+  <BulletItem heading="Cursor">
+    The most polished vibe experience in an editor. Composer for natural-language refactors. Tab-completion that reads the whole repo. Command-K for inline edits. The agent panel for longer-running work. If you spend the day in your editor and want to vibe in flow, Cursor is the strongest single product. Caveat: the agent panel hits the same laptop-runtime ceilings as anything else (no persistence past lid close, no parallel agents, no real-credential gating). See [the cursor head-to-head](/vs/cursor) for our full take.
+  </BulletItem>
+  <BulletItem heading="Windsurf">
+    A close competitor to Cursor on the editor-experience axis. Codeium's product, with a slightly different tradeoff in the chat-vs-completion balance. Same laptop-runtime caveats apply. See [/vs/windsurf](/vs/windsurf).
+  </BulletItem>
+  <BulletItem heading="Zed">
+    Native macOS editor with built-in AI. Smaller surface area than Cursor or Windsurf, faster than both for editor-only operations. The vibe surface is thinner; Zed leans toward "AI as a power tool inside a fast editor" rather than "AI runs the show." Good for engineers who want speed and minimalism with a vibe option. Less good for people who want the agent to drive entire features.
+  </BulletItem>
+  <BulletItem heading="VS Code with Copilot or Claude or extensions">
+    The configurable approach. Pick your editor, pick your agent extension. Maximum flexibility, minimum integration polish. Good for engineers who want to swap pieces independently; less good for people who want a single coherent experience.
+  </BulletItem>
+  <BulletItem heading="Claude Code in inline mode">
+    Less of an "editor" and more of a "vibe in the terminal" experience. Strong agent quality (it's the same Claude Code from our [/agents/claude-code](/agents/claude-code) page), thinner editor integration. Best paired with a real editor; the terminal vibe complements rather than replaces a tab-completion experience.
+  </BulletItem>
+</BulletList>
+
+The Flavor A pitch: you stay close to the code. You see every diff. The agent suggests, you approve. When something is wrong, you can drop into the file and fix it directly because the file is right there in your editor.
+
+The Flavor A trap: the laptop runtime. The vibe is fast until the work outgrows the laptop, which means overnight runs, parallel agents, real-credential operations. At that point the agent panel becomes a liability rather than an asset.
+
+## Flavor B: persistent agent on a cloud runtime
+
+The tools, with honest takes.
+
+<BulletList>
+  <BulletItem heading="Lovable">
+    "Describe an app, get an app" is the canonical version. Built around React and Supabase and Vercel by default, deploying as you build. Strong opinionated stack; weak escape valve when you need to do something the platform's idioms don't anticipate. See [/vs/lovable](/vs/lovable) for the trade-offs.
+  </BulletItem>
+  <BulletItem heading="Bolt">
+    StackBlitz's product, leaning toward marketing sites, landing pages, and prototypes. Excellent for the "I need a working demo by tomorrow" use-case. Less suited for projects that will outgrow a single deploy target. See [/vs/bolt](/vs/bolt).
+  </BulletItem>
+  <BulletItem heading="Base44">
+    A newer entrant focused on full-stack apps with auth, databases, and integrations. Heavier than Bolt; lighter than building from scratch. Tradeoffs noted in [/vs/base44](/vs/base44).
+  </BulletItem>
+  <BulletItem heading="Replit Agent">
+    Replit's agent product, integrated into the Replit IDE and deploy infrastructure. Strongest "finish what I started" experience because it lives inside an IDE rather than a chat panel. Locked to Replit's runtime in ways the others aren't. See [/vs/replit](/vs/replit).
+  </BulletItem>
+  <BulletItem heading="Manus">
+    Less coding-focused, more general-purpose autonomous agent. Useful when the work is "research, summarize, draft" rather than "edit code, run tests." Different shape from the rest. See [/vs/manus](/vs/manus).
+  </BulletItem>
+  <BulletItem heading="v0 (Vercel)">
+    UI generator more than a vibe-coding product. Excellent at "produce a React component for this Figma frame." Worth mentioning because it gets pulled into vibe workflows even though it's not technically a vibe-coding tool. It's a single-shot UI primitive that other tools can compose with.
+  </BulletItem>
+</BulletList>
+
+The Flavor B pitch: zero setup. Open a browser, type, get a deployed app. Real persistence (the runtime is server-side, so the agent doesn't stop when you close the laptop). Genuinely fast for the prototype-to-demo loop.
+
+The Flavor B trap: lock-in via tool definitions and runtime opacity. The agent's "tools" are the platform's primitives: Lovable's auth integration, Bolt's deploy flow, Replit's package manager. When you outgrow the platform, you don't have a portable workflow. You have a project that lives where it was built.
+
+## The hidden costs nobody mentions
+
+Both flavors have costs that don't show up in the demo. Worth flagging before you commit.
+
+<Callout variant="warn" title="Flavor A: the laptop sleeps">
+The agent panel runs in the editor process. The editor process runs on your laptop. The laptop closes. The vibe ends. For projects that outgrow a single coffee-shop session, the laptop becomes the bottleneck, and the bottleneck shows up most painfully when you've kicked off an eight-hour test run and walked away thinking it would just keep going. The fix is to move the agent off the laptop. We obviously think the right place is [an agent workstation](/concepts/agent-workstation), but any persistent runtime works.
+</Callout>
+
+<Callout variant="warn" title="Flavor B: vendor lock-in by tool definition">
+The cloud vibe products ship with their own runtime: Lovable's deploy, Bolt's package manager, Base44's database wiring, Replit's hosting. While you're inside, the integration is great. When you try to leave, you discover that "leave" means "rebuild the auth integration, the deploy story, and the database schema on a different platform." This is a structural cost, not a flaw in any specific product. The escape valve is to use these tools for what they're great at (prototypes, demos) and migrate when the project becomes serious.
+</Callout>
+
+<Callout variant="warn" title="Both flavors: vibe meets real credentials">
+Vibe coding has no native concept of "this action is dangerous." The whole point is the agent moves fast. The first time the agent connects a real Stripe key, a real production database, a real customer email list, the assumption that "the agent is helpful and the human reviews" stops being safe. Vibe coding is built for the throwaway. The moment the work stops being throwaway, the loop needs gates the vibe was deliberately designed without.
+</Callout>
+
+## When to graduate from vibe coding to engineering work
+
+The honest line: when the project starts touching real credentials, real customers, or real money. The vibe loop is fast because it has no friction. When the cost of a wrong move stops being "I'll redo the prototype" and starts being "I just deleted production data," the friction-free loop is the wrong tool.
+
+Graduating doesn't mean stopping the use of AI agents. It means moving the agent into a runtime that persists through your laptop being closed (so longer work is possible), gates privileged actions behind a [passkey approval](/glossary/passkey-approval) (so the agent can't move fast on something that matters), isolates the agent from your ambient credentials (so a confused agent can't reach your AWS profile), and audits every action so you have a record when something goes wrong.
+
+For people who liked the cloud-vibe flavor, the migration target is [an agent workstation](/concepts/agent-workstation): a persistent runtime that you control, with the agent of your choice (Claude Code, Codex, OpenCode, Cursor's CLI) running inside it. Same vibe, different boundary. For people who liked the laptop flavor, the same thing applies. Keep your editor as the client. Move the agent to the workstation.
+
+## A practical decision tree
+
+If your work is a throwaway prototype, a one-off demo, or a learning exercise: pick a Flavor B tool that matches your stack. Lovable for full-stack React and Supabase. Bolt for marketing pages. Replit Agent for "finish what I started." Move fast; don't worry about runtime properties.
+
+If your work is exploratory but might go somewhere: stay in Flavor A, in an editor you can take with you. Cursor or Windsurf is the strongest experience. Build with a stack you know how to deploy yourself, even if you're not deploying yet.
+
+If your work is going into production, touches real customers, or holds credentials worth protecting: graduate. The agent stays; the laptop runtime goes. Run Cursor's CLI, Claude Code, Codex, or OpenCode on a persistent workstation. See our [run-claude-code-overnight walkthrough](/blog/run-claude-code-overnight) for what that looks like in practice.
+
+The decision isn't about whether to vibe. Vibing is fine. It's about which runtime supports the work you're actually doing.
+
+---
+
+## FAQ
+
+<Faq />
+
+---
+
+## References
+
+- Karpathy, *Software 2.0* and follow-ups on vibe coding, [karpathy.medium.com](https://karpathy.medium.com/)
+- StackBlitz, *Bolt design notes*, [stackblitz.com/bolt](https://stackblitz.com/)
+- Replit Agent technical writeup, [replit.com/agent](https://replit.com/agent)
+- Anthropic, *Claude Code design and security*, [anthropic.com/news](https://www.anthropic.com/news)
+
+<Cta
+  eyebrow="Vibe with a runtime that scales"
+  body="Ellul gives you the cloud-vibe persistence with none of the lock-in. Bring your own agent (Claude Code, Codex, OpenCode, Cursor's CLI), your own model key, your own stack. Vibe in flow; ship behind a passkey gate."
+  primary={{ href: "https://console.ellul.ai/sign-up", label: "Get a workstation" }}
+  links={[
+    { href: "/glossary/vibe-coding", label: "What is vibe coding? →" },
+    { href: "/concepts/agent-workstation", label: "Agent workstation concept →" },
+  ]}
+/>

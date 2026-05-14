@@ -1,0 +1,51 @@
+{
+  "isolationSpectrum": {
+    "eyebrow": "Ellul Foundry",
+    "heading": "The Isolation Spectrum",
+    "intro": "Not every workload needs a dedicated server. A web scraper does not have the same threat model as a financial trading agent. Foundry provides three tiers of compute, each matched to a risk profile.",
+    "headers": {
+      "tier": "Tier",
+      "isolation": "Isolation Model",
+      "useCase": "Use Case",
+      "cost": "Cost Position",
+      "spinUp": "Spin-up"
+    },
+    "tiers": {
+      "standard": {
+        "name": "Standard Instance",
+        "isolation": "OCI Namespaces (mount + PID + network)",
+        "useCase": "Web scraping, data processing, non-sensitive automation",
+        "cost": "Cheaper than Daytona",
+        "spinUp": "<2s"
+      },
+      "secure": {
+        "name": "Secure Instance",
+        "isolation": "Firecracker MicroVMs (hardware-virtualized guest kernel)",
+        "useCase": "Untrusted third-party code, plugin execution, multi-tenant SaaS agents",
+        "cost": "Faster than E2B",
+        "spinUp": "~3s"
+      },
+      "sovereign": {
+        "name": "Sovereign Host",
+        "isolation": "1:1 Dedicated Bare-Metal (single-tenant kernel)",
+        "useCase": "Financial agents, PII processing, credential-holding workloads",
+        "cost": "Mitigates side-channel by design",
+        "spinUp": "<60s (warm pool)"
+      }
+    },
+    "callouts": {
+      "wholesale": {
+        "title": "Wholesale hardware",
+        "desc": "Runs on wholesale bare-metal pricing, a fraction of hyperscaler list prices for equivalent compute."
+      },
+      "lifecycle": {
+        "title": "Scheduled lifecycle",
+        "desc": "Hibernates idle instances to cold storage. Near-100% fleet utilization."
+      },
+      "noTax": {
+        "title": "No hyperscaler tax",
+        "desc": "No egress fees, no per-request charges, no monitoring upsells."
+      }
+    }
+  }
+}

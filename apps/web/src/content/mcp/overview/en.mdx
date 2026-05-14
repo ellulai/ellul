@@ -1,0 +1,77 @@
+The <Term slug="mcp">Model Context Protocol</Term> is the most important protocol announcement in the AI tooling space since the chat completions API. Before MCP, every agent's tool integration was bespoke: Claude had its tool format, Cursor had a different one, Codex had another, and a developer who wanted "give my agent access to Postgres" had to write three separate integrations or pick a single agent and live inside its walls.
+
+MCP made the wire format the same. Same handshake. Same capability descriptors. Same authentication model. The result is a healthy ecosystem of MCP servers (Playwright, GitHub, Postgres, file systems, search APIs, custom internal tools) that any compliant agent can use without the agent's vendor having to bless them.
+
+This page is about what MCP is in practice, why it matters, and what changes when MCP servers run on an <Term slug="agent-workstation">agent workstation</Term> instead of on a laptop.
+
+## What MCP actually does
+
+An MCP server exposes a set of tools (functions the agent can call), resources (read-only data the agent can query), and prompts (templates the agent can use). An MCP client (almost always an AI agent) connects, discovers what's available, and calls tools as needed during its reasoning loop. The protocol is JSON-RPC over stdio for local servers and SSE/HTTP for remote ones.
+
+The interesting design choice is that the agent and the server speak through a well-defined contract. The agent doesn't know how a tool is implemented; it knows what to call and what to expect back. That separation lets the same MCP server work with any compliant agent, and lets the same agent use any MCP server.
+
+In practice, this means you can mix and match:
+
+- A coding agent (Claude Code, Cursor's CLI, OpenCode) connected to
+- A Playwright MCP for browser automation, a Postgres MCP for database queries, a GitHub MCP for issue and PR operations, and
+- A custom MCP server for your internal APIs.
+
+The agent gets a single composable toolbox; you don't write integration code per agent.
+
+## Why running MCP on a workstation matters
+
+The default MCP setup runs servers as local subprocesses of the agent. This is fine when your agent's session is short. It becomes painful when:
+
+1. **You want long-lived tool state.** A Playwright MCP that has spent twenty minutes warming a browser cache shouldn't restart every time the agent's session ends.
+2. **You want multiple agents to share a tool.** Two agents on adjacent workstations both wanting GitHub access shouldn't each spin up their own credential-holding subprocess.
+3. **You want gated credentials.** Plaintext tokens in MCP server environment variables are exactly the failure mode <Term slug="sovereign-shield">Sovereign Shield</Term> is designed to prevent.
+4. **You want isolation between projects.** Project A's MCP servers shouldn't be able to read project B's filesystem.
+
+Ellul's workstation primitive addresses all four:
+
+<Callout type="note" title="MCP on Ellul, in one sentence">
+MCP servers run as long-lived processes inside the workstation's namespace, with credentials brokered by the shield rather than passed in plaintext, isolated per-project, and reusable across multiple agent sessions on the same workstation.
+</Callout>
+
+The shape of this in practice:
+
+- **Long-lived servers.** A Playwright MCP starts when you provision the workstation and stays running. Browser warm. Auth cookies persistent. The agent attaches and detaches without restarting the server.
+- **Credential brokering.** GitHub MCP doesn't get your PAT in its environment. The shield holds the token; the MCP server receives a short-lived scoped credential per call. Even if the MCP server is compromised, the token never leaks.
+- **Namespace isolation.** MCP servers are scoped to the project namespace. Project A's GitHub MCP cannot see project B's filesystem; project A's database MCP cannot connect to project B's database. This is enforced at the kernel layer, not by application logic.
+- **Cross-agent reuse.** If you run Claude Code and Cursor's CLI on the same workstation, they share the same MCP servers. The work of setting up your tools happens once per workstation, not once per agent.
+
+## The MCP servers that matter most
+
+A short list of MCP servers that show up repeatedly in real engineering work:
+
+- **GitHub MCP.** Issues, PRs, reviews, comments, status checks. Replaces a swathe of "give the agent a GitHub token and hope" patterns.
+- **Postgres / SQL MCP.** Read-only or read-write database access, with the connection string brokered by the shield. Lets an agent answer "what's the schema?" or "find recent rows" without you giving it bare DB credentials.
+- **Playwright MCP.** Headless browser, useful for E2E test generation, scraping internal admin tools, or any "agent needs to drive a browser" scenario. Long-running browsers benefit massively from workstation persistence.
+- **Filesystem MCP.** Bounded filesystem access; useful for sub-agents that should read but not write a specific tree, or for cross-project peering with stricter controls than the default.
+- **Search MCPs.** Custom internal search (your docs, your wiki, your codebase index) exposed as a queryable MCP server. Far more useful than dropping a search API URL into the agent's prompt.
+- **Custom internal MCPs.** Your company's API, exposed once as MCP, usable by every agent.
+
+Each of these has its own deep page on this site (work-in-progress for the long tail; the most common ones are linked below). The goal is to be the canonical reference for "how do I run MCP X on a workstation safely?"
+
+## How Ellul's namespace model interacts with MCP
+
+A short note on the architecture, because it matters for the security pitch.
+
+When you provision an MCP server on an Ellul workstation, it runs inside a project namespace: its own mount, PID, and network namespace. The agent that's allowed to call into it runs in the same namespace. Other projects' agents are physically unable to reach the MCP server's socket. The MCP server's filesystem is the project's filesystem and nothing more.
+
+When the MCP server needs a credential, it asks the shield. The shield decides whether the request is authorized (per-project, per-action), brokers the credential, and the MCP server makes the call without ever holding the long-lived secret. The shield's process runs as a different system user; the MCP server can't ptrace it, can't read its environment, can't attach to its subprocesses.
+
+The result is a structurally hardened tool integration model. MCP is an open protocol; the way Ellul runs it is a security claim about the protocol's runtime.
+
+## Where to go next
+
+- [Setup: getting MCP servers running on a workstation →](/mcp/setup)
+- [GitHub MCP →](/mcp/github)
+- [Database MCP →](/mcp/database)
+- [Playwright MCP →](/mcp/playwright)
+- [Cursor MCP integration →](/mcp/cursor)
+- [Claude Code MCP integration →](/mcp/claude-code)
+
+If you're new to agents on Ellul entirely, start with the [agent workstation page](/concepts/agent-workstation). MCP is one of several things that's better when the agent has its own computer.
+
+<FAQ />

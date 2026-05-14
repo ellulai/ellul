@@ -1,0 +1,73 @@
+Two or three AI agents working at the same time, on overlapping problems, without stepping on each other's state. That's what <Term slug="parallel-agents">parallel agents</Term> means in practice. Like a lot of "obvious" patterns, the obvious version (open three terminals, start three agents, hope) is a recipe for state corruption. The disciplined version (separate sandboxes, read-only peering, bounded write authority) requires architecture.
+
+This page is about why one fails, why the other works, and what you have to give up to get there.
+
+## Why "open three terminals" doesn't work
+
+The first time most engineers try to run two AI agents at once on a single laptop, the failure modes hit in this order:
+
+1. **Port collisions.** Both agents start a dev server on port 3000. One wins. The other's tests fail mysteriously.
+2. **Package-manager fights.** Two `npm install` processes against the same `node_modules`. One leaves the directory in a half-broken state. The other inherits it. Both agents now have wrong information about what's installed.
+3. **Working-directory drift.** The agents `cd` into the same repo and check out different branches. The one currently checked out wins; the other agent's "I'm working on feature/X" claim becomes false without it noticing.
+4. **Credential bleed.** One agent's secret-handling pattern (env vars in shell history, exported tokens) leaks into the other's process tree.
+5. **Git lock contention.** Two agents trying to fetch, rebase, or push at the same repo step on each other's `.git/index.lock`.
+
+You can fix these one at a time with discipline. Most engineers I've watched try this give up around problem 3, because the failures look like the agent being confused, and the agent **is** confused, because its model of the filesystem is now wrong.
+
+The fix is not better discipline. It's structural isolation.
+
+## The right primitive: one workstation per agent
+
+Each agent gets its own <Term slug="agent-workstation">agent workstation</Term>. Independent filesystem. Independent process tree. Independent network namespace. Independent credentials. There are no ports to collide. There are no shared `node_modules`. There is no `.git/index.lock` shared between them, because they are not in the same git repo on the same disk. They are in their own clones, on their own disks.
+
+This sounds heavyweight. It isn't, in practice. Workstations are kernel constructs (namespaces, mounts, cgroups), not VMs. A workstation costs about as much as a long-running shell. The architectural cost is low; the safety gain is large.
+
+<Callout type="note" title="The pattern that works">
+One coding agent on workstation A. One reviewing agent on workstation B. Optionally a documenting agent on workstation C. Each runs the same model or different models. The reviewer reads from the coder's branch via a read-only peering view. The documenter does the same. None of them can edit each other's work.
+</Callout>
+
+## Coordination is read-only by default
+
+Two agents writing to the same resource at the same time is a category of bug that humans systematically underestimate. The classic version of this problem in concurrent systems engineering is "lost update": agent A reads a file, agent B reads it, both edit, both write. Last write wins, and the other agent's change is silently gone. AI agents make this worse because they reason about state from a model and don't necessarily notice the divergence until much later.
+
+The Ellul peering primitive is read-only on purpose. Agent A grants read access to its source code; agent B mounts a filtered snapshot at a known path; agent B can analyze, summarize, generate documentation, write a review, propose changes, but it cannot push, edit, or escalate against agent A's working tree. Write authority stays scoped to whichever agent owns the resource.
+
+If you do want write coordination between two agents, the right pattern is **handoff**, not concurrent edit. Agent A finishes a step, opens a PR or commits to a branch, hands off explicitly. Agent B picks up. The serialization makes the failure mode "we don't have step B yet" rather than "we have an inconsistent step A and step B."
+
+## The peering primitive in practice
+
+The technical shape of read-only peering on Ellul:
+
+- The consuming agent declares which source workstation it wants to read from. The owner of the source workstation explicitly grants the access (this is a passkey-gated action, not a free-floating capability).
+- A filtered snapshot is materialized into the consuming agent's filesystem at `.shared/<source-name>` via an rsync-style copy with an explicit exclude list and `--no-links` so symlink-based attacks are not a path.
+- The exclude list is conservative: `.env*`, `.envrc`, `.openclaw/`, `.claude/`, `.codex/`, `.config/`, `.cursor/`, `.vscode/`, `.idea/`, `.docker/`, `credentials.json`, `service-account.json`, `.npmrc`, `.pypirc`, `.netrc`, `.htpasswd`, `.pgpass`, `node_modules/`, `.git/objects/`, and similar per-tool config dirs. Files that exist only on the source side **physically don't exist** on the consuming side. Provably out of reach, not "the agent shouldn't access them."
+- There is no write path back to the source. The consuming agent cannot mutate the snapshot; it can only generate work that the human (or another workflow) can apply back to the source, gated by the source agent's owner.
+
+The result is that read access is real, useful, and bounded, and write authority remains scoped to one agent per resource, which is what makes parallelism safe.
+
+## What two or three agents look like in practice
+
+A few shapes that show up repeatedly:
+
+**Coder + reviewer.** One agent writes the feature. Another reads the diff, runs lint, runs tests, comments on the PR. The reviewer never gets push permission. If the reviewer's analysis is good, the coder agent (or the human) folds the feedback in.
+
+**Coder + documenter.** One agent ships code. Another reads the diff and updates the docs site. The documenter has no write access to the codebase; it produces a draft PR against the docs repo. Neither side blocks on the other.
+
+**Three-way migration.** One agent runs the migration in a staging environment. A second agent runs the new code's tests against the migrated state. A third agent watches metrics and reports anomalies. Each operates on its own workstation. The human reviews the assembled output.
+
+In each shape, parallelism is **task-level**, not file-level. Two agents do not edit the same file at once. The work decomposes into pieces that can run independently and merge back at clean boundaries.
+
+## When parallel agents are not the answer
+
+If your work is one agent's job, parallel agents are overhead. Don't add a reviewer agent to a five-line bug fix. Don't documenter-agent a typo. The pattern earns its keep when the underlying task naturally decomposes into independent streams (build vs review, develop vs migrate, code vs docs), and not before.
+
+The other failure mode is unbounded parallelism. Two or three agents, one human can manage. Eight agents, one human cannot meaningfully review. If you find yourself wanting more than three at once, the right answer is structured queues, not more concurrent agents. The human bottleneck has to compose with the agent fleet, or the fleet's output is unread and unreviewed.
+
+## See also
+
+- [Agent workstation →](/concepts/agent-workstation)
+- [Always-on AI agent →](/concepts/always-on-ai-agent)
+- [Cursor on your laptop vs Cursor on Ellul →](/vs/cursor)
+- [Overnight refactors →](/solutions/overnight-refactors)
+
+<FAQ />

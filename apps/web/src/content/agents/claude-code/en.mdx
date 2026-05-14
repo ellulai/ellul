@@ -1,0 +1,118 @@
+## What is Claude Code?
+
+Claude Code is Anthropic's terminal-first coding agent. You install it once, invoke it as `claude` from any project, and the agent reads the repository, plans multi-step edits, runs tests, and writes diffs back to disk. Anthropic positions it as the agent layer in their <Term slug="agentic-workflow">agentic workflow</Term> story. It ships the deepest <Term slug="mcp">MCP</Term> client we know of as of April 2026, the strongest code-review behavior in the category, and a per-action permissions model that has had more thought put into it than anyone else's.
+
+Ellul is not an alternative to Claude Code. Ellul is the computer Claude Code runs on.
+
+## Why running it on Ellul matters
+
+Claude Code on a laptop has one structural problem you cannot fix in software, which is that the laptop closes. The agent's session is a process tree, the process tree lives on your machine, and when the lid drops, the process pauses. Your Wi-Fi flickers and the run hangs. Anthropic shipped Remote Control in early 2026 so you can drive the session from your phone, but the session itself still depends on the laptop you started it on.
+
+An <Term slug="agent-workstation">agent workstation</Term> takes that bottleneck out of the picture. It is a persistent, isolated computer that exists for the agent to live on. Ellul provisions one in roughly ninety seconds, with `claude` already installed, your shell history populated, your packages cached. The workstation does not sleep, so the session does not die.
+
+Three things shift once the process moves:
+
+1. **Long runs become routine.** A migration that would never finish in a focused two-hour stretch finishes overnight. We measure this for our own customers and <Term slug="long-running-agent">long-running agent</Term> sessions average 6.4 unattended hours at the time of writing.
+2. **Sessions go parallel.** Two `claude` processes on different branches in adjacent workstations, with read-only peering so a reviewer agent can see a coder agent's source without being able to write to it.
+3. **The gate moves out of the agent.** Claude Code's per-action permission system is the most thoughtful in the category, but it lives *inside* the agent process. Ellul's gate runs in a separate process behind a FIDO2 passkey. The agent cannot read the gate, attach to it, or talk it into bypassing itself.
+
+<Callout type="note" title="Same agent, new home">
+Your prompts, your `CLAUDE.md`, your tool config, and your MCP servers all transfer one-to-one. Claude Code is identical on Ellul. The only thing that changes is where the process lives.
+</Callout>
+
+## Quick-start: from sign-up to first session
+
+This walkthrough assumes you already have an Anthropic account or a Claude Pro / Max plan. If you do not, set that up at [claude.ai](https://claude.ai) first.
+
+1. **Sign up** at console.ellul.ai. A Free tier exists for evaluation. Hobby is $20/mo for up to two parallel workstations. Pro is $50/mo for up to five workstations plus read-only peering. The trial does not ask for a card.
+2. **Provision a workstation.** A persistent sandbox boots in roughly ninety seconds, pre-loaded with Claude Code, Codex, OpenCode, and Cursor's CLI.
+3. **Connect a passkey.** FIDO2 from your phone, laptop, or hardware key. The passkey is what gates `git push`, deploys, secret reads, and any other privileged action the agent attempts.
+4. **Authenticate Claude Code.** Either paste an Anthropic API key into Ellul's vault, or run `claude login` and complete OAuth against your Claude Pro/Max account. The credential lives in a server-side vault that is unreachable from the agent process.
+5. **Open a session.** Click into the chat surface that wraps the workstation in your browser, or SSH in and run `claude` directly.
+
+You can start the session with the CLI or with the configuration file you already keep on your laptop:
+
+<CodeTabs>
+  <CodeTab label="CLI">
+```bash
+# From a workstation shell. Same flags you would use locally.
+cd ~/work/your-repo
+claude --model sonnet
+```
+  </CodeTab>
+  <CodeTab label="CLAUDE.md">
+```md
+# CLAUDE.md
+Project-specific behavior the agent reads on every run.
+The same file you commit on your laptop works unchanged on the workstation.
+
+## Conventions
+- Tests live in tests/, run with `pnpm test`.
+- Never commit directly to main.
+- Migrations live in db/migrations and need a passkey approval to run.
+```
+  </CodeTab>
+</CodeTabs>
+
+The session is yours until you cancel.
+
+## Picking a plan
+
+Hobby is the right starting point if you run one or two agents at a time and want to feel out the always-on shape. You get up to two workstations, BYO Claude credential, and the passkey gate.
+
+Pro adds the things that compound once you commit:
+
+- **Multiple workstations per account** for <Term slug="parallel-agents">parallel agents</Term> on different branches.
+- **Read-only peering** so a reviewer agent can read a coder agent's working tree without the ability to write back.
+- **Production credential vault** for tokens the agent should never touch in plaintext: AWS, GitHub PATs, database passwords.
+
+Both tiers BYO your Claude credential. Ellul charges for the workstation, not for the model.
+
+## Common patterns
+
+Most of our customers move three kinds of work onto Ellul first.
+
+The first is overnight refactoring. Mechanical-but-tedious migrations where the agent's per-step quality is good enough but the step count is too high for a focused session. You queue at 11pm. You wake up to a draft PR.
+
+The second is multi-session reviews. A coder agent in workstation A and a reviewer agent in workstation B with read-only peering, both running Claude Code with different system prompts, neither able to corrupt the other's branch. We use this internally for every non-trivial change.
+
+The third is MCP-heavy automation. MCP servers are long-lived processes, and Ellul keeps them resident on the workstation between sessions. State that took an hour to build up does not vanish when you close the laptop.
+
+There is also the phone-driven approval pattern, which is more a UX habit than a use case. Push notification fires when the agent hits a gate. You tap your passkey. The PR merges. You walk off the train.
+
+## Honest limits
+
+<Callout type="warning" title="What moving to Ellul does not solve">
+- **Inline editor completions.** They assume the agent is co-located with your editor. Claude Code on Ellul lives on a server, so if you want inline completions in your editor, run Cursor on your laptop and use Claude Code on Ellul for the heavy work. They compose.
+- **Network-latency-sensitive interactivity.** A streaming session over a transatlantic link adds 50 to 100 milliseconds per token to the perceived latency. For long unattended runs that does not matter. For typing alongside the agent it can.
+- **Anthropic-managed cloud.** If you specifically want Anthropic to host the agent, that is their cloud, not ours. Ellul is model-agnostic and runs Codex, Cursor's CLI, and OpenCode on the same primitive.
+</Callout>
+
+## Common questions
+
+### Does Claude Code run identically on Ellul?
+Yes. Claude Code is a CLI, and Ellul provisions a Linux workstation pre-configured for it. Your prompts, your config, and your project setup all transfer one-to-one. The behavior change is purely operational: the agent does not stop when your laptop sleeps.
+
+### Can I use Claude Pro instead of API key BYOK?
+Yes. Claude Code on Ellul supports both. You can sign in with a Claude Pro subscription or use an Anthropic API key. The choice is between Anthropic's subscription pricing model and direct usage-based API pricing.
+
+### How does Claude Code's MCP support work on Ellul?
+Claude Code is one of the most mature MCP clients. MCP servers run as long-lived processes on the workstation alongside the agent. State persists between sessions, so you do not reconnect from scratch every time.
+
+### Can I run Claude Code overnight on Ellul?
+Yes, and it is the canonical use case. Queue a long task, close your laptop, sleep. The workstation keeps the session running. Privileged actions pause on the passkey gate so nothing irreversible happens unattended; merges and deploys wait for you to tap.
+
+### How is Ellul's passkey gate different from Claude Code's built-in permission prompts?
+Claude Code's permission prompts run inside the agent process, and a sufficiently clever prompt injection can talk the agent into bypassing them. Ellul's gate runs in a separate, hardened process the agent cannot read, attach to, or prompt-inject. The agent decides what to attempt; the gate decides what is allowed to happen.
+
+## See also
+
+- [Claude Code vs Ellul →](/vs/claude-code)
+- [Claude Code vs Cursor →](/vs/claude-code-vs-cursor)
+- [Run Claude Code in the cloud →](/solutions/run-claude-code-in-cloud)
+
+## References
+
+- Anthropic, [Claude Code](https://www.anthropic.com/claude-code). The official product page.
+- Anthropic, [Claude Code documentation](https://code.claude.com/docs). Installation, configuration, MCP integration.
+- Model Context Protocol, [specification](https://modelcontextprotocol.io). The open standard Claude Code's MCP client implements.

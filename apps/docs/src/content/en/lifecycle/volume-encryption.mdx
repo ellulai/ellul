@@ -1,0 +1,95 @@
+---
+title: "Volume Encryption"
+description: "How your storage volume is encrypted, who holds the keys, and what changes between tiers."
+section: "Lifecycle"
+order: 1
+---
+
+Your code, secrets, application database, and chat history live on an encrypted storage volume attached to your workstation. The volume uses LUKS2 disk encryption. Three modes determine who holds the unlock key.
+
+## Three encryption modes
+
+| Mode | Available on | Platform key | User key | Recovery from platform |
+|------|-------------|--------------|----------|------------------------|
+| **Standard** | All tiers | Yes | No | Yes |
+| **Enhanced** | Pro plan | Yes | Yes (passkey) | Yes |
+| **Sovereign** | Pro plan | No (removed) | Yes (passkey) | No |
+
+The mode is set under **Account > Server > Security**.
+
+## Standard mode
+
+The platform manages the encryption key. The key is stored encrypted at the control plane and delivered to your workstation when needed (after a server reboot, during wake from hibernation, etc.).
+
+Choose Standard if you want minimum onboarding friction and you trust the platform layer to manage keys. This is the right choice for development and prototyping.
+
+## Enhanced mode
+
+Both the platform key and a key derived from your WebAuthn passkey can unlock the volume.
+
+In day-to-day use, the platform unlocks automatically. If you ever want to unlock the volume directly with your passkey (for example, on a new workstation that has imported your volume), you can.
+
+Recovery is still possible through the platform. Enhanced is a safety net: you have a personal key, but you have not given up platform-side recovery.
+
+## Sovereign mode (Private Locked tier)
+
+The platform's key is physically removed from the volume header. The platform's wrapped copy is deleted from the control plane database. Only the key derived from your WebAuthn passkey can unlock the volume.
+
+After this transition:
+
+- ellul cannot decrypt your volume.
+- There is no platform fallback.
+- The only way back in is your passkey or a recovery code paired with a compatible authenticator.
+
+<Callout type="warning" title="Irreversibility">
+  If you lose your passkey and your recovery codes, the data on a Sovereign-mode volume cannot be recovered. The platform has no key.
+</Callout>
+
+The four layers of defence behind sovereign mode:
+
+1. The platform key is removed from the volume's encryption header.
+2. The keyfile on your server is securely overwritten and deleted.
+3. The wrapped key is deleted from the control plane database.
+4. A marker on your server prevents the unlock flow from attempting automatic decryption.
+
+## Changing modes
+
+You change modes from **Account > Server > Security**.
+
+<Steps>
+  <Step number={1} title="Standard to Enhanced">
+    Enrol a passkey if you have not already. Add a passkey-derived key alongside the platform key. Reversible.
+  </Step>
+  <Step number={2} title="Enhanced to Sovereign">
+    Verify your passkey-derived key works. The platform removes its own key, deletes its wrapped copy, shreds the keyfile on the server, and places the sovereign marker. Conditionally reversible: you can re-enrol a platform key only by first unlocking with your passkey.
+  </Step>
+  <Step number={3} title="Sovereign to Enhanced">
+    Authenticate with your passkey, unlock the volume, then add a fresh platform key. The sovereign marker is removed.
+  </Step>
+</Steps>
+
+Each transition is recorded in the audit log.
+
+## Unlock during normal operation
+
+The platform handles unlock automatically:
+
+| Mode | Unlock |
+|------|--------|
+| Standard | Automatic. The platform delivers the key. |
+| Enhanced | Automatic by default. Manual passkey unlock also possible. |
+| Sovereign | The console prompts you to authenticate with your passkey. |
+
+In sovereign mode, the prompt appears on the dashboard whenever the volume needs to be unlocked. Tap your passkey and the volume opens.
+
+## Header backup
+
+For Standard and Enhanced modes, the platform retains an encrypted backup of the volume's header. This protects against header corruption (an extremely rare hardware-level fault). The backup is bound to the platform key and cannot be used to circumvent sovereign mode.
+
+In sovereign mode, header backup escrow is disabled. If the header is corrupted and you have not made your own backup, the volume is unrecoverable.
+
+## Where to go next
+
+- [Security Tiers](/concepts/security-tiers) for the broader tier model.
+- [Passkeys](/authentication/passkeys) for enrolment and PRF derivation.
+- [Cross-Device Recovery](/authentication/cross-device) for handling lost devices.

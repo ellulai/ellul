@@ -1,0 +1,66 @@
+{
+  "name": "@ellul.ai/i18n",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
+    },
+    "./routing": {
+      "import": "./src/routing.ts",
+      "types": "./src/routing.ts"
+    },
+    "./middleware": {
+      "import": "./src/middleware.ts",
+      "types": "./src/middleware.ts"
+    },
+    "./cookie": {
+      "import": "./src/cookie.ts",
+      "types": "./src/cookie.ts"
+    },
+    "./metadata": {
+      "import": "./src/metadata.ts",
+      "types": "./src/metadata.ts"
+    },
+    "./request": {
+      "import": "./src/request.ts",
+      "types": "./src/request.ts"
+    },
+    "./server": {
+      "import": "./src/server.ts",
+      "types": "./src/server.ts"
+    },
+    "./client": {
+      "import": "./src/client.ts",
+      "types": "./src/client.ts"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@ellul.ai/i18n-consts": "workspace:*",
+    "@ellul.ai/i18n-messages": "workspace:*",
+    "next-intl": "^3.26.5",
+    "use-intl": "^3.26.5"
+  },
+  "peerDependencies": {
+    "next": "^15.0.0",
+    "react": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@ellul.ai/ts-config": "workspace:*",
+    "@types/react": "^19.0.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.17"
+  }
+}

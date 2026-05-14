@@ -1,0 +1,230 @@
+## What is MCP setup on Ellul?
+
+**MCP setup on Ellul** is the end-to-end process of getting an <Term slug="mcp">MCP</Term> server running on an <Term slug="agent-workstation">agent workstation</Term> in a way that's secure, persistent, and reusable across sessions. The per-tool pages ([Cursor](/mcp/cursor), [Claude Code](/mcp/claude-code), [Playwright](/mcp/playwright), [Database](/mcp/database), [GitHub](/mcp/github)) assume you've done it once; this page is the reference they link back to.
+
+Four ingredients, regardless of which MCP server you're installing:
+
+1. A workstation with your agent CLI installed.
+2. The MCP server's binary or entry point on the workstation.
+3. The server's credential stored in `.ellul/secrets.db`, encrypted at rest.
+4. The agent's `mcp.json` registering both `ellul-mcp` and the new server.
+
+Get those right and the rest is mechanical. Get them wrong and you've reintroduced laptop-style fragility, or worse, leaked secrets into a plaintext config.
+
+## Prerequisites
+
+**An Ellul workstation, provisioned.** Hobby is fine for one or two workstations; Pro is needed for more parallel workstations and for production-grade integrations. From the console, click "New workstation" and pick the agent CLI you want to default to (Claude Code, Cursor, OpenCode, Codex). The CLI ships preinstalled.
+
+**A passkey on file.** MCP server installs are gated by <Term slug="passkey-approval">passkey approval</Term>. If you haven't enrolled one, the console prompts you on first install. Any FIDO2 device works: phone biometric, hardware key, OS-level passkey.
+
+**An understanding of which MCP servers you actually need.** The temptation when starting is to install every MCP server you've heard of. Resist it. Each MCP server adds attack surface; each one is something the agent can call. Start with one, add more as the use cases prove themselves. The most common starting set is **filesystem + GitHub**, and many workstations never need more.
+
+<Callout type="note" title="A quick decision tree">
+- The agent should know about your code: install **filesystem MCP**.
+- The agent should know about your GitHub state: install [**GitHub MCP**](/mcp/github).
+- The agent should know about your data: install [**database MCP**](/mcp/database).
+- The agent should drive a browser: install [**Playwright MCP**](/mcp/playwright).
+- The agent should call your internal API: write a **custom MCP** (see "Bring your own server" below).
+
+Most workstations need two of these, ever.
+</Callout>
+
+## The manifest format
+
+Every MCP-aware agent reads a JSON manifest that lists its servers. The exact path differs per agent (Cursor uses `~/.cursor/mcp.json`, Claude Code uses `~/.config/claude-code/mcp.json` plus a project-local `<project>/.mcp.json`), but the schema is the same.
+
+A minimal Ellul-default entry:
+
+```json
+{
+  "mcpServers": {
+    "ellul": { "command": "ellul-mcp", "args": [], "env": {} }
+  }
+}
+```
+
+The `ellul-mcp` binary is the workstation's own MCP server. It exposes:
+
+- `ellul_exec` to run commands behind the workstation's gate model
+- `ellul_gate_request` and `ellul_gate_status` to ask for and check on gates
+- `ellul_list_guardrails` to read the tree-sitter rules enforced on the workspace
+- `ellul_env_import` and `ellul_env_read` for the encrypted secret store
+- `ellul_scan` to trigger an out-of-band guardrail scan
+
+That's the layer that makes the agent's tool calls gate-aware. Adding a stdio-mode third-party server alongside it:
+
+```json
+{
+  "mcpServers": {
+    "ellul": { "command": "ellul-mcp", "args": [], "env": {} },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/workspace"]
+    }
+  }
+}
+```
+
+An SSE-mode third-party server, which is what you usually want for anything you'd like to keep warm:
+
+```json
+{
+  "mcpServers": {
+    "ellul": { "command": "ellul-mcp", "args": [], "env": {} },
+    "github": {
+      "url": "http://127.0.0.1:7830/mcp",
+      "transport": "sse"
+    }
+  }
+}
+```
+
+A few notes on the schema:
+
+- `command` + `args` is for stdio servers. The runtime spawns the binary; servers die when the agent's session ends.
+- `url` + `transport: "sse"` is for SSE servers. The runtime connects over HTTP; lifecycle is independent of the agent's.
+- `env` sets environment variables. **Don't put secrets here.** Use `ellul_env_import` so the value lands in the encrypted secret store and gets injected at launch.
+
+## Directory conventions on Ellul
+
+Where things live on the workstation:
+
+```
+/home/dev/                         # workstation user home
+├── .config/
+│   ├── claude-code/mcp.json       # Claude Code's user-level servers
+│   └── opencode/mcp.json          # OpenCode's MCP servers
+├── .cursor/
+│   └── mcp.json                   # Cursor's user-level servers
+├── .ellul/
+│   ├── daemon.sock                # daemon UDS (shield-coordinated)
+│   ├── secrets.db                 # encrypted local secret store
+│   ├── project.json               # project identity
+│   └── proxy.port                 # TCP fallback for the daemon
+└── workspace/                     # your code
+    └── .mcp.json                  # project-scoped servers
+```
+
+The vault that holds workstation-level secrets is at `/etc/ellul/shield-data/`, owned by `root:shield 750`. Agents aren't in the `shield` group and can't read it. The vault is bind-mounted from a persistent volume, so reboots and OS updates don't lose your secrets.
+
+## The four-step install pattern
+
+1. **Pick a server.** Anything that implements the [MCP specification](https://spec.modelcontextprotocol.io) works. Anthropic publishes a [reference set](https://github.com/modelcontextprotocol/servers).
+2. **Store credentials.** Whatever the server needs (PAT, API key, connection string, refresh token) gets imported once via `ellul_env_import`. The value lands in `.ellul/secrets.db` encrypted, and isn't recoverable from `mcp.json`.
+3. **Run in SSE mode where possible.** SSE servers persist; stdio servers don't. On a workstation, persistence is the whole point.
+4. **Add a manifest entry alongside `ellul-mcp`.** Don't paste secrets into `env`; the daemon injects them at launch. Reload the agent's MCP config (`/mcp reload` in Claude Code, "Reload MCP Servers" in Cursor).
+
+A passkey approval fires on the first install of each new server. After approval, the runtime starts the server and the agent connects.
+
+<CodeTabs>
+
+**Step-by-step in shell, for a generic SSE server:**
+
+```bash
+# 1. Pick the server: e.g. the Anthropic Postgres MCP
+
+# 2. Store the credential (from the agent or the daemon REPL)
+ellul_env_import: DATABASE_URL=postgresql://shield_app_readonly@127.0.0.1:5432/appdb
+
+# 3. Start the server in SSE mode
+npx -y @modelcontextprotocol/server-postgres --port 7820
+
+# 4. Add to agent config
+nano <project>/.mcp.json
+```
+
+**Equivalent manifest entry:**
+
+```json
+{
+  "mcpServers": {
+    "ellul": { "command": "ellul-mcp", "args": [], "env": {} },
+    "postgres": {
+      "url": "http://127.0.0.1:7820/mcp",
+      "transport": "sse"
+    }
+  }
+}
+```
+
+</CodeTabs>
+
+## Debugging connection failures
+
+When an MCP server doesn't show up in the agent's tool list, the failure is almost always one of three things. Check in this order.
+
+**1. The server isn't actually running.** SSH in and check:
+
+```bash
+curl -sS http://127.0.0.1:7830/mcp/health
+```
+
+If the server isn't up, the agent has nothing to connect to. The most common cause is a missing secret: the server expected `GITHUB_TOKEN` (or whatever) and the env wasn't injected. Check the server's startup logs.
+
+**2. The agent didn't reload its config.** Manifest changes don't apply until the agent rereads them. Run `/mcp reload` (Claude Code), "Reload MCP Servers" (Cursor), or restart the session entirely.
+
+**3. The daemon isn't running.** `ellul-mcp` is a stdio subprocess that connects to a daemon at `~/.ellul/daemon.sock` (or via TCP fallback at `~/.ellul/proxy.port`). If the daemon isn't running, every `ellul_*` tool call returns "daemon_not_running". Start the daemon with `ellul`.
+
+If those three are clean and the server still doesn't respond, inspect the protocol traffic. The MCP server logs every JSON-RPC message at `--log-level debug`; turn it on temporarily and look for handshake failures.
+
+<Callout type="warning" title="Don't paste secrets into mcp.json to test something quick">
+The single most common mistake on a fresh workstation is putting a PAT or connection string directly into the manifest "to see if the server's actually working", with intent to switch to the secret store later. Don't. The plaintext-in-mcp.json state is exactly the failure mode the workstation is built to prevent, and "I'll move it later" is how secrets stay in plaintext for six months. Import to the secret store first.
+</Callout>
+
+## Bring your own server
+
+Custom MCP servers (your internal API, your design system, your customer-data store) are normal. The protocol is small and the SDKs are straightforward. Implement against the official [TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) or [Python SDK](https://github.com/modelcontextprotocol/python-sdk), run it on the workstation in SSE mode, register it in the manifest, and import any secrets via `ellul_env_import`. Custom servers get the same namespace isolation, secret-store integration, and passkey-gated installs as the published ones.
+
+One note: the first iteration's tool descriptions are usually too vague for the agent to use. Iterate on those before iterating on logic.
+
+## Security model in one section
+
+Three layers.
+
+**Credentials don't sit in the agent process.** Long-lived tokens live in `.ellul/secrets.db`, encrypted with a per-project derived key. The daemon injects them into MCP server child processes at launch and redacts them from streamed output.
+
+**The MCP server is namespace-isolated.** Each server runs inside the project's namespace (mount, PID, network). Cross-project access is opt-in and source-only.
+
+**New servers require passkey approval.** The agent can edit `mcp.json`, but the runtime won't launch a new server without your tap.
+
+## FAQ
+
+### How long does setup take?
+
+About fifteen minutes for the first workstation with one or two MCP servers. Subsequent additions take five minutes.
+
+### Can I bring my own MCP server?
+
+Yes. Any MCP-compliant server (open-source or proprietary) runs on Ellul. The secret store and gate model work regardless of who wrote the MCP server.
+
+### Do I need separate MCP configs for different agents on the same workstation?
+
+Yes. Cursor reads `~/.cursor/mcp.json`, Claude Code reads `<project>/.mcp.json`, and so on. Project-scoped configs are the easiest way to keep things consistent across agents.
+
+### Can MCP servers from different agents share the same upstream?
+
+Yes. They connect to the same daemon, request the same secrets, hit the same upstreams. The MCP server processes themselves are usually duplicated (one per agent), but the credential and namespace boundaries are shared.
+
+### What happens to running MCP servers when the workstation reboots?
+
+SSE-mode servers are managed by systemd-style supervision and restart automatically. Their bind-mounted state (browser context, connection pools, cached tokens) is preserved across reboots.
+
+## Where to go next
+
+- [Cursor MCP](/mcp/cursor) for Cursor-specific install steps
+- [Claude Code MCP](/mcp/claude-code) for Claude-Code-specific install steps
+- [GitHub MCP](/mcp/github) for the most common first server
+- [Database MCP](/mcp/database) for Postgres with classified gates
+- [Playwright MCP](/mcp/playwright) for long-running browser automation
+- [Sovereign Shield](/glossary/sovereign-shield) for the substrate that makes credential brokering possible
+- [The MCP hub](/mcp) for what MCP is in one page
+
+## References
+
+- [Model Context Protocol specification](https://spec.modelcontextprotocol.io)
+- [Anthropic: Introducing MCP](https://www.anthropic.com/news/model-context-protocol)
+- [Anthropic-published MCP servers](https://github.com/modelcontextprotocol/servers)
+- [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk)
+- [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)
+
+<FAQ />

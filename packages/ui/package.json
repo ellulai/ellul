@@ -1,0 +1,19 @@
+{
+  "name": "@ellul.ai/ui",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./pricing": "./src/pricing.tsx",
+    "./ellul-logo": "./src/ellul-logo.tsx"
+  },
+  "devDependencies": {
+    "@ellul.ai/ts-config": "workspace:*",
+    "@types/react": "^19.0.2",
+    "typescript": "^5.7.2"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

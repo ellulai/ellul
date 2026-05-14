@@ -1,0 +1,85 @@
+---
+title: "Welcome"
+description: "Your agent's computer. An always-on workstation that runs overnight, off your laptop, with multiple agents in parallel."
+section: "Getting Started"
+order: 1
+---
+
+## Your agent's computer
+
+An always-on workstation for your AI agent. Runs overnight. Keeps working while your laptop sleeps. Coordinates a team of agents in parallel.
+
+You bring the agent. We provide the environment.
+
+| Agent | Status |
+|-------|--------|
+| Claude Code | Supported |
+| Codex | Supported |
+| Cursor | Supported |
+| OpenCode | Supported |
+
+You authenticate each agent inside your workstation. The credentials live on your encrypted volume; they never touch the ellul control plane and they never sit on your laptop.
+
+## Three things ellul gets right
+
+### Autonomy. Agents that don't stop.
+
+Close your laptop. Your agent keeps working. Come back to a finished feature, a reviewed PR, a drafted doc. Check in from your phone. The workstation runs overnight; you wake up to results.
+
+Most agents today are tethered to the user's machine. They stop when the lid closes, they crash when the WiFi flakes, they lose state when you switch projects. ellul breaks the tether.
+
+### Composition. Agents that can see, but can't touch.
+
+Run three agents in parallel. One writes code. One reviews it. One drafts the docs. Each has its own sandbox. They can read each other's work. They cannot break each other's state.
+
+This is how agent teams should be built. Each sandbox is kernel-isolated by default; you grant explicit, scoped, read-only access to share context.
+
+### Safety as enabler. Yes means yes.
+
+All of that autonomy is only possible because every privileged action pauses for your passkey. Git push, production database, domain changes, secret access. They stop, wait for a biometric tap, and only then happen.
+
+That is how you let an agent run for hours unsupervised without getting burned.
+
+## What the workstation includes
+
+- **Always-on compute.** Persistent storage. Agents keep running while your laptop sleeps.
+- **Per-project sandboxes.** Each project lives in its own kernel-isolated workspace with private filesystem, processes, and network identity.
+- **Per-sandbox database.** Provisioned on demand.
+- **Permission gates.** Privileged actions (push, deploy, secrets, database writes) require your explicit approval. The agent asks. You approve or deny.
+- **Audit trail.** Every privileged action is recorded in a tamper-evident hash-chained log.
+- **Encrypted persistent storage.** On Pro, your storage volume is LUKS2-encrypted with options ranging from platform-managed to fully user-controlled keys.
+
+## What ellul is not
+
+- **Not a chat wrapper.** Your agent runs natively as a CLI inside a real Linux sandbox, with full filesystem and network access scoped to that sandbox.
+- **Not a credential vault on your laptop.** Agent credentials stay on your workstation, encrypted, and the platform cannot read them.
+- **Not where production runs.** ellul is upstream of Vercel, Fly, Railway, Neon. We are where the agent works. Your apps run wherever you ship them.
+- **Not a lock-in.** Your workstation is a standard Linux server. If you stop using ellul, disable the agent, take over, keep going.
+
+## Plans
+
+| Plan | Price | What it is |
+|------|-------|-----------|
+| **Hobby** | $20 / month | One sandbox. For a side project or kicking the tyres. |
+| **Pro** | $50 / month | Multiple parallel sandboxes, encrypted persistent storage, custom domains, direct deploy, full port access, SSH. Daily driver. |
+
+Two specialised products are also available:
+
+- **Shield Gateway** ($10 / month). A FIDO2-gated proxy for existing agent frameworks. No SDK, no code changes.
+- **Agent Adapter** (custom). Full headless trust API for orchestrators.
+
+For the full feature breakdown see [Tier Comparison](/reference/tier-comparison).
+
+## Where to go next
+
+<Steps>
+  <Step number={1} title="Read the Quick Start">
+    Five minute walkthrough from sign-up to your first overnight agent run. [Quick Start](/getting-started/quick-start).
+  </Step>
+  <Step number={2} title="Tour the console">
+    Learn the workspace tabs and how to navigate. [The Console](/getting-started/the-console).
+  </Step>
+  <Step number={3} title="Run agents in parallel">
+    Multiple sandboxes. Read-only peering. [Sandboxes](/concepts/sandboxes).
+  </Step>
+</Steps>

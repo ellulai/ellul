@@ -1,0 +1,20 @@
+[Unit]
+Description=ellul.ai preview reconciler timer
+# Timer fires even if the service hasn't been run yet (boot case).
+Requires=ellul-preview-reconciler.service
+
+[Timer]
+# First fire 2 minutes after boot — gives file-api + vault mounts
+# time to settle. Then every 5 minutes thereafter.
+OnBootSec=2min
+OnUnitActiveSec=5min
+# Align to the wall clock so multiple VPSes in a fleet don't all fire
+# at once and hammer shared infrastructure.
+AccuracySec=30s
+# Persistent=true means a missed tick (e.g. laptop sleep / VPS hibernation)
+# fires immediately on wake, not "wait 5 more minutes from now."
+Persistent=true
+Unit=ellul-preview-reconciler.service
+
+[Install]
+WantedBy=timers.target

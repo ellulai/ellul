@@ -1,0 +1,71 @@
+---
+title: "Regions and Data Residency"
+description: "Where your workstation runs and the boundaries we respect."
+section: "Lifecycle"
+order: 2
+---
+
+Your workstation runs in a specific geographic region. Region selection is available on paid plans (Pro and Hobby). Region is fixed at creation and used by the platform to keep your data within the jurisdiction you choose.
+
+## Available regions
+
+Regions are listed during sandbox creation. Common regions include datacenters in:
+
+- North America (US East, US West).
+- Europe (Central, North).
+- Asia-Pacific.
+
+The exact list depends on availability at the underlying cloud provider.
+
+## What stays in the region
+
+Once you pick a region:
+
+- Your workstation runs in that region.
+- The encrypted storage volume lives in that region.
+- Backups (where applicable) stay in the region.
+- Logs that the platform retains stay in the region.
+
+What does cross regions:
+
+- Heartbeat telemetry to the control plane (server health, no customer data).
+- Authentication events to the control plane.
+- Routing through the global edge (TLS termination, DDoS protection).
+
+For European data residency, choose a European region. Your server will be located within Europe, and your data will not leave it through any platform-managed mechanism.
+
+## Changing regions
+
+Region is fixed at creation. To move a workstation to a different region:
+
+<Steps>
+  <Step number={1} title="Decide what you need to migrate">
+    Sandboxes, secrets, and database content typically need to move. Other configuration is regenerated.
+  </Step>
+  <Step number={2} title="Back up what you need">
+    Push code to git. Export database snapshots. Note your secret values.
+  </Step>
+  <Step number={3} title="Create a new workstation in the target region">
+    From the dashboard, create a new workstation and select the new region.
+  </Step>
+  <Step number={4} title="Restore your data">
+    Pull code, restore database, recreate secrets.
+  </Step>
+  <Step number={5} title="Update DNS for any custom domains">
+    Repoint custom domains to the new workstation.
+  </Step>
+  <Step number={6} title="Delete the old workstation">
+    Once you are confident the new one is fully operational.
+  </Step>
+</Steps>
+
+For workstations on the Pro plan with encrypted volumes, the platform can perform a block-level migration that preserves the encrypted volume contents end-to-end without reading them. Contact support if you need assistance with that flow.
+
+## Compliance
+
+Region selection is a tool for compliance, not a guarantee. If you have a specific compliance requirement (GDPR, HIPAA, regional sovereignty), please review our [Security Whitepaper](/security) and contact us before relying on the platform for regulated workloads.
+
+## Where to go next
+
+- [Volume Encryption](/lifecycle/volume-encryption) for at-rest encryption.
+- [Backups](/lifecycle/backups) for data preservation.

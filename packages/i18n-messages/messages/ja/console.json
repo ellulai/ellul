@@ -1,0 +1,3229 @@
+{
+  "console": {
+    "meta": {
+      "title": "ellul.ai",
+      "description": "スマートフォンを、プロフェッショナルな開発環境に変える。"
+    },
+    "notFound": {
+      "message": "ページが見つかりません。",
+      "backHome": "ホームに戻る"
+    },
+    "sidebar": {
+      "expandThreadsTooltip": "スレッドを展開",
+      "newThreadTooltip": "新しいスレッド",
+      "collapseTooltip": "サイドバーを折りたたむ",
+      "showScopedThreadsTooltip": "スコープされたスレッドを表示",
+      "showThreadsFromTooltip": "{scope} のスレッドを表示",
+      "pendingPermissionsBadge": "{count, plural, =0 {保留中の権限はありません} other {#件の権限が保留中}}",
+      "threadsHeader": "スレッド",
+      "dialogClose": "閉じる",
+      "rename": "名前を変更",
+      "delete": "削除",
+      "threadCountVertical": "{count} 件のスレッド",
+      "scopedTabDefault": "スコープ",
+      "allTabLabel": "すべて",
+      "noThreadsYet": "スレッドがまだありません",
+      "noThreadsHint": "+ をタップして会話を開始",
+      "untitledThread": "新しいスレッド"
+    },
+    "serverContext": {
+      "contextPlaceholder": "AI ツール用のコンテキストを入力…",
+      "filenamePlaceholder": "ファイル名.md",
+      "readOnly": "読み取り専用",
+      "unsaved": "未保存",
+      "saved": "保存しました",
+      "save": "保存",
+      "preview": "プレビュー",
+      "edit": "編集",
+      "noContent": "*コンテンツがありません*",
+      "globalContext": "グローバルコンテキスト",
+      "globalFallbackPreview": "CLAUDE.md",
+      "claudeSubtitle": "Claude CLI コンテキスト",
+      "agentsSubtitle": "OpenCode / Codex エージェントルール",
+      "customContextSubtitle": "カスタムコンテキスト",
+      "customContextFiles": "カスタムコンテキストファイル",
+      "newContextFile": "新しいコンテキストファイル",
+      "noContextFiles": "コンテキストファイルはありません",
+      "noContextFilesHint": "コンテキストファイルを作成すると、AI コーディングアシスタントに知識を渡せます。",
+      "errorFetchFailed": "コンテキストファイルの取得に失敗しました",
+      "errorCannotConnect": "ファイル API に接続できません",
+      "errorFetchFile": "ファイルの取得に失敗しました",
+      "errorSave": "保存に失敗しました",
+      "errorDelete": "削除に失敗しました",
+      "errorDeleteFile": "ファイルの削除に失敗しました",
+      "errorCreateFile": "ファイルの作成に失敗しました",
+      "authRequiredTitle": "認証が必要です",
+      "sessionExpiredTitle": "セッションが終了しました",
+      "authRequiredBody": "セキュリティ認証情報が期限切れまたは無効です。",
+      "sessionExpiredBody": "セッションが終了した可能性があります。再認証してご利用を続けてください。",
+      "authenticating": "認証中...",
+      "loginWithPasskey": "パスキーでログイン",
+      "refreshPage": "ページを更新",
+      "retry": "再試行"
+    },
+    "serverStatus": {
+      "stepLabels": {
+        "starting": "サーバーを起動中",
+        "starting_dots": "サーバーを起動中...",
+        "byos_node_detected": "ノードに接続しました",
+        "writing_files": "構成ファイルを書き込み中...",
+        "packages": "システムパッケージをインストール中",
+        "packages_dots": "システムパッケージをインストール中...",
+        "nodejs": "Node.js をセットアップ中",
+        "nodejs_dots": "Node.js をセットアップ中...",
+        "devtools": "開発者ツールをインストール中...",
+        "opencode": "AI コーディングツールをインストール中",
+        "opencode_dots": "AI コーディングツールをインストール中...",
+        "configuring": "サーバーを設定中",
+        "configuring_dots": "サーバーを設定中...",
+        "services": "サービスを起動中...",
+        "ready": "準備完了",
+        "settingUp": "セットアップ中..."
+      },
+      "title": "サーバーのステータス",
+      "stateActive": "稼働中",
+      "descriptionProvisioning": "サーバーをセットアップしています。インストール完了後にご利用いただけます。",
+      "descriptionActive": "サーバーは稼働中で、ご利用いただける状態です。",
+      "descriptionError": "サーバーのプロビジョニング中にエラーが発生しました。",
+      "estimatedTime": "通常 3〜4 分ほどかかります。少々お待ちください...",
+      "fetchFailed": "サーバーのステータスを取得できませんでした",
+      "errorFallback": "問題が発生しました。再試行いただくか、サポートまでお問い合わせください。",
+      "retry": "再試行",
+      "ipAddressLabel": "IP アドレス",
+      "openTermius": "Termius で開く",
+      "liveUrl": "公開 URL",
+      "siteUrlLabel": "サイト URL",
+      "siteUrlHint": "ご自身のドメインをこの IP に向けるか、sslip.io の URL をそのままご利用いただくと、HTTPS をすぐに有効化できます。",
+      "degradedSubsystems": "一部サブシステムが低下: {flags}",
+      "performanceWarning": "サーバーのメモリが不足気味です。より良いパフォーマンスのためにアップグレードをご検討ください。",
+      "sshConnection": "SSH 接続",
+      "teleportNote": "Teleport(ID ベース)経由でアクセス"
+    },
+    "onboarding": {
+      "presets": {
+        "developer": {
+          "label": "開発者",
+          "description": "コード・ターミナル・全ツールを揃えた完全な開発ワークフロー"
+        },
+        "studio": {
+          "label": "スタジオ",
+          "description": "チャットとプレビューに特化した、素早い反復のための環境"
+        }
+      },
+      "progress": {
+        "creatingSandbox": "サンドボックスを作成中…",
+        "scaffolding": "プロジェクトを生成中…",
+        "cloning": "リポジトリをクローン中…",
+        "writingMetadata": "セットアップを完了中…",
+        "installingDeps": "依存関係をインストール中…",
+        "detecting": "フレームワークを検出中…",
+        "working": "処理中…",
+        "cancelling": "キャンセル中…"
+      },
+      "errors": {
+        "loadConnections": "接続の読み込みに失敗しました",
+        "enterName": "サンドボックス名を入力してください",
+        "duplicateName": "同じ名前のサンドボックスが既に存在します",
+        "createFailed": "サンドボックスの作成に失敗しました",
+        "passkeyDeclined": "パスキー認証が拒否されたか、完了しませんでした",
+        "passkeyFailed": "パスキー認証に失敗しました",
+        "importFailed": "リポジトリのインポートに失敗しました"
+      },
+      "choose": {
+        "title": "どのように始めますか?",
+        "subtitle": "新しいプロジェクトを生成するか、既存のリポジトリをクローンします",
+        "compactPrompt": "どのように始めますか?",
+        "scaffold": {
+          "title": "プロジェクトを生成",
+          "description": "フレームワークを選ぶだけで、動くアプリを数秒で構築します"
+        },
+        "git": {
+          "title": "Git からクローン",
+          "description": "GitHub、GitLab、Bitbucket の既存リポジトリをインポート"
+        }
+      },
+      "workspaceType": {
+        "title": "最初のサンドボックスを作成",
+        "subtitle": "ワークスペースの種類を選んで始めましょう",
+        "compactPrompt": "ワークスペースの種類を選択"
+      },
+      "framework": {
+        "title": "フレームワークを選択",
+        "subtitle": "事前構成済みのスタック。後で変更できます。"
+      },
+      "name": {
+        "scaffoldHeading": "新しい {framework} プロジェクト",
+        "scaffoldHeadingFallback": "新規プロジェクト",
+        "gitHeading": "Git からインポート",
+        "scaffoldSubtitle": "サンドボックスに名前を付けてください。後から変更できます。",
+        "gitSubtitle": "サンドボックスに名前を付けて、リポジトリを接続します",
+        "label": "サンドボックス名",
+        "placeholder": "my-awesome-sandbox",
+        "hint": "サンドボックス用のディレクトリが作成されます"
+      },
+      "git": {
+        "title": "リポジトリを接続",
+        "subtitle": "{name} 用のリポジトリを選択",
+        "providerLabel": "Git プロバイダーを接続",
+        "connectedTo": "{provider} に接続済み。",
+        "connectAnother": "別のプロバイダーを接続",
+        "addProvider": "追加"
+      },
+      "importing": {
+        "title": "サンドボックスをセットアップ中"
+      },
+      "buttons": {
+        "back": "戻る",
+        "continue": "続ける",
+        "creating": "作成中...",
+        "createSandbox": "サンドボックスを作成",
+        "cancel": "キャンセル",
+        "tryAgain": "再試行"
+      },
+      "projectStructure": {
+        "title": "プロジェクト構成",
+        "subtitle": "コードの構成方法を選んでください。",
+        "singleApp": "シングルアプリ",
+        "singleAppDescription": "1つのプロジェクト、1つのフレームワーク。ほとんどのユースケースに最適。",
+        "monorepo": "モノレポ",
+        "monorepoDescription": "Turborepo ワークスペース。アプリやパッケージを追加可能。"
+      }
+    },
+    "workspaceExtensions": {
+      "core_chat": {
+        "name": "チャット",
+        "description": "ワークスペースとやり取りするための AI チャットインターフェース",
+        "tabs": {
+          "main": {
+            "label": "チャット",
+            "description": "プロジェクトの構築と反復のための AI チャット"
+          }
+        }
+      },
+      "core_code": {
+        "name": "コード",
+        "description": "コードブラウザとエディタ",
+        "tabs": {
+          "main": {
+            "label": "コード",
+            "description": "プロジェクトファイルを閲覧・編集"
+          }
+        }
+      },
+      "core_preview": {
+        "name": "ライブプレビュー",
+        "description": "実行中のアプリケーションをリアルタイムでプレビュー",
+        "tabs": {
+          "main": {
+            "label": "プレビュー",
+            "description": "ホットリロード対応のライブプレビュー — 開発サーバーを起動します"
+          }
+        }
+      },
+      "core_vault_notes": {
+        "name": "ボールトノート",
+        "description": "永続的なノートとナレッジベース",
+        "tabs": {
+          "main": {
+            "label": "ノート",
+            "description": "永続的なノートとドキュメント"
+          }
+        }
+      },
+      "core_vault_graph": {
+        "name": "ボールトグラフ",
+        "description": "ナレッジグラフの可視化",
+        "tabs": {
+          "main": {
+            "label": "グラフ",
+            "description": "ノートとつながりを可視化したナレッジグラフ"
+          }
+        }
+      },
+      "core_vault_scopes": {
+        "name": "ボールトスコープ",
+        "description": "ボールトエントリのスコープ付きアクセス制御",
+        "tabs": {
+          "main": {
+            "label": "スコープ",
+            "description": "ボールトエントリのアクセススコープを管理"
+          }
+        }
+      },
+      "core_db_tables": {
+        "name": "データベーステーブル",
+        "description": "データベーステーブルとデータの閲覧",
+        "tabs": {
+          "main": {
+            "label": "テーブル",
+            "description": "データベーステーブルの閲覧と管理"
+          }
+        }
+      },
+      "core_db_sql": {
+        "name": "SQL エディタ",
+        "description": "SQL クエリの実行",
+        "tabs": {
+          "main": {
+            "label": "SQL",
+            "description": "インタラクティブな SQL クエリエディタ"
+          }
+        }
+      },
+      "core_db_bin": {
+        "name": "データベースのごみ箱",
+        "description": "削除されたデータベースレコードのごみ箱",
+        "tabs": {
+          "main": {
+            "label": "ごみ箱",
+            "description": "削除されたレコードを閲覧・復元"
+          }
+        }
+      },
+      "core_db_settings": {
+        "name": "データベース設定",
+        "description": "データベースの構成と管理",
+        "tabs": {
+          "main": {
+            "label": "設定",
+            "description": "データベース接続、ロール、構成"
+          }
+        }
+      },
+      "core_obs_health": {
+        "name": "ヘルスモニター",
+        "description": "サーバーのヘルスとパフォーマンスメトリクス",
+        "tabs": {
+          "main": {
+            "label": "ヘルス",
+            "description": "CPU、メモリ、サーバーヘルスのメトリクス"
+          }
+        }
+      },
+      "core_obs_gates": {
+        "name": "ゲートモニター",
+        "description": "ソブリンゲートのアクティビティを監視",
+        "tabs": {
+          "main": {
+            "label": "ゲート",
+            "description": "ゲートリクエスト、承認、監査ログを表示"
+          }
+        }
+      },
+      "core_obs_development": {
+        "name": "開発ログ",
+        "description": "プレビューが有効な場合に表示される開発サーバーログ",
+        "tabs": {
+          "main": {
+            "label": "開発",
+            "description": "開発サーバーとビルドのログ(プレビュータブが必要)"
+          }
+        }
+      },
+      "core_obs_claw": {
+        "name": "ZeroClaw モニター",
+        "description": "ZeroClaw エージェントのアクティビティ監視",
+        "tabs": {
+          "main": {
+            "label": "ZeroClaw",
+            "description": "AI エージェントのセッションとアクティビティを監視"
+          }
+        }
+      },
+      "core_settings_context": {
+        "name": "コンテキスト設定",
+        "description": "AI コンテキストファイル管理",
+        "tabs": {
+          "main": {
+            "label": "コンテキスト",
+            "description": "AI コンテキストファイルを管理(CLAUDE.md など)"
+          }
+        }
+      },
+      "core_settings_secrets": {
+        "name": "シークレットマネージャー",
+        "description": "環境変数とシークレットの管理",
+        "tabs": {
+          "main": {
+            "label": "シークレット",
+            "description": "環境変数とシークレットを管理"
+          }
+        }
+      },
+      "core_settings_security": {
+        "name": "セキュリティ設定",
+        "description": "セキュリティ層、パスキー、アクセス制御",
+        "tabs": {
+          "main": {
+            "label": "セキュリティ",
+            "description": "セキュリティ層、パスキー、SSH 鍵、権限を管理"
+          }
+        }
+      },
+      "core_int_zeroclaw": {
+        "name": "ZeroClaw",
+        "description": "ZeroClaw エージェントの構成 — API キー、チャネル、コアファイル",
+        "tabs": {
+          "main": {
+            "label": "ZeroClaw",
+            "description": "ZeroClaw の API キー、通信チャネル、コアコンテキストファイルを構成"
+          }
+        }
+      }
+    },
+    "navContexts": {
+      "workspace": "ワークスペース",
+      "deployed": "デプロイ済み",
+      "vault": "ボールト",
+      "database": "データベース",
+      "observability": "オブザーバビリティ",
+      "settings": "設定",
+      "integrations": "連携"
+    },
+    "intAiAgents": {
+      "header": {
+        "title": "ZeroClaw",
+        "description": "ZeroClaw エージェントを構成 — API キー、通信チャネル、コアコンテキストファイル。"
+      },
+      "tabs": {
+        "provider": "プロバイダー",
+        "channels": "チャネル",
+        "coreFiles": "コアファイル"
+      }
+    },
+    "transitions": {
+      "provisioning": {
+        "title": "環境をセットアップ中",
+        "wait": "初回のみのセットアップです。3〜4分かかります。お待ちください。"
+      },
+      "upgrade": {
+        "title": "環境をアップグレード中",
+        "step": {
+          "preparing": "アップグレードの準備中...",
+          "preparingDetail": "ワークスペースを保護しています",
+          "allocating": "サーバーリソースを確保中...",
+          "allocatingDetail": "専用インフラを割り当てています",
+          "storage": "永続ストレージを準備中...",
+          "storageDetail": "暗号化ブロックボリュームを作成しています",
+          "transfer": "データを転送中...",
+          "transferDetail": "プロジェクトと設定を移行しています",
+          "configuring": "環境を設定中...",
+          "configuringDetail": "サーバー構成を適用しています",
+          "provisioning": "インフラをプロビジョニング中...",
+          "provisioningDetail": "専用サーバーを構築しています",
+          "finalizing": "仕上げ中...",
+          "finalizingDetail": "もうすぐ完了します"
+        },
+        "newPlanLabel": "新しいプラン",
+        "freeBadge": "無料",
+        "elapsedSuffix": "経過",
+        "longerThanExpected": "通常より時間がかかっています...",
+        "preserved": "リポジトリ、ファイル、設定はすべて保持されます",
+        "refreshPage": "ページを再読み込み",
+        "fallbackTier": "有料プラン",
+        "tierCapacity": {
+          "hobby": "サンドボックス1つ",
+          "pro": "サンドボックス5つ",
+          "shieldPro": "プロキシのみ"
+        },
+        "tierName": {
+          "hobby": "個人",
+          "pro": "プロ",
+          "shieldPro": "Shield Gateway"
+        }
+      },
+      "wake": {
+        "titleWaking": "サーバーを起動中",
+        "titleSetup": "環境をセットアップ中",
+        "restoring": "ワークスペースを復元中...",
+        "provisioning": "インフラをプロビジョニング中...",
+        "wakeFailed": "起動に失敗しました",
+        "passkeyFailed": "パスキー認証に失敗しました",
+        "preparing": "準備中...",
+        "coldProvisioning": "コールドプロビジョニング — 最大10分ほどかかる場合があります。",
+        "settingUpFresh": "ワークスペース用に新しいサーバーを準備しています...",
+        "takingMoment": "少々お待ちください...",
+        "elapsedSuffix": "経過",
+        "tapPasskey": "パスキーをタップして暗号化ボリュームをアンロックしてください。",
+        "usuallyFew": "通常は数秒で完了します。",
+        "retry": "再試行",
+        "refreshPage": "ページを再読み込み"
+      },
+      "hibernate": {
+        "title": "サーバーをハイバーネート中",
+        "saving": "ワークスペースを保存中...",
+        "subtitle": "データを安全に保存しています。通常は 30〜60 秒で完了します。"
+      }
+    },
+    "appGrid": {
+      "shipFirstSandbox": "最初のサンドボックスをデプロイ",
+      "noSandboxesYet": "まだデプロイされたサンドボックスはありません",
+      "noSandboxesHint": "素晴らしいアプリを作って、専用サブドメインにデプロイしましょう。",
+      "deployedSandboxes": "デプロイ済みサンドボックス",
+      "sandboxCount": "{count, plural, other {#件のサンドボックス}}",
+      "live": "稼働中"
+    },
+    "overview": {
+      "sandboxes": "サンドボックス",
+      "sandboxCount": "{count, plural, other {#件のサンドボックス}}",
+      "newSandbox": "新規サンドボックス",
+      "searchPlaceholder": "検索…",
+      "sortRecent": "最近",
+      "sortAlpha": "A — Z",
+      "sortAlphaDesc": "Z — A",
+      "noMatching": "一致するサンドボックスがありません",
+      "clearSearch": "検索をクリア",
+      "subline": {
+        "empty": "空",
+        "appsCount": "{count} 個のアプリ"
+      },
+      "live": "稼働中",
+      "delete": "削除",
+      "deleteSandboxTitle": "サンドボックスを削除",
+      "deleteConfirmDescription": "<name>{name}</name> とそのすべてのアプリを完全に削除します。確認のためサンドボックス名を入力してください。",
+      "deleteFailed": "サンドボックスの削除に失敗しました",
+      "cancel": "キャンセル",
+      "createSandboxTitle": "サンドボックスを作成"
+    },
+    "authWall": {
+      "connectionLost": "接続が切断されました",
+      "sessionExpired": "セッションの有効期限が切れました",
+      "connectionMessage": "サーバーに接続できません。接続状態を確認してもう一度お試しください。",
+      "sessionMessage": "セッションの有効期限が切れました。続行するには認証してください。",
+      "authenticating": "認証中...",
+      "loginPasskey": "パスキーでログイン",
+      "refreshPage": "ページを再読み込み",
+      "authFailed": "認証に失敗しました"
+    },
+    "serverSwitcher": {
+      "selectServer": "サーバーを選択",
+      "newServer": "新しいサーバー",
+      "products": {
+        "shieldGateway": "Shield Gateway",
+        "cloudPlatform": "クラウドプラットフォーム"
+      },
+      "fallbackName": "サーバー"
+    },
+    "vpsUpdateBanner": {
+      "title": "新機能が利用可能です",
+      "rebuildSingular": "サーバーをリビルドして、この機能を有効化してください:",
+      "rebuildPlural": "サーバーをリビルドして、これらの機能を有効化してください:",
+      "features": {
+        "passkey": "パスキー認証 (Face ID / Touch ID)",
+        "pop": "プルーフ・オブ・プレゼンス (端末バインディング)",
+        "sshKeys": "ダッシュボードからの SSH キー管理",
+        "tierSwitch": "セキュリティティアの切り替え (Standard / Web-Locked)",
+        "terminalTokens": "セキュアなターミナルセッショントークン",
+        "codeBrowser": "ブラウザ内コードエディター",
+        "agentBridge": "ツール連携用 AI エージェントブリッジ"
+      }
+    },
+    "agentUpdateBanner": {
+      "modeSwitchAuto": "自動更新に切り替えますか?",
+      "modeSwitchManual": "手動更新に切り替えますか?",
+      "modeAutoDescription": "今後、署名済みマニフェストはカナリアに昇格されるたびに、次のハートビートで自動的に適用されます。手動承認は不要です。",
+      "modeManualDescription": "今後、署名済みマニフェストはサーバー上でダウンロード・検証されますが、「今すぐ更新」をクリックするまで適用されません。",
+      "securityNoteAuto": "セキュリティについて: マニフェストは引き続きプラットフォームによって ML-DSA-65 で署名され、適用前にサーバー側で検証されます。自動モードはロールアウトを高速化するもので、検証を弱めるものではありません。",
+      "headsUpManual": "ご注意: 手動モードでは更新タイミングを最終的にコントロールできますが、承認を忘れるとサーバーが最新の canary/stable バージョンから遅れていきます。",
+      "cancel": "キャンセル",
+      "switching": "切り替え中…",
+      "enableAuto": "自動を有効化",
+      "enableManual": "手動を有効化",
+      "applyTitle": "プラットフォーム更新を適用中…",
+      "applyDescription": "署名済みの更新コマンドがサーバー上で実行中です。エンフォーサーが {target} をステージングし、事前チェックを実行し、シンボリックリンクを切り替え、サービスを再起動しています。通常は10〜20秒で完了し、終わると自動でバナーが更新されます。",
+      "applyTargetFallback": "新しいバージョン",
+      "pendingTitle": "適用準備が整いました",
+      "pendingDescription": "マニフェスト v{version} はステージング・検証済みで、承認をお待ちしています。バンドルはサーバーに既にダウンロードされており、適用は迅速なサービス再起動だけで完了します。",
+      "applying": "適用中…",
+      "updateNow": "今すぐ更新",
+      "applyDialogTitle": "プラットフォーム更新を適用しますか?",
+      "applyDialogDescription": "マニフェスト v{version} はプラットフォームによって署名され、サーバー上で検証されています。バンドルは既にディスクに展開済みで、適用はシンボリックリンクの切り替えと数件のサービス再起動のみです。",
+      "applyWhatHappens": "何が起こるか: エンフォーサーがリリースのシンボリックリンクを切り替え、file-api・agent-bridge・watchdog・term-proxy を再起動します。ターミナル、コードブラウザ、AI チャットが10〜20秒ほど中断されます。プロジェクトファイル、データベース、セッションには影響しません。",
+      "applyIfBreaks": "万一失敗した場合: コンポーネント障害やクラッシュループを検知すると、エンフォーサーが自動的に前のバージョンへロールバックします。手動での復旧は不要です。",
+      "applyUpdate": "更新を適用",
+      "lastFailedTitle": "前回の更新が正常に完了しませんでした",
+      "lastFailedPartial": "一部のコンポーネントは正常に再起動しましたが、いくつかは失敗してロールバックされました。",
+      "lastFailedFull": "前回のマニフェストの全コンポーネントが、適用失敗後にロールバックされました。",
+      "lastFailedSuffix": " サーバーは前のバージョンで稼働しています。",
+      "lastFailedHint": "次にプラットフォームから公開されるマニフェストで自動的に再試行されます。失敗が続く場合は、VPS のエンフォーサーログで詳細スタックトレースを確認してください。",
+      "rolledBackTitle": "前のバージョンに戻されました",
+      "rolledBackDescription": "最新のマニフェストはロールバックされました。サーバーは前のバージョンで安定稼働中です。次回公開のマニフェストで再度試行されます。",
+      "upToDateTitle": "プラットフォームは最新です",
+      "upToDateDescription": "稼働中マニフェスト v{version}",
+      "upToDateEnforcer": " (エンフォーサー {version})",
+      "waitingHeartbeatTitle": "次のハートビートを待機中",
+      "waitingHeartbeatDescription": "マニフェスト v{version} が利用可能です。サーバーは次のハートビート (10秒以内) でプル・検証・ステージングを行い、適用準備完了として表示されます。",
+      "serverOnlineTitle": "サーバーオンライン",
+      "serverOnlineDescription": "{enforcer}今回の起動以降、まだインストールレポートはありません — サーバーが既に最新マニフェストで動作している場合は通常です。次のプラットフォームリリースで自動的に適用されます。",
+      "serverOnlineEnforcer": "エンフォーサー {version} で稼働中。",
+      "waitingFirstPingTitle": "最初の存命確認を待機中",
+      "waitingFirstPingDescription": "このサーバーはまだチェックインしていません。エンフォーサーがオンラインになってから約60秒以内に、プラットフォームのバージョンとヘルスがここに表示されます。自動と手動の更新モードはこの間でも切り替え可能で、次回同期から有効になります。",
+      "liveness": {
+        "online": "オンライン",
+        "stale": "遅延",
+        "offline": "オフライン",
+        "tooltipOnline": "サーバーは過去2分以内にピングを送信しました。",
+        "tooltipStale": "サーバーの最後のハートビートは遅延しました。到達可能ですが想定より遅くなっています。",
+        "tooltipOffline": "サーバーが連続してハートビートを欠落しています。停止、ファイアウォール、または再起動中の可能性があります。"
+      },
+      "mode": {
+        "auto": "自動",
+        "manual": "手動",
+        "tooltipAuto": "自動: 検証済みマニフェストは次のハートビートで即座に適用されます。",
+        "tooltipManual": "手動: 検証済みマニフェストはステージングのみされ、承認を待ちます。"
+      },
+      "toggleLabel": "自動更新",
+      "toggleDescriptionAuto": "検証済みマニフェストは次のハートビートで自動適用されます。各更新の事前確認を行うにはオフにしてください。",
+      "toggleDescriptionManual": "検証済みマニフェストはサーバー上でステージングされ、承認を待機します。自動適用するにはオンに切り替えてください。",
+      "ariaApplyInProgress": "プラットフォーム更新を適用中",
+      "ariaPendingUpdate": "適用待ちのプラットフォーム更新",
+      "ariaUpToDate": "サーバーは最新です",
+      "ariaApplyPending": "保留中の更新 v{version} を適用",
+      "ariaLiveness": "稼働状態: {label}",
+      "ariaUpdateMode": "更新モード: {label}"
+    },
+    "dashboardShell": {
+      "subscriptionEnding": "サブスクリプション終了予定",
+      "willBeDeletedOn": "サーバーは {date} に削除されます。それまでは引き続きフルアクセス可能です。",
+      "undoCancel": "キャンセルを取り消し",
+      "billing": "請求",
+      "dismiss": "閉じる",
+      "loadStatusFailed": "サーバーステータスの読み込みに失敗しました。再度お試しください。",
+      "retry": "再試行",
+      "paymentReceived": "支払いを受け付けました",
+      "confirmingSubscription": "サブスクリプションを確認しています...",
+      "demoMode": "デモモード — モックデータを使用中。バックエンドには接続されていません"
+    },
+    "byosEnroll": {
+      "title": "自分のサーバーを追加",
+      "subtitle": "Sovereign Stack をご自身のハードウェアで実行します。",
+      "introTitle": "自分のサーバーを持ち込む",
+      "introBody": "ワンタイムトークンを生成し、Mac または Linux サーバーで 1 つのコマンドを実行するだけで、Sovereign Stack をインストールできます。",
+      "supportedPlatforms": "対応プラットフォーム:",
+      "platformMac": "macOS 13 以降 (Apple Silicon または Intel)",
+      "platformLinux": "Debian / Ubuntu Linux",
+      "requirements": "必要要件:",
+      "reqRam": "2 GB 以上の RAM",
+      "reqDisk": "10 GB 以上の空きディスク",
+      "reqRoot": "Root / sudo アクセス",
+      "runOnYourServer": "サーバー側で次のコマンドを実行:",
+      "waitingForConnection": "接続を待機中...",
+      "expiresIn": "有効期限まで {time}",
+      "sudoNote": "このコマンドは <code>sudo</code> で実行する必要があります。macOS では Command Line Tools のインストールを促されることがありますが、許可してください。",
+      "nodeConnected": "ノードが接続されました",
+      "nodeConnectedSubtitle": "{os} ({hostname})",
+      "cpuLabel": "CPU",
+      "cpuValue": "{cores} コア",
+      "ramLabel": "RAM",
+      "ramValue": "{gb} GB",
+      "diskLabel": "ディスク",
+      "diskValue": "{gb} GB",
+      "confirmationCode": "確認コード",
+      "confirmationCodeNote": "ターミナルに表示されているコードと一致することをご確認ください。",
+      "macosDiskNote": "macOS でディスクアクセスを求めるポップアップが表示されたら、ヘッドレス動作のために「許可」をクリックしてください。",
+      "installingTitle": "Sovereign Stack をインストール中...",
+      "installingSubtitle": "数分かかる場合があります。このダイアログを閉じてもインストールはバックグラウンドで続行されます。",
+      "serverSummary": "{os} · {cores} CPU · {ram} GB RAM",
+      "readyTitle": "サーバーの準備が整いました!",
+      "readySummary": "{os} ({hostname}) · {cores} CPU · {ram} GB RAM",
+      "errorEnrollFailed": "エンロールメントトークンの作成に失敗しました",
+      "errorTokenFailed": "トークンの作成に失敗しました",
+      "errorFetchStatus": "ステータスの取得に失敗しました",
+      "errorTokenExpired": "エンロールメントトークンの有効期限が切れました。新しいトークンを生成してください。",
+      "errorTokenExpiredCountdown": "トークンの有効期限が切れました。新しいトークンを生成してください。",
+      "cancel": "キャンセル",
+      "close": "閉じる",
+      "generating": "生成中...",
+      "generateToken": "トークンを生成",
+      "openDashboard": "ダッシュボードを開く"
+    },
+    "activeServerDialogs": {
+      "tierNames": {
+        "cloud_platform_hobby": "Hobby",
+        "cloud_platform_pro": "Pro",
+        "shield_proxy_pro": "Shield Gateway",
+        "hobby": "Hobby",
+        "pro": "Pro",
+        "newPlan": "新しいプラン",
+        "currentPlan": "現在のプラン"
+      },
+      "tierCapacity": {
+        "cloud_platform_hobby": "ワークスペース 1 個",
+        "cloud_platform_pro": "ワークスペース 5 個",
+        "shield_proxy_pro": "プロキシのみ",
+        "hobby": "ワークスペース 1 個",
+        "pro": "ワークスペース 5 個"
+      },
+      "resize": {
+        "upgrading": "サーバーをアップグレード中",
+        "downgrading": "サーバーをダウングレード中",
+        "upgradingDots": "サーバーをアップグレードしています...",
+        "downgradingDots": "サーバーをダウングレードしています...",
+        "applyingConfig": "新しい構成を適用中...",
+        "verifyingHealth": "サーバーの正常性を確認中...",
+        "almostThere": "もうすぐ完了します...",
+        "elapsed": "経過時間 {seconds} 秒",
+        "remaining": " · 残り約 {seconds} 秒",
+        "takingLonger": " · 想定より時間がかかっています...",
+        "newPlanLabel": "新しいプラン",
+        "preservedNote": "サンドボックス・ファイル・設定はすべて保持されます",
+        "refreshPage": "ページを更新"
+      },
+      "vpsAuth": {
+        "passkeyTitle": "パスキー確認が必要です",
+        "authorizationTitle": "認可が必要です",
+        "passkeyDescription": "この {operation} をパスキーで確認してください。",
+        "standardDescription": "サーバーは保護されています。{operation} を行うには以下の手順に従ってください。",
+        "passkeyHelp": "下のボタンをクリックし、パスキー(Face ID / Touch ID / セキュリティキー)で確認してください。",
+        "warningPrefix": "警告:",
+        "warningRebuild": " 再構築するとサーバー上のすべてのデータが削除されます。",
+        "warningDelete": " この操作はサーバーを完全に破棄します。",
+        "cancel": "キャンセル",
+        "waitingForPasskey": "パスキーを待機中...",
+        "confirmWithPasskey": "パスキーで確認"
+      }
+    },
+    "statusOverlays": {
+      "errorTitle": "プロビジョニングに失敗しました",
+      "errorBody": "問題が発生しました。再度お試しください。",
+      "errorAction": "削除してやり直す",
+      "unlockingTitle": "ボリュームをアンロック中...",
+      "lockedTitle": "ボリュームがロックされています",
+      "unlockingBody": "パスキーを使ってボリュームを復号しています...",
+      "lockedBody": "暗号化されたボリュームをアンロックする必要があります。",
+      "passkeyFailed": "パスキーの認証に失敗しました",
+      "tapToUnlock": "パスキーをタップしてアンロック",
+      "pendingDeletionTitle": "サーバーは削除予定です",
+      "pendingDeletionBody": "サブスクリプションが終了しました。サーバーは 24 時間後に削除されます。",
+      "resubscribeNow": "今すぐ再購読",
+      "frozenTitle": "サーバーは一時停止中",
+      "frozenBody": "自動セキュリティシステムが異常な動作を検出したため、サーバーは一時的に停止されました。",
+      "frozenReasonLabel": "理由",
+      "dataSafeTitle": "データは安全です",
+      "dataSafeBody": "サーバーが停止している間も、ファイル・リポジトリ・設定はすべて保持されます。誤検知だと思われる場合は、サポートまでご連絡いただければ、確認のうえサーバーを復旧します。",
+      "contactSupport": "サポートに連絡",
+      "checkStatus": "ステータスを確認"
+    },
+    "auditLog": {
+      "title": "監査ログ",
+      "entries": "{count} 件",
+      "verifyIntegrity": "整合性を検証",
+      "chainVerified": "チェーン検証済み",
+      "chainVerifiedDesc": "{count} 件のエントリを検証しました。ハッシュチェーンは無傷です。",
+      "integrityCompromised": "整合性に問題があります",
+      "chainBroken": "エントリ #{at} でチェーンが破損: {reason}",
+      "noEvents": "監査イベントなし",
+      "events": {
+        "auth_success": "ログイン",
+        "auth_failure": "ログイン失敗",
+        "session_destroyed": "ログアウト",
+        "deploy": "デプロイ",
+        "git_push": "Gitプッシュ",
+        "luks_init": "ボリューム暗号化",
+        "luks_unlock": "ボリュームのロック解除"
+      }
+    },
+    "desktopTabBar": {
+      "manageGroupsTooltip": "グループを管理",
+      "newGroup": "新しいグループ",
+      "groupsHeading": "グループ",
+      "deleteGroupTitle": "{name} を削除"
+    },
+    "frameworkPicker": {
+      "categoriesAriaLabel": "フレームワークカテゴリ",
+      "categories": {
+        "frontend": "ウェブアプリ",
+        "backend": "API・サービス",
+        "data": "データ・ML",
+        "mobile": "モバイル",
+        "monorepo": "モノレポ"
+      },
+      "simpleChoices": {
+        "frontend": {
+          "title": "ウェブアプリ",
+          "description": "フルスタックのウェブアプリケーション",
+          "detail": "Next.js・Tailwind 設定済み"
+        },
+        "backend": {
+          "title": "API",
+          "description": "データを提供するバックエンド",
+          "detail": "Hono・TypeScript 設定済み"
+        }
+      }
+    },
+    "tabAddMenu": {
+      "manageTabs": "タブを管理",
+      "manageTabsTitle": "タブを管理",
+      "currentTabs": "現在のタブ",
+      "addSection": "追加",
+      "upgrade": "アップグレード"
+    },
+    "terminalDrawer": {
+      "title": "ターミナル",
+      "iframeTitle": "ターミナル",
+      "minimize": "ターミナルを最小化",
+      "close": "ターミナルを閉じる"
+    },
+    "permissionToast": {
+      "logs": "ログへのアクセス",
+      "env": "環境変数へのアクセス",
+      "db": "データベースへのアクセス",
+      "db_read": "データベース読み取り",
+      "db_write": "データベース書き込み",
+      "db_migrate": "データベースマイグレーション",
+      "db_full": "データベース全アクセス",
+      "git": "git プッシュ",
+      "deploy": "デプロイ",
+      "tool": "ツール利用",
+      "wallet_spend": "ウォレット支払い",
+      "vault_read": "ボールト読み取り",
+      "exec": "サンドボックス実行",
+      "fallback": "{gate} へのアクセス",
+      "describe": "エージェントが {kind} を要求しています。",
+      "describeWithTool": "エージェントが {kind} ({tool}) を要求しています。",
+      "thread": "スレッド {id}…",
+      "review": "確認",
+      "dismiss": "閉じる"
+    },
+    "createStack": {
+      "title": "新規スタックを作成",
+      "description": "Hetzner Cloud を利用したクラウド開発環境をデプロイします",
+      "stackName": "スタック名 (任意)",
+      "namePlaceholder": "my-awesome-project",
+      "nameHint": "スタックのわかりやすい名前。空欄の場合は自動生成されます。",
+      "webTerminalTitle": "Web ターミナルアクセス",
+      "webTerminalBody": "ブラウザから1クリックでサーバーへアクセス。SSH キーは VPS 内で <code>sudo setup-ssh-key</code> を使って後から追加できます",
+      "included": "含まれるもの:",
+      "feature1": "ワークスペース2つ (アップグレード可)",
+      "feature2": "Node.js 20 と npm プリインストール",
+      "feature3": "AI コーディングアシスタント (OpenCode)",
+      "feature4": "自動 SSL 証明書付き HTTPS",
+      "createServer": "スタックを作成",
+      "provisioning": "プロビジョニング中...",
+      "provisioningHint": "3〜4分ほどかかります。サーバーをプロビジョニングしています。",
+      "createFailed": "サーバーの作成に失敗しました"
+    },
+    "buildAttestation": {
+      "title": "ランタイム・ビルド証明",
+      "ariaLabel": "ランタイム・ビルド証明: {hash}",
+      "explainer": "サーバーは ping ごとに自身のエンフォーサーバイナリの sha256 を計算し、先頭 12 文字をここに刻印します。偽造不可能 — このサフィックスは、ランタイムの自己ハッシュロジックを含むコードでのみ生成できます。"
+    },
+    "gates": {
+      "logs": {
+        "label": "ログアクセス",
+        "description": "非マスクのアプリケーションログを閲覧",
+        "ttl": "5分"
+      },
+      "env": {
+        "label": "シークレット注入",
+        "description": "シークレットを注入したコマンドを1回だけ実行",
+        "ttl": "30秒",
+        "warning": "エージェントにシークレット注入の1回限りのアクセスを許可します。使用後すぐにゲートが閉じます。"
+      },
+      "db": {
+        "label": "データベースアクセス",
+        "description": "データベースへの一般的なアクセス",
+        "ttl": "10分"
+      },
+      "db_read": {
+        "label": "DB 読み取り",
+        "description": "読み取り専用クエリ (SELECT)",
+        "ttl": "10分"
+      },
+      "db_write": {
+        "label": "DB 書き込み",
+        "description": "書き込み操作 (INSERT/UPDATE/DELETE)",
+        "ttl": "5分",
+        "warning": "エージェントがアプリケーションデータを変更できるようになります。バックアップがあることを確認してください。"
+      },
+      "db_migrate": {
+        "label": "DB マイグレーション",
+        "description": "スキーママイグレーション (DDL) を実行",
+        "ttl": "5分",
+        "warning": "エージェントにスキーママイグレーション用の一時的な認証情報を付与します。各承認は1回限りの使用です。"
+      },
+      "db_full": {
+        "label": "DB フルアクセス",
+        "description": "オーナーロールでの無制限のデータベースアクセス",
+        "ttl": "5分",
+        "warning": "エージェントに DROP・TRUNCATE を含むデータベースオーナーの全認証情報を付与します。細心の注意を払って使用してください。"
+      },
+      "git": {
+        "label": "Git プッシュ",
+        "description": "リモートリポジトリへのコードプッシュ",
+        "ttl": "5分",
+        "warning": "エージェントがリモート git リポジトリにコードをプッシュできるようになります。各承認は5分で期限切れとなる1回限りのトークンを発行します。"
+      },
+      "deploy": {
+        "label": "デプロイ",
+        "description": "本番環境へのアプリケーションデプロイ",
+        "ttl": "5分",
+        "warning": "エージェントが手動承認なしでアプリケーションをデプロイできるようになります。各承認は5分で期限切れとなる1回限りのトークンを発行します。"
+      },
+      "request": {
+        "title": "エージェントリクエスト: {gate}",
+        "highRisk": "高リスク",
+        "elevatedRisk": "やや高",
+        "description": "AI エージェントが保護されたリソースへの一時的なアクセスを要求しています。",
+        "expiresAfter": "{ttl} 後に自動期限切れ",
+        "agentReason": "エージェントの理由",
+        "alwaysApproveExplainer": "「常に承認」はこのポップアップをスキップしますが、各リクエストで1回限りのトークンを発行します。永続的なアクセスはありません。",
+        "deny": "拒否",
+        "denyTooltip": "このリクエストを拒否",
+        "allowOnce": "1回だけ許可",
+        "allowOnceTooltip": "このリクエストを許可 ({ttl})",
+        "neverAllow": "常に拒否",
+        "neverAllowTooltip": "{scope} に対して常に拒否します。エージェントは確認せずスキップします。",
+        "alwaysApprove": "常に承認",
+        "alwaysApproveTooltip": "{scope} に対して自動承認します。設定で変更可能。",
+        "thisSandbox": "このサンドボックス",
+        "deniedToast": "{gate} を拒否しました",
+        "neverAllowToast": "{scope} に対して {gate} は常に拒否されます。エージェントは確認なしにスキップします。",
+        "alwaysApproveToast": "{scope} に対して {gate} を自動承認しました",
+        "grantedToast": "{gate} を許可しました"
+      },
+      "statusBar": {
+        "open": "オープン中のゲート:",
+        "revokeTooltip": "クリックして {gate} を取り消し"
+      }
+    },
+    "tabHome": {
+      "general": "一般",
+      "generalSubtitle": "サーバーの詳細とステータス",
+      "plan": "プラン",
+      "uptime": "稼働時間",
+      "since": "開始: {date}",
+      "ipAddress": "IP アドレス",
+      "region": "リージョン",
+      "platformVersion": "プラットフォームバージョン",
+      "platformVersionManifest": "(マニフェスト v{version})",
+      "highUsage": "高負荷",
+      "highUsageHint": "より多くのリソースが必要であればアップグレードをご検討ください。",
+      "billingTitle": "プラン",
+      "billingSubtitle": "現在のプランとアップグレードオプション",
+      "currentPlan": "現在のプラン",
+      "updateRecovery": "更新リカバリ",
+      "updateRecoverySubtitle": "更新前の状態にロールバック",
+      "updateRecoveryDescription": "更新前のスナップショットが利用可能です。最後の更新前の状態にサーバーを戻すことができます。",
+      "expires": "有効期限: {date}",
+      "rollingBack": "ロールバック中...",
+      "rollback": "更新前の状態にロールバック",
+      "aiTokenUsage": "AI トークン使用量",
+      "aiCurrentPeriod": "現在の課金期間",
+      "used": "使用済み",
+      "remaining": "残量",
+      "remainingTokens": "{value}M トークン",
+      "resetsIn": "リセット",
+      "dangerZone": "危険な操作",
+      "dangerSubtitle": "これらの操作は元に戻せません",
+      "rebuildServer": "サーバーをリビルド",
+      "deleteServer": "サーバーを削除",
+      "cannotRebuild": "{state} 中はリビルドできません",
+      "cannotDelete": "{state} 中は削除できません",
+      "deleteDialogTitle": "サーバーを削除しますか?",
+      "deleteDialogDescription": "サーバーとすべてのデータを完全に削除します。サブスクリプションは継続されます。",
+      "deleteWarning": "警告: シークレットは完全に復元不能になります。",
+      "cancel": "キャンセル",
+      "deleting": "削除中...",
+      "rebuildDialogTitle": "サーバーをリビルドしますか?",
+      "rebuildDialogDescription": "すべてを消去して新しいワークスペースを構築します。IP アドレスと DNS は維持されます。",
+      "rebuildWarning": "警告: ファイルとプロジェクトはすべて完全に削除されます。",
+      "rebuilding": "リビルド中...",
+      "rollbackDialogTitle": "更新前の状態にロールバックしますか?",
+      "rollbackDialogDescription": "最後のプラットフォーム更新前のスナップショットにサーバーを復元します。",
+      "rollbackWhatHappens": "何が起こるか: サーバーのシステムディスクが更新前の状態に復元されます。永続ストレージ上のプロジェクトファイルとデータベースは影響を受けません。更新以降のシステム設定変更は元に戻されます。",
+      "rollbackExpires": "このスナップショットの有効期限: {date}。",
+      "rollbackButton": "サーバーをロールバック",
+      "copiedToClipboard": "クリップボードにコピーしました",
+      "health": {
+        "ok": "正常",
+        "degraded": "劣化",
+        "failing": "失敗",
+        "unknown": "保留",
+        "tooltipOk": "前回のレポートでエージェントマニフェストの適用に成功しました。",
+        "tooltipDegraded": "前回のマニフェスト適用がロールバック、または部分適用となりました。サーバーは前の安定バージョンで動作中です。",
+        "tooltipFailing": "前回のマニフェスト適用が失敗しました。サーバーログをご確認ください。",
+        "tooltipUnknown": "サーバーはまだ報告していません。最初のハートビートを待機中です。"
+      },
+      "planDisplay": {
+        "hobbyLabel": "個人",
+        "hobbyCapacity": "ワークスペース1つ",
+        "proLabel": "プロ",
+        "proCapacity": "ワークスペース5つ",
+        "shieldGatewayLabel": "Shield Gateway",
+        "shieldGatewayCapacity": "プロキシのみ"
+      }
+    },
+    "tabGit": {
+      "headerRepository": "リポジトリ",
+      "headerGit": "Git",
+      "subtitleConnected": "リモートリポジトリに接続済みです。",
+      "subtitleDisconnected": "プロバイダーを接続して、コードのバックアップとバージョン管理を始めましょう。",
+      "selectSandboxTitle": "サンドボックスごとの Git 連携",
+      "selectSandboxHint": "各サンドボックスは独自のリポジトリ接続を持ちます。Git を設定するには、概要からサンドボックスを選択してください。",
+      "redirectNotice": "Git プロバイダー接続は <strong>Integrations</strong> コンテキストに移動しました。このサンドボックスのリポジトリ連携は以下で管理できます。",
+      "encryptedNote": "認証情報はエンドツーエンドで暗号化されます",
+      "connected": "接続済み",
+      "addProvider": "プロバイダーを追加",
+      "selectRepo": "リポジトリを選択",
+      "connecting": "リポジトリを接続中...",
+      "linkFailed": "リポジトリの連携に失敗しました",
+      "back": "戻る",
+      "deployInitiated": "デプロイを開始しました。AI アシスタントがサンドボックスをデプロイしています。",
+      "deployFailed": "デプロイに失敗しました: {message}",
+      "gitSyncInitiated": "Git 同期を開始しました。AI アシスタントがコードをプッシュしています。",
+      "gitSyncFailed": "Git 同期に失敗しました: {message}",
+      "passkeyFailed": "パスキー認証に失敗しました",
+      "passkeyRequired": "パスキー確認が必要です。もう一度お試しください。"
+    },
+    "tabEditor": {
+      "connecting": "接続中",
+      "connectionFailed": "接続に失敗しました",
+      "retry": "再試行",
+      "iframeTitle": "コードブラウザ"
+    },
+    "installingBanner": {
+      "title": "依存関係をインストール中",
+      "subtitle": "<code>npm install</code> 完了後にプレビューが利用可能になります。それまでの間にコードを編集できます。"
+    },
+    "preview": {
+      "manualConfigBinaryNotFound": "PATH 上にバイナリが見つかりません",
+      "manualConfigSpecMissing": "プレビューコマンドを検出できませんでした",
+      "manualConfigBinarySub": "dev コマンドを実行しようとしましたが、バイナリが見つかりませんでした。下の欄で編集するか、先にインストールを実行してください。",
+      "manualConfigSpecMissingSub": "このアプリの起動方法を自動検出できませんでした。実行するコマンドを指定してください。",
+      "manualPackageManager": "検出されたパッケージマネージャ: <pm>{pm}</pm>",
+      "startCommandLabel": "起動コマンド",
+      "startCommandHint": "ポートを参照するには <port>$PORT</port> を使用します。バイナリは PATH を通じて解決されます (<bin>node_modules/.bin/</bin> も含む)。",
+      "portLabel": "ポート",
+      "portHint": "dev サーバーがバインドするポート。Caddy がここにルーティングします。",
+      "startCommandRequired": "起動コマンドは必須です",
+      "portInvalid": "ポートは 65536 未満の正の整数である必要があります",
+      "saving": "保存中…",
+      "saveAndStart": "保存して起動",
+      "cancel": "キャンセル",
+      "networkError": "ネットワークエラー",
+      "installingHint": "依存関係をインストール中 — 完了するとプレビューが利用可能になります。",
+      "startFailed": "プレビューの起動に失敗: {reason}",
+      "rotateDevice": "デバイスを回転",
+      "refreshPreview": "プレビューを更新",
+      "emptySandbox": "このサンドボックスは空です",
+      "previewNotAvailable": "プレビューを利用できません",
+      "previewOutOfSync": "プレビューが同期できていません",
+      "previewAuthFailed": "プレビューの認証に失敗しました",
+      "frontendLabel": "フロントエンド",
+      "backendLabel": "バックエンド",
+      "companionBadge": "コンパニオン",
+      "installingShort": "インストール中…",
+      "viewPreview": "プレビューを表示",
+      "previewLabel": "プレビュー",
+      "resourceBlockedTitle": "メモリ不足",
+      "resourceBlockedSub": "このプレビューを起動するための空きメモリが不足しています。",
+      "resourceVpsHas": "VPSのRAMは {totalMB} MB です。",
+      "resourceFrameworkNeeds": "{framework} の起動にはピーク時 ~{peakMB} MB 必要です。",
+      "resourceAvailable": "現在 {availableMB} MB 利用可能です。",
+      "resourceOtherPreviews": "他に {count} 個のプレビューが実行中です。",
+      "resourceUpgradeHobby": "Proプラン（8 GB）にアップグレードすると、より大きなプロジェクトや複数のプレビューに対応できます。",
+      "resourceUpgradePro": "より多くのリソースが必要ですか？エンタープライズプランについてお問い合わせください。",
+      "resourceUpgradeCta": "Proにアップグレード",
+      "resourceContactCta": "お問い合わせ",
+      "resourceRetry": "リトライ",
+      "resourceUsed": "使用中: {mb} MB",
+      "resourceNeeded": "必要: ~{mb} MB",
+      "resourceTotal": "合計: {mb} MB",
+      "editConfigHeadline": "プレビュー設定を編集",
+      "editConfigSubhead": "起動コマンド、ポート、環境変数、モードを変更できます。",
+      "modeLabel": "モード",
+      "modeHot": "Hot（HMR）",
+      "modeWarm": "Warm（本番ビルド）",
+      "modeHint": "Hotは開発コマンドをHMR付きで実行します。Warmは本番ビルドコマンドを実行します。",
+      "envLabel": "環境変数",
+      "envHint": "起動コマンドの前にexportされるキー・値ペア。$PORTでポートを参照できます。",
+      "addVariable": "+ 変数を追加",
+      "advancedLabel": "詳細設定",
+      "prodStartLabel": "本番コマンド",
+      "prodStartHint": "Warmモードで使用されます。空の場合は起動コマンドにフォールバックします。",
+      "runtimeLabel": "ランタイム",
+      "prodEnvLabel": "本番環境変数",
+      "prodEnvHint": "Warmモードでのみ、ベース環境変数の上に適用されます。",
+      "saveAndRestart": "保存して再起動",
+      "editConfig": "設定を編集",
+      "envKeyPlaceholder": "KEY",
+      "envValuePlaceholder": "value",
+      "loadingConfig": "設定を読み込み中…",
+      "devCommandPlaceholder": "npm run dev",
+      "startCommandPlaceholder": "npm start",
+      "companionStartFailed": "コンパニオンの起動に失敗しました",
+      "companionToggleFailed": "コンパニオンの切り替えに失敗しました",
+      "restart": "再起動",
+      "proxyPathPlaceholder": "/api",
+      "loadingApp": "アプリを読み込み中…",
+      "serverRunning": "サーバー稼働中",
+      "portHeldMessage": "プレビューポートがプラットフォームで追跡されていないプロセスに占有されています。コードに問題はありません — 再起動をクリックして自動修復してください。",
+      "restartPreview": "プレビューを再起動",
+      "authorizing": "認証中…"
+    },
+    "apiDocs": {
+      "scanning": "API ドキュメントをスキャン中...",
+      "scanningHint": "一般的な OpenAPI スペックのパスを確認しています",
+      "endpoints": "{count} エンドポイント",
+      "refreshSpec": "スペックを更新",
+      "base": "ベース",
+      "models": "モデル",
+      "baseUrl": "ベース URL",
+      "startServerHint": "dev サーバーを起動すると、API ドキュメントを自動検出します。",
+      "healing": "AI アシスタントが OpenAPI スペックを追加中...",
+      "healingAttempts": "{max} 回中 {current} 回目。スペックが追加されるとサンドボックスが自動的に再起動します。",
+      "exhausted": "自動検出では OpenAPI スペックを追加できませんでした。",
+      "exhaustedHint": "ここにインタラクティブな API ドキュメントを表示するには、手動で追加してください:",
+      "noSpec": "OpenAPI スペックが検出されませんでした。追加するとここでインタラクティブな API ドキュメントを利用できます。",
+      "install": "インストール: <pkg/>",
+      "installLabel": "インストール:",
+      "manualSetupHint": "OpenAPI/Swagger スペックエンドポイントをサンドボックスに追加してください。一般的なパス:",
+      "openApiSpec": "OpenAPI 仕様",
+      "parameters": "パラメータ",
+      "name": "名前",
+      "in": "場所",
+      "type": "型",
+      "description": "説明",
+      "requestBody": "リクエストボディ",
+      "required": "必須",
+      "responses": "レスポンス",
+      "exampleLabel": "例: {name}",
+      "deprecated": "非推奨",
+      "model": "モデル",
+      "properties": "{count} プロパティ",
+      "backend": "バックエンド"
+    },
+    "vault": {
+      "selectProject": "ナレッジボルトを表示するプロジェクトを選択してください",
+      "loadingIndex": "ボルトインデックスを読み込み中...",
+      "authRequired": "ボルトを利用するにはアクティブなセッションが必要です。",
+      "authRefreshHint": "ページを再読み込みして再認証してください。",
+      "loadFailed": "ボルトを読み込めませんでした。",
+      "loadFailedHint": "このサーバーではまだボルトサービスが利用できない可能性があります。",
+      "retry": "再試行",
+      "title": "ナレッジボルト",
+      "indexHint": "プロジェクトの Markdown ファイルをインデックス化して、Wiki リンク・グラフビュー・スコープ検索を有効にします。",
+      "initialize": "ボルトを初期化",
+      "searchPlaceholder": "ノートを検索...",
+      "newNoteTooltip": "新規ノート (Cmd+N)",
+      "rebuildIndexTooltip": "インデックスを再構築",
+      "noteCount": "{count} 件のノート",
+      "noNotesYet": "ノートはまだありません",
+      "createFirstNote": "最初のノートを作成",
+      "noResultsFor": "「{query}」に一致する結果はありません",
+      "saving": "保存中...",
+      "saved": "保存しました",
+      "saveFailed": "保存に失敗しました",
+      "unsaved": "未保存",
+      "wordCount": "{count} 語",
+      "previewTooltip": "プレビュー (Cmd+E)",
+      "editTooltip": "編集 (Cmd+E)",
+      "renameTooltip": "リネーム / 移動",
+      "deleteNoteTooltip": "ノートを削除",
+      "writingPlaceholder": "書き始めましょう...",
+      "selectNoteToStart": "ノートを選択して開始してください",
+      "vaultEmpty": "ボルトは空です",
+      "browseHint": "ファイルツリーを参照するか検索してノートを見つけてください。",
+      "createFirstHint": "最初のノートを作成してナレッジベースを構築しましょう。",
+      "newNote": "新規ノート",
+      "kbdNew": "新規",
+      "kbdEdit": "編集",
+      "kbdSave": "保存",
+      "newNoteTitle": "新規ノート",
+      "newNoteDescription": "新しいノートのパスを入力してください。スラッシュでフォルダを作成できます。",
+      "notePath": "ノートのパス",
+      "notePathPlaceholder": "例: architecture/overview または meeting-notes",
+      "notePathHintPrefix": ".md 拡張子は自動で追加されます。フォルダで整理するには",
+      "notePathHintSuffix": "を使用してください。",
+      "untitled": "無題",
+      "inboxQuick": "inbox/quick-note",
+      "cancel": "キャンセル",
+      "create": "作成",
+      "deleteNoteTitle": "ノートを削除",
+      "deleteNoteConfirmPrefix": "次のノートを削除してもよろしいですか:",
+      "deleteNoteConfirmSuffix": "?",
+      "thisNote": "このノート",
+      "deleteNoteWarning": "ファイルがディスクから削除され、元に戻すことはできません。",
+      "delete": "削除",
+      "renameNoteTitle": "ノートをリネーム / 移動",
+      "renameNoteDescription": "パスを変更してノートをリネームまたは移動します。Wiki リンク用に旧名はエイリアスとして保持されます。",
+      "newPath": "新しいパス",
+      "renameHint": ".md 拡張子は自動で追加されます。",
+      "rename": "リネーム",
+      "createNoteFailed": "ノートの作成に失敗しました",
+      "deleteNoteFailed": "ノートの削除に失敗しました",
+      "renameNoteFailed": "ノートのリネームに失敗しました",
+      "backlinks": {
+        "linkedMentions": "リンクされたメンション ({count})",
+        "restrictedSuffix": "+ {count} 件の制限あり",
+        "someRestricted": "制限された他のノートがこのノートにリンクしています。",
+        "severalRestricted": "制限された複数のノートがこのノートにリンクしています。",
+        "manyRestricted": "制限された多くのノートがこのノートにリンクしています。"
+      },
+      "renderer": {
+        "properties": "プロパティ"
+      },
+      "graph": {
+        "refresh": "グラフを更新",
+        "zoomIn": "拡大",
+        "zoomOut": "縮小",
+        "truncated": "省略",
+        "loading": "読み込み中...",
+        "stats": "ノード {nodes} 件、エッジ {edges} 件",
+        "restrictedSuffix": " | 制限 {count} 件",
+        "restrictedNode": "制限あり"
+      },
+      "scopes": {
+        "title": "ボルトスコープ",
+        "subtitle": "エージェントとコラボレーターが見られる範囲を制御するサーバーサイドプロジェクションを定義します。",
+        "newScope": "新規スコープ",
+        "loadingScopes": "スコープを読み込み中...",
+        "createTitle": "スコープを作成",
+        "createDescription": "このボルトでエージェントとコラボレーターが見られる範囲を制御するルールを定義します。",
+        "name": "名前",
+        "namePlaceholder": "agent-research-scope",
+        "description": "説明",
+        "descriptionPlaceholder": "このスコープの用途...",
+        "defaultAction": "デフォルトの動作",
+        "defaultExclude": "除外 (デフォルトで拒否)",
+        "defaultInclude": "含む (デフォルトで許可)",
+        "boundaryDisclosure": "境界の開示",
+        "agentDefault": "エージェントのデフォルト",
+        "rules": "ルール",
+        "addRule": "+ ルールを追加",
+        "rulesHint": "上から下に評価され、最後に一致したものが優先されます。",
+        "noRulesYet": "ルールはまだありません。ルールを追加して開始してください。",
+        "ruleTypeFolderGlob": "フォルダグロブ",
+        "ruleTypeTag": "タグ",
+        "ruleTypeFrontmatter": "フロントマター",
+        "ruleTypeNotePath": "ノートパス",
+        "folderGlobPlaceholder": "research/**",
+        "tagPlaceholder": "project/backend",
+        "notePathPlaceholder": "specific-note.md",
+        "frontmatterKeyPlaceholder": "key",
+        "frontmatterValuePlaceholder": "value",
+        "opExists": "存在する",
+        "opEq": "=",
+        "opNeq": "!=",
+        "actionInclude": "含む",
+        "actionExclude": "除外",
+        "cancel": "キャンセル",
+        "createScope": "スコープを作成",
+        "deleteConfirm": "このスコープを削除しますか? 使用中のすべてのボルトセッションが無効になります。",
+        "createFailed": "スコープの作成に失敗しました",
+        "activeScopes": "アクティブなスコープ",
+        "noScopesDefined": "スコープが定義されていません",
+        "noScopesHint": "スコープを作成してエージェントとコラボレーターが見られる範囲を制御してください。",
+        "agentDefaultBadge": "エージェントデフォルト",
+        "boundaryDisclosureBadge": "境界の開示",
+        "rulesCount": "{count, plural, =1 {ルール # 件} other {ルール # 件}}",
+        "version": "v{version}",
+        "rulesLabel": "ルール",
+        "defaultPrefix": "デフォルト: {default}",
+        "noRulesDefault": "ルールが定義されていません。デフォルトの動作: {default} を使用しています。",
+        "delete": "削除",
+        "settingsTitle": "ボルトスコープ",
+        "settingsSubtitle": "ナレッジボルトでエージェントとコラボレーターが見られる範囲を制御します。スコープはサーバーサイドプロジェクションを定義し、エージェントは範囲外のデータには決してアクセスしません。",
+        "settingsLoading": "スコープを読み込み中...",
+        "settingsNoScopes": "スコープが定義されていません。Vault > Scopes タブでスコープを作成してエージェントのナレッジアクセスを制御してください。",
+        "settingsBoundaryBadge": "境界",
+        "settingsScopeMeta": "v{version} · ルール {count} 件 · デフォルト: {default}",
+        "settingsManageHintPrefix": "スコープの管理は",
+        "settingsManageHintLink": "Vault > Scopes",
+        "settingsManageHintSuffix": "タブで行います。変更はアクティブなボルトセッションを直ちに無効化します。"
+      },
+      "share": {
+        "title": "ノートを共有",
+        "descriptionPrefix": "次のノートの共有リンクを作成:",
+        "policyLabel": "共有ポリシー",
+        "policyInternal": "内部のみ",
+        "policyExternal": "外部",
+        "expiresLabel": "有効期限",
+        "expiry1h": "1 時間",
+        "expiry24h": "24 時間",
+        "expiry7d": "7 日間",
+        "expiry30d": "30 日間",
+        "expiryNever": "無期限",
+        "maxUsesLabel": "最大使用回数",
+        "maxUsesPlaceholder": "無制限",
+        "maxUsesHint": "空欄で無制限になります。",
+        "linkCreated": "共有リンクを作成しました",
+        "cancel": "キャンセル",
+        "createLink": "リンクを作成",
+        "done": "完了",
+        "copied": "コピー済み",
+        "copyLink": "リンクをコピー",
+        "createFailed": "リンクの作成に失敗しました"
+      }
+    },
+    "security": {
+      "permissionAsk": "毎回確認",
+      "permissionAllowAlways": "常に許可",
+      "permissionNever": "常に拒否",
+      "permissionInherit": "ゲートから継承",
+      "permissionAllowSession": "自動承認 (セッション)",
+      "inheritedSuffix": "(継承)",
+      "resetToDefault": "デフォルトにリセット",
+      "agentPermissionsTitle": "エージェント権限",
+      "selectSandbox": "サンドボックスを選択してエージェント権限を設定してください。",
+      "agentPermissionsSubtitle": "AI エージェントが実行できる操作を制御します。",
+      "oneTimeActions": "ワンタイム操作",
+      "oneTimeActionsHint": "リクエストごとに使い捨てトークンが生成されます。チャットの「アクション」メニューから承認します。",
+      "writeAccess": "書き込みアクセス",
+      "writeAccessHint": "保護されたリソースへの時間制限付き書き込みアクセス。",
+      "readAccessTitle": "読み取りアクセス",
+      "readAccessSubtitle": "AI エージェントが読み取れる対象を制御します。",
+      "timeLimitedAccess": "時間制限付きアクセス",
+      "timeLimitedAccessHint": "一時的なウィンドウ (30 秒〜10 分) を開きます。エージェントの要求時にポップアップで承認します。",
+      "connectedToolPermissionsTitle": "接続済みツールの権限",
+      "connectedToolPermissionsSubtitle": "接続された統合ごとのツール権限。ゲートレベルのデフォルトを個別ツールで上書きできます。",
+      "providerNeon": "Neon Database",
+      "providerSupabase": "Supabase",
+      "providerStripe": "Stripe API",
+      "providerVercel": "Vercel",
+      "providerGithub": "GitHub",
+      "providerTurso": "Turso",
+      "providerPlanetscale": "PlanetScale",
+      "capabilityDatabaseRead": "データベース読み取り",
+      "capabilityDatabaseWrite": "データベース書き込み",
+      "capabilityDatabaseSchema": "データベーススキーマ",
+      "capabilityExecutionShell": "実行シェル",
+      "capabilityNetworkEgress": "ネットワーク送信",
+      "capabilityDeploymentTrigger": "デプロイトリガー",
+      "capabilitySecretsRead": "シークレット読み取り",
+      "capabilitySecretsWrite": "シークレット書き込み",
+      "capabilityGitRead": "Git 読み取り",
+      "capabilityGitWrite": "Git 書き込み",
+      "capabilityFilesystemRead": "ファイル読み取り",
+      "capabilityFilesystemWrite": "ファイル書き込み",
+      "capabilityExternalRead": "外部読み取り",
+      "capabilityExternalWrite": "外部書き込み",
+      "capabilityExternalAdmin": "外部管理",
+      "defaultBadge": "デフォルト",
+      "quarantinedUnhealthy": "{count} 件の異常",
+      "quarantinedDisabled": "{count} 件のエージェント無効",
+      "quarantinedSuffix": "{summary} の接続 {count} 件 — 統合で確認してください",
+      "gateStatusTitle": "ゲートステータス",
+      "gateOpenBadge": "{count} 件オープン",
+      "openLabel": "オープン",
+      "lockedLabel": "ロック中",
+      "revoke": "取り消し",
+      "encryptionFingerprintTitle": "暗号化フィンガープリント",
+      "encryptionFingerprintHint": "シークレットを暗号化する公開鍵を識別します。予期しない変更は鍵のローテーションや侵害を示している可能性があります。",
+      "copyFingerprint": "フィンガープリントをコピー",
+      "dangerZoneTitle": "危険ゾーン",
+      "deleteSandboxTitle": "このサンドボックスを削除",
+      "deleteSandboxBodyPrefix": "サンドボックスを削除すると元に戻せません。これにより",
+      "deleteSandboxBodySuffix": "ディレクトリとそのすべての内容が永久に削除されます。",
+      "deleteSandboxButton": "このサンドボックスを削除",
+      "deleteConfirmTypePrefix": "確認のため、以下に",
+      "deleteConfirmTypeSuffix": "と入力してください:",
+      "deleteConfirmPlaceholder": "確認のためサンドボックス名を入力",
+      "deleteFailed": "サンドボックスの削除に失敗しました",
+      "cancel": "キャンセル",
+      "deleting": "削除中...",
+      "deletePermanently": "完全に削除"
+    },
+    "observability": {
+      "activeDevServers": "アクティブな開発サーバー",
+      "noActiveDevServers": "アクティブな開発サーバーはありません",
+      "noActiveDevServersHint": "ワークスペースからプレビューを開始するとここにログが表示されます",
+      "idle": "アイドル",
+      "phase": {
+        "ready": "準備完了",
+        "installing": "インストール中",
+        "starting": "起動中",
+        "error": "エラー",
+        "crashed": "クラッシュ",
+        "idle": "アイドル"
+      },
+      "autoHealing": "自動修復中",
+      "healFailed": "修復失敗",
+      "noLogYet": "ログ出力はまだありません",
+      "noDeployment": "デプロイが見つかりません",
+      "noDeploymentHint": "ワークスペースからサンドボックスをデプロイすると本番ステータスが表示されます",
+      "deployed": "デプロイ済み",
+      "application": "アプリケーション",
+      "domain": "ドメイン",
+      "directory": "ディレクトリ",
+      "applicationLogs": "アプリケーションログ",
+      "logsComingSoon": "本番ログのストリーミングは近日提供予定",
+      "logsHint": "ライブログにはターミナルを使用してください",
+      "connected": "接続済み",
+      "disconnected": "切断",
+      "lastSync": "最終同期: {time}",
+      "cpu": "CPU",
+      "memory": "メモリ",
+      "activeSessions": "アクティブセッション",
+      "noActiveSessions": "アクティブな CLI セッションはありません",
+      "services": "サービス",
+      "serviceTerminal": "ターミナル",
+      "serviceSsh": "SSH",
+      "serviceRealtime": "リアルタイム WS",
+      "running": "稼働中",
+      "stopped": "停止中",
+      "zeroclawTitle": "ZeroClaw",
+      "zeroclawTagline": "Rust ネイティブ",
+      "refresh": "更新",
+      "active": "アクティブ",
+      "offline": "オフライン",
+      "watchdogUnreachable": "watchdog サービスに到達できませんでした",
+      "dedicatedSubprocess": "専用サブプロセス",
+      "perProjectIsolate": "プロジェクト別アイソレート",
+      "memoryUnit": "MB",
+      "memoryLabel": "メモリ",
+      "uptimeLabel": "稼働時間",
+      "coldStartUnit": "ms",
+      "coldStartLabel": "コールドスタート",
+      "runtimeUnavailable": "ランタイムサービスは利用できません",
+      "cliCredentialsTitle": "CLI 認証情報",
+      "configured": "設定済み",
+      "notConfigured": "未設定",
+      "quickActions": "クイック操作",
+      "restartServices": "サービスを再起動",
+      "restartServicesHint": "agent-bridge、ターミナルプロキシ、関連サービスを再起動します",
+      "restartConfirm": "enforcer と watchdog サービスを再起動しますか? アクティブセッションが一時的に中断される場合があります。",
+      "restartSuccess": "サービスを再起動しました",
+      "restartPartial": "一部のサービスの再起動に失敗しました",
+      "restartFailed": "サービスの再起動に失敗しました",
+      "troubleshooting": "トラブルシューティング",
+      "gatewayNotRunningTitle": "ゲートウェイが稼働していません",
+      "gatewayNotRunningFix": "上記の「サービスを再起動」をお試しください。ゲートウェイが起動しない場合は、設定 → Claw → プロバイダーで API キーが設定されているか確認してください。",
+      "excessiveRestartsTitle": "過剰な再起動を検出",
+      "excessiveRestartsFix": "ゲートウェイがクラッシュループしています。Claw のコアファイルに構文エラーがないか確認するか、API キーを削除して再追加してみてください。",
+      "watchdogUnreachableTitle": "watchdog に到達できません",
+      "watchdogUnreachableFix": "watchdog サービスがダウンしている可能性があります。「サービスを再起動」を試してください。それでも失敗する場合、設定 → 危険ゾーンからフルリブートが必要かもしれません。",
+      "allOperational": "すべてのシステムは正常に動作しています"
+    },
+    "connectionGroup": {
+      "routeRoleDbDefault": "データベースのデフォルト",
+      "routeRoleDeployDefault": "デプロイのデフォルト",
+      "routeRoleGitDefault": "Git のデフォルト",
+      "deleteWarningStopDb": "DATABASE_URL の注入を停止",
+      "deleteWarningRemoveDb": "DB アクションを削除",
+      "deleteWarningRemoveAgentDb": "データベースツールへのエージェントアクセスを削除",
+      "deleteWarningStopDeploy": "デプロイトリガーを停止",
+      "deleteWarningRemoveDeploy": "デプロイアクションを削除",
+      "deleteWarningRemoveAgentDeploy": "デプロイツールへのエージェントアクセスを削除",
+      "deleteWarningStopGit": "Git 認証情報の注入を停止",
+      "deleteWarningRemoveGit": "Git アクションを削除",
+      "deleteWarningRemoveAgentGit": "Git ツールへのエージェントアクセスを削除",
+      "deleteWarningGenericConnections": "このグループのすべての接続を削除",
+      "deleteWarningGenericTools": "ツールへのエージェントアクセスを削除",
+      "providerCustom": "カスタム MCP",
+      "transportSse": "SSE",
+      "transportStreamableHttp": "Streamable HTTP",
+      "transportStdio": "stdio",
+      "groupUpdated": "グループを更新しました",
+      "updateGroupFailed": "グループの更新に失敗しました",
+      "groupDeleted": "グループを削除しました",
+      "deleteGroupFailed": "グループの削除に失敗しました",
+      "defaultUpdated": "デフォルト接続を更新しました",
+      "setDefaultFailed": "デフォルトの設定に失敗しました",
+      "agentExposureFailed": "エージェント公開設定の更新に失敗しました",
+      "connectionRemoved": "接続を削除しました",
+      "removeConnectionFailed": "接続の削除に失敗しました",
+      "mcpAdded": "MCP 接続を追加しました",
+      "addConnectionFailed": "接続の追加に失敗しました",
+      "discoveryNotAvailable": "ディスカバリーはまだ利用できません",
+      "discoverySuccess": "接続を確認しました — ツールはサーバー上のエージェントによって検出されます",
+      "discoveryFailed": "ディスカバリーに失敗しました",
+      "editName": "クリックして名前を編集",
+      "editGroup": "グループを編集",
+      "deleteGroup": "グループを削除",
+      "noConnectionsConfigured": "接続はまだ設定されていません。",
+      "connectionCount": "{count, plural, =1 {接続 # 件} other {接続 # 件}}",
+      "noConnectionsYet": "接続はまだありません。",
+      "addToStart": "接続を追加して開始してください。",
+      "tools": "ツール",
+      "discoverTools": "ツールを検出",
+      "addConnection": "接続を追加",
+      "deleteRoleGroupTitle": "ロールグループを削除",
+      "deleteRoleGroupSubtitle": "このグループは {role} です。",
+      "roleGroupFallback": "ロールグループ",
+      "deletingWill": "削除すると以下が実行されます:",
+      "cancel": "キャンセル",
+      "delete": "削除",
+      "default": "デフォルト",
+      "setAsDefault": "デフォルトに設定",
+      "changeRepo": "リポジトリを変更",
+      "selectRepo": "リポジトリを選択",
+      "hideTools": "ツールを非表示",
+      "viewTools": "ツールを表示",
+      "remove": "削除",
+      "searchRepos": "リポジトリを検索...",
+      "noReposFound": "リポジトリが見つかりません",
+      "repositoryLinked": "リポジトリをリンクしました",
+      "repositoryLinkFailed": "リポジトリのリンクに失敗しました",
+      "whatToConnect": "何を接続しますか?",
+      "customMcpServer": "カスタム MCP サーバー",
+      "back": "戻る",
+      "name": "名前",
+      "namePlaceholder": "My MCP Server",
+      "url": "URL",
+      "urlPlaceholder": "https://mcp.example.com/sse",
+      "transport": "トランスポート",
+      "authToken": "認証トークン",
+      "authTokenOptional": "(任意)",
+      "authTokenPlaceholder": "Bearer トークンまたは API キー",
+      "connect": "接続"
+    },
+    "customDomain": {
+      "title": "カスタムドメイン",
+      "loading": "読み込み中…",
+      "sovereignNotice": "カスタムドメインはまだソブリンモードでは対応していません。LUKS キーは現在のオリジンに紐付いており、複数オリジンに対応するには新しい LUKS スロットの追加が必要で、これは将来のリリースで予定されています。",
+      "statusPendingValidation": "DNS 検証待ち",
+      "statusValidating": "DNS を検証中…",
+      "statusIssuingCert": "TLS 証明書を発行中…",
+      "statusActive": "アクティブ",
+      "statusValidationFailed": "DNS 検証に失敗しました",
+      "statusCertFailed": "証明書の発行に失敗しました",
+      "statusSuspended": "一時停止中",
+      "activeNotice": "アクティブ — VPS は https://{hostname} で応答します",
+      "remove": "削除",
+      "removeConfirm": "このカスタムドメインを削除しますか? VPS は直ちにそのドメインでの応答を停止します。",
+      "passkeyNotice": "セキュリティ上、カスタムドメインは独立したオリジンとして扱われます。デフォルト URL ですでにパスキーを登録していても、初めて https://{hostname} にアクセスする際にパスキーを登録する必要があります。両方の URL は引き続き利用できます。",
+      "dnsVerification": "DNS 検証",
+      "dnsVerificationHint": "DNS プロバイダーで {hostname} に次の {type} レコードを追加してください:",
+      "dnsLabelName": "Name",
+      "dnsLabelValue": "Value",
+      "checkStatusNow": "今すぐステータスを確認",
+      "cancel": "キャンセル",
+      "intro": "独自のドメインをこの VPS に接続します。Cloudflare が DNS 検証と TLS 証明書の発行を自動で行います。通常は数分かかります。",
+      "yourDomain": "ご使用のドメイン",
+      "domainPlaceholder": "app.acme.com",
+      "termsAccept": "私はこのドメインを所有または管理しており、Ellul または第三者になりすますために使用しないことに同意します。",
+      "addDomain": "ドメインを追加",
+      "requestFailed": "リクエストに失敗しました"
+    },
+    "notificationSettings": {
+      "title": "プッシュ通知",
+      "disableAll": "すべて無効化",
+      "enableAll": "すべて有効化",
+      "categories": {
+        "gateRequest": "ゲートリクエスト",
+        "gateRequestDesc": "エージェントがデプロイ・プッシュ・データアクセスの権限を要求しています",
+        "cliPrompt": "エージェントの質問",
+        "cliPromptDesc": "エージェントが入力を待機しています",
+        "taskComplete": "タスク完了",
+        "taskCompleteDesc": "エージェントがタスクを完了しました",
+        "taskError": "タスクエラー",
+        "taskErrorDesc": "エージェントが問題に遭遇しました",
+        "serverStatus": "サーバーステータス",
+        "serverStatusDesc": "サーバーの起動・停止・休止状態",
+        "deployStatus": "デプロイ",
+        "deployStatusDesc": "デプロイ設定の変更"
+      }
+    },
+    "languagePicker": {
+      "ariaLabel": "言語",
+      "selectLanguage": "言語を選択",
+      "currentLanguage": "現在の言語: {language}"
+    },
+    "desktopHeader": {
+      "platformSettings": "プラットフォーム設定",
+      "online": "オンライン",
+      "offline": "オフライン"
+    },
+    "appSelector": {
+      "noProjects": "プロジェクトなし",
+      "selectScope": "スコープを選択",
+      "monorepoRoot": "モノレポ"
+    },
+    "workspaceContent": {
+      "files": "ファイル",
+      "changes": "変更",
+      "search": "検索",
+      "refresh": "更新"
+    },
+    "contextContent": {
+      "noSandbox": "サンドボックスがありません",
+      "createSandboxHint": "概要画面からサンドボックスを作成してデータベースのプロビジョニングを開始しましょう。"
+    },
+    "mobileDashboard": {
+      "governanceTier": "ガバナンスティア",
+      "governanceHint": "シークレットとセキュリティ管理 — アップグレードでワークスペース、デプロイ、プレビューが利用可能",
+      "upgrade": "アップグレード",
+      "establishingSession": "セキュアセッションを確立中",
+      "verifyingCredentials": "認証情報を検証中",
+      "passkeyAuthMessage": "続行するにはパスキーで認証してください。",
+      "groups": {
+        "created": "「{name}」グループを作成しました",
+        "createFailed": "グループの作成に失敗しました",
+        "deleted": "グループを削除しました",
+        "deleteFailed": "グループの削除に失敗しました"
+      }
+    },
+    "mobileBottomNav": {
+      "groups": "グループ",
+      "newGroup": "新規グループ"
+    },
+    "chatGrid": {
+      "title": "チャット",
+      "emptyTitle": "まだチャットはありません",
+      "emptyHint": "チャットを開始するとここに表示されます。",
+      "lastActive": "最終アクティブ {time}",
+      "removeFromGrid": "グリッドから削除",
+      "addThread": "スレッドを追加"
+    },
+    "clawChannels": {
+      "title": "チャンネル",
+      "subtitle": "エージェントへの受信チャンネルを設定",
+      "subtitleConsole": "メッセージングプラットフォームを ZeroClaw ランタイムに接続します。チャンネルは完全に分離された状態で同時に動作します。",
+      "addChannel": "チャンネルを追加",
+      "noChannels": "チャンネルが設定されていません",
+      "noChannelsHint": "チャンネルを追加して、エージェントがメッセージを送受信できるようにします。",
+      "saved": "保存しました",
+      "saveFailed": "保存に失敗しました",
+      "saving": "保存中...",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "delete": "削除",
+      "deleteChannelTitle": "チャンネルを削除しますか?",
+      "deleteChannelDesc": "このチャンネルと関連する認証情報を削除します。エージェントはこのチャンネルからメッセージを受信しなくなります。",
+      "removing": "削除中...",
+      "remove": "削除",
+      "channelType": "チャンネルの種類",
+      "label": "ラベル",
+      "connected": "接続済み",
+      "notConfigured": "未設定",
+      "viewSetupGuide": "セットアップガイドを表示",
+      "telegramName": "Telegram",
+      "telegramDescription": "grammÿ 経由の Bot API。グループに対応。",
+      "telegramBotTokenLabel": "Bot トークン",
+      "telegramBotTokenHelp": "Telegram の @BotFather で Bot を作成します。",
+      "discordName": "Discord",
+      "discordDescription": "Discord Bot API + Gateway。サーバー、チャンネル、DM に対応。",
+      "discordTokenLabel": "Bot トークン",
+      "discordTokenPlaceholder": "Discord Bot のトークン",
+      "discordTokenHelp": "Discord Developer Portal から Bot トークンを取得します。Message Content と Server Members の Intent を有効化してください。",
+      "whatsappConnected": "WhatsApp に接続しました!",
+      "whatsappPairingHint": "WhatsApp は QR コードによるペアリングを使用します。下のボタンで QR コードを生成し、スマートフォンでスキャンしてください。",
+      "startPairing": "ペアリングを開始",
+      "retry": "再試行"
+    },
+    "clawCoreFiles": {
+      "title": "コアファイル",
+      "subtitle": "ペルソナ・アイデンティティ・ツールのガイダンスを起動時に注入します。",
+      "refresh": "更新",
+      "noFiles": "ワークスペースファイルが見つかりません",
+      "noFilesHint": "アイソレートが初期化されると、ZeroClaw ランタイムのアイデンティティファイルがここに表示されます。",
+      "saved": "保存しました",
+      "edit": "編集",
+      "cancel": "キャンセル",
+      "save": "保存",
+      "today": "今日",
+      "oneDayAgo": "1日前",
+      "daysAgo": "{count}日前"
+    },
+    "serverSettings": {
+      "domainsTitle": "ドメイン",
+      "domainsSubtitle": "カスタムドメインと SSL",
+      "modalTitle": "プラットフォーム設定",
+      "tabs": {
+        "general": "一般",
+        "appearance": "表示",
+        "domains": "ドメイン",
+        "billing": "請求",
+        "context": "コンテキスト"
+      },
+      "product": "プロダクト",
+      "productCloudSandbox": "クラウドサンドボックス - セキュアな AI 開発環境",
+      "productCloudPlatform": "クラウドプラットフォーム - フルスタック開発・ホスティング",
+      "productShieldProxy": "Shield プロキシ - ローカルエージェントのセキュリティファイアウォール",
+      "desktopLayout": "デスクトップレイアウト",
+      "desktopLayoutHint": "大画面でのワークスペースの配置",
+      "modeFocus": "フォーカス",
+      "modeFocusDesc": "サイドバー内蔵の全幅タブ",
+      "modeStudio": "スタジオ",
+      "modeStudioDesc": "チャットとプレビューを並べて表示",
+      "language": "言語",
+      "languageHint": "コンソール、チャット、コードブラウザ、ドキュメントの表示言語"
+    },
+    "tlsCard": {
+      "title": "デプロイメントモデル",
+      "subtitle": "サーバーをインターネットに接続する方法を選択します。すべてのプランで両方のオプションが利用可能です。",
+      "active": "有効",
+      "unavailable": "利用不可",
+      "cloudflareTitle": "Cloudflare エッジ",
+      "cloudflareDescription": "DDoS 保護、グローバル CDN、エッジキャッシュ。Cloudflare がエッジで TLS を終端します。Origin Certificate と Authenticated Origin Pulls で接続を保護。",
+      "directTitle": "ダイレクト接続",
+      "directDescription": "Let's Encrypt による真の E2E 暗号化。第三者が復号化されたトラフィックを見ることはありません。DNS のみルーティング、コンプライアンス対応。",
+      "quotaExhaustedTitle": "Let's Encrypt のクォータを使い切りました",
+      "quotaExhaustedDesc": "今週 {used}/{limit} 件の証明書を使用済み。{resetIn} 後にリセット。",
+      "quotaIndicator": "Let's Encrypt: 今週 {used}/{limit} 件の証明書を使用",
+      "switchingModel": "デプロイメントモデルを切り替え中...",
+      "reauthRequired": "再認証が必要です",
+      "reauthHint": "ドメインが変更されました。新しいドメインのパスキーログインへリダイレクト中...",
+      "switchFailed": "モデルの切り替えに失敗しました",
+      "rateLimited": "{error}。{resetIn} 後にリセット",
+      "fetchFailed": "サーバー情報の取得に失敗しました",
+      "fetchQuotaFailed": "クォータの取得に失敗しました",
+      "switchFailedFallback": "デプロイメントモデルの切り替えに失敗しました"
+    },
+    "webLockCard": {
+      "title": "環境ロック",
+      "subtitle": "セキュリティティアを選択",
+      "currentTier": "現在のティア",
+      "settings": "設定",
+      "upgrade": "アップグレード",
+      "switching": "切り替え中...",
+      "saved": "保存しました",
+      "lockNameDefault": "Web ロック",
+      "lockNameCli": "環境ロック",
+      "privacyNameDefault": "プライバシーロック",
+      "privacyNameCli": "環境プライバシー",
+      "subjectDefault": "ワークスペース",
+      "subjectCli": "環境",
+      "tierLabel": {
+        "standard": "スタンダード",
+        "webLock": "Web ロック",
+        "privacyLock": "プライバシーロック",
+        "webLocked": "Web ロック有効",
+        "privateLocked": "プライバシーロック有効",
+        "settingUp": "設定中",
+        "configuring": "構成中"
+      },
+      "tierShortLabel": {
+        "standard": "標準",
+        "web": "Web",
+        "privacy": "プライバシー"
+      },
+      "tierDescription": {
+        "standard": "セッショントークンによる基本認証",
+        "webLock": "所有証明付きパスキー認証",
+        "privacyLock": "暗号化ボリューム — 私たちでもデータを読めません",
+        "standardLong": "ellul.ai のログインで保護されます",
+        "webLockedLong": "Face ID / Touch ID で保護されます",
+        "privateLockedLong": "パスキー認証付き暗号化ボリューム"
+      },
+      "userMessage": {
+        "standard": "ellul.ai のログインで保護されています。当社が侵害された場合やアカウントが乗っ取られた場合はリスクがあります。",
+        "webLocked": "Face ID / Touch ID で保護されています。当社が侵害されても安全です。",
+        "privateLocked": "ボリュームは LUKS2 で暗号化されています。Face ID / Touch ID で保護され、パスキーがないとデータは読み取れません。"
+      },
+      "permanent": "永続",
+      "active": "有効",
+      "incomplete": "未完了",
+      "settingUpEllipsis": "設定中...",
+      "levelDescription": {
+        "off": "{subject}は標準セキュリティで保護されています。Web ロックを有効化してパスキー保護を追加できます。",
+        "webLocked": "{subject}はパスキーで保護されています。プライバシーロックを有効化するとデータが暗号化されます。",
+        "privacyLocked": "{subject}は完全に保護されています。パスキーアクセスとデータ暗号化 — 当社でも読み取れません。",
+        "setupIncomplete": "{subject}のロックは部分的に有効です。{subject}を完全に保護するには設定を完了してください。",
+        "transitioning": "{subject}のセキュリティを構成中です。"
+      },
+      "cta": {
+        "enableWebLock": "Web ロックを有効化",
+        "enablePrivacyLock": "プライバシーロックを有効化",
+        "manageSecurity": "セキュリティを管理",
+        "completeSetup": "設定を完了",
+        "pleaseWait": "お待ちください..."
+      },
+      "recoveryCodesAvailable": "リカバリーコードは設定で確認できます",
+      "volumeEncryptionActive": "ボリューム暗号化は有効です (プラットフォームが管理)",
+      "encryptedAtRest": "データは保管時に暗号化されます — サーバー停止中も保護されます。",
+      "privacyLockPermanent": "プライバシーロックは永続的で、解除はできません。",
+      "lostPasskey": "パスキーを紛失した場合",
+      "lostPasskeyHint": "リカバリーコードでアクセスを回復できます。リカバリーコードがない場合はサポートまでご連絡ください — データは暗号化されたまま安全に保たれますが、アクセスには元のパスキーデバイスが必要です。",
+      "passkeyProtects": "パスキーが Web アクセスを保護します。SSH は別途利用可能です。プライバシーロックにアップグレードしてデータを暗号化するか、スタンダードへダウングレードできます。",
+      "standardSecurityNote": "標準セキュリティではセッショントークンを使用します。Web ロックを有効化するとパスキー認証と所有証明が追加され、すべてのリクエストでデバイスが暗号的に証明されます。",
+      "connecting": "接続中...",
+      "downgradeToStandard": "スタンダードへダウングレード",
+      "manageLock": "ロックを管理",
+      "advanced": "詳細設定",
+      "webTerminalLabel": "Web ターミナル:",
+      "webTerminalEnabled": "有効",
+      "webTerminalDisabled": "無効",
+      "webTerminalPasskeyRequired": "パスキー必須",
+      "sshAccessLabel": "SSH アクセス:",
+      "sshEnabled": "有効",
+      "sshDisabled": "無効",
+      "sshDynamic": "動的",
+      "safeIfBreached": "プラットフォームが侵害されても安全",
+      "atRiskIfBreached": "プラットフォーム侵害時にリスクあり",
+      "privacyLockActive": "プライバシーロック有効",
+      "dataEncryptedNote": "データは暗号化されています。これは元に戻せません。",
+      "downgradeWillReduce": "セキュリティが低下します",
+      "downgradeWillReduceBody": "パスキー要件と所有証明検証を解除します。プラットフォームが侵害された場合、攻撃者が{subject}にアクセスする可能性があります。",
+      "removePasskeyFrom": "{subject}からパスキー保護を解除します。",
+      "downgrading": "ダウングレード中...",
+      "confirmDowngrade": "ダウングレードを確認",
+      "lockEnabledToast": "{lockName} を有効化しました。",
+      "downgradedToast": "スタンダードへダウングレードしました。",
+      "downgradeFailed": "ダウングレードに失敗しました",
+      "cancel": "キャンセル"
+    },
+    "shieldSetup": {
+      "title": "Shield セットアップ",
+      "next": "次へ",
+      "back": "戻る",
+      "done": "完了",
+      "settingUp": "Shield ゲートウェイを設定中",
+      "onlyOnce": "この処理は最初の 1 回だけです。次回以降のログインは即時です。",
+      "step": {
+        "accountCreated": "アカウント作成済み",
+        "paymentConfirmed": "支払い確認済み",
+        "provisioningServer": "サーバーをプロビジョニング中",
+        "provisioningStarting": "開始しています...",
+        "settingUpPasskey": "パスキーを設定中",
+        "connectingToServer": "サーバーに接続中...",
+        "connectingToCli": "CLI に接続中"
+      },
+      "tokenTimeoutBody": "サーバーに接続できませんでした。まだ起動中の可能性があります。",
+      "tryAgain": "再試行",
+      "redirecting": "パスキーの設定にリダイレクトしています..."
+    },
+    "configVerify": {
+      "title": "サーバー構成の透明性",
+      "subtitle": "ellul.ai が約束した通りにサーバーが稼働していることを検証します。",
+      "fetching": "構成を取得中...",
+      "error": "エラー",
+      "fetchFailed": "構成の取得に失敗しました",
+      "integrityVerified": "整合性を検証しました",
+      "integrityVerifiedDesc": "ブラウザで計算した構成ハッシュが、当社サーバーに保存されているハッシュと一致しました。",
+      "integrityMismatch": "整合性が一致しません",
+      "integrityMismatchDesc": "警告: ハッシュが一致しません。改ざんの可能性があります。",
+      "configHashLabel": "構成ハッシュ(SHA-256)",
+      "verifyOnYourServer": "サーバー側で検証",
+      "verifyIntro": "完全な検証チェーンを確立するため、以下のコマンドをサーバーで実行し、ハッシュを照合してください。",
+      "scriptIntro": "このスクリプトの処理内容:",
+      "scriptStepHash": "サーバーの cloud-init の SHA-256 ハッシュを計算する",
+      "scriptStepRootKeys": "不正な root SSH キーが追加されていないか確認する",
+      "scriptStepFirewall": "ファイアウォールがスパム/マイニングをブロックしているか確認する",
+      "scriptStepMiner": "暗号通貨マイナーのプロセスをスキャンする",
+      "publicKeyFingerprintLabel": "サーバー公開鍵フィンガープリント",
+      "publicKeyFingerprintHint": "サーバー上で <code>ellul-env fingerprint</code> を実行し、表示された値と照合してください",
+      "cloudInitLabel": "Cloud-Init 構成",
+      "yamlHide": "YAML を非表示",
+      "yamlShow": "YAML を表示",
+      "yamlNote": "プロビジョニング時に Hetzner に送信された実際の YAML です。シークレットは含まれません(トークンは実行時に注入されます)。"
+    },
+    "vscodeConnect": {
+      "fetchStatusFailed": "サーバーのステータスを取得できませんでした",
+      "noDomainConfigured": "サーバーにドメインがまだ設定されていません。",
+      "genericError": "問題が発生しました",
+      "loadingFallback": "読み込み中...",
+      "connectingMessage": "サーバーに接続しています...",
+      "signInTitle": "続行するにはサインイン",
+      "signInSubtitle": "サーバーを VS Code に接続するには認証が必要です",
+      "continueWithGitHub": "GitHub で続行",
+      "continueWithGoogle": "Google で続行",
+      "termsAcceptance": "サインインすると、利用規約に同意したものとみなされます。",
+      "connectionFailedTitle": "接続に失敗しました",
+      "connectionFailedHint": "このタブを閉じて、VS Code からもう一度お試しください。",
+      "noNonceTitle": "VS Code 接続",
+      "noNonceBodyBefore": "VS Code 内で ",
+      "noNonceBodyBadge": "サーバーに接続",
+      "noNonceBodyAfter": " コマンドを実行して、接続フローを開始してください。",
+      "noServerTitle": "サーバーが見つかりません",
+      "noServerBody": "先にサーバーを作成してから、VS Code から接続してください。",
+      "goToDashboard": "ダッシュボードを開く",
+      "notReadyTitle": "サーバーの準備ができていません",
+      "notReadyBodyBefore": "サーバーは ",
+      "notReadyBodyAfter": " です。稼働状態になってから再度お試しください。",
+      "dashboard": "ダッシュボード"
+    },
+    "enableLock": {
+      "title": "Web ロックを有効化",
+      "subtitle": "Web ロックは操作のたびにパスキーを要求します",
+      "passkey": "パスキー",
+      "next": "次へ",
+      "back": "戻る",
+      "cancel": "キャンセル",
+      "enabling": "有効化中...",
+      "enable": "Web ロックを有効化",
+      "browserNotSupportedTitle": "ブラウザが未対応です",
+      "browserNotSupportedBody": "{lockName} には WebAuthn が必要です。Chrome、Safari、Firefox を使用してください。",
+      "close": "閉じる",
+      "enableTitleWebLock": "{lockName}を有効化",
+      "enableTitlePrivacyLock": "{privacyName}を有効化",
+      "encryptDescription": "{subject}のすべてのデータを暗号化します。",
+      "protectDescription": "パスキーで{subject}を保護します。",
+      "webLockProtects": "Web ロックは Web アクセスを保護します:",
+      "webLockBullet1": "- ブラウザアクセスにパスキー (Face ID / Touch ID) が必要",
+      "webLockBullet2": "- すべてのリクエストでデバイスを暗号的に証明",
+      "webLockBullet3": "- SSH アクセスは別途利用可能",
+      "webLockBullet4": "- いつでもスタンダードへダウングレード可能",
+      "privacyLockEncrypts": "プライバシーロックはサーバー上のすべてを暗号化します:",
+      "privacyLockBullet1": "- ソースコード、プロジェクトファイル、データベース",
+      "privacyLockBullet2": "- API キー、シークレット、環境変数",
+      "privacyLockBullet3": "- チャット履歴とエージェントの認証情報",
+      "privacyLockBullet4": "- サーバー設定と TLS 証明書",
+      "privacyLockEncryptedNote": "すべてのデータはあなただけが管理する鍵で保管時に暗号化されます。ellul.ai のスタッフでさえデータを読むことはできません。",
+      "cannotBeUndone": "これは元に戻せません",
+      "cannotBeUndoneBody": "プライバシーロックは永続的です。一度暗号化を有効にすると解除できません。続行する前にパスキーデバイスにアクセスできることを確認してください。",
+      "oneTapHint": "Face ID / Touch ID をワンタップしてすべて設定します。",
+      "enablePrivacyLock": "プライバシーロックを有効化",
+      "registeringPasskey": "パスキーを登録中",
+      "completeBiometric": "Face ID / Touch ID を完了して続行",
+      "protectingSubject": "{subject}を保護中...",
+      "mayTakeMoment": "少々お時間がかかる場合があります",
+      "lockEnabled": "{lockName} を有効化しました",
+      "saveRecovery": "下のリカバリー情報を保存してください。再表示はされません。",
+      "accessRecovery": "アクセスリカバリー",
+      "accessRecoveryHint": "パスキーデバイスを紛失した場合に使用します。",
+      "copied": "コピーしました",
+      "copyAccessCodes": "アクセスコードをコピー",
+      "privacyLockRecoveryNote": "Web ロック時のアクセスリカバリーコードは引き続き有効です。パスキーデバイスを紛失した場合に使用してください。",
+      "dataRecovery": "データリカバリー",
+      "dataRecoveryHint": "データを単独で復元する必要がある場合に使用します。",
+      "copyRecoveryKey": "リカバリーキーをコピー",
+      "savedEverything": "すべて保存しました",
+      "errors": {
+        "syncPending": "Web ロックを有効化しましたが、暗号化資格情報の同期が保留中です。サーバーが再接続するとプライバシーロックが利用可能になります。",
+        "setupFailed": "セットアップに失敗しました",
+        "cancelled": "キャンセルしました。準備ができたら再試行してください。"
+      },
+      "recoveryCodesHeader": "{lockName} - アクセスリカバリーコード",
+      "recoveryCodesFooter": "これらのコードを安全に保管してください。各コードは 1 回のみ使用可能です。"
+    },
+    "secrets": {
+      "title": "シークレット",
+      "subtitle": "アプリで利用できる暗号化された認証情報",
+      "addSecret": "シークレットを追加",
+      "addVariable": "変数を追加",
+      "saveAll": "すべて保存",
+      "saveChanges": "変更を保存",
+      "savedSuccessfully": "保存しました",
+      "key": "キー",
+      "value": "値",
+      "save": "保存",
+      "saving": "保存中...",
+      "delete": "削除",
+      "deleting": "削除中...",
+      "edit": "編集",
+      "cancel": "キャンセル",
+      "noSecrets": "シークレットがありません",
+      "noSecretsHint": "シークレットを追加してアプリで利用できるようにします。",
+      "show": "表示",
+      "hide": "非表示",
+      "copy": "コピー",
+      "copied": "コピーしました",
+      "copiedExclaim": "コピーしました!",
+      "envProduction": "本番",
+      "envDevelopment": "開発",
+      "envProductionLabel": "本番シークレット",
+      "envDevelopmentLabel": "開発シークレット",
+      "revealAll": "すべて表示",
+      "hideAll": "すべて非表示",
+      "importEnv": ".env をインポート",
+      "noEnvVars": "環境変数がありません",
+      "noEnvVarsHint": "API_KEY や SECRET_TOKEN のような変数を追加します",
+      "managedByIntegrations": "Integrations で管理中",
+      "managedByIntegrationsHint": "Integrations で管理中 — Integrations コンテキストで編集してください",
+      "managedByIntegrationsNote": "これらの変数は Integrations で管理されています。変更するには Integrations コンテキストを使用してください。",
+      "newVariables": "新しい変数",
+      "keyPlaceholder": "KEY_NAME",
+      "valuePlaceholder": "値",
+      "deleteSecretTitle": "シークレットを削除しますか?",
+      "deleteSecretDescription": "<strong>{name}</strong> を完全に削除します。",
+      "importDialogTitle": ".env ファイルをインポート",
+      "importDialogDescription": ".env ファイルの内容を貼り付けるか、ファイルをアップロードしてください。値はアップロード前に暗号化されます。",
+      "chooseEnvFile": ".env ファイルを選択",
+      "orPasteBelow": "または下に貼り付け",
+      "importTextareaPlaceholder": "DATABASE_URL=postgresql://...\nAPI_KEY=sk-...\nSECRET_TOKEN=abc123",
+      "variablesDetected": "{count, plural, other {#件の変数を検出}}",
+      "warnings": "警告:",
+      "encrypting": "暗号化中...",
+      "importSecretsCount": "{count, plural, other {#件のシークレットをインポート}}",
+      "secretsImportedSuccess": "{count, plural, other {#件のシークレットをインポートしました。}}",
+      "sensitivityLabel": {
+        "sensitive": "機密",
+        "plain": "プレーン",
+        "secret": "シークレット"
+      },
+      "exposureBadge": {
+        "public": "公開",
+        "safe": "安全",
+        "seen": "閲覧済み",
+        "rotate": "ローテーション",
+        "publicTitle": "非機密に分類されています",
+        "rotatedTitle": "前回エージェントに公開されてから値がローテーションされました",
+        "notSeenTitle": "エージェントはまだこのシークレットを見ていません",
+        "acknowledgedTitle": "エージェントが値を確認済み (承認済み)",
+        "rotateTitle": "エージェントが現在の値を見ています。ローテーションを推奨します。",
+        "notExposed": "エージェントには公開されていません"
+      },
+      "classifyMenu": {
+        "secret": "シークレット",
+        "plain": "公開 (ローテーション通知なし)",
+        "acknowledge": "承認 (警告を消す)"
+      },
+      "rotation": {
+        "warning": "エージェントが現在の値を見ました。ローテーションをご検討ください。",
+        "dismiss": "閉じる"
+      },
+      "actions": {
+        "hideValue": "値を非表示",
+        "revealValue": "値を表示",
+        "copyValue": "値をコピー",
+        "editValue": "値を編集",
+        "deleteAction": "削除"
+      },
+      "errors": {
+        "publicKeyUnavailable": "サーバーの公開鍵が利用できません",
+        "invalidVariableName": "変数名が無効です: {key}。アルファベットまたはアンダースコアで始める必要があります。",
+        "saveSecrets": "シークレットの保存に失敗しました",
+        "saveSecret": "シークレットの保存に失敗しました",
+        "deleteSecret": "シークレットの削除に失敗しました",
+        "loadValues": "シークレットの値の読み込みに失敗しました",
+        "readValues": "シークレットの値の読み込みに失敗しました",
+        "importSecrets": "シークレットのインポートに失敗しました",
+        "clipboardUnavailable": "クリップボードを利用できません。手動でコピーしてください。",
+        "fetchPublicKey": "公開鍵の取得に失敗しました"
+      },
+      "envParse": {
+        "noEquals": "{line} 行目: '=' が見つかりません",
+        "invalidKey": "{line} 行目: キー \"{key}\" が無効です",
+        "unterminatedDouble": "{line} 行目: ダブルクォートが閉じられていません",
+        "unterminatedSingle": "{line} 行目: シングルクォートが閉じられていません"
+      }
+    },
+    "tierSelector": {
+      "title": "プラン",
+      "subtitle": "ニーズに合ったプランを選択",
+      "currentPlan": "現在のプラン",
+      "switchTo": "{plan} に切り替え",
+      "switching": "切り替え中...",
+      "loadingPlans": "プランを読み込み中...",
+      "loadFailed": "プラン候補の読み込みに失敗しました",
+      "downgradeScheduled": "ダウングレード予約済み",
+      "downgradeScheduledBody": "プランは <date></date> に <plan></plan> ({interval}) へ変更されます。それまでは現在のプランをそのままご利用いただけます。",
+      "cancel": "キャンセル",
+      "upgradeInProgress": "アップグレード処理中",
+      "upgradeInProgressBody": "サーバーを <plan></plan> にアップグレード中です。通常 1〜2 分で完了します。",
+      "downgradeScheduledSuccess": "ダウングレードを予約しました",
+      "paymentConfirmed": "支払いを確認しました",
+      "planChangedSuccess": "プランを変更しました",
+      "chargedAmount": "請求額: ${amount} (日割り)",
+      "newAiProxyToken": "新しい AI プロキシトークン (保存してください):",
+      "planChangeFailed": "プランの変更に失敗しました",
+      "ctaScheduled": "予約済み",
+      "ctaUpgrade": "アップグレード",
+      "ctaDowngrade": "ダウングレード",
+      "manageSubscription": "サブスクリプションを管理またはキャンセル",
+      "downgradeTo": "{name} へダウングレード",
+      "upgradeTo": "{name} へアップグレード",
+      "calculatingCost": "正確な金額を計算中...",
+      "dueTodayProrated": "本日の請求額 (日割り)",
+      "thenAnnually": "以降は年額",
+      "thenMonthly": "以降は月額",
+      "perYear": "/年",
+      "perMonth": "/月",
+      "takesEffectOn": "適用日",
+      "newAnnualRate": "新しい年額料金",
+      "newMonthlyRate": "新しい月額料金",
+      "keepFullAccess": "適用日まで現在のプランをそのままご利用いただけます",
+      "processing": "処理中...",
+      "scheduleDowngrade": "ダウングレードを予約",
+      "confirmUpgrade": "アップグレードを確認"
+    },
+    "sessionExtend": {
+      "stillWorking": "まだ作業中ですか?",
+      "hibernateSoon": "セッションがまもなくハイバーネートされます",
+      "hibernatingIn": "ハイバーネートまで",
+      "renewing": "更新中...",
+      "keepWorking": "作業を継続",
+      "upgradeNoLimits": "アップグレード: 時間制限なし",
+      "letItSleep": "そのまま休止する",
+      "renewalsRemaining": "{count, plural, =1 {本日残り#回更新可能} other {本日残り#回更新可能}}",
+      "stillThereTitle": "まだ作業中ですか? - ellul.ai",
+      "renewalLimitReached": "本日の更新回数の上限に達しました。アップグレードで無制限のセッションを利用できます!",
+      "renewFailed": "セッションの更新に失敗しました"
+    },
+    "policiesCard": {
+      "title": "ポリシー",
+      "subtitle": "エージェントの動作を制御するカスタムポリシー",
+      "noPolicies": "アクティブなポリシーはありません"
+    },
+    "policyProposalsCard": {
+      "title": "ポリシー提案",
+      "subtitle": "エージェントからの新しいポリシーの提案",
+      "noProposals": "保留中の提案はありません"
+    },
+    "modelProviders": {
+      "title": "API キー",
+      "subtitle": "ワークスペースには無料モデルが含まれています。API キーは不要です。プレミアムモデルをすべてのプロジェクトで使用するには、API キーを追加してください。Anthropic、OpenAI、OpenRouter、Google に対応しています。",
+      "apiKey": "API キー",
+      "configured": "設定済み",
+      "notSet": "未設定",
+      "update": "更新",
+      "remove": "削除",
+      "byok": "プロバイダーへ直接アクセスするための独自の API キーをご利用ください。ワークスペース内のすべての ZeroClaw アイソレートに適用されます。",
+      "providerLabel": {
+        "anthropic": "Anthropic",
+        "openai": "OpenAI",
+        "openrouter": "OpenRouter",
+        "google": "Google",
+        "googleAi": "Google AI"
+      },
+      "keyPlaceholder": "API キーを貼り付け...",
+      "modelIdPlaceholder": "例: anthropic/claude-sonnet-4, meta-llama/llama-3.3-70b-instruct:free",
+      "browseModelsPrefix": "モデル一覧:",
+      "browseModelsSuffix": "。空欄の場合はデフォルト (Gemma 3n、無料) が使用されます。",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "getKey": "キーを取得:"
+    },
+    "securitySettings": {
+      "title": "アカウントセキュリティ",
+      "oauthProtected": "OAuth 保護",
+      "providerName": {
+        "github": "GitHub",
+        "google": "Google"
+      },
+      "securedThrough": "アカウントは {provider} OAuth 認証で保護されています。",
+      "signedInWith": "{provider} でサインイン中",
+      "twoFactor": "二要素認証",
+      "twoFactorBody": "ellul.ai アカウントの二要素認証 (2FA) は {provider} アカウントで管理されます。サインイン時に {provider} が認証処理を行い、設定されている 2FA も処理します。",
+      "manageProviderSecurity": "{provider} のセキュリティを管理",
+      "hideTip": "ヒントを隠す",
+      "whyOauth": "なぜ OAuth?",
+      "whyOauthHeader": "OAuth 認証を採用する理由:",
+      "whyOauthBullet1": "覚えたり管理したりするパスワードがない",
+      "whyOauthBullet2": "{provider} のエンタープライズ級セキュリティを活用",
+      "whyOauthBullet3": "2FA、パスキー、セキュリティキーをプロバイダーが処理",
+      "whyOauthBullet4": "フィッシング攻撃から自動的に保護",
+      "whyOauthBullet5": "アイデンティティの単一の真実の源",
+      "recommendedHeader": "推奨セキュリティ手順",
+      "recommended1": "最大限のセキュリティのため {provider} アカウントで 2FA を有効化",
+      "recommended2": "ハードウェアセキュリティキー (YubiKey) またはパスキーでフィッシング耐性のあるログインを実現",
+      "recommended3": "{provider} アカウントで承認済みアプリケーションを定期的に確認",
+      "teleportHeader": "サーバーアクセス (Teleport)",
+      "teleportBody": "ellul.ai のサーバーは ID ベースの SSH アクセスに Teleport を使用します。サーバーに接続すると、Teleport が確認済みメールアドレス (<email></email>) に基づいて短期証明書を発行します。",
+      "teleportBullet1": "証明書は 12 時間で失効 (ログイン時に自動更新)",
+      "teleportBullet2": "管理または漏洩する静的 SSH キーは不要",
+      "teleportBullet3": "すべてのセッションは監査用に記録",
+      "teleportBullet4": "サインアウト時にアクセスを自動取り消し"
+    },
+    "securityCard": {
+      "title": "接続と主権",
+      "subtitle": "あなたと ellul.ai がサーバーにどうアクセスできるかを制御します",
+      "connected": "接続中",
+      "airGapped": "エアギャップ中",
+      "disconnected": "切断中",
+      "tooltipConnected": "サーバーがセキュリティ更新をポーリングしています。",
+      "tooltipAirGapped": "サーバーはエアギャップモードです。\nダッシュボードのトグルは無効化されています。",
+      "tooltipDisconnected": "サーバーに到達できません。オフラインまたはエアギャップモードの可能性があります。",
+      "lastSyncPrefix": "最終同期:",
+      "secondsAgo": "{count}秒前",
+      "minutesAgo": "{count}分前",
+      "hoursAgo": "{count}時間前",
+      "sovereignActive": "主権モード有効",
+      "sovereignActiveBody": "サーバーは完全に主権下にあります。ellul.ai のアクセス権は <strong>ゼロ</strong> です。ダッシュボードのトグルは無効です。SSH のみがサーバーに到達できます。",
+      "webTerminalAccess": "Web ターミナルアクセス",
+      "enabled": "有効",
+      "disabled": "無効",
+      "webTerminalEnabledBody": "ブラウザからサーバーにアクセスします。ellul.ai がターミナルトークンを生成できます。",
+      "webTerminalDisabledBody": "サーバー上の <code>ttyd</code> プロセスは <strong>停止</strong> しています。ellul.ai を含め、誰もターミナルにアクセスできません。",
+      "ttydProcess": "ttyd プロセス:",
+      "running": "実行中",
+      "stopped": "停止中",
+      "sshAccessTitle": "SSH アクセス",
+      "port22Open": "ポート 22 開放",
+      "port22Closed": "ポート 22 閉鎖",
+      "sshEnabledBody": "任意の SSH クライアントで接続できます。鍵はあなたが管理します。",
+      "sshDisabledBody": "ポート 22 はファイアウォールにより <strong>閉鎖</strong> されています。SSH 接続はブロックされます。",
+      "sshKeyLockedTitle": "鍵はサーバーに固定されました",
+      "sshKeyLockedBody": "SSH 鍵は永続的にインストールされています。セキュリティ上、ellul.ai は最初のインストール後に鍵を注入または置き換えできません。鍵を追加するには SSH でログインして次を実行してください:",
+      "port22Label": "ポート 22 (SSH):",
+      "open": "開放",
+      "closed": "閉鎖",
+      "enforcementNotice": "変更は <strong>30 秒以内</strong> に適用されます。サーバー上の <code>ellul-enforcer</code> デーモンが更新をポーリングし、サービスを物理的に開始/停止します。",
+      "sovereignSecurityNotice": "主権セキュリティの注意事項",
+      "sovereignSecurityBody": "ellul.ai はあなたの鍵を保持していません。ターミナルと SSH の両方を無効化したり、主権/エアギャップモードに入った場合、<strong>当社からアクセスを復旧することはできません</strong>。"
+    },
+    "policies": {
+      "title": "ポリシー",
+      "subtitle": "実行前に強制されるコード品質と安全性のルール。",
+      "addPolicy": "ポリシーを追加",
+      "noPolicies": "ポリシーが設定されていません。",
+      "section": {
+        "safety": "安全性",
+        "safetyDesc": "プラットフォームの安全性ルール。無効化できません。",
+        "codeQuality": "コード品質",
+        "codeQualityDesc": "解析時に強制されるコード品質基準。",
+        "custom": "カスタム",
+        "customDesc": "追加したワークスペース固有のルール。"
+      },
+      "viewSource": "ソースを表示",
+      "edit": "編集",
+      "delete": "削除",
+      "policyUpdated": "ポリシーを更新しました",
+      "policyDeleted": "ポリシーを削除しました",
+      "policyCreated": "ポリシーを作成しました",
+      "policySaved": "ポリシーを保存しました",
+      "newPolicy": "新規ポリシー",
+      "editPolicy": "ポリシーを編集",
+      "newPolicyDescription": "tree-sitter クエリを定義してコード品質や安全性のルールを強制します。",
+      "editPolicyDescription": "ポリシーのクエリ、説明、エラーメッセージを変更します。",
+      "name": "名前",
+      "namePlaceholder": "no-eval",
+      "nameHint": "小文字、数字、ハイフンのみ。作成後は変更できません。",
+      "description": "説明",
+      "descriptionPlaceholder": "コードインジェクション防止のため eval() の呼び出しをブロックします。",
+      "severity": "重大度",
+      "severityError": "エラー (実行をブロック)",
+      "severityWarning": "警告 (ログのみ)",
+      "errorMessage": "エージェントに表示されるエラーメッセージ",
+      "errorMessagePlaceholder": "eval() を使用しないでください。任意のコード実行を可能にします。代わりに ast.literal_eval() を使用してください。",
+      "errorMessageHint": "具体的に書いてください。エージェントが代わりに何をすべきかを明確に伝えます。",
+      "treeSitterQuery": "Tree-sitter クエリ",
+      "queryHintPrefix": "言語ごとのクエリを定義するには",
+      "queryHintMiddle": "マーカーを使用してください。各セクションには",
+      "queryHintSuffix": "キャプチャを含める必要があります。",
+      "cancel": "キャンセル",
+      "create": "ポリシーを作成",
+      "saveChanges": "変更を保存",
+      "errors": {
+        "fetchPolicies": "ポリシーの取得に失敗しました",
+        "createFailed": "ポリシーの作成に失敗しました",
+        "nameRequired": "名前は必須です。",
+        "nameInvalid": "名前は小文字、数字、ハイフンのみ使用可能です (例: no-eval)。",
+        "messageRequired": "エラーメッセージは必須です。エージェントに何が悪かったかを伝えます。",
+        "queryRequired": "クエリのソースが必要です。",
+        "noLangSections": "; @lang セクションが見つかりません。少なくとも 1 つの言語セクションとクエリを追加してください。",
+        "unknownLang": "; @lang セクションに未知の言語 \"{lang}\" があります。サポート対象: {supported}",
+        "emptyBody": "{langs} のクエリ本文が空です。各言語セクションには tree-sitter クエリが必要です。",
+        "missingViolation": "{langs} セクションに @violation キャプチャがありません。一致したノードを示すためクエリには @violation を含める必要があります。",
+        "generic": "失敗しました"
+      }
+    },
+    "policyProposals": {
+      "agentProposals": "エージェント提案",
+      "pendingCount": "{count} 件保留中",
+      "introBody": "AI エージェントがポリシー変更をリクエストしています。確認して承認または却下してください。",
+      "approve": "承認",
+      "deny": "却下",
+      "approvedToast": "提案を承認しました — ポリシーを更新しました",
+      "deniedToast": "提案を却下しました",
+      "approveFailed": "承認に失敗しました",
+      "denyFailed": "提案の却下に失敗しました"
+    },
+    "crossProject": {
+      "title": "共有アクセス",
+      "subtitle": "このサンドボックスに、他のサンドボックスのソースコードとプレビューへの読み取り専用アクセスを許可します。ファイルは <code>.shared/&lt;sandbox&gt;</code> に表示されます。サンドボックス単位での許可となるため、許可したサンドボックス内のすべてのアプリが公開されます。",
+      "noOtherSandboxes": "このサーバーには他のサンドボックスがありません",
+      "visibleTo": "公開先",
+      "readsThisSandbox": "このサンドボックスを読み取り",
+      "sourcePreview": "ソース + プレビュー",
+      "changesNote": "変更は次回のエージェント起動時に適用されます。共有ファイルは読み取り専用のスナップショットです。",
+      "grantFailed": "アクセスの許可に失敗しました",
+      "revokeFailed": "アクセスの取り消しに失敗しました"
+    },
+    "sshKeys": {
+      "title": "SSH キー",
+      "subtitle": "サーバーへのアクセスを許可された SSH キー",
+      "addKey": "キーを追加",
+      "addSshKey": "SSH キーを追加",
+      "noKeys": "SSH キーがありません",
+      "noKeysHint": "SSH キーを追加してターミナルアクセスを有効化します。",
+      "noKeysHintStandard": "SSH キーが設定されていません。キーを追加して SSH アクセスを有効化します。",
+      "noKeysHintWebLocked": "SSH キーが設定されていません。SSH サーバーは無効です。",
+      "name": "名前",
+      "publicKey": "公開鍵",
+      "publicKeyRequired": "公開鍵が必要です",
+      "connectingToServer": "サーバーに接続中...",
+      "connectionFailed": "接続に失敗しました。ページを再読み込みしてください。",
+      "namePlaceholder": "例: macbook-pro",
+      "keyNamePlaceholder": "キー名 (任意)",
+      "keyPlaceholder": "ssh-ed25519 AAAA... または ssh-rsa AAAA...",
+      "defaultKeyName": "SSH キー",
+      "addKeyTitle": "SSH キーを追加",
+      "saving": "保存中...",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "remove": "削除",
+      "removing": "削除中...",
+      "addFailed": "キーの追加に失敗しました",
+      "removeFailed": "キーの削除に失敗しました",
+      "footerStandard": "キーは JWT 認証経由でサーバーに直接保存されます。",
+      "footerWebLocked": "Face ID / Touch ID が必要です。変更はサーバーに直接適用されます。"
+    },
+    "git": {
+      "createRepo": {
+        "title": "リポジトリを作成",
+        "dialogDescription": "{provider} に新しいリポジトリを作成し、コードをバックアップします。",
+        "name": "リポジトリ名",
+        "namePlaceholder": "my-project",
+        "nameValidationError": "使用できるのは英数字・ハイフン・ドット・アンダースコアのみです",
+        "visibility": "公開範囲",
+        "private": "プライベート",
+        "public": "パブリック",
+        "createFailed": "リポジトリの作成に失敗しました",
+        "creating": "作成中...",
+        "create": "リポジトリを作成",
+        "cancel": "キャンセル"
+      },
+      "linkedRepo": {
+        "title": "連携リポジトリ",
+        "branch": "デフォルトブランチ: {branch}",
+        "private": "プライベート",
+        "public": "パブリック",
+        "syncing": "同期中...",
+        "lastPush": "最終プッシュ: {time}",
+        "neverPushed": "プッシュ履歴なし",
+        "import": "コードをインポート",
+        "importing": "インポート中...",
+        "change": "リポジトリを変更",
+        "unlink": "連携解除",
+        "unlinking": "連携解除中..."
+      },
+      "providerCard": {
+        "github": "GitHub",
+        "gitlab": "GitLab",
+        "bitbucket": "Bitbucket",
+        "githubDescription": "オープンソースとチームに最も人気",
+        "gitlabDescription": "内蔵 CI/CD と DevOps プラットフォーム",
+        "bitbucketDescription": "Atlassian ツールと統合",
+        "comingSoon": "近日公開",
+        "connect": "接続",
+        "connecting": "接続中...",
+        "unavailable": "利用不可"
+      },
+      "repoPicker": {
+        "title": "リポジトリを選択",
+        "search": "リポジトリを検索...",
+        "newButton": "新規",
+        "noRepos": "リポジトリが見つかりません",
+        "noMatching": "検索条件に一致するリポジトリがありません",
+        "createNew": "新しいリポジトリを作成",
+        "loading": "リポジトリを読み込み中...",
+        "loadFailed": "リポジトリの読み込みに失敗しました。もう一度お試しください。",
+        "today": "今日",
+        "yesterday": "昨日",
+        "daysAgo": "{count}日前",
+        "monthsAgo": "{count}か月前",
+        "yearsAgo": "{count}年前",
+        "githubManageAccess": "リポジトリが見つからない場合は GitHub でアクセスを管理してください"
+      }
+    },
+    "integrations": {
+      "title": "連携",
+      "subtitle": "エージェントを外部ツールと接続",
+      "noConnections": "接続がありません",
+      "noConnectionsHint": "ツールグループを追加して、外部サービスを接続します。",
+      "addGroup": "グループを追加",
+      "createGroup": {
+        "title": "接続グループを作成",
+        "name": "名前",
+        "namePlaceholder": "例: 本番データベース",
+        "icon": "アイコン",
+        "systemRouteRole": "システムルートロール",
+        "optional": "(任意)",
+        "create": "作成",
+        "cancel": "キャンセル",
+        "creating": "作成中..."
+      },
+      "groupTab": {
+        "exposure": "エージェントへの公開",
+        "exposureEnabled": "有効",
+        "exposureDisabled": "無効",
+        "default": "デフォルト",
+        "setDefault": "デフォルトに設定",
+        "removeConnection": "削除",
+        "addConnection": "接続を追加"
+      },
+      "toolReview": {
+        "title": "ツールを確認",
+        "approve": "承認",
+        "deny": "拒否",
+        "details": "詳細",
+        "noTools": "確認するツールはありません",
+        "capabilities": {
+          "database_read": "データベース読み取り",
+          "database_write": "データベース書き込み",
+          "database_schema": "データベーススキーマ",
+          "execution_shell": "シェル実行",
+          "network_egress": "ネットワーク送出",
+          "deployment_trigger": "デプロイトリガー",
+          "secrets_read": "シークレット読み取り",
+          "secrets_write": "シークレット書き込み",
+          "git_read": "Git 読み取り",
+          "git_write": "Git 書き込み",
+          "filesystem_read": "ファイル読み取り",
+          "filesystem_write": "ファイル書き込み",
+          "external_read": "外部読み取り",
+          "external_write": "外部書き込み",
+          "external_admin": "外部管理"
+        },
+        "confidence": {
+          "high": "信頼度: 高",
+          "medium": "信頼度: 中",
+          "low": "信頼度: 低"
+        },
+        "unclassified": "未分類",
+        "noCalls": "呼び出しなし",
+        "oneCall": "呼び出し 1 回",
+        "manyCalls": "呼び出し {count} 回",
+        "justNow": "たった今",
+        "minutesAgo": "{count} 分前",
+        "hoursAgo": "{count} 時間前",
+        "daysAgo": "{count} 日前",
+        "noToolsDiscoveredYet": "まだツールは検出されていません。",
+        "toolsAppearOnceConnected": "MCP サーバーが接続されると、ここにツールが表示されます。",
+        "summaryDiscovered": "{count} 件検出",
+        "summaryApproved": "{count} 件承認済み",
+        "summaryNeedsReview": "{count} 件要確認",
+        "summaryRejected": "{count} 件拒否",
+        "sectionApproved": "承認済み",
+        "sectionNeedsReview": "要確認",
+        "sectionRejected": "拒否",
+        "quarantined": "隔離中",
+        "rejected": "拒否",
+        "classificationLabel": "分類: {label}",
+        "confidenceLabel": "信頼度: {label}",
+        "reasonLabel": "理由: 「{reason}」",
+        "approveAs": "承認...",
+        "rejectAction": "拒否",
+        "rejectedByUserSuffix": "(ユーザーが拒否)"
+      }
+    },
+    "contexts": {
+      "appsList": {
+        "authFailed": "認証に失敗しました。サンドボックスへアクセスするには再認証してください。",
+        "cannotConnect": "サーバーに接続できません",
+        "creationInProgress": "作成処理が進行中です",
+        "cancelled": "キャンセルしました",
+        "createFailed": "サンドボックスの作成に失敗しました",
+        "cloneFailed": "リポジトリのクローンに失敗しました",
+        "deleteFailed": "サンドボックスの削除に失敗しました"
+      },
+      "workbench": {
+        "missingRequestId": "リクエスト ID が見つかりません — このゲートには応答できません。再読み込みして再試行してください。",
+        "noActiveSandbox": "アクティブなサンドボックスが選択されていません",
+        "operatorKeyUnavailable": "オペレーターキーが利用できません"
+      },
+      "codeToken": {
+        "platformTokenFailed": "プラットフォームトークンの取得に失敗しました",
+        "noPlatformJwt": "プラットフォーム JWT を受信できませんでした",
+        "createSessionFailed": "コードセッションの作成に失敗しました",
+        "establishCookieFailed": "コードセッションの Cookie 設定に失敗しました",
+        "establishSessionFailed": "コードセッションの確立に失敗しました",
+        "securityInitFailed": "セキュリティ初期化に失敗しました。再認証してください。",
+        "authFailed": "認証に失敗しました。再認証してください。",
+        "authRequired": "認証が必要です。再認証してください。"
+      }
+    },
+    "notifications": {
+      "gateRequest": {
+        "title": "操作が必要です",
+        "body": "エージェントが許可を求めています: {permission}",
+        "bodyWithReason": "エージェントが許可を求めています: {permission} — {reason}"
+      },
+      "cliPrompt": {
+        "title": "エージェントが入力を待っています",
+        "body": "AI エージェントがあなたの応答を待っています"
+      },
+      "taskComplete": {
+        "title": "タスクが完了しました",
+        "body": "AI エージェントがタスクを完了しました"
+      },
+      "taskError": {
+        "title": "タスクが失敗しました",
+        "body": "AI エージェントでエラーが発生しました"
+      },
+      "serverReady": {
+        "title": "サーバー準備完了",
+        "body": "サーバーが稼働中です"
+      },
+      "serverHibernated": {
+        "title": "サーバーがハイバネートしました",
+        "body": "サーバーがスリープに入りました"
+      },
+      "deployment": {
+        "title": "デプロイが更新されました",
+        "bodyNamed": "{name} のデプロイが変更されました",
+        "body": "デプロイ設定が更新されました"
+      }
+    },
+    "hooks": {
+      "clawChannels": {
+        "loadFailed": "チャネル設定を読み込めません",
+        "saveFailed": "チャネル設定の保存に失敗しました"
+      },
+      "clawWorkspace": {
+        "loadFailed": "ワークスペースファイルを読み込めません",
+        "saveFailed": "ファイルの保存に失敗しました"
+      },
+      "llmKeys": {
+        "loadFailed": "LLM キー状態の取得に失敗しました",
+        "saveFailed": "キーの保存に失敗しました: {status}",
+        "removeFailed": "キーの削除に失敗しました"
+      }
+    },
+    "database": {
+      "card": {
+        "heading": "データベース",
+        "loading": "データベースを確認中...",
+        "pgUnavailable": "このサーバーでは PostgreSQL が利用できません。",
+        "pgUnavailableHint": "一時的な状態の可能性があります — サーバーが自動復旧を試みます。",
+        "checking": "確認中...",
+        "retry": "再試行",
+        "active": "稼働中",
+        "psqlVersion": "PostgreSQL 16",
+        "rolesLabel": "ロール",
+        "infoBanner": "DATABASE_URL はサンドボックスのシークレットに自動設定されます。エージェントはゲート付きクエリプロキシ経由でデータにアクセスします。",
+        "deleteConfirmTitle": "データベースを削除しますか？",
+        "deleteConfirmBody": "<strong>{database}</strong> とすべてのデータを完全に削除します。この操作は取り消せません。",
+        "cancel": "キャンセル",
+        "deleteForever": "完全に削除",
+        "deleteDatabase": "データベースを削除",
+        "noDatabase": "データベースはまだありません",
+        "noDatabaseHint": "PostgreSQL データベースを追加します。<code>DATABASE_URL</code> がサンドボックスのシークレットに自動的に挿入されます。",
+        "creating": "作成中...",
+        "addDatabase": "データベースを追加",
+        "isolationHint": "各アプリは分離されたロールを取得します。エージェントはゲート付きクエリプロキシ経由でのみデータにアクセスできます。",
+        "createDefaultError": "データベースの作成に失敗しました",
+        "fetchInfoFailed": "データベース情報の取得に失敗しました",
+        "createSuccess": "データベースを作成しました。DATABASE_URL がシークレットに挿入されました。",
+        "deleteSuccess": "データベースを削除しました",
+        "deleteDefaultError": "データベースの削除に失敗しました",
+        "roleApp": "アプリ",
+        "roleAppDesc": "DML: 読み書き",
+        "roleReadonly": "読み取り専用",
+        "roleReadonlyDesc": "SELECT のみ",
+        "roleOwner": "オーナー",
+        "roleOwnerDesc": "DDL: スキーマ全権"
+      },
+      "browser": {
+        "loadingDatabases": "データベースを読み込み中...",
+        "pgUnavailableTitle": "PostgreSQL は利用できません",
+        "pgUnavailableDescription": "データベースエンジンは現在起動中または復旧中です。",
+        "checkAgain": "再確認",
+        "errorTitle": "データベースエラー",
+        "errorFallback": "データベースの読み込みに失敗しました",
+        "retry": "再試行",
+        "noDatabasesTitle": "このサンドボックスにはデータベースがありません",
+        "noDatabasesHint": "データベースはサンドボックス単位で管理され、内部で生成したすべてのアプリで共有されます。<code>DATABASE_URL</code> は自動的に挿入されます。",
+        "createDatabase": "データベースを作成",
+        "sandboxLabel": "サンドボックス",
+        "sandboxTitle": "データベースはサンドボックス単位で管理されます。{sandboxId} 内のすべてのアプリが DATABASE_URL を継承します。",
+        "select": "選択",
+        "devBadge": "Dev",
+        "prodBadge": "Prod",
+        "newDatabase": "新しいデータベース",
+        "selectTable": "テーブルを選択",
+        "filterTables": "テーブルを絞り込み...",
+        "noMatchingTables": "一致するテーブルがありません",
+        "noTablesYet": "テーブルはまだありません",
+        "createTable": "テーブルを作成",
+        "tabTables": "テーブル",
+        "tabSql": "SQL",
+        "tabBin": "ゴミ箱",
+        "tabSettings": "設定",
+        "refresh": "更新",
+        "createDialogTitle": "新しいデータベース",
+        "createDialogDescription": "このサンドボックス用に新しい PostgreSQL データベースを作成します。",
+        "databaseLabel": "データベース ラベル",
+        "databaseLabelPlaceholder": "例: production、staging、test",
+        "databaseLabelHint": "小文字のアルファベット、数字、アンダースコアのみ使用できます。",
+        "cancel": "キャンセル",
+        "create": "作成",
+        "dropDialogTitle": "データベースを削除",
+        "dropDialogDescription": "<strong>{label}</strong> とすべてのデータを完全に削除します。",
+        "dropAssignedBoth": "このデータベースは開発環境と本番環境の両方に割り当てられています。",
+        "dropAssignedDev": "このデータベースは開発環境に割り当てられています。",
+        "dropAssignedProd": "このデータベースは本番環境に割り当てられています。",
+        "deleteForever": "完全に削除",
+        "createSuccess": "データベースを作成しました",
+        "deleteSuccess": "データベースを削除しました"
+      },
+      "lite": {
+        "loading": "データベースを確認中...",
+        "pgUnavailable": "このサーバーでは PostgreSQL が利用できません。",
+        "pgUnavailableHint": "プランをアップグレードするとデータベースが利用できます。",
+        "addDatabaseTitle": "データベースを追加",
+        "addDatabaseHint": "サンドボックス用に PostgreSQL データベースを作成します。<code>DATABASE_URL</code> が環境変数に自動設定されます。",
+        "creating": "作成中...",
+        "createDatabase": "データベースを作成",
+        "createSuccess": "データベースを作成しました。DATABASE_URL がサンドボックスに挿入されました。",
+        "deleteSuccess": "データベースを削除しました",
+        "renameSuccess": "データベース名を変更しました",
+        "active": "稼働中",
+        "infoBanner": "DATABASE_URL はサンドボックスの環境に自動設定されます。AI エージェントはゲート付きクエリプロキシ経由でデータにアクセスします。",
+        "deleteConfirmTitle": "データベースを削除しますか？",
+        "deleteConfirmBody": "すべてのデータを完全に削除します。この操作は取り消せません。",
+        "cancel": "キャンセル",
+        "deleteForever": "完全に削除",
+        "deleteDatabase": "データベースを削除"
+      },
+      "tables": {
+        "searchTables": "テーブルを検索...",
+        "noMatchingTables": "一致するテーブルがありません",
+        "noTablesYet": "テーブルはまだありません",
+        "newTable": "新しいテーブル",
+        "selectTablePrompt": "閲覧するテーブルを選択",
+        "selectFromSidebar": "サイドバーからテーブルを選択してください",
+        "selectFromSidebarOrCreate": "サイドバーからテーブルを選択するか、新規作成してください",
+        "createTable": "テーブルを作成",
+        "columnsTab": "カラム",
+        "tableTab": "テーブル",
+        "searchColumnsOrData": "カラム名やデータを検索...",
+        "searchHint": "カラム名を入力してズーム、または現在のカラム内のデータを検索します",
+        "noColumns": "カラムがありません",
+        "rowAction": "行",
+        "csvAction": "CSV",
+        "schemaAction": "スキーマ",
+        "filtered": "フィルタ済み",
+        "filter": "フィルタ",
+        "filterValuePlaceholder": "値...",
+        "applyFilter": "適用",
+        "cancelFilter": "キャンセル",
+        "clearFilter": "クリア",
+        "addColumn": "カラム",
+        "dropTable": "テーブルを削除",
+        "noMatchingRows": "一致する行がありません",
+        "emptyTable": "空のテーブル",
+        "nullDisplay": "NULL",
+        "page": "ページ {page}",
+        "rowRange": "{start}-{end} / {total}",
+        "nullable": "null 許容",
+        "columnsCount": "{columns} カラム · {rows} 行",
+        "atLeastOneColumnRequired": "少なくとも 1 つのカラムには名前が必要です",
+        "tableCreated": "テーブル「{name}」を作成しました",
+        "tableDropped": "テーブル「{name}」を削除しました",
+        "columnAdded": "カラム「{name}」を追加しました",
+        "rowInserted": "行を追加しました",
+        "rowDeleted": "行を削除しました",
+        "csvCopied": "CSV としてクリップボードにコピーしました",
+        "zoomOut": "ズームアウト"
+      },
+      "tableDialogs": {
+        "createTitle": "テーブルを作成",
+        "createDescription": "<strong>{db}</strong> にテーブルスキーマを定義します。",
+        "tableName": "テーブル名",
+        "tableNamePlaceholder": "users",
+        "columnsLabel": "カラム",
+        "addColumnButton": "カラムを追加",
+        "columnNamePlaceholder": "column_name",
+        "nullable": "Null 許容",
+        "defaultValuePlaceholder": "デフォルト値",
+        "cancel": "キャンセル",
+        "create": "作成",
+        "dropTitle": "テーブルを削除",
+        "dropDescription": "<strong>{name}</strong> とすべてのデータを完全に削除します。",
+        "dropConfirm": "テーブルを削除",
+        "addColumnTitle": "カラムを追加",
+        "addColumnDescription": "<strong>{name}</strong> にカラムを追加します。",
+        "columnNameLabel": "カラム名",
+        "columnNameInputPlaceholder": "email",
+        "typeLabel": "型",
+        "defaultOptionalLabel": "デフォルト (任意)",
+        "defaultOptionalPlaceholder": "'default_value'",
+        "addColumn": "カラムを追加",
+        "insertRowTitle": "行を追加",
+        "insertRowDescription": "<strong>{name}</strong> に行を追加します。",
+        "nullPlaceholder": "NULL",
+        "requiredPlaceholder": "必須",
+        "insert": "追加",
+        "deleteRowTitle": "行を削除",
+        "deleteRowDescription": "この行を完全に削除します。",
+        "moreFields": "他 {count} 件",
+        "delete": "削除"
+      },
+      "sql": {
+        "queryPlaceholder": "SELECT * FROM users LIMIT 10;",
+        "fullSqlAccess": "SQL フルアクセス",
+        "run": "実行",
+        "rowsCountSingular": "{count} 行",
+        "rowsCountPlural": "{count} 行",
+        "queryExecutedNoRows": "クエリを実行しました。返却された行はありません。",
+        "writePromptTitle": "SQL を入力して実行を押してください",
+        "writePromptHint": "DDL と DML をフルサポート",
+        "destructiveTitle": "破壊的な操作",
+        "destructiveDescription": "このクエリはデータを完全に変更または削除します。この操作は取り消せません。",
+        "typeConfirmLabel": "続行するには CONFIRM と入力してください",
+        "confirmPlaceholder": "CONFIRM",
+        "cancel": "キャンセル",
+        "execute": "実行",
+        "nullDisplay": "NULL",
+        "rowLabel": "行 {index}"
+      },
+      "settings": {
+        "databasesHeading": "データベース",
+        "developmentBadge": "開発",
+        "productionBadge": "本番",
+        "unsetDev": "Dev 解除",
+        "setDev": "Dev に設定",
+        "unsetProd": "Prod 解除",
+        "setProd": "Prod に設定",
+        "newDatabase": "新しいデータベース",
+        "schemaHeading": "スキーマ: {label}",
+        "createTable": "テーブルを作成",
+        "noTablesInDatabase": "このデータベースにテーブルはありません",
+        "columnsCount": "{count} カラム",
+        "rowsCount": "{count} 行",
+        "browse": "閲覧",
+        "notNull": "NOT NULL",
+        "connectionHeading": "接続",
+        "engineLabel": "エンジン",
+        "engineValue": "PostgreSQL",
+        "hostLabel": "ホスト",
+        "hostValue": "localhost",
+        "portLabel": "ポート",
+        "portValue": "5432",
+        "authLabel": "認証",
+        "authValue": "scram-sha-256",
+        "databaseUrlAutoInjected": "データベースが割り当てられると、DATABASE_URL がサンドボックスのシークレットに自動的に挿入されます。",
+        "backupsHeading": "バックアップ",
+        "createBackup": "バックアップを作成",
+        "backupCreated": "バックアップを作成しました",
+        "noBackupsTitle": "バックアップはまだありません",
+        "noBackupsHint": "このサンドボックスのすべてのデータベースの pg_dump バックアップを作成します",
+        "restore": "復元",
+        "backupsLocation": "バックアップはサーバーの /var/backups/ellul/postgres/ に保存されます",
+        "developmentDbUpdated": "開発データベースを更新しました",
+        "productionDbUpdated": "本番データベースを更新しました",
+        "databaseRestored": "バックアップからデータベースを復元しました",
+        "restoreTitle": "バックアップから復元",
+        "restoreDescription": "現在のデータベースのすべてのデータが置き換えられます。事前に自動でバックアップが作成されます。",
+        "typeRestoreLabel": "続行するには RESTORE と入力してください",
+        "restorePlaceholder": "RESTORE",
+        "cancel": "キャンセル",
+        "restoreConfirm": "復元"
+      },
+      "bin": {
+        "softDeletedRows": "ソフト削除された行",
+        "refresh": "更新",
+        "audited": "監査済み",
+        "auditedTooltip": "すべての復元・パージ操作は改ざん検知可能な暗号監査ログに記録されます (Ed25519 ハッシュチェーン)",
+        "searchPlaceholder": "削除済みの行を検索...",
+        "selectionBadge": "ページ内 {selected} / {total} 件",
+        "recover": "復元",
+        "purge": "パージ",
+        "noTablesWithSoftDelete": "ソフト削除対応のテーブルはありません",
+        "softDeleteRequirement": "テーブルに <code>deleted_at</code> と <code>deleted_by</code> カラムが必要です",
+        "purgeAllInTable": "テーブル内すべてをパージ",
+        "selectTable": "テーブルを選択...",
+        "tableOptionLabel": "{name} ({count} 件削除済み)",
+        "noSoftDeleteMobile": "ソフト削除カラムを持つテーブルがありません",
+        "selectTableToView": "削除済みの行を表示するテーブルを選択してください",
+        "selectTableHint": "AI エージェントが行を削除すると、タイムスタンプ付きでソフト削除されます。ここから復元または完全削除できます。",
+        "loading": "削除済みの行を読み込み中...",
+        "noMatchingDeleted": "「{query}」に一致する削除済みの行はありません",
+        "noDeletedRows": "{table} に削除済みの行はありません",
+        "tryDifferentSearch": "別の検索語をお試しください",
+        "rowsAppearHere": "AI エージェントが削除した行は復元のためここに表示されます",
+        "clearSearch": "検索をクリア",
+        "primaryKeyTooltip": "主キー (行の識別に使用)",
+        "recoverThisRow": "この行を復元",
+        "permanentlyDelete": "完全に削除",
+        "nullDisplay": "null",
+        "deleted": "削除済み",
+        "moreColumns": "他 {count} カラム",
+        "rowsRecoveredSingular": "{count} 行を復元しました",
+        "rowsRecoveredPlural": "{count} 行を復元しました",
+        "rowsPurgedSingular": "{count} 行を完全に削除しました",
+        "rowsPurgedPlural": "{count} 行を完全に削除しました",
+        "allPurgedSuccess": "削除済みの行をすべて完全にパージしました",
+        "deletedRowsCountSingular": "{count} 件の削除済みの行",
+        "deletedRowsCountPlural": "{count} 件の削除済みの行",
+        "matchingQuery": "「{query}」に一致",
+        "noPk": "PK なし",
+        "noPkTooltip": "このテーブルには主キーがありません。行の識別にすべてのカラムを使用するため、重複行があると不安定になる可能性があります。安全な復元のために主キーの追加をおすすめします。"
+      },
+      "binDialogs": {
+        "recoverTitleSingular": "{count} 行を復元",
+        "recoverTitlePlural": "{count} 行を復元",
+        "recoverDescription": "<code>deleted_at</code> と <code>deleted_by</code> を NULL に戻し、行を有効な状態に復元します。通常のクエリ結果に再び表示されます。",
+        "rowsIdentifiedByPk": "行は主キーで識別されます ({columns})",
+        "cancel": "キャンセル",
+        "recover": "復元",
+        "purgeTitle": "行を完全に削除",
+        "purgeAllDescription": "「{table}」内のソフト削除された<strong>すべての</strong>行を完全に削除します。この操作は取り消せず、監査ログに記録されます。",
+        "purgeSelectionDescriptionSingular": "「{table}」から {count} 行を完全に削除します。この操作は取り消せず、監査ログに記録されます。",
+        "purgeSelectionDescriptionPlural": "「{table}」から {count} 行を完全に削除します。この操作は取り消せず、監査ログに記録されます。",
+        "typePurgeToConfirm": "確認のため <code>purge</code> と入力してください",
+        "purgePlaceholder": "purge",
+        "purgeForever": "完全にパージ"
+      }
+    },
+    "lib": {
+      "preferredLocale": {
+        "saveFailed": "言語設定を保存できませんでした ({message})"
+      },
+      "regions": {
+        "fallback": "—",
+        "us-east": {
+          "name": "米国東部",
+          "detail": "バージニア"
+        },
+        "us-west": {
+          "name": "米国西部",
+          "detail": "オレゴン"
+        },
+        "eu-central": {
+          "name": "EU 中央",
+          "detail": "ドイツ"
+        },
+        "eu-north": {
+          "name": "EU 北部",
+          "detail": "フィンランド"
+        },
+        "asia-pacific": {
+          "name": "アジア太平洋",
+          "detail": "シンガポール"
+        }
+      }
+    },
+    "terms": {
+      "metaTitle": "利用規約 | ellul.ai",
+      "metaDescription": "ellul.ai の利用規約および利用規定です。",
+      "backToHome": "← ホームに戻る",
+      "title": "利用規約",
+      "lastUpdated": "最終更新: 2025年1月",
+      "sections": {
+        "acceptance": {
+          "heading": "1. 規約への同意",
+          "paragraphs": [
+            "ellul.ai(以下「本サービス」)にアクセスまたはご利用いただいた時点で、お客様は本利用規約(以下「本規約」)に同意したものとみなされます。本規約に同意いただけない場合、本サービスをご利用いただくことはできません。当社は本規約をいつでも改定する権利を留保しており、改定後も本サービスを継続してご利用いただいた場合、変更内容に同意したものとみなされます。"
+          ]
+        },
+        "description": {
+          "heading": "2. サービスの内容",
+          "intro": "ellul.ai は、開発環境を初期構成済みのクラウド型仮想プライベートサーバー(VPS)を提供します。本サービスには以下が含まれます。",
+          "bullets": [
+            "クラウドサーバーのプロビジョニングおよび管理",
+            "ブラウザベースのターミナルアクセス",
+            "プリインストール済みの開発ツールおよび AI コーディングアシスタント",
+            "HTTPS/SSL 証明書の自動発行",
+            "カスタムサブドメインの割り当て"
+          ]
+        },
+        "acceptableUse": {
+          "heading": "3. 利用規定",
+          "introBefore": "本サービスは合法的な目的にのみご利用いただけます。以下の行為は",
+          "introEmphasis": "厳格に禁止",
+          "introAfter": "されています。",
+          "prohibitedHeading": "禁止行為",
+          "bullets": [
+            {
+              "term": "暗号通貨マイニング:",
+              "body": " ビットコイン、イーサリアム、Monero など、ブロックチェーンを利用したマイニングを含む、あらゆる暗号通貨採掘ソフトウェアの実行"
+            },
+            {
+              "term": "スパム・大量メール送信:",
+              "body": " 同意なき大量メール、スパム送信、または大量配信目的のメールサーバー運用"
+            },
+            {
+              "term": "DDoS およびネットワーク攻撃:",
+              "body": " 分散型サービス妨害攻撃、ネットワークスキャン、その他あらゆるサイバー攻撃の実行または加担"
+            },
+            {
+              "term": "違法コンテンツ:",
+              "body": " 児童搾取コンテンツ、海賊版ソフトウェア、知的財産権を侵害するコンテンツなど、違法コンテンツのホスト・配布・リンク設定"
+            },
+            {
+              "term": "フィッシング・詐欺:",
+              "body": " フィッシングサイト、詐欺サイト、各種詐欺行為の運営"
+            },
+            {
+              "term": "マルウェアの配布:",
+              "body": " 悪意あるソフトウェア、ウイルス、トロイの木馬その他有害コードのホスト・作成・配布"
+            },
+            {
+              "term": "プロキシ/VPN サービス:",
+              "body": " 当社からの事前書面承認のない公開プロキシサーバー、VPN サービス、Tor 出口ノードの運営"
+            },
+            {
+              "term": "リソースの不正利用:",
+              "body": " 他のユーザーやインフラの安定性に影響を与える形でリソースを意図的に過剰消費する行為"
+            }
+          ],
+          "consequenceBefore": "本利用規定への違反は",
+          "consequenceEmphasis": "返金なしでの即時利用停止",
+          "consequenceAfter": "の対象となり、必要に応じて関係当局への通報を行う場合があります。"
+        },
+        "responsibilities": {
+          "heading": "4. アカウントに関する責任",
+          "intro": "お客様は以下について責任を負うものとします。",
+          "bullets": [
+            "アカウント認証情報および SSH キーのセキュリティ維持",
+            "お客様のアカウント下で発生するすべての行為",
+            "適用法令を遵守したご利用",
+            "データのバックアップ(ellul.ai はバックアップを提供しません)",
+            "連絡先情報を最新の状態に保つこと"
+          ]
+        },
+        "payment": {
+          "heading": "5. 支払い条件",
+          "intro": "支払いは Stripe を通じて処理されます。本サービスにご加入いただくことで、以下に同意いただいたものとみなします。",
+          "bullets": [
+            "毎月の自動課金をご登録の支払い方法に対して許可すること",
+            "既存の加入者には 30 日前の通知をもって料金が変更される場合があること",
+            "返金は当社の裁量により行われ、規約違反時には返金を行わないこと",
+            "サーバーリソースはプロビジョニング開始時点から削除時点まで課金対象となること"
+          ]
+        },
+        "termination": {
+          "heading": "6. サービスの終了",
+          "intro": "当社は、以下の場合にお客様のアカウントおよび本サービスへのアクセスを停止または終了する権利を留保します。",
+          "bullets": [
+            {
+              "emphasis": "返金なしで即時に",
+              "body": "利用規定への違反があった場合"
+            },
+            {
+              "emphasis": "7日前の通知をもって",
+              "body": "未払いやその他規約違反があった場合"
+            },
+            {
+              "emphasis": "いつでも",
+              "body": "法令遵守やインフラ保護のために必要となった場合"
+            }
+          ],
+          "outro": "アカウント終了時、サーバー上のすべてのデータは恒久的に削除されます。アカウント終了前のデータエクスポートはお客様の責任で行ってください。"
+        },
+        "infrastructure": {
+          "heading": "7. インフラおよび第三者",
+          "paragraphs": [
+            "ellul.ai のサーバーは Hetzner Cloud のインフラ上にプロビジョニングされます。本サービスのご利用には Hetzner の利用規約および利用規定も適用されます。当社は、不正利用報告の調査や Hetzner のポリシーへの対応に必要な範囲で、Hetzner と情報を共有することがあります。"
+          ]
+        },
+        "liability": {
+          "heading": "8. 責任の制限",
+          "intro": "本サービスは、明示・黙示を問わず一切の保証を伴わない「現状有姿」で提供されます。法令で許される最大限の範囲において、",
+          "bullets": [
+            "本サービスについて 100% の稼働率や可用性を保証しません",
+            "本サービスのご利用に起因するデータ喪失、業務中断、その他損害について責任を負いません",
+            "当社の総責任額は、請求発生前 3 か月間にお客様が支払った金額を超えないものとします",
+            "お客様がサーバー上で利用される第三者サービス、API、ツールについて当社は責任を負いません"
+          ]
+        },
+        "indemnification": {
+          "heading": "9. 補償",
+          "paragraphs": [
+            "お客様は、本サービスのご利用、本規約への違反、または第三者の権利侵害に起因または関連して生じる請求、損害、損失、費用(法的費用を含む)について、ellul.ai、その役員、取締役、従業員、代理人を補償し、損害から保護することに同意するものとします。"
+          ]
+        },
+        "law": {
+          "heading": "10. 準拠法",
+          "paragraphs": [
+            "本規約はイギリスの法律に準拠して解釈されるものとし、抵触法の原則は適用されません。本規約に起因するあらゆる紛争はイングランドおよびウェールズの裁判所において解決されるものとします。"
+          ]
+        },
+        "contact": {
+          "heading": "11. お問い合わせ",
+          "intro": "本規約に関するご質問や不正利用の報告は、以下のメールアドレスまでご連絡ください。"
+        }
+      },
+      "footer": {
+        "privacy": "プライバシーポリシー",
+        "home": "ホーム"
+      }
+    },
+    "privacy": {
+      "metaTitle": "プライバシーポリシー | ellul.ai",
+      "metaDescription": "ellul.ai のプライバシーポリシー — 当社がデータを収集・利用・保護する方法",
+      "backToHome": "← ホームに戻る",
+      "title": "プライバシーポリシー",
+      "lastUpdated": "最終更新: 2025年1月",
+      "sections": {
+        "introduction": {
+          "heading": "1. はじめに",
+          "paragraphs": [
+            "ellul.ai(以下「当社」「私たち」)は、お客様のプライバシー保護に努めています。本プライバシーポリシーでは、当社のクラウド開発プラットフォームをご利用いただく際の情報の収集・利用・保護方法について説明します。"
+          ]
+        },
+        "informationCollected": {
+          "heading": "2. 収集する情報",
+          "accountHeading": "アカウント情報",
+          "accountBullets": [
+            "メールアドレス(OAuth プロバイダーから取得)",
+            "氏名(OAuth プロバイダーから取得)",
+            "プロフィール画像(OAuth プロバイダーから取得)",
+            "OAuth プロバイダー識別子(GitHub、Google)"
+          ],
+          "metadataHeading": "サーバーメタデータ",
+          "metadataBullets": [
+            "サーバーの IP アドレス",
+            "サーバーの状態および設定",
+            "リソース使用量(CPU、メモリ)",
+            "作成および削除のタイムスタンプ"
+          ],
+          "paymentHeading": "支払い情報",
+          "paymentBody": "支払い処理は完全に Stripe が行います。当社はクレジットカード番号や銀行口座情報を保存しません。Stripe からは支払い状況とサブスクリプションに関する情報のみを受け取ります。",
+          "doNotCollectHeading": "当社が収集しない情報",
+          "doNotCollectBullets": [
+            {
+              "term": "サーバーの内容:",
+              "body": " サーバー上のファイル、コード、データに当社は一切アクセスしません"
+            },
+            {
+              "term": "SSH キー:",
+              "body": " SSH キーはプロビジョニング時に一度だけ送信され、その後は破棄されます"
+            },
+            {
+              "term": "ターミナルセッション:",
+              "body": " ターミナル操作のログ取得・録画・監視は行いません"
+            },
+            {
+              "term": "ユーザーシークレット:",
+              "body": " 環境変数はクライアント側で暗号化されており、当社では復号できません"
+            }
+          ]
+        },
+        "howWeUse": {
+          "heading": "3. 情報の利用目的",
+          "intro": "当社は収集した情報を以下の目的で利用します。",
+          "bullets": [
+            "お客様のクラウドサーバーのプロビジョニングおよび管理",
+            "支払いの処理およびサブスクリプションの管理",
+            "重要なサービス通知の送信",
+            "プラットフォーム上の不正利用の検出および防止",
+            "本サービスの改善および新機能の開発",
+            "法令上の義務の遵守"
+          ]
+        },
+        "dataSharing": {
+          "heading": "4. データの共有",
+          "intro": "当社は以下の相手にのみお客様の情報を共有します。",
+          "providersHeading": "サービス提供事業者",
+          "providersBullets": [
+            {
+              "term": "Hetzner Cloud:",
+              "body": " サーバープロビジョニング(サーバー構成情報を提供)"
+            },
+            {
+              "term": "Stripe:",
+              "body": " 支払い処理(請求情報を提供)"
+            },
+            {
+              "term": "Cloudflare:",
+              "body": " DNS 管理(ドメイン情報を提供)"
+            },
+            {
+              "term": "Neon:",
+              "body": " データベースホスティング(暗号化済みのアカウントデータを保存)"
+            }
+          ],
+          "legalHeading": "法的要請",
+          "legalBody": "法律、裁判所命令、政府機関からの要請に基づく場合、または当社の権利・財産・安全を保護する必要がある場合、情報を開示することがあります。",
+          "noSaleEmphasis": "当社はお客様の個人情報を販売しません",
+          "noSaleSuffix": "(マーケティング目的での第三者への販売は行いません)。"
+        },
+        "security": {
+          "heading": "5. データセキュリティ",
+          "intro": "当社は業界標準のセキュリティ対策を実施しています。",
+          "bullets": [
+            "すべてのデータ送信は HTTPS/TLS で暗号化",
+            "機微なデータは保存時にも暗号化(AES-256)",
+            "ターミナル認証用に各サーバー固有の JWT シークレットを使用",
+            "ユーザーシークレットはゼロ知識暗号化(BYOK)",
+            "定期的なセキュリティ監査および監視"
+          ]
+        },
+        "retention": {
+          "heading": "6. データ保持",
+          "bullets": [
+            {
+              "term": "有効なアカウント:",
+              "body": " アカウントが有効な間、データを保持します"
+            },
+            {
+              "term": "削除されたサーバー:",
+              "body": " サーバー削除と同時にサーバーデータは恒久的に削除されます"
+            },
+            {
+              "term": "閉鎖されたアカウント:",
+              "body": " アカウント閉鎖から 30 日以内にアカウントデータを削除します"
+            },
+            {
+              "term": "法的保持義務:",
+              "body": " 法令により必要な場合、一部のデータをより長く保持することがあります"
+            }
+          ]
+        },
+        "rights": {
+          "heading": "7. お客様の権利",
+          "intro": "お客様の所在地によっては、以下の権利を行使できる場合があります。",
+          "bullets": [
+            {
+              "term": "アクセス権:",
+              "body": " お客様の個人情報の写しを請求する権利"
+            },
+            {
+              "term": "訂正権:",
+              "body": " 不正確なデータの訂正を請求する権利"
+            },
+            {
+              "term": "削除権:",
+              "body": " アカウントおよびデータの削除を請求する権利"
+            },
+            {
+              "term": "ポータビリティ権:",
+              "body": " データを移植可能な形式で受け取る権利"
+            },
+            {
+              "term": "異議申立権:",
+              "body": " データの一部処理に対して異議を申し立てる権利"
+            }
+          ],
+          "outro": "これらの権利を行使される場合は、以下までご連絡ください: "
+        },
+        "cookies": {
+          "heading": "8. Cookie について",
+          "intro": "当社は以下の必要不可欠な Cookie を使用します。",
+          "bullets": [
+            {
+              "term": "認証:",
+              "body": " ログイン状態を維持するためのセッション Cookie"
+            },
+            {
+              "term": "ターミナルアクセス:",
+              "body": " Web ターミナル認証用のセキュアな Cookie"
+            }
+          ],
+          "outro": "サイト横断の追跡を行うトラッキング Cookie や第三者の解析 Cookie は使用しません。"
+        },
+        "transfers": {
+          "heading": "9. 国際的なデータ移転",
+          "paragraphs": [
+            "お客様のデータは EU 域内(Hetzner サーバー)および米国(Stripe、その他クラウドサービス)で処理される場合があります。当社は、適用されるデータ保護法令に従って、国際的なデータ移転に必要な保護措置を講じています。"
+          ]
+        },
+        "children": {
+          "heading": "10. 児童のプライバシー",
+          "paragraphs": [
+            "本サービスは 18 歳未満の方のご利用を想定していません。当社は児童から故意に個人情報を収集することはありません。当社が児童から情報を収集している可能性に気づかれた場合は、ただちにご連絡ください。"
+          ]
+        },
+        "changes": {
+          "heading": "11. 本ポリシーの変更",
+          "paragraphs": [
+            "当社は本プライバシーポリシーを随時更新する場合があります。重要な変更については、メールまたは本サービスを通じてお知らせします。変更後も本サービスを継続してご利用いただいた場合、更新後のポリシーに同意したものとみなされます。"
+          ]
+        },
+        "contact": {
+          "heading": "12. お問い合わせ",
+          "intro": "プライバシーに関するご質問や懸念事項は、以下までご連絡ください。",
+          "emailLabel": "メール: "
+        }
+      },
+      "footer": {
+        "terms": "利用規約",
+        "home": "ホーム"
+      }
+    },
+    "tabAI": {
+      "connectorsTitle": "コネクタ",
+      "connectorsDescription": "このサーバーの全ワークスペースで共有されるAIツールとプロバイダキー",
+      "toolsTitle": "AIツール",
+      "toolsDescription": "全ワークスペースのAIエージェント向けツールとプロバイダルーティング",
+      "dangerZone": "危険な操作",
+      "wipeGbrainTitle": "gbrainメモリを消去",
+      "wipeGbrainDescription": "保存された全知識を完全に削除します。gbrainは有効のまま、新規状態で再開します。",
+      "wipeGbrainConfirmTitle": "gbrainメモリを消去しますか？",
+      "wipeGbrainConfirmDescription": "AIエージェントが保存した全ページ、リンク、知識を完全に削除します。gbrainは有効のまま空のデータベースで再開します。この操作は元に戻せません。",
+      "cancel": "キャンセル",
+      "wiping": "消去中…",
+      "wipeAllMemory": "全メモリを消去"
+    },
+    "app": {
+      "redirecting": "リダイレクト中…",
+      "switchingApps": "アプリを切り替え中…"
+    },
+    "connection": {
+      "title": "接続の問題",
+      "retryingMessage": "サーバーに接続できません。自動リトライ中…",
+      "retryNow": "今すぐリトライ"
+    },
+    "toasts": {
+      "serverUpdated": "サーバーの更新に成功しました",
+      "passkeyConfirm": "パスキーで確認してこのサーバーを{operation}してください。",
+      "rebuildStarted": "サーバーの再構築を開始しました",
+      "rebuildDescription": "新しいAIプロキシトークンが生成されました。",
+      "updateQueued": "更新がキューに追加されました",
+      "updateQueuedDescription": "署名済みの保留中更新コマンドがサーバーへ送信されました。サービスはまもなく再起動します。",
+      "autoUpdatesEnabled": "自動更新が有効",
+      "manualUpdatesEnabled": "手動更新が有効",
+      "autoUpdatesDescription": "今後のプラットフォーム更新は自動的に適用されます。",
+      "manualUpdatesDescription": "今後の更新はステージングされ、承認を待ちます。",
+      "passkeyChangePlan": "パスキーで確認してプランを変更してください。",
+      "passkeyFailed": "パスキーの確認に失敗しました"
+    },
+    "createServer": {
+      "title": "サーバーをデプロイ",
+      "description": "ellul.ai 開発環境を作成します。",
+      "terminalAccessTitle": "Webターミナルアクセス",
+      "terminalAccessDescription": "ブラウザからワンクリックでサーバーにアクセス。SSH鍵はVPS内から後で追加できます。",
+      "sandboxWarning": "デイリーサンドボックスです。ワークスペースは24時間で初期化されます。Standard（$25/月）にアップグレードすると永続保存されます。",
+      "planIncludes": "{plan}プランの内容：",
+      "oneWorkspace": "ワークスペース 1つ",
+      "twoWorkspaces": "ワークスペース 2つ",
+      "nodejs": "Node.js 20 + npm プリインストール",
+      "opencode": "AIコーディングアシスタント（OpenCode）",
+      "https": "自動SSL付きHTTPS",
+      "upgradeable": "プラン間のアップグレード可能",
+      "afterDeployNote": "デプロイ後、ターミナルで <code>sudo setup-ssh-key</code> を使ってSSH鍵を追加し、ダッシュボードからセキュリティティアをアップグレードできます。",
+      "cancel": "キャンセル",
+      "deploying": "デプロイ中…"
+    },
+    "updateNudge": {
+      "requiresUpdate": "{feature}にはサーバー更新が必要です",
+      "applying": "適用中…",
+      "updateNow": "今すぐ更新",
+      "willStage": "次のハートビートで更新がステージングされます。",
+      "inProgress": "更新中…"
+    },
+    "errorBoundary": {
+      "cannotCommunicate": "サーバーと通信できません。",
+      "stillRunning": "サーバーは安全に稼働し続けています。",
+      "retry": "リトライ"
+    },
+    "aiTools": {
+      "auto": "自動",
+      "noKeys": "キー未設定",
+      "providers": "プロバイダ",
+      "addKeysHint": "上にキーを追加して接続",
+      "gbrainRam": "〜256 MB RAM",
+      "gbrainDescription": "AIエージェント用の永続メモリ",
+      "byAuthor": "{author} 作",
+      "requiresRam": "Proプランが必要",
+      "runningOnPort": "ポート {port} で稼働中",
+      "gstackDisk": "〜310 MB ディスク",
+      "gstackDescription": "AIコーディングエージェント向け30以上のスキル",
+      "notAvailable": "このVPSでは利用できません",
+      "skillsActive": "全エージェントでスキル有効",
+      "operationFailed": "操作に失敗しました"
+    },
+    "connectors": {
+      "failedToSave": "キーの保存に失敗しました",
+      "removeTitle": "APIキーを削除しますか？",
+      "removeDescription": "このサーバーから{label}のAPIキーを削除します。このプロバイダを使用するAIツールは、新しいキーが追加されるまでアクセスできなくなります。",
+      "cancel": "キャンセル",
+      "removing": "削除中…",
+      "removeKey": "キーを削除",
+      "pastePlaceholder": "トークンまたはコードを貼り付け…",
+      "signInTo": "{label}にサインイン",
+      "nowConnected": "{label}が接続されました。",
+      "followInstructions": "以下の手順に従って{label}を認証してください。",
+      "startingAuth": "認証セッションを開始中…",
+      "authExited": "認証がコード{code}で終了しました",
+      "send": "送信",
+      "done": "完了",
+      "save": "保存",
+      "update": "更新",
+      "apiKey": "APIキー",
+      "signIn": "サインイン",
+      "signedIn": "サインイン済み",
+      "getKey": "キーを取得"
+    },
+    "environmentLock": {
+      "standardLabel": "スタンダード",
+      "standardDescription": "ellul.aiログインで保護",
+      "standardUserMessage": "ellul.aiログインで保護されています。サービス侵害やアカウント乗っ取り時にリスクがあります。",
+      "webLockedLabel": "Webロック",
+      "webLockedDescription": "Face ID / Touch ID で保護",
+      "webLockedUserMessage": "Face ID / Touch ID で保護されています。サービスが侵害されても安全です。",
+      "privateLockedLabel": "プライベートロック",
+      "privateLockedDescription": "パスキー認証付き暗号化ボリューム",
+      "privateLockedUserMessage": "LUKS2で暗号化されたボリューム。Face ID / Touch ID で保護。パスキーなしではデータを読み取れません。",
+      "settingUp": "セットアップ中…",
+      "pleaseWait": "お待ちください…"
+    }
+  }
+}

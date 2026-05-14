@@ -1,0 +1,115 @@
+## What is Codex?
+
+Codex is OpenAI's coding-agent CLI. You install it once, run it as `codex` in any project, and the agent reads the repository, plans multi-file edits, executes tools, and writes diffs back to disk against your OpenAI API key. The surface area is deliberately small compared to vendor-bundled IDEs, and the loop is tuned for focused multi-file edits. As of April 2026, Codex is OpenAI's primary <Term slug="agentic-workflow">agentic workflow</Term> entry point on the command line.
+
+Ellul is not an alternative to Codex. Ellul is the persistent <Term slug="agent-workstation">agent workstation</Term> Codex runs on.
+
+## Why running Codex on Ellul matters
+
+Codex on a laptop runs into the same wall every CLI agent runs into. When the laptop sleeps, the process pauses. When the Wi-Fi flickers, the run hangs. The work that Codex is best at, where the agent grinds through a thousand small mechanical edits, is exactly the work that asks the laptop to stay open the longest.
+
+Move the session onto a workstation built for it. The workstation does not sleep, so the session does not die. Three things change:
+
+1. **Eight-hour overnight runs become routine.** Codex queues at 11pm and finishes by morning. You wake up to a draft PR.
+2. **Sessions go parallel and isolated.** Multiple `codex` processes in adjacent workstations on different branches, with no port collisions and no shared filesystem state to corrupt.
+3. **Privileged actions pause on a passkey.** Production-touching commands like `git push`, deploys, and prod-database queries pause on a FIDO2 gate that runs in a separate process the agent cannot read.
+
+<Callout type="tip" title="Your OpenAI key never touches the agent process">
+The credential lives in a server-side vault. When Codex calls the OpenAI API, the key is brokered through a separate process. Crash dumps, `/proc` reads, and prompt-injection paths cannot recover it from the agent's process namespace.
+</Callout>
+
+## Quick-start: from sign-up to first session
+
+This walkthrough assumes you already have an OpenAI API key. If you do not, generate one at [platform.openai.com](https://platform.openai.com) before starting.
+
+1. **Sign up** at console.ellul.ai. Hobby is $20/mo for up to two parallel workstations. Pro is $50/mo for up to five workstations and read-only peering.
+2. **Provision a workstation.** A persistent sandbox boots in roughly ninety seconds, pre-loaded with Codex, Claude Code, OpenCode, and Cursor's CLI.
+3. **Connect a passkey.** FIDO2 from your phone, laptop, or hardware key. The passkey gates `git push`, deploys, and any other privileged action the agent attempts.
+4. **Authenticate Codex.** Paste your OpenAI API key into Ellul's vault, or run `codex login` and complete the OAuth flow. Either way the credential is stored server-side and never sits in the agent's process namespace.
+5. **Open a session.** Use Ellul's chat surface in the browser, or SSH into the workstation and run `codex` directly.
+
+You can drive Codex with the CLI flags you already know, or by committing your config file:
+
+<CodeTabs>
+  <CodeTab label="CLI">
+```bash
+# Same flags as on a laptop. Same model selection, same approval policy.
+cd ~/work/your-repo
+codex --model gpt-5
+```
+  </CodeTab>
+  <CodeTab label="config.toml">
+```toml
+# ~/.codex/config.toml. Ellul brokers OPENAI_API_KEY through the vault, so
+# the credential does not appear here in plaintext.
+model = "gpt-5"
+approval_policy = "on-failure"
+sandbox_mode = "workspace-write"
+```
+  </CodeTab>
+</CodeTabs>
+
+The session is yours until you cancel.
+
+## Picking a plan
+
+Hobby is right for a single Codex session at a time. One workstation, BYO OpenAI key, passkey gate, and the dependencies you install stay installed across sessions.
+
+Pro is the tier you graduate to when one session at a time stops being enough:
+
+- **Multiple workstations** for <Term slug="parallel-agents">parallel agents</Term>. Two `codex` sessions on different branches, no shared filesystem state.
+- **Read-only peering** between workstations so a reviewer agent can read a coder agent's working tree without writing back.
+- **Production credential vault.** Tokens that should not sit in plaintext (AWS, GitHub PATs, database passwords) live behind the gate. The agent receives them only after a passkey tap.
+
+Both tiers BYO your OpenAI credential. Ellul charges for the workstation, not for the model.
+
+## Common patterns
+
+The work that benefits most from running Codex on Ellul is the work where the agent's per-step quality is good but the step count is large.
+
+Overnight migrations are the obvious one. Dependency upgrades, framework cutovers, lockfile hygiene across a monorepo. You queue the task before bed and read the diff at breakfast.
+
+Multi-file refactors are Codex's bread and butter. Running them on a workstation lets you queue several in sequence without baby-sitting your laptop, and the workstation's filesystem keeps the in-progress branches and scratch files even if you log off.
+
+Codex with MCP becomes more useful when the MCP servers themselves are long-lived. A database client, a Playwright browser, a shell, a custom internal API: all of them stay warm on the workstation between agent sessions. Warm-up cost amortizes.
+
+Production-touching automation is where the gate earns its keep. Anything that ends in `git push`, `vercel deploy`, or a write to a real database stops on a passkey approval. The agent decides what to attempt. The human approves the consequential bit.
+
+Mixed-model workflows are the unsexy but real reason teams keep coming back. Codex on the workstation alongside Claude Code, OpenCode, and Cursor's CLI. Use Codex for the focused multi-file edit. Swap to a different agent for the architecture pass. Hand back when it is time for the test loop. They share the workstation, the filesystem, and the gate. You do not have to commit to a vendor for a whole project.
+
+## Honest limits
+
+<Callout type="warning" title="A few things to be clear about">
+- **Inline editor completions.** Codex does not provide them. If you want them, pair Codex on Ellul with Cursor as your laptop editor.
+- **Round-trip latency on transatlantic links.** Streaming output adds 50 to 100 milliseconds per token across a long network hop. For unattended runs this does not matter. For typing along with the agent, locate your workstation in the closest region.
+- **OpenAI account requirements.** You bring your own OpenAI account and key. Ellul does not front-bill your model usage and does not subsidize it.
+</Callout>
+
+## Common questions
+
+### Does Codex run identically on Ellul?
+Yes. Codex is a CLI, and Ellul provisions a Linux workstation with it pre-installed. Same flags, same config, same behavior. The agent's session decouples from your laptop's lifecycle.
+
+### Do I need an OpenAI subscription or just an API key?
+An API key is sufficient for BYOK. Codex does not require a separate ChatGPT subscription on Ellul.
+
+### How does Codex compare to Claude Code on Ellul?
+Both run on the same workstation primitive. The decision is about model preference and CLI ergonomics. Codex against Claude Code is a model-and-loop choice, not an infrastructure choice.
+
+### Can I run Codex unattended overnight?
+Yes. Long unattended runs are the highest-value use case for moving Codex off your laptop. The workstation keeps the session live; the passkey gate ensures nothing irreversible happens before you tap.
+
+### How does Ellul handle my OpenAI API key?
+Your key lives in a server-side vault that the agent process cannot read. When Codex needs to call the OpenAI API, the credential is injected through a separate broker process. Crash dumps, `/proc` reads, and prompt-injection paths cannot recover the key from the agent's process namespace.
+
+## See also
+
+- [Claude Code vs Ellul →](/vs/claude-code)
+- [Cursor vs Ellul →](/vs/cursor)
+- [Overnight refactors on Ellul →](/solutions/overnight-refactors)
+
+## References
+
+- OpenAI, [platform overview](https://platform.openai.com). API access and key management.
+- OpenAI, [Codex CLI repository](https://github.com/openai/codex). Source, installation, release notes.
+- Model Context Protocol, [specification](https://modelcontextprotocol.io). Codex's MCP integration follows this open standard.

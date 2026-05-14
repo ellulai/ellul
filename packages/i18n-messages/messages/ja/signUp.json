@@ -1,0 +1,12 @@
+{
+  "signUp": {
+    "heading": "はじめましょう",
+    "headingShield": "Shield Gateway",
+    "subheadShieldFlow": "シークレットはプロキシ越しに。ローカルには何も保存しません。",
+    "subheadHasTier": "サインインしてサーバーをセットアップ",
+    "subheadPickTier": "プランを選んで作り始めましょう",
+    "selectTierPrompt": "上からプランを選んで続けてください",
+    "alreadyHaveAccount": "すでにアカウントをお持ちですか?",
+    "changePlan": "プランを変更"
+  }
+}

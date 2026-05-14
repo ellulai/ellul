@@ -1,0 +1,18 @@
+plugins {
+    id 'application'
+}
+
+group = 'com.example'
+version = '0.1.0'
+
+java {
+    sourceCompatibility = '17'
+}
+
+application {
+    mainClass = 'com.example.app.App'
+}
+
+repositories {
+    mavenCentral()
+}

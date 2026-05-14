@@ -1,0 +1,9 @@
+{
+  "welcome": {
+    "title": "Welcome to ellul.ai",
+    "greeting": "Your sandbox is ready.",
+    "orientation": "Your agent stays on — even when you close your laptop.",
+    "buttonChat": "Start a chat",
+    "buttonCode": "Open the code editor"
+  }
+}

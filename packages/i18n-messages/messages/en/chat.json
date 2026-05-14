@@ -1,0 +1,412 @@
+{
+  "chat": {
+    "emptyStates": {
+      "noThreads": "No threads yet",
+      "noThreadsHint": "Tap a session above to start a new conversation",
+      "connecting": "Connecting…",
+      "selectOrCreate": "Select or create a thread to begin."
+    },
+    "relativeTime": {
+      "justNow": "just now",
+      "minutesAgo": "{count, plural, one {# minute ago} other {# minutes ago}}",
+      "hoursAgo": "{count, plural, one {# hour ago} other {# hours ago}}",
+      "daysAgo": "{count, plural, one {# day ago} other {# days ago}}"
+    },
+    "errors": {
+      "notConnected": "Not connected to the workbench.",
+      "sendFailed": "Failed to send message."
+    },
+    "planSidebar": {
+      "label": "Plan"
+    },
+    "threads": {
+      "heading": "Threads",
+      "newThread": "New thread",
+      "newThreadFallback": "New Thread",
+      "activeThreadFallback": "Thread",
+      "scopedLabel": "Scoped",
+      "allLabel": "All"
+    },
+    "tooltips": {
+      "expandThreads": "Expand threads",
+      "collapseSidebar": "Collapse sidebar",
+      "showScopedThreads": "Show scoped threads",
+      "showThreadsFrom": "Show threads from {scope}"
+    },
+    "connection": {
+      "disconnected": "Disconnected",
+      "disconnectedHint": "Trying to reconnect — your threads are safe.",
+      "reconnecting": "Reconnecting…",
+      "reconnectingWithAttempt": "Reconnecting (attempt {attempt})…",
+      "reconnectingHint": "Threads will reappear when the connection is back.",
+      "disconnectedShort": "Disconnected. Trying to reconnect.",
+      "errorShort": "Connection error. Refresh if this persists."
+    },
+    "fileDrop": {
+      "title": "Drop file to upload",
+      "hint": "File will be sent to the AI"
+    },
+    "copy": {
+      "tooltip": "Copy to clipboard",
+      "copied": "Copied!",
+      "error": "Copy failed"
+    },
+    "composer": {
+      "selectOptionsHint": "Select one or more options.",
+      "sendFailed": "Failed to send input — try again."
+    },
+    "modelPin": {
+      "pinFailed": "Failed to pin model",
+      "unpinFailed": "Failed to unpin model"
+    },
+    "perTurnRevert": {
+      "label": "{count, plural, one {Revert} other {Revert # turns}}",
+      "tooltip": "{count, plural, one {Revert this turn} other {Revert # turns}}"
+    },
+    "providerAuth": {
+      "checking": "Checking…",
+      "recheck": "Re-check",
+      "verifyingTitle": "Verifying {provider} login…",
+      "verifyingBody": "Confirming the new auth state with the bridge. You can keep typing — sessions already work the moment the login lands.",
+      "providerUnavailable": "{provider} provider is unavailable.",
+      "providerLimited": "{provider} provider has limited availability.",
+      "notReady": "{provider} is not ready",
+      "runAndRecheck": "Run on the server and re-check:",
+      "signInTo": "Sign in to {provider}"
+    },
+    "threadError": {
+      "dismissAria": "Dismiss error",
+      "friendly": {
+        "noHeadroom": "Not enough memory to start this — try again in a moment.",
+        "tierCap": "Your tier's slot cap is full.",
+        "degradedRed": "System at capacity — work paused while pressure eases.",
+        "pressureHigh": "Memory pressure high — please wait a few seconds.",
+        "frameworkTooBig": "This workload exceeds your tier's per-workload budget.",
+        "queueFull": "Too many sends in flight; please wait.",
+        "slotHydrateFailed": "Pro Claude slot couldn't resume; the session was reset.",
+        "slotSpawnFailed": "Pro Claude slot couldn't start; check the runbook.",
+        "slotEvictTimeout": "Switching slot timed out; retried.",
+        "spawnScopeBinaryMissing": "Server binary missing — please redeploy.",
+        "portBindTimeout": "Preview took too long to bind; check the dev command.",
+        "checkpointDiskFull": "Vault disk full — checkpoints disabled until cleared.",
+        "cgroupv2NotMounted": "Server cgroup-v2 not mounted; reduced mode."
+      }
+    },
+    "authSetup": {
+      "fallbackProvider": "Provider",
+      "title": "Sign in to {provider}",
+      "descriptionDefault": "Authenticating the CLI that runs on your server — one time. Follow the two steps below.",
+      "descriptionCursor": "Authenticating the CLI that runs on your server — one time. Open the link below; we'll detect the sign-in automatically.",
+      "openLinkSignIn": "Open this link to sign in",
+      "openLinkBrowser": "Open this link in your browser",
+      "copyUrl": "Copy URL",
+      "copyFullUrl": "Copy full URL",
+      "copy": "Copy",
+      "copied": "Copied",
+      "enterCode": "Enter this one-time code",
+      "pasteCode": "Paste the code you get back",
+      "pastePlaceholder": "Paste code and press Enter",
+      "send": "Send",
+      "sending": "Sending…",
+      "sent": "Sent ✓",
+      "retry": "Retry",
+      "contacting": "Contacting sign-in provider… this usually takes a few seconds.",
+      "directTokenSummary": "Already have a token? Paste it directly →",
+      "directTokenHelp": "Run <code>claude setup-token</code> on your laptop, then paste the resulting <code>sk-ant-oat01-…</code> token below. Skips the in-modal sign-in flow.",
+      "tokenPlaceholder": "sk-ant-oat01-...",
+      "directTokenInvalid": "Token must start with sk-ant-oat01-",
+      "saveToken": "Save token",
+      "saving": "Saving…",
+      "transcriptHeader": "Session transcript",
+      "transcriptStarting": "Starting session…",
+      "tryAgain": "Try again",
+      "close": "Close",
+      "cancel": "Cancel",
+      "status": {
+        "starting": "Starting session…",
+        "waitingPaste": "Waiting for the code you paste below",
+        "urlReady": "Sign-in URL ready — open it to continue",
+        "startingCli": "Starting CLI on the server…",
+        "connected": "Connected — finishing up",
+        "errorPrefix": "Error: {message}",
+        "signinFailed": "Sign-in failed (exit code {exitCode})",
+        "idle": "Idle"
+      }
+    },
+    "system": {
+      "autoTidy": "Auto-tidying — compacting older sessions and trimming idle previews to free memory.",
+      "degradedMode": "System at capacity — new sends are queued; new previews paused until pressure eases."
+    },
+    "archive": {
+      "heading": "Archived threads",
+      "title": "Archived ({count})",
+      "untitledDefault": "Untitled thread",
+      "unarchiveTooltip": "Unarchive",
+      "restoreButton": "Restore"
+    },
+    "toast": {
+      "copy": {
+        "errorTitle": "Copy error"
+      },
+      "expandable": {
+        "showDetails": "Show details",
+        "hideDetails": "Hide details"
+      },
+      "dismissNotificationAria": "Dismiss notification"
+    },
+    "providerStatus": {
+      "title": "{provider} provider status",
+      "providerUnavailable": "{provider} provider is unavailable.",
+      "providerLimited": "{provider} provider has limited availability."
+    },
+    "ui": {
+      "dialog": {
+        "closeAria": "Close"
+      },
+      "modelPicker": {
+        "noModels": "No models available",
+        "newModelAria": "New model",
+        "newBadge": "New",
+        "pinDefault": "Pin as default model",
+        "unpinDefault": "Unpin default model"
+      }
+    },
+    "markdown": {
+      "copyCode": "Copy code",
+      "copied": "Copied"
+    },
+    "approval": {
+      "cancelTurn": "Cancel turn",
+      "decline": "Decline",
+      "alwaysAllowSession": "Always allow this session",
+      "approveOnce": "Approve once",
+      "pendingHeading": "PENDING APPROVAL",
+      "command": "Command approval requested",
+      "fileRead": "File-read approval requested",
+      "fileChange": "File-change approval requested"
+    },
+    "primaryActions": {
+      "submitting": "Submitting...",
+      "submit": "Submit",
+      "next": "Next",
+      "nextQuestion": "Next question",
+      "submitAnswer": "Submit answer",
+      "submitAnswers": "Submit answers",
+      "previous": "Previous",
+      "previousQuestionAria": "Previous question",
+      "stopGenerationAria": "Stop generation",
+      "sending": "Sending...",
+      "refine": "Refine",
+      "implement": "Implement",
+      "implementInNewThread": "Implement in a new thread",
+      "implementationActionsAria": "Implementation actions",
+      "connectingAria": "Connecting",
+      "preparingWorktreeAria": "Preparing worktree",
+      "sendingAria": "Sending",
+      "sendMessageAria": "Send message"
+    },
+    "queuedSend": {
+      "label": "Queued · pos {position} · ~{eta}",
+      "minutes": "{count} min",
+      "seconds": "{count} s"
+    },
+    "runtimeModeToggle": {
+      "groupAria": "Runtime mode",
+      "lite": "Lite",
+      "pro": "Pro",
+      "useProTitle": "Use Pro Claude (full access)",
+      "atCapacityTitle": "Pro slots at capacity — switching will evict the LRU slot"
+    },
+    "compactControls": {
+      "moreControlsAria": "More composer controls",
+      "modeGroupLabel": "Mode",
+      "accessGroupLabel": "Access",
+      "chat": "Chat",
+      "plan": "Plan",
+      "supervised": "Supervised",
+      "autoAcceptEdits": "Auto-accept edits",
+      "fullAccess": "Full access",
+      "showPlanSidebar": "Show {label} sidebar",
+      "hidePlanSidebar": "Hide {label} sidebar"
+    },
+    "runtimeMode": {
+      "supervisedLabel": "Supervised",
+      "supervisedDescription": "Ask before commands and file changes.",
+      "autoAcceptEditsLabel": "Auto-accept edits",
+      "autoAcceptEditsDescription": "Auto-approve edits, ask before other actions.",
+      "fullAccessLabel": "Full access",
+      "fullAccessDescription": "Allow commands and edits without prompts.",
+      "selectAria": "Runtime mode",
+      "planModeTitle": "Plan mode — click to return to normal build mode",
+      "buildModeTitle": "Default mode — click to enter plan mode",
+      "planModeShort": "Plan",
+      "buildModeShort": "Build"
+    },
+    "composerExtended": {
+      "preparingWorktree": "Preparing worktree...",
+      "draftAttachmentWarning": "Draft attachment may not persist",
+      "draftAttachmentTooltip": "Draft attachment could not be saved locally and may be lost on navigation.",
+      "previewImageAria": "Preview {name}",
+      "removeImageAria": "Remove {name}",
+      "approvalPlaceholder": "Resolve this approval request to continue",
+      "pendingAnswerPlaceholder": "Type your own answer, or leave this blank to use the selected option",
+      "planRefinePlaceholder": "Add feedback to refine the plan, or leave this blank to implement it",
+      "disconnectedPlaceholder": "Ask for follow-up changes or attach images",
+      "defaultPlaceholder": "Ask anything, @tag files/folders, or use / to show available commands",
+      "attachAfterPlanQuestions": "Attach images after answering plan questions.",
+      "unsupportedFileType": "Unsupported file type for '{name}'. Please attach image files only.",
+      "exceedsImageLimit": "'{name}' exceeds the {limit} attachment limit.",
+      "tooManyImages": "You can attach up to {max} images per message.",
+      "imageFallback": "image",
+      "planReady": "Plan ready",
+      "terminalContextExpired": "Terminal context expired. Remove and re-add {label} to include it in your message."
+    },
+    "commandMenu": {
+      "skillsLabel": "Skills",
+      "builtInLabel": "Built-in",
+      "providerLabel": "Provider",
+      "noMatchingSkills": "No skills found. Try / to browse provider commands.",
+      "noMatchingFiles": "No matching files or folders.",
+      "noMatchingCommand": "No matching command.",
+      "searchingSkills": "Searching workspace skills...",
+      "searchingFiles": "Searching workspace files..."
+    },
+    "slashCommands": {
+      "model": "/model",
+      "modelDescription": "Switch response model for this thread",
+      "plan": "/plan",
+      "planDescription": "Switch this thread into plan mode",
+      "default": "/default",
+      "defaultDescription": "Switch this thread back to normal build mode",
+      "providerCommandFallback": "Run provider command",
+      "providerSkillFallback": "Run provider skill",
+      "skillScopeFallback": "{scope} skill"
+    },
+    "contextWindow": {
+      "label": "Context window",
+      "usedAria": "Context window {percent} used",
+      "tokensUsedAria": "Context window {tokens} tokens used",
+      "tokensUsedSoFar": "{tokens} tokens used so far",
+      "contextUsed": "{used} / {total} context used",
+      "totalProcessed": "Total processed: {tokens} tokens",
+      "autoCompacts": "Automatically compacts its context when needed."
+    },
+    "traits": {
+      "variantTitle": "Variant",
+      "effortTitle": "Effort",
+      "thinkingTitle": "Thinking",
+      "fastModeTitle": "Fast Mode",
+      "contextWindowTitle": "Context Window",
+      "agentTitle": "Agent",
+      "thinkingOnDefault": "On (default)",
+      "thinkingOff": "Off",
+      "fastModeOn": "on",
+      "fastModeOff": "off",
+      "ultrathinkInBodyText": "Your prompt contains \"ultrathink\" in the text. Remove it to change effort.",
+      "defaultSuffix": " (default)",
+      "ultrathinkLabel": "Ultrathink",
+      "thinkingOnSuffix": "Thinking On",
+      "thinkingOffSuffix": "Thinking Off",
+      "fastLabel": "Fast",
+      "normalLabel": "Normal"
+    },
+    "traitsLegacy": {
+      "title": "Traits",
+      "reasoningEffort": "Reasoning effort",
+      "fastMode": "Fast mode",
+      "thinking": "Thinking",
+      "alwaysThink": "Always think",
+      "variant": "Variant",
+      "variantPlaceholder": "(default)",
+      "on": "On",
+      "off": "Off",
+      "default": "Default",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "extraHigh": "Extra-high",
+      "max": "Max",
+      "ultrathink": "Ultrathink"
+    },
+    "providerPicker": {
+      "modelTitle": "Model",
+      "discovering": "Discovering…",
+      "discoveringModels": "Discovering models…",
+      "noModelsConfigured": "No models configured",
+      "recent": "Recent",
+      "all": "All",
+      "model": "Model"
+    },
+    "actionsDropdown": {
+      "actions": "Actions",
+      "destructive": "This is destructive",
+      "areYouSure": "Are you sure?",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "agentRequesting": "Agent requesting {action}"
+    },
+    "expandedImage": {
+      "previewAria": "Expanded image preview",
+      "closeAria": "Close image preview",
+      "previousAria": "Previous image",
+      "nextAria": "Next image"
+    },
+    "proposedPlan": {
+      "fallbackTitle": "Proposed plan",
+      "planLabel": "Plan",
+      "copy": "Copy plan",
+      "copied": "Copied",
+      "downloadAria": "Download plan",
+      "expand": "Expand plan",
+      "collapse": "Collapse plan"
+    },
+    "scrollToBottom": "Scroll to latest messages",
+    "messagesTimeline": {
+      "emptyStartConversation": "Send a message to start the conversation.",
+      "revertToMessageTitle": "Revert to this message",
+      "sendFailed": "Not delivered",
+      "retryAria": "Retry sending message",
+      "previewImageAria": "Preview {name}",
+      "responseLabel": "Response",
+      "responseWithSummary": "Response • {summary}",
+      "workingFor": "Working for",
+      "workingFallback": "Working...",
+      "workingZeroSeconds": "0s",
+      "emptyResponse": "(empty response)",
+      "toolCallsHeader": "Tool calls",
+      "workLogHeader": "Work log",
+      "groupCount": "{label} ({count})",
+      "showLess": "Show less",
+      "showMore": "Show {count} more",
+      "changedFiles": "Changed files ({count})",
+      "collapseAll": "Collapse all",
+      "expandAll": "Expand all",
+      "viewDiff": "View diff"
+    },
+    "sandbox": {
+      "switchAria": "Switch sandbox",
+      "noSandbox": "No sandbox",
+      "warm": "● warm",
+      "cold": "○ cold",
+      "proSlots": " · pro ×{count}"
+    },
+    "uploading": "Uploading...",
+    "thread": {
+      "newThreadOf": "New {provider} thread",
+      "rename": "Rename",
+      "delete": "Delete",
+      "threadsCountTotal": "{count} threads"
+    },
+    "skillSource": {
+      "app": "App",
+      "system": "System",
+      "project": "Project",
+      "personal": "Personal"
+    },
+    "agentAuth": {
+      "authRequired": "Authentication required",
+      "authFailed": "Authentication failed",
+      "networkError": "Network error"
+    }
+  }
+}

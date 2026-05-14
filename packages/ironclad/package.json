@@ -1,0 +1,22 @@
+{
+  "name": "@ellul.ai/ironclad",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Free tier security: Warden proxy, MITM CA, command shims, SUID lockdown",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "warden:build": "cd warden && go build -o ../../dist/warden ./cmd/warden"
+  },
+  "devDependencies": {
+    "@ellul.ai/ts-config": "workspace:*",
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.2"
+  }
+}

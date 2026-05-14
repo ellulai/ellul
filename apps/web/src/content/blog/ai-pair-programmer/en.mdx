@@ -1,0 +1,97 @@
+"AI pair programmer" was always a strained metaphor. Pair programming is two humans at one keyboard, taking turns, talking out loud, catching each other's mistakes. The value comes from the _other_ human, with their different mental model, their willingness to disagree, and their memory of what you decided three weeks ago. Replace one of them with an LLM and the parts that mattered are the parts you can't replicate.
+
+The term still got used because it sounded right and it was useful for marketing. In 2026 it sounds antique. This is a short essay on how it aged.
+
+## 2022 to 2024: the metaphor at its strongest
+
+GitHub Copilot launched in 2021 with the tagline "Your AI pair programmer." It was a defensible framing. The product was inline completions: you typed, it suggested the next few lines, you accepted or rejected. The interaction had a turn-taking quality. The model was small enough that it failed often, which kept the human's attention engaged. The metaphor of "pair" carried, barely.
+
+Cursor launched in 2023 and adopted similar framing. The agent panel was new, but the dominant interaction was still "I write a line, the AI suggests the next line, I accept it." The metaphor still mostly fit. You could squint and see two participants alternating at the keyboard.
+
+The term peaked in this window. Every job description for a developer-tools company used it. Every blog post used it. Every conference talk used it. It was the canonical phrase.
+
+## 2024 to 2025: the metaphor stretches
+
+Two things broke the metaphor at once.
+
+The agents got better at multi-step planning. By late 2024, Cursor's Composer and Claude's coding mode could take a paragraph of intent and produce a multi-file diff. The interaction wasn't turn-taking anymore. You wrote a request, walked away for a minute, came back to a diff. That's not a pair. That's a contractor.
+
+Codebase indexing got real. The agent panel could hold the whole repo's call graph and type information in scope. This made the "ask the AI to do a thing" interaction more powerful but also more autonomous. The agent didn't need you to navigate the file tree. It had the file tree.
+
+By mid-2025, the dominant interaction in Cursor and Windsurf had quietly shifted from "inline completion as I type" to "natural-language request, multi-file diff." Completions were still there as a feature, not the headline. The headline was the agent.
+
+The branding lagged. "AI pair programmer" was still in the docs. The product was no longer pair-shaped.
+
+## 2026: the metaphor breaks
+
+In April 2026, the most-used mode of agentic tools is unattended.
+
+You write a task in the Cursor agent panel before lunch. You come back from lunch. The agent has been running, has produced a draft PR, has run the tests, has caught two of its own mistakes and retried. You read the diff and accept or reject.
+
+You kick off a Claude Code session at 11pm. You close your laptop. You wake up to a finished refactor sitting in a draft PR, with the agent's reasoning logged, the tests passing, and the deploy paused waiting for your tap.
+
+This isn't pair programming. There's no second person at the keyboard, because there's no keyboard for the duration of the work. The interaction shape is closer to "I assigned you a ticket; show me the PR when you're done."
+
+The agent isn't a pair. It's a junior engineer with infinite patience, no opinions about scope, and a well-known tendency to confidently get certain things wrong. The right relationship to such an engineer isn't "pair." It's delegation, with reviewable diffs.
+
+## What should "pair" mean now?
+
+If we want the term to survive, it has to mean something narrower than it used to.
+
+A useful definition: **pair programming with AI is the turn-taking inline mode**. Completions you accept. Command-K rewrites. Line-by-line edits you approve as you type. The human is at the keyboard. The AI is the second seat. The conversation is real-time. Each suggestion is small enough to read in one breath. This is the original spirit of "pair," reduced to what an LLM can actually contribute.
+
+Anything that runs longer than the human's attention span (multi-file Composer, eight-hour refactors, autonomous PR drafting, overnight runs) isn't pair programming. It's something else. We have words: agentic coding, AI engineering, autonomous engineering. None of them are perfect, but they're closer to what's actually happening than "pair."
+
+## Which products are still pair-shaped?
+
+Honest sort, ignoring branding:
+
+<BulletList>
+  <BulletItem heading="Mostly pair-shaped">
+    GitHub Copilot's inline completions. Cursor's command-K and inline edit. Windsurf's inline suggestions. JetBrains AI Assistant in its inline mode. These are turn-taking, completion-shaped, and small enough per-suggestion that the human stays at the keyboard.
+  </BulletItem>
+  <BulletItem heading="Past pair-shaped">
+    Cursor's Composer, Windsurf's Cascade, Claude Code, Codex, Copilot Workspace, Copilot Agent. All of these are agent-shaped: task in, diff out, with autonomous tool use in between. They belong to a different category than what "pair" originally meant. The fact that they share an editor with the inline mode confuses the framing.
+  </BulletItem>
+  <BulletItem heading="Definitely not pair-shaped">
+    Devin, Manus, Bolt, Lovable, Replit Agent, base44. These are managed agent products. The interaction is "describe the work, walk away, come back to a result." Calling them pair programmers would be malpractice. Most of their marketing has stopped trying.
+  </BulletItem>
+</BulletList>
+
+Two of those bullets used to all be the first one. The category split is recent.
+
+## Why does this matter for how you set up your work?
+
+The term you use shapes how you set up your work. If you think "AI pair programmer" you optimize for keyboard ergonomics, completion latency, and a single editor on a single machine. If you think "agent doing autonomous engineering" you optimize for runtime: where does the agent live, how does it survive your laptop closing, how do you gate the actions it takes against production, how do you run two of them on different problems at once.
+
+The pair-programmer setup (Cursor on your laptop, completions inline) is fine for pair-programmer work. It isn't fine for the agent work 2026 has pushed most engineers toward. Different shape, different tools, different runtime. See [agent workstation](/concepts/agent-workstation) for the long version.
+
+## So is the term dead?
+
+Not dead, narrowed. "AI pair programmer" still describes a real interaction: the inline, turn-taking, completion-shaped mode. That mode still ships and still earns its keep. What's no longer fair is to use the term as the umbrella for the entire field. The umbrella term is gone, and the terms that have stuck (agent, autonomous coder, AI engineer) are all imperfect.
+
+If you say "AI pair programmer" in 2026, you're either describing the inline mode specifically, or you're using a term whose meaning slipped while you weren't looking. Both are fine. Just notice which one you're doing.
+
+---
+
+## FAQ
+
+<Faq />
+
+---
+
+## References
+
+- [The original Extreme Programming definition of pair programming (c2 wiki)](https://wiki.c2.com/?PairProgramming)
+- [GitHub Copilot announcement (2021)](https://github.blog/news-insights/product-news/introducing-github-copilot-ai-pair-programmer/)
+- Internal: [Agent workstation](/concepts/agent-workstation), [Always-on AI agent](/concepts/always-on-ai-agent)
+
+<Cta
+  eyebrow="If your work is past pair-shaped"
+  body="Long agent runs need a runtime that doesn't sleep when you do. Ellul is the persistent workstation your agent CLI lives on, with passkey-gated production access."
+  primary={{ href: "https://console.ellul.ai/sign-up", label: "Get a workstation" }}
+  links={[
+    { href: "/concepts/agent-workstation", label: "Agent workstation" },
+    { href: "/blog/claude-code-vs-cursor", label: "Claude Code vs Cursor" },
+  ]}
+/>

@@ -1,0 +1,76 @@
+'use strict';
+
+const SECRET_PATTERNS = [
+  'DATABASE_URL', 'DB_URL', 'DB_HOST', 'DB_PASS', 'DB_USER', 'DB_NAME',
+  'REDIS_URL', 'REDIS_HOST', 'REDIS_PASS',
+  'MONGODB_URI', 'MONGO_URL',
+  'AMQP_URL', 'RABBITMQ_URL',
+  'SECRET', 'TOKEN', 'KEY', 'PASSWORD', 'PASS', 'CREDENTIAL',
+  'API_KEY', 'API_SECRET', 'API_TOKEN',
+  'PRIVATE_KEY', 'CLIENT_SECRET',
+  'STRIPE', 'OPENAI', 'ANTHROPIC', 'RESEND', 'CLERK', 'TWILIO',
+  'SENDGRID', 'SUPABASE', 'FIREBASE', 'NEON', 'TURSO',
+  'AWS_ACCESS', 'AWS_SECRET',
+  'SMTP', 'MAIL',
+  'SENTRY_DSN',
+  'WEBHOOK_SECRET',
+  'ENCRYPTION_KEY', 'SIGNING_KEY',
+  '__GIT_',
+];
+
+const SAFE_KEYS = new Set([
+  'NODE_ENV', 'PORT', 'HOST', 'HOSTNAME', 'HOME', 'USER', 'PATH',
+  'SHELL', 'LANG', 'TERM', 'COLORTERM', 'FORCE_COLOR', 'NO_COLOR',
+  'NODE_OPTIONS', 'NODE_PATH', 'NODE_DEBUG',
+  'TZ', 'LC_ALL', 'LC_CTYPE',
+  'npm_lifecycle_event', 'npm_package_name', 'npm_package_version',
+  'PWD', 'OLDPWD', 'SHLVL', 'LOGNAME',
+  'XDG_RUNTIME_DIR', 'XDG_DATA_DIRS', 'XDG_CONFIG_DIRS',
+  'DBUS_SESSION_BUS_ADDRESS',
+]);
+
+function isSecretKey(key) {
+  var upper = key.toUpperCase();
+  return SECRET_PATTERNS.some(function(p) { return upper.includes(p); });
+}
+
+function isSafeKey(key) {
+  if (SAFE_KEYS.has(key)) return true;
+  if (key.startsWith('SIBLING_URL_') || key.startsWith('SIBLING_PORT_')) return true;
+  return false;
+}
+
+function shouldHide(key) {
+  if (isSecretKey(key)) return true;
+  if (isSafeKey(key)) return false;
+  return false;
+}
+
+var originalEnv = process.env;
+
+var envProxy = new Proxy(originalEnv, {
+  get: function(target, prop, receiver) {
+    if (typeof prop === 'string') return target[prop];
+    return Reflect.get(target, prop, receiver);
+  },
+  set: function(target, prop, value) {
+    if (typeof prop === 'string') { target[prop] = value; return true; }
+    return Reflect.set(target, prop, value);
+  },
+  ownKeys: function(target) {
+    return Object.keys(target).filter(function(k) { return !shouldHide(k); });
+  },
+  has: function(target, prop) {
+    if (typeof prop === 'string' && shouldHide(prop)) return false;
+    return prop in target;
+  },
+  getOwnPropertyDescriptor: function(target, prop) {
+    if (typeof prop === 'string' && shouldHide(prop)) return undefined;
+    return Object.getOwnPropertyDescriptor(target, prop);
+  },
+});
+
+Object.defineProperty(process, 'env', {
+  get: function() { return envProxy; },
+  configurable: true,
+});

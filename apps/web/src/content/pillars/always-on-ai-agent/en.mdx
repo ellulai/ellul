@@ -1,0 +1,62 @@
+An <Term slug="always-on-agent">always-on AI agent</Term> is one whose lifecycle is decoupled from yours. You open a chat, give direction, walk away from the keyboard, and the agent keeps making progress. You come back hours later (from a phone, a different laptop, the next morning) and the work has continued. Approval requests for privileged actions buffer in a notification queue until you're reachable. Otherwise, the agent does not need you to be awake to be useful.
+
+That sounds simple. The architecture that makes it true is not.
+
+## The default lifecycle, and why it doesn't work
+
+Most agent tools today are built around a session model: a developer opens a tab, talks to the agent, and the session lives as long as the developer's process is running. Cursor's agent panel runs inside Cursor on your laptop. Claude Code is a CLI you invoke from your terminal. Codex spawns from your machine. The agent is alive as long as your shell or your IDE is alive.
+
+This is fine for short tasks: write me a function, refactor this module, generate this test. It breaks for the work that actually moves the needle: the eight-hour migration, the dependency upgrade across forty packages, the test suite that takes a full overnight cycle, the platform refactor that takes three days.
+
+The session model has a hard ceiling at "as long as the human is at the keyboard." For knowledge work, that's a serious constraint, but for **agent work**, it's existential. An agent's productivity per hour scales with continuity. If it has to start over every time the laptop sleeps, the long jobs that compound (the ones where each step depends on the last) are off the table.
+
+## What changes when the lifecycle decouples
+
+Move the agent off the laptop and onto a persistent <Term slug="agent-workstation">agent workstation</Term> and the lifecycle ceiling disappears. The agent's session is now bounded by its own task rather than by your attention.
+
+The shape of normal work changes:
+
+- **Tasks measured in hours, not minutes.** "Refactor the entire job-runner module" becomes a thing you start before lunch and review before dinner, not a thing you babysit at the keyboard.
+- **Tasks measured in days.** Migrations across many files. End-to-end test sweeps. Dependency upgrades that need to run, fail, fix, and run again. The agent makes incremental progress while you're doing other work.
+- **Sleep.** You queue work and go to bed. The agent runs the long path overnight and meets you in the morning with a draft PR or a list of decisions it needs from you.
+- **Mobility.** The agent doesn't care which device you use to reach it. Phone in the subway, laptop on the couch, desktop at the office; same agent, same workstation, same context.
+
+<Callout type="note" title="The mental model">
+Think of the agent less like a process and more like an employee on a different schedule. Some of the most useful work happens while you're not in the room. Your job is direction, review, and approval, not constant supervision.
+</Callout>
+
+## What "always-on" requires under the hood
+
+A useful always-on agent isn't just "the laptop didn't sleep." It needs four things the typical session model doesn't provide:
+
+**1. Persistent state.** Installed dependencies, in-progress branches, MCP server processes, agent memory: all of it has to live across sessions, lid closes, and human absences. An ephemeral sandbox can't be always-on by definition.
+
+**2. Crash recovery.** Long-running processes crash. A useful always-on agent has supervisor logic that restarts it and resumes from the last committed checkpoint, with the rule of thumb that any state worth keeping has to be written to disk before the agent considers a step complete.
+
+**3. Approval queueing.** When the agent hits a privileged action (`git push`, deploy, secret read) and the human is asleep, the action shouldn't fail or proceed silently. It should pause, queue, and notify, with the agent moving on to non-privileged work in the meantime. <Term slug="passkey-approval">Passkey approval</Term> is the right primitive: explicit, irreproducible by the agent, and approvable from any registered device.
+
+**4. Cross-device reachability.** The console must work from any device the human happens to be using. That's a UX claim with a security shape: the same passkey-gated authentication has to work whether you're on your laptop, your phone, or a borrowed machine.
+
+## When the always-on framing actually changes the work
+
+Two patterns benefit disproportionately from an always-on agent:
+
+The first is **slow compounding work**. A multi-hour refactor is more useful than two one-hour refactors because the agent builds context as it goes. If you have to restart, you also have to re-explain. Continuity has compound returns; an always-on agent captures them.
+
+The second is **ambient supervision**. Instead of one focused session per day where you babysit the agent, you have a running channel where you check in when convenient: morning coffee, lunch, end of day. The agent's work expands to fill the time you weren't planning to give it. The throughput of the human-agent pair goes up because the human's bottleneck is now their schedule, not their willingness to sit at the keyboard.
+
+## When it's overkill
+
+If your agent work is short, you don't need always-on. Cursor's inline completions, Claude Code's one-shot prompts, Copilot's edit suggestions: none of them need a persistent workstation. The session model fits the work.
+
+The crossover happens around the four-hour mark. If you regularly find yourself starting tasks you don't expect to finish in a single sitting, or queueing work you'd rather not babysit, you've crossed into territory where the always-on framing earns its keep.
+
+## See also
+
+- [Agent workstation →](/concepts/agent-workstation)
+- [Parallel agents →](/concepts/parallel-agents)
+- [Overnight refactors →](/solutions/overnight-refactors)
+- [Cursor on your laptop vs Cursor on Ellul →](/vs/cursor)
+- [Claude Code locally vs Claude Code on a workstation →](/vs/claude-code)
+
+<FAQ />

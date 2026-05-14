@@ -1,0 +1,45 @@
+{
+  "docs": {
+    "meta": {
+      "titleDefault": "ellul.ai ドキュメント",
+      "titleTemplate": "%s | ellul.ai ドキュメント",
+      "description": "ellul.ai のドキュメント。あなたのエージェントの、コンピューター。AIエージェントのための常時稼働ワークステーション。夜通し動き、ノートPCの外で、複数のエージェントを並列に動かします。"
+    },
+    "sidebar": {
+      "label": "ドキュメント",
+      "openMenu": "ドキュメントメニューを開く",
+      "closeMenu": "ドキュメントメニューを閉じる"
+    },
+    "page": {
+      "onThisPage": "このページの目次",
+      "lastUpdated": "最終更新",
+      "editOnGitHub": "GitHub で編集"
+    },
+    "lockCard": {
+      "techLabel": "技術",
+      "benefitLabel": "メリット"
+    },
+    "comparison": {
+      "paasLabel": "従来型 PaaS",
+      "vpsLabel": "標準 VPS",
+      "ellulLabel": "ellul.ai"
+    },
+    "og": {
+      "eyebrow": "Ellul ドキュメント",
+      "subtitle": "常時稼働エージェントワークステーションのドキュメント。"
+    },
+    "search": {
+      "placeholder": "ドキュメントを検索…",
+      "empty": "結果が見つかりません"
+    },
+    "hero": {
+      "badgeAlwaysOn": "常時稼働",
+      "badgeDocs": "ドキュメント",
+      "headlineLine1": "あなたのエージェントの、",
+      "headlineLine2": "コンピューター。",
+      "subhead": "AIエージェントのための常時稼働ワークステーション。夜通し動き、ノートPCがスリープ中も動き続け、複数のエージェントを並列に協調します。",
+      "ctaPrimary": "ドキュメントを読む",
+      "ctaSecondary": "ワークステーションを取得"
+    }
+  }
+}

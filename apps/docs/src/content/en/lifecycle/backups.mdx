@@ -1,0 +1,69 @@
+---
+title: "Backups"
+description: "How your data is preserved and how to restore from a backup."
+section: "Lifecycle"
+order: 3
+---
+
+The platform takes daily backups of per-sandbox databases. They are retained for a short period and stored alongside your workstation. You can also pull backups manually from the database panel.
+
+## What gets backed up
+
+By default, the platform backs up:
+
+- Per-sandbox application databases.
+
+Not backed up automatically:
+
+- Application code (you should rely on git for this).
+- Application secrets (you should keep your own copy in a password manager).
+- Object storage you create for your application.
+
+If your application stores files outside the database, you are responsible for backing them up using the tools your stack provides.
+
+## Daily database backups
+
+Each sandbox database is backed up automatically once per day. Backups are encrypted and stored on your workstation's persistent volume. Retention is one week by default.
+
+## Manual backups
+
+You can take a manual backup at any time from **Database > Settings > Backups**. The platform produces a compressed dump and lets you download it.
+
+We recommend taking a manual backup before:
+
+- A schema migration.
+- A bulk data update.
+- A risky deploy.
+
+## Restoring from a backup
+
+To restore:
+
+<Steps>
+  <Step number={1} title="Open Database > Settings > Backups">
+    The list shows recent backups with timestamps.
+  </Step>
+  <Step number={2} title="Select a backup">
+    Choose the backup you want to restore from.
+  </Step>
+  <Step number={3} title="Confirm the restore">
+    The platform takes a fresh pre-restore backup of the current state, then replays the selected backup. The current state is preserved in case you need to undo.
+  </Step>
+</Steps>
+
+Restore is a privileged operation and requires `db_full` permission gate approval.
+
+## What about the rest of the volume
+
+The encrypted storage volume itself (containing your code, secrets, etc.) is not automatically replicated off-site. The volume is durable storage at the cloud provider level, comparable to a managed disk. For belt-and-suspenders durability:
+
+- Push code to git remotes regularly.
+- Back up secrets manually to your password manager.
+- Export important application data on your own schedule.
+
+For Pro accounts with stricter requirements, you can request enabled off-site encrypted backup of the full volume. Contact us if this is relevant.
+
+## Where to go next
+
+- [Volume Encryption](/lifecycle/volume-encryption) for at-rest encryption.
+- [Regions and Data Residency](/lifecycle/regions) for where your data lives.

@@ -1,0 +1,43 @@
+{
+  "name": "@ellul.ai/docs",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack -p 3001",
+    "build": "next build && node scripts/postbuild-mirror-default-locale.mjs",
+    "start": "npx serve -p 3001 out",
+    "lint": "next lint",
+    "lighthouse": "lhci autorun --config=./lighthouserc.json",
+    "cf:preview": "next build && npx wrangler pages dev out --config wrangler.jsonc",
+    "cf:deploy": "next build && npx wrangler pages deploy out --config wrangler.jsonc --project-name ellul.ai-docs",
+    "cf:deploy:staging": "dotenv -e .env.staging -- next build && node scripts/postbuild-mirror-default-locale.mjs && npx wrangler pages deploy out --config wrangler.jsonc"
+  },
+  "dependencies": {
+    "geist": "^1.5.1",
+    "gray-matter": "^4.0.3",
+    "next": "^15.1.3",
+    "next-mdx-remote": "^5.0.0",
+    "posthog-js": "^1.205.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remark-gfm": "^4.0.1",
+    "@ellul.ai/i18n": "workspace:*",
+    "@ellul.ai/i18n-consts": "workspace:*",
+    "@ellul.ai/i18n-messages": "workspace:*",
+    "@ellul.ai/marketing-mdx": "workspace:*",
+    "next-intl": "^3.26.5"
+  },
+  "devDependencies": {
+    "@ellul.ai/ts-config": "workspace:*",
+    "@lhci/cli": "^0.14.0",
+    "@tailwindcss/typography": "^0.5.16",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2",
+    "wrangler": "^4.58.0"
+  }
+}

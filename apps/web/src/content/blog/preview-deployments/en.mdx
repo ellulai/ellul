@@ -1,0 +1,140 @@
+A preview deployment is a live URL for a code branch. Not the diff, the running app. The convention has been with us since at least 2017, and it has quietly grown more important every year as the gap between writing code and reading it widens. In 2026, with an AI agent often the one writing the code, the preview URL is doing more of the review than the diff is.
+
+This post covers why that shift matters, the three architectural shapes preview deployments come in, and where each one earns its keep.
+
+## Why do previews matter more when the agent is shipping?
+
+When a human writes code, the human knows what they did. They remember which files they changed and why. The diff is a record they read to refresh their own memory. Reviewers read it because the human author is across the table.
+
+When an agent writes code, the human reading the PR is the reviewer, often the only reviewer, reading the diff cold. The diff is necessary, but slower to consume than a live URL. The URL says "the feature works" in five seconds. The diff says "look at lines 217 to 453 to verify the feature works" in fifteen minutes.
+
+There's a subtler issue. Agents in 2026 are confident. They write `// fixed the timezone bug` in commit messages whether or not they fixed it. They mark tests passing whether or not the tests cover the regression. The text in the PR is not a reliable summary. The behavior of the deployed branch is. A preview URL is part of how you trust an agent's PR, not optional decoration.
+
+## The three shapes
+
+### Shape 1: per-PR ephemeral (Vercel, Netlify, Render)
+
+Each PR triggers a fresh build. The platform deploys to a unique subdomain. The preview lives until the PR closes. When a new commit lands, the platform builds again and replaces the deployment.
+
+**Strengths.** Clean isolation between previews. Cheap when traffic is low. Universally understood.
+
+**Weaknesses.** Cold-start latency on every build. Stale previews when the agent commits faster than builds complete. No persistent state, so anything the agent did to a database in the preview is lost when the build cycles. Bad fit for agents iterating every few minutes.
+
+### Shape 2: edge runtime (Cloudflare Workers, Pages)
+
+A variant of shape 1 with the edge runtime as the deployment target. Each PR ships to a Workers preview environment, propagated globally in seconds.
+
+**Strengths.** Single-digit-millisecond cold start. Global propagation. Cheap at scale.
+
+**Weaknesses.** Workers' programming model is a constraint, not just a runtime. Long-running connections, large in-memory caches, and specific Node APIs have to be re-shaped. If your stack already targets Workers, this is invisible. If your stack targets Node, the preview environment differs from production.
+
+### Shape 3: persistent runtime (the workstation itself)
+
+The agent's workstation serves the preview. There is no per-PR build. The agent runs `pnpm dev` (or equivalent) on the workstation and the preview URL points at that long-lived process. When the agent edits a file, the preview reflects the edit on the next page load. Same as if the agent were working locally and you were watching its dev server.
+
+**Strengths.** Zero cold start. State persists between iterations. The preview is exactly what the agent is currently running, which makes "agent says it works, human verifies it works" a five-second loop instead of a five-minute one.
+
+**Weaknesses.** Costs scale with workstation count, not PR count. State persistence cuts both ways: the preview drifts from production over time as the agent leaves debug data behind.
+
+## What does the wiring look like?
+
+A sketch of each, not full configs.
+
+<CodeTabs>
+
+**Vercel: connect repo, every PR auto-previews.**
+
+```bash
+# vercel.json (defaults handle most cases)
+{
+  "github": { "silent": true },
+  "buildCommand": "pnpm build",
+  "outputDirectory": ".next"
+}
+# Vercel posts the preview URL to the PR automatically.
+```
+
+**Cloudflare Pages: similar shape via Wrangler.**
+
+```toml
+# wrangler.toml
+name = "my-app"
+compatibility_date = "2026-04-01"
+pages_build_output_dir = "dist"
+# Preview URLs auto-generated per PR; bind in Pages dashboard.
+```
+
+**Persistent runtime on a workstation: the dev server is the preview.**
+
+```bash
+# On the workstation, agent runs:
+pnpm dev --port 3000
+# Workstation issues a stable preview URL bound to port 3000.
+# The URL stays the same across commits; the content updates live.
+```
+
+</CodeTabs>
+
+## The agent committed; humans review at the URL
+
+The workflow with persistent-runtime previews:
+
+<NumberedList>
+  <NumberedItem heading="The agent works on a branch">
+    The agent's [workstation](/concepts/agent-workstation) holds the branch. The dev server is running. The preview URL is whatever URL the workstation exposes (sometimes a workspace URL, sometimes a custom domain).
+  </NumberedItem>
+  <NumberedItem heading="The agent commits and notifies">
+    When the agent finishes a step it commits, optionally opens a PR, and pings the human via push notification with the preview URL.
+  </NumberedItem>
+  <NumberedItem heading="The human reviews at the URL">
+    Tap the notification on a phone, browser opens the preview, click around. Feature works or it doesn't. If it works, tap a passkey to approve the deploy. If not, leave a comment and the agent iterates.
+  </NumberedItem>
+  <NumberedItem heading="The merge gate stays at the boundary">
+    The deploy itself is a privileged action paused for a passkey tap. The human has approved the merge from the URL. The platform brokers the actual `git push` and deploy after the tap. The credential never enters the agent's process.
+  </NumberedItem>
+</NumberedList>
+
+## Cost and loop speed trade against each other
+
+There's no Pareto-optimal answer. The right choice is workload-dependent.
+
+<Callout variant="info" title="The shape of the tradeoff">
+Per-PR ephemeral previews are cheap per build and slow per change. Persistent-runtime previews are expensive per workstation and instant per change. If the agent iterates twice a day, ephemeral wins. If the agent iterates twenty times a day, persistent wins. The crossover sits around five iterations per day, and your build time decides where exactly.
+</Callout>
+
+Build time is the biggest variable. A 30-second build amortizes well over many iterations. A 5-minute build doesn't. Most agentic teams reach for persistent-runtime previews after the second time the agent burned an hour waiting on builds.
+
+## What about Codespaces?
+
+Codespaces is a different shape. The workspace is the preview, but Codespaces was built for humans. No agent gating, no parallel-agent isolation, no passkey on `git push`. Workable as a preview-runtime if the work is human-led. Insufficient as a runtime when the agent is the primary user. See [Codespaces vs Ellul](/vs/codespaces) for the longer comparison.
+
+## So which approach do I pick?
+
+If the work is mostly stateless web frontends and the agent commits a few times a day, Vercel-style ephemeral previews are the cleanest answer. If the stack is edge-native, Workers previews are equivalent with better cold-start. If the agent iterates every few minutes and loop speed matters, persistent-runtime previews on the workstation pay back the higher per-month cost in time saved.
+
+The deeper question, the one to answer before any of these: when the agent says "done," who is reviewing the work? If the answer is "the diff," your preview infrastructure can be lazy. If the answer is "the URL," it can't. For most agentic teams in 2026, it's the URL.
+
+---
+
+## FAQ
+
+<Faq />
+
+---
+
+## References
+
+- [Vercel preview deployments](https://vercel.com/docs/deployments/preview-deployments)
+- [Cloudflare Pages previews](https://developers.cloudflare.com/pages/configuration/preview-deployments/)
+- [GitHub Codespaces port forwarding](https://docs.github.com/en/codespaces/developing-in-a-codespace/forwarding-ports-in-your-codespace)
+- Internal: [Cursor on Ellul](/agents/cursor), [Claude Code on Ellul](/agents/claude-code), [Codespaces vs Ellul](/vs/codespaces)
+
+<Cta
+  eyebrow="Persistent-runtime previews"
+  body="The dev server is already running. The agent commits; the URL updates. The merge is passkey-gated. Twenty dollars a month for Hobby, fifty for Pro."
+  primary={{ href: "https://console.ellul.ai/sign-up", label: "Get a workstation" }}
+  links={[
+    { href: "/agents/cursor", label: "Cursor on Ellul" },
+    { href: "/agents/claude-code", label: "Claude Code on Ellul" },
+  ]}
+/>

@@ -1,0 +1,9 @@
+{
+  "welcome": {
+    "title": "ellul.ai へようこそ",
+    "greeting": "サンドボックスの準備が整いました。",
+    "orientation": "ノートパソコンを閉じても、エージェントは動き続けます。",
+    "buttonChat": "チャットを始める",
+    "buttonCode": "コードエディタを開く"
+  }
+}

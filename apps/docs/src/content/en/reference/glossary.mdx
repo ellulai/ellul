@@ -1,0 +1,70 @@
+---
+title: "Glossary"
+description: "Terms used across the documentation."
+section: "Reference"
+order: 3
+---
+
+## A
+
+**Agent Adapter.** A product configuration that lets orchestrator platforms (Paperclip, CrewAI, custom) provision and manage workstations programmatically.
+
+**Audit log.** Hash-chained record of every privileged action on your workstation. Tamper-evident.
+
+## C
+
+**Console.** The web application at console.ellul.ai. Where you sign in, manage workstations, and work inside sandboxes.
+
+**Cross-sandbox access.** A grant that lets one sandbox read another's source code as a frozen, read-only snapshot. Source visibility only; data and operations remain isolated.
+
+## E
+
+**Enhanced encryption.** A storage encryption mode where both the platform's key and a key derived from your passkey can unlock the volume. Available on Pro plan.
+
+## G
+
+**Gate.** A permission requirement attached to a privileged action. The agent must request a gate; you approve or deny in the console.
+
+## H
+
+**Hash-chained audit log.** A log where each entry references a cryptographic hash of the previous entry, so retroactive modification is detectable.
+
+**Hobby.** The entry paid plan. Always-on workstation for side projects with persistent storage.
+
+## P
+
+**Passkey.** A WebAuthn credential bound to your device's secure hardware. Phishing-resistant authentication.
+
+**Permission gate.** See *Gate*.
+
+**Pro.** The recommended paid plan. Adds encrypted persistent storage, custom domains, direct deploy, full port access, and SSH on top of Hobby.
+
+**Proof of possession (PoP).** A continuous signing mechanism on long-lived connections, used in Web Locked and Private Locked tiers. Defeats stolen-cookie attacks.
+
+**Private Locked.** The strongest security tier. The platform's encryption key is removed from the volume. Only your passkey can unlock.
+
+## S
+
+**Sandbox.** A kernel-isolated workspace for one project. Has its own namespace (filesystem, processes, network), its own database, its own secrets, its own preview port.
+
+**Session.** The authenticated state between you and your workstation. Web sessions, code-operation tokens, terminal sessions.
+
+**Shield Gateway.** A standalone product. A FIDO2-gated proxy for existing agent frameworks. No SDK or code changes required.
+
+**Sovereign Shield.** The on-server authentication and authorisation service. Hosts the auth database, issues sessions, enforces permission gates, signs heartbeats.
+
+**Sovereign mode.** Equivalent to Private Locked tier. The platform's volume key is physically removed.
+
+**Standard tier.** The default security tier. Convenient authentication and platform-managed encryption.
+
+## W
+
+**Web Locked.** A security tier where authentication requires a passkey and active connections sign continuous proof-of-possession challenges. Storage is still platform-recoverable.
+
+**Workspace.** The view in the console for one sandbox. Tabs for chat, code, preview, database, observability, settings, and integrations.
+
+**Workstation.** The Linux server backing your account. One workstation hosts multiple sandboxes.
+
+## Z
+
+**ZeroClaw.** The autonomous agent runtime. One of the chat session types and an observability tab.

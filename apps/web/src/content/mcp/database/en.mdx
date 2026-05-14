@@ -1,0 +1,172 @@
+## What is a database MCP server?
+
+A **database MCP server** is an <Term slug="mcp">MCP</Term>-compliant interface between an AI agent and a SQL database. Postgres is the most common upstream, but the same pattern applies to MySQL, SQLite, and (with appropriate translation) some NoSQL stores. It exposes the database's primitives (query, schema introspection, row counts, table descriptions) as MCP tools, so an agent can answer "what tables are in this database?" or "find the orders from last Tuesday with status PENDING" through ordinary tool calls instead of having someone hand-paste schema into the prompt.
+
+The Anthropic-published [`server-postgres`](https://github.com/modelcontextprotocol/servers/tree/main/src/postgres) is the reference implementation. Community servers exist for MySQL and SQLite with similar shape.
+
+The reason database MCP gets its own page (and why Ellul builds extra structure around it) is that **databases are where the agent meets production data**. The blast radius of "agent ran the wrong UPDATE" is meaningfully larger than "agent edited the wrong file". A workstation runtime that does nothing about that blast radius is a workstation that should not have a database MCP server installed.
+
+This page covers how Ellul's <Term slug="sovereign-shield">Sovereign Shield</Term> brokers database connections, how queries are classified into read, write, and migrate buckets with different gating policies, and what that means for day-to-day agent work.
+
+## What the database MCP gives the agent
+
+The standard tool set is consistent across MCP database servers:
+
+- **Schema introspection:** `list_tables`, `describe_table`, `list_indexes`, `list_constraints`.
+- **Querying:** `query` (parameterized SQL, returns rows) and `execute` (parameterized SQL, no rows).
+- **Convenience:** `count_rows`, `sample_rows`, `explain_query`.
+
+The agent calls them; the MCP server runs them; results come back as structured data.
+
+Ellul adds a classifier between the MCP server and the database. Every query the agent issues passes through it before reaching Postgres, and lands in one of three buckets.
+
+## The three database gates
+
+Ellul classifies database operations into three gate types, each with its own access policy.
+
+**`db_read`.** Anything purely read-only: `SELECT`, `EXPLAIN`, schema introspection. Flows through unchallenged. The agent's effective database identity is a role with `SELECT` privileges only, so even a misclassified query can't mutate data; the database itself rejects it.
+
+**`db_write`.** `INSERT`, `UPDATE`, `DELETE`, `MERGE`. Pauses for <Term slug="passkey-approval">passkey approval</Term>. The action queues, you get a notification on your phone, you tap to approve. The agent runs as a separate role with DML privileges that's only effective for the duration of an approved action; outside that window, the role isn't a callable identity at all.
+
+**`db_migrate`.** `CREATE TABLE`, `ALTER TABLE`, `DROP TABLE`, `CREATE INDEX`, anything DDL. Requires its own gate, separate from `db_write` because the failure modes are categorically worse. The migration role is created on demand when the gate is granted, scoped to a short TTL (default 15 minutes), and destroyed when the gate is revoked or expires.
+
+`db_write` implies `db_read`. `db_migrate` implies both. The implication chain means an approved migration session can run any read or write query alongside the migration without re-prompting.
+
+<Callout type="note" title="The classification, in one sentence">
+The MCP server doesn't decide what's safe. Postgres does, via per-query role switches that the shield enforces. A misclassified query just fails at the database layer; it can't accidentally execute with elevated privileges.
+</Callout>
+
+## Step-by-step: install Postgres MCP on an Ellul workstation
+
+The shortest path from a fresh workstation to an agent that can answer schema questions about a production read replica.
+
+**1. Provision a workstation and a database.** From the console, create the workstation, then provision Postgres. The provision call sets up the per-app role hierarchy (`shield_{app}_owner`, `shield_{app}_app`, `shield_{app}_readonly`) and writes a `DATABASE_URL` into the workstation's secret store.
+
+**2. Connect the database to your real one.** Most teams point the workstation's database at a read replica of their production database, with a clear backup and recovery story for the writable case. The connection details (host, port, replica credentials) live in the shield's vault, never in the agent's environment.
+
+**3. Install the MCP server.** The reference Postgres MCP from Anthropic:
+
+```bash
+npx -y @modelcontextprotocol/server-postgres --port 7820
+```
+
+The server reads `DATABASE_URL` from its environment when launched. The workstation's exec layer injects it from the encrypted secret store at launch time, so the connection string never sits in `mcp.json` and isn't available to other processes.
+
+**4. Wire it into the agent's MCP config.** In `<project>/.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "ellul": { "command": "ellul-mcp", "args": [], "env": {} },
+    "postgres": {
+      "url": "http://127.0.0.1:7820/mcp",
+      "transport": "sse"
+    }
+  }
+}
+```
+
+**5. Verify.** Ask the agent to list the tables in the database, sorted by row count. The agent issues a `db_read` query through the MCP server. Postgres runs it as `shield_app_readonly`. Results come back. You're done.
+
+<CodeTabs>
+
+**Postgres role used for read queries (the default identity):**
+
+```
+postgresql://shield_app_readonly@127.0.0.1:5432/appdb
+```
+
+**Postgres role used after a `db_write` gate is granted (only for the approved action):**
+
+```
+postgresql://shield_app_app@127.0.0.1:5432/appdb
+```
+
+</CodeTabs>
+
+The two roles are real Postgres identities with real `GRANT`/`REVOKE` boundaries. The MCP server can't escalate by issuing a different SQL string; the database itself enforces the boundary.
+
+## A worked example: agent investigates a production data anomaly
+
+Customers report cart items intermittently vanishing. You suspect a race condition in the merge code but want the agent to explore the data first.
+
+1. You ask: "There's a bug where cart items occasionally vanish. Investigate the cart-merge code path. Find affected carts in the database. Don't write code yet."
+2. The agent inspects the schema. `list_tables`, `describe_table`, `list_indexes`. All `db_read`. No prompts.
+3. It runs investigative queries: `SELECT id, user_id, updated_at FROM carts WHERE updated_at > NOW() - INTERVAL '24 hours' AND items_count = 0;` and a dozen variations.
+4. It narrows down twelve affected carts in the last 24 hours, each with a `cart_merges` event a few seconds before the items dropped.
+5. It writes a one-paragraph hypothesis (the merge transaction isn't locking the source cart's items), proposes a code change, and stops.
+
+No data was modified. The agent's read access didn't escalate. The hypothesis is testable; the fix is small. Read-heavy investigation is fast and safe by default; the friction is reserved for the moment you decide to mutate data, and at that point the friction is correct.
+
+## Security: passkey-gated writes, scoped roles, no credential exposure
+
+Three layers.
+
+**Connection string brokering.** The `DATABASE_URL` lives in the shield's vault, encrypted at rest. The MCP server gets it injected at launch through the workstation's exec layer. The agent process never holds it.
+
+**Per-app role hierarchy.** Every project gets three Postgres roles:
+
+- `shield_{app}_owner` owns the schema. Used only by migration jobs.
+- `shield_{app}_app` has DML privileges (`INSERT`, `UPDATE`, `DELETE`). Only active during an approved `db_write` window.
+- `shield_{app}_readonly` has `SELECT` only. The agent's default identity for `db_read`.
+
+The roles are real Postgres identities with real `GRANT`/`REVOKE` boundaries. The MCP server can't escalate by issuing a different SQL string; the database enforces the boundary.
+
+**Passkey-gated writes and migrations.** Any `db_write` or `db_migrate` query pauses the agent. You see the SQL and the affected table on your phone, and you tap to approve.
+
+<Callout type="warning" title="The default state for agents is read-only">
+On a freshly provisioned workstation, the agent's effective database identity is `shield_app_readonly`. Writes aren't just gated, they're not possible without an approved gate, because the role with write privileges isn't active. Structural, not advisory.
+</Callout>
+
+One footgun: don't grant `db_migrate` for long unless you mean it. The migration role has DDL privileges, and 15 minutes is plenty of time for a confused agent to drop a critical table. The short default TTL exists for a reason.
+
+## Common patterns
+
+**Read-only data exploration.** Schema questions, analytics queries, "find me the rows that look weird". Default mode. No prompts.
+
+**Single-row writes.** `UPDATE users SET email = '...' WHERE id = ...`. The agent prepares the query; you tap to approve. Useful for "fix this one customer's profile" workflows.
+
+**Migrations during dev.** Working on a feature that needs a new column. Grant `db_migrate` for 15 minutes. Agent runs the migration. Window expires; the migration role is destroyed.
+
+**Production read replicas.** Point the database MCP at a read replica. Even a misclassified write query just fails: the replica is read-only at the database layer.
+
+**Backup before risky operations.** Before any `db_migrate`, the runtime can take a logical backup (`pg_dump`) into the workstation's vault.
+
+## FAQ
+
+### Can the agent run any SQL?
+
+By default, no. Queries are classified into db_read / db_write / db_migrate buckets. Read queries flow through; write queries pause for passkey approval; migration queries require an explicit, separate gate that holds for a short TTL.
+
+### How is the connection string protected?
+
+It lives in the shield's vault, encrypted. The MCP server receives it at launch through the workstation's exec layer; the credential never enters the agent's process or environment.
+
+### What happens if the classifier misclassifies a query?
+
+It fails at the database layer. The agent's effective role doesn't have privileges for the bucket it tried to use, so Postgres rejects the query. A misclassification is a failure, not a privilege escalation.
+
+### Can I bring my own database (not Postgres)?
+
+Yes. The MCP server pattern is the same for MySQL and SQLite, and the wire format is database-agnostic. The Ellul-specific extras (role hierarchy, classifier, gate model) are tightest on Postgres but adaptable.
+
+### What about read-write applications? My agent needs to insert rows.
+
+That's what `db_write` is for. The agent issues the query; the runtime pauses; you approve from your phone. Approval activates the `shield_app_app` role for the duration of the write, then deactivates it. For batch writes, you can approve a window: the same pattern as `db_migrate`, with DML scope.
+
+## Where to go next
+
+- [MCP setup on Ellul](/mcp/setup) for the end-to-end walkthrough
+- [GitHub MCP](/mcp/github) for "investigate a bug, open a PR" workflows
+- [Claude Code on Ellul](/agents/claude-code) for a typical database-MCP client
+- [Cursor on Ellul](/agents/cursor) for the other typical client
+- [Sovereign Shield](/glossary/sovereign-shield) for the credential substrate
+- [The MCP hub](/mcp) for what MCP is in one page
+
+## References
+
+- [Anthropic Postgres MCP server](https://github.com/modelcontextprotocol/servers/tree/main/src/postgres)
+- [Model Context Protocol specification](https://spec.modelcontextprotocol.io)
+- [Postgres role and privilege documentation](https://www.postgresql.org/docs/current/user-manag.html)
+
+<FAQ />

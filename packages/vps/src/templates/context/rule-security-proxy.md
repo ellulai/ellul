@@ -1,0 +1,1 @@
+**SECURITY**: NEVER touch /etc/ellul/*, /var/lib/sovereign-shield/*. Tampering = PERMANENT LOCKOUT.

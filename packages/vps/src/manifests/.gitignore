@@ -1,0 +1,9 @@
+# Signed manifests + public key are generated artifacts of
+# apps/api/scripts/sign-manifests.ts. The operator runs that tool once
+# (with the real signing seed) and ships the outputs via provisioning.
+#
+# For dev/CI, run:
+#   pnpm tsx apps/api/scripts/sign-manifests.ts --generate
+# which regenerates these files with an ephemeral key.
+*.cbor
+manifest.pub

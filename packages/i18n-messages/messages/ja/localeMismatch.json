@@ -1,0 +1,15 @@
+{
+  "localeMismatch": {
+    "title": "{newLocale} に切り替えました",
+    "body": "プロジェクトのルール（CLAUDE.md、AGENTS.md、.cursor/rules）は{createdLocale}のままです。エージェントに書き直しを依頼するか、ファイルを手動で編集してください。",
+    "dismiss": "わかりました",
+    "localeNames": {
+      "en": "英語",
+      "ja": "日本語",
+      "ko": "韓国語",
+      "de": "ドイツ語",
+      "pt-BR": "ブラジルポルトガル語",
+      "fr": "フランス語"
+    }
+  }
+}

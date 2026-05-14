@@ -1,0 +1,127 @@
+---
+title: "Working in a Sandbox"
+description: "Day-to-day flow inside a sandbox: chat, code, preview, database, secrets, context."
+section: "Sandboxes"
+order: 1
+---
+
+A sandbox is the unit of work on your workstation. This page walks through the tabs you use day to day.
+
+## Chat
+
+The chat tab is where you talk to your agent. The session picker at the top lets you switch between:
+
+| Session | What it is |
+|---------|-----------|
+| **Shell** | A shell with no AI. For direct commands. |
+| **ZeroClaw** | The autonomous agent runtime. |
+| **OpenCode** | OpenCode CLI. |
+| **Claude** | Claude Code. |
+| **Codex** | OpenAI's Codex CLI. |
+| **Cursor** | Cursor agent. |
+
+Each session preserves its own state per thread. You can have multiple threads in one sandbox; switching threads is instant.
+
+The chat panel also shows:
+
+- A model picker (per-agent).
+- Streaming output as the agent works.
+- Diffs for proposed code changes.
+- Pending CLI prompts (login flows, interactive questions).
+- Permission gate requests when the agent asks.
+
+## Code
+
+The code tab shows your sandbox's file tree on the left and a viewer on the right. Files refresh in real time as the agent or your shell modifies them.
+
+Behaviour:
+
+- Selecting a file opens it in the viewer.
+- Modified files show a dot indicator.
+- The `.zeroclaw` internal directory is hidden.
+- Tree nodes are sorted directories first, then alphabetically.
+- Multiple files can be open in tabs.
+- Diff viewer shows recent changes.
+
+The code tab is read-friendly. Editing happens through the agent in chat or through commands you run in a Shell session.
+
+## Preview
+
+When the agent (or you) starts a development server, the preview tab shows it. The tab provides:
+
+- The preview URL on a per-sandbox subdomain.
+- Refresh, open-in-new-tab, and copy-URL actions.
+- Status of the underlying process.
+
+Each sandbox gets its own preview port. Stopping the preview server frees the port.
+
+## Database
+
+The database area has four tabs:
+
+| Tab | What it does |
+|-----|--------------|
+| **Tables** | Browse rows, schemas, indexes. |
+| **SQL** | Run ad-hoc queries with a built-in editor. |
+| **Bin** | Recently dropped tables. Recoverable for a short window. |
+| **Settings** | Configure connection details, role permissions. |
+
+The per-sandbox database is provisioned on first use. The agent's read and write operations against it are governed by the `db_read`, `db_write`, `db_migrate`, and `db_full` permission gates.
+
+## Settings
+
+### Context
+
+Manage the durable context the agent receives at the start of every conversation. This is where you put project conventions, naming standards, special instructions. The platform aggregates this into the agent's prompt automatically.
+
+### Secrets
+
+Store application secrets (API keys, database URLs that point to external services, encryption keys for your own use). Secrets are encrypted at rest. The agent reads them only via an `env` permission gate, where the secret is injected into a single command.
+
+Common patterns:
+
+- `STRIPE_SECRET_KEY` for payment integration.
+- `OPENAI_API_KEY` if you want the application code to call OpenAI directly.
+- `DATABASE_URL` if you want to override the platform-provided database with an external one.
+
+### Security
+
+Per-gate permission rules (`ask`, `allow always`, `never`), the audit log, and session controls.
+
+## Observability
+
+### Health
+
+High-level status: services up, recent errors, resource pressure indicators.
+
+### Gates
+
+Active and pending permission requests. This is where you can see at a glance what the agent is asking for and what is still pending.
+
+### Development
+
+Application logs streamed in real time. Log redaction applies by default; the `logs` permission gate temporarily reveals unredacted entries.
+
+### ZeroClaw
+
+The state of the autonomous agent runtime: what it is doing, recent task transitions, retries, and failures.
+
+## Vault (release-gated)
+
+Available to accounts where the feature is enabled. Three tabs:
+
+| Tab | Purpose |
+|-----|---------|
+| **Notes** | Knowledge documents the agent can refer to. |
+| **Graph** | A visual graph of how notes link. |
+| **Scopes** | Access controls for shared notes. |
+
+## Integrations
+
+Per-integration tabs appear when you connect external services. Each integration manages its own surface (logs, configuration, status).
+
+## Where to go next
+
+- [Cross-Sandbox Sharing](/projects/sharing-projects) for granting read access between sandboxes.
+- [Permission Gates](/permissions/overview) for the authorisation layer.
+- [Custom Domains](/deployment/custom-domains) for production traffic.

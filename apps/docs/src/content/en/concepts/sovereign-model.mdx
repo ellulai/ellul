@@ -1,0 +1,103 @@
+---
+title: "The Sovereign Model"
+description: "How ellul keeps the cryptographic authority over your data on your machine, not on ours."
+section: "Core Concepts"
+order: 1
+---
+
+The ellul trust model has one principle behind it: the keys live where the data lives.
+
+Every conventional cloud platform asks you to trust people. The team that holds your database password. The support engineer who can read your logs. The vendor whose vendor was breached last week. Trust accumulates without being audited, and one compromised link breaks the chain.
+
+ellul removes the people from the chain wherever cryptography can do the job instead.
+
+## Two layers of authority
+
+There is a clean split between **infrastructure authority** and **data authority**.
+
+| Authority | Lives with | What it controls |
+|-----------|------------|------------------|
+| Infrastructure | ellul | Billing, server provisioning, DNS, runtime updates. |
+| Data | You | Authentication, session validity, gate decisions, encrypted volume contents. |
+
+ellul handles billing and the cloud provider relationship. We provision the server, install the runtime, ship signed updates. We do not hold the keys to your data.
+
+In Web Locked tier, your authentication private keys live in your device's secure enclave and never leave it. In Private Locked tier, the encryption key for your storage volume is removed from the encryption header so even we cannot decrypt it.
+
+## Cryptographic, not procedural
+
+The platform replaces procedural trust with cryptographic guarantees in several places.
+
+<Callout type="principle" title="The shift">
+  Procedural: "Our staff is trained not to access customer data."
+  Cryptographic: "Our staff cannot access customer data because the key was deleted from the volume header."
+</Callout>
+
+Specifically:
+
+- **Heartbeats** from your server to ellul are cryptographically signed with a post-quantum signature scheme. The control plane never accepts an unsigned heartbeat.
+- **Commands** from ellul to your server are signed and optionally end-to-end encrypted to your server's per-host public key. Your server verifies signatures locally; an attacker who compromises the control plane still cannot inject commands.
+- **Updates** to the runtime are signed with a key held in a hardware security module. Your server verifies signatures locally before applying any update, and a hash chain prevents downgrade attacks.
+- **Authentication** in Web Locked tier uses WebAuthn with non-extractable hardware-bound private keys, plus continuous proof-of-possession signing on long-lived connections.
+
+## What ellul cannot see
+
+This is the most concrete answer to "what data does the vendor have access to":
+
+- The contents of your encrypted volume.
+- Your passkey private keys.
+- Your application secrets stored in the per-sandbox secrets manager.
+- Your chat history.
+- Your application database contents.
+- Your code.
+- Your agent CLI credentials (Claude, Codex, Cursor, OpenCode).
+
+What ellul does see:
+
+- Your account email.
+- Your billing details.
+- Server-level metadata: status, public IP, region, plan, security tier.
+- Coarse heartbeat telemetry: whether the server is healthy.
+- Wrapped storage keys (Standard and Web Locked tiers only; never in Private Locked).
+
+## The bus factor question
+
+Every developer should ask their hosting platform what happens if the vendor disappears. Most cannot give a useful answer.
+
+Your workstation is a standard Linux server running on a major cloud provider. ellul is a management layer on top, not a proprietary container or a locked-down image.
+
+If ellul goes offline:
+
+<Steps>
+  <Step number={1} title="Your server keeps running">
+    Applications, data, and configurations continue to operate. Nothing depends on ellul for runtime.
+  </Step>
+  <Step number={2} title="The local enforcer enters fail-safe mode">
+    After several missed heartbeats, the on-server enforcer reduces external access as a precaution and continues to poll for recovery.
+  </Step>
+  <Step number={3} title="You take over via SSH">
+    SSH in (Pro plan), disable the agent, open the firewall as you wish, and you have a standard Linux server.
+  </Step>
+  <Step number={4} title="Transfer billing">
+    Move billing to your own cloud provider account. ellul is fully out of the picture.
+  </Step>
+</Steps>
+
+There is no kill switch. No remote wipe. No dead-man trigger.
+
+## Audit trail
+
+Every privileged action on your workstation is recorded in a hash-chained audit log stored on the encrypted volume. Each entry references a cryptographic hash of the previous one, so any retroactive modification breaks the chain and is detectable.
+
+The chain head is reported with every heartbeat. The control plane stores the latest head per server. If a future heartbeat reports a hash that does not continue from the previously observed one, audit-chain divergence is flagged.
+
+Tampering is therefore detectable both locally (chain verification) and externally (cross-attestation), even though the database itself lives on your server.
+
+You can view the audit log at any time under **Settings > Security > Audit**.
+
+## Where to go next
+
+- [Security Tiers](/concepts/security-tiers) explains Standard, Web Locked, and Private Locked.
+- [Sandboxes](/concepts/sandboxes) covers kernel-level project isolation.
+- [The Agent](/concepts/the-agent) describes how chat sessions and tools interact with sandboxes.
+- [Permission Gates](/permissions/overview) shows how privileged actions get authorised.

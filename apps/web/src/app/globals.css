@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Sodium-lit night palette: single accent, warm cream text */
+    --ink: #0B0B0F;
+    --ink-1: #13131A;       /* surface */
+    --ink-2: #1A1A23;       /* surface elevated */
+    --hairline: rgba(245, 239, 230, 0.07);
+    --hairline-2: rgba(245, 239, 230, 0.12);
+
+    --cream: #F5EFE6;
+    --cream-65: rgba(245, 239, 230, 0.65);
+    --cream-40: rgba(245, 239, 230, 0.4);
+    --cream-25: rgba(245, 239, 230, 0.25);
+
+    /* Sodium amber: the only accent */
+    --sodium: #F0A65A;
+    --sodium-soft: rgba(240, 166, 90, 0.14);
+    --sodium-strong: rgba(240, 166, 90, 0.4);
+
+    /* Used sparingly */
+    --terra: #E5806B;
+  }
+
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+    overflow-x: clip;
+  }
+
+  body {
+    overflow-x: clip;
+  }
+
+  body {
+    color: var(--cream);
+    background:
+      radial-gradient(ellipse at 50% -10%, rgba(240, 166, 90, 0.06) 0%, transparent 55%),
+      var(--ink);
+    background-attachment: fixed;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "ss01", "cv11";
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--sodium-soft);
+    color: var(--cream);
+  }
+}
+
+@layer components {
+  .panel-ascente {
+    @apply rounded-2xl overflow-hidden;
+    background: var(--ink-1);
+    border: 1px solid var(--hairline);
+    box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.5);
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .data-table {
+    @apply w-full border-collapse text-left;
+  }
+  .data-table thead th {
+    border-bottom: 1px solid var(--hairline-2);
+    @apply px-4 py-3 text-xs font-semibold uppercase tracking-wider;
+    color: var(--cream-40);
+  }
+  .data-table tbody td {
+    border-bottom: 1px solid var(--hairline);
+    @apply px-4 py-3 text-sm;
+    color: var(--cream-65);
+  }
+  .data-table tbody tr:hover {
+    background: rgba(245, 239, 230, 0.02);
+  }
+
+  .code-block {
+    @apply rounded-lg p-5 font-mono text-sm overflow-x-auto;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--hairline);
+    color: var(--cream-65);
+  }
+
+  .section-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.2em];
+    color: var(--sodium);
+    opacity: 0.75;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

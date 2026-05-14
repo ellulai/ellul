@@ -1,0 +1,45 @@
+{
+  "docs": {
+    "meta": {
+      "titleDefault": "ellul.ai Docs",
+      "titleTemplate": "%s | ellul.ai Docs",
+      "description": "Documentation for ellul.ai. Your agent's computer. An always-on workstation for AI agents that runs overnight, off your laptop, with multiple agents in parallel."
+    },
+    "sidebar": {
+      "label": "Docs",
+      "openMenu": "Open documentation menu",
+      "closeMenu": "Close documentation menu"
+    },
+    "page": {
+      "onThisPage": "On this page",
+      "lastUpdated": "Last updated",
+      "editOnGitHub": "Edit on GitHub"
+    },
+    "lockCard": {
+      "techLabel": "Tech",
+      "benefitLabel": "Benefit"
+    },
+    "comparison": {
+      "paasLabel": "Traditional PaaS",
+      "vpsLabel": "Standard VPS",
+      "ellulLabel": "ellul.ai"
+    },
+    "og": {
+      "eyebrow": "Ellul Docs",
+      "subtitle": "Documentation for the always-on agent workstation."
+    },
+    "search": {
+      "placeholder": "Search docs…",
+      "empty": "No results"
+    },
+    "hero": {
+      "badgeAlwaysOn": "Always-on",
+      "badgeDocs": "Documentation",
+      "headlineLine1": "Your agent's",
+      "headlineLine2": "computer.",
+      "subhead": "An always-on workstation for your AI agent. Runs overnight. Keeps working while your laptop sleeps. Coordinates a team of agents in parallel.",
+      "ctaPrimary": "Read the Docs",
+      "ctaSecondary": "Get a workstation"
+    }
+  }
+}

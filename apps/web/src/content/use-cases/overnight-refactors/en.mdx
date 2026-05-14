@@ -1,0 +1,88 @@
+Some work doesn't fit in an editor session. Migrating a 200k-line codebase off React 18. Upgrading every microservice from Express 4 to Hono. Renaming a domain concept that touches every layer of the stack. The agent can do it. The question is whether you have to be awake while it works.
+
+If the agent runs on your laptop, yes. The lid stays open, the WiFi has to hold, and you're either keeping it on your desk overnight or accepting that the run dies somewhere around 2am.
+
+If the agent runs on Ellul, no.
+
+## The shape of an overnight run
+
+<Callout type="note" title="What an unattended run actually looks like">
+You queue the task at 11pm. The agent works on a persistent sandbox. Every privileged action (push, deploy, prod write) pauses on a passkey gate. By morning the agent has either opened a draft PR for you to review, or stopped at a gate waiting for your approval. Either way, you wake up to less work than you started with.
+</Callout>
+
+What happens between you closing the lid and you opening it the next morning:
+
+1. **Agent works on the workstation.** Same Claude Code, Codex, or Cursor CLI you'd use locally. Same model, same prompts. Different home.
+2. **State persists.** Branches, scratch files, package installs, in-progress diffs; all stay where the agent left them.
+3. **Privileged actions block on the gate.** The agent doesn't push, deploy, or merge until you tap your passkey. The gate runs in a separate process that the agent cannot read or attach to.
+4. **You sleep.** Phone on the bedside. If the agent finishes early or hits a gate, you get a push notification.
+
+## A worked example: React 18 to 19 migration
+
+Imagine a 50k-line codebase. The migration involves:
+
+- Updating `package.json` and lockfile across multiple workspaces.
+- Replacing every deprecated React API call site (3,400 of them).
+- Updating every test that relies on legacy concurrent-rendering behavior.
+- Running the test suite, fixing what breaks, iterating until green.
+- Opening a PR that's reviewable by a human.
+
+A senior engineer doing this manually: 2-3 days of focused work.
+
+A Claude Code agent on a laptop: maybe 6-8 hours of agent time, plus the laptop being open the whole time.
+
+A Claude Code agent on Ellul: same 6-8 hours, but you're asleep for most of them. You queue it at 11pm, you wake up at 7am, you read the diff over coffee, you tap your passkey to merge the PR.
+
+## What the gate does
+
+The gate is what makes overnight runs safe. It's the answer to "what if the agent does something I didn't authorize at 3am while I'm asleep."
+
+<FeatureMatrix
+  competitorName="Local agent"
+  rows={[
+    { capability: "Run the test suite", ellul: "Allowed (sandbox)", competitor: "Allowed", advantage: "tie" },
+    { capability: "Edit source files", ellul: "Allowed (sandbox)", competitor: "Allowed", advantage: "tie" },
+    { capability: "git push", ellul: "Pauses on passkey", competitor: "Runs immediately", advantage: "ellul" },
+    { capability: "vercel deploy / fly deploy", ellul: "Pauses on passkey", competitor: "Runs immediately", advantage: "ellul" },
+    { capability: "Talk to production database", ellul: "Pauses on passkey", competitor: "Runs immediately", advantage: "ellul" },
+    { capability: "Read SSH key from agent process", ellul: false, competitor: true, advantage: "ellul", note: "Ellul keeps secrets out of the agent's process namespace; local agents read from ~/.ssh." }
+  ]}
+  caption="What the agent can and cannot do unattended."
+/>
+
+The agent decides what work to do. The gate enforces what the human has approved.
+
+## Setup for an overnight run
+
+1. **Sign up.** Pro is $50/mo (we recommend it for unattended runs because of the multi-sandbox support).
+2. **Provision a workstation.** Pre-installed with Claude Code, Codex, OpenCode, and Cursor's CLI.
+3. **Bring your model key.** BYOK from your Anthropic / OpenAI / Google account. Stored in the server-side vault.
+4. **Connect a passkey.** FIDO2 from your phone is the most common, since push notifications come straight to it.
+5. **Queue the task.** Either through Ellul's chat UI or by SSHing in and running the agent directly. Describe the task in detail; tighter prompts mean fewer overnight surprises.
+6. **Walk away.** The agent runs.
+
+## Morning routine
+
+When you wake up, three states are possible:
+
+- **The agent finished.** A draft PR is open. You review the diff, tap your passkey, the gate releases the merge.
+- **The agent is paused on a gate.** It hit a `git push` or a deploy and is waiting for your approval. You either approve or reject; the agent picks up from there.
+- **The agent stopped on an error.** Persistent state on the workstation makes recovery cheap. You re-attach, see what blew up, give the agent a follow-up prompt or restart from a known-good branch.
+
+In all three cases, the lid problem doesn't apply. The agent's progress doesn't depend on whether you closed your laptop.
+
+## When this isn't worth it
+
+If your refactor takes 30 minutes, you don't need an overnight run. Sit at the keyboard, run the agent locally, watch it work.
+
+If your refactor needs human judgment at every step (architecture choices, naming taste, product decisions), an unattended run will produce a PR you have to redo.
+
+The sweet spot is mechanical-but-tedious: thousands of small, similar changes; a clear acceptance criterion (tests pass, types check, lints pass); the kind of work where the agent's per-step quality is good enough but the volume is too much for a focused session.
+
+## See also
+
+- [Claude Code vs Cursor →](/vs/claude-code-vs-cursor)
+- [Claude Code vs Ellul →](/vs/claude-code)
+- [Run Claude Code in the cloud →](/solutions/run-claude-code-in-cloud)
+
+<FAQ />

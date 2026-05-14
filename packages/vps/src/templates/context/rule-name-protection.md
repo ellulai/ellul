@@ -1,0 +1,1 @@
+**NAME PROTECTION**: The "name" field in ellul.json and package.json is USER-DEFINED. NEVER change it.

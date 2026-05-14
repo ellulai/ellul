@@ -1,0 +1,147 @@
+Two architectures dominate the agent-runtime space. Ephemeral sandboxes spin up per session, run the agent's code, and die at the end. Persistent workstations exist across sessions, with installed dependencies, agent state, and warm context all surviving between uses. They solve different problems, fail in different ways, and a hybrid model in the middle is increasingly where the practical answers live.
+
+This is a comparative essay. We'll define the two, walk through worked examples for each, name the products in each category, and finish with the hybrid pattern that's quietly becoming the default. The decision is less about which architecture is "better" and more about which one matches the work you're actually doing.
+
+## Defining the two models
+
+An ephemeral sandbox is a container, microVM, or process-isolated environment that exists for the duration of a single agent task. Lifetime: hundreds of milliseconds to a few minutes, occasionally up to an hour. State: nothing survives the end of the session. Cold start: optimized aggressively, often under a second. Examples: e2b, Modal, Cloudflare Workers (in some configurations), AWS Lambda (with extensions). The mental model is "a fresh execution environment, every time."
+
+A persistent workstation is a long-lived environment (VM, container, or dedicated host) that exists across many agent sessions. Lifetime: days to months. State: filesystem, processes, installed packages, configuration, agent context all persist. Cold start: minutes for first provision, seconds-to-minutes for resume from sleep. Examples: Ellul's [agent workstations](/concepts/agent-workstation), Daytona workspaces, GitHub Codespaces (when retained), self-hosted dev VMs. The mental model is "a computer that exists for the agent to live on."
+
+The shapes are not the same product wearing different hats. The performance, cost, and operational characteristics diverge significantly. Pick the wrong one and the workflow fights you for a year.
+
+## When ephemeral wins
+
+Ephemeral sandboxes are the right answer when the work has these properties: short duration (sub-second to a few minutes), stateless (the result is a return value, not a persistent change), bounded scope (one tool call, one code execution, one data transformation), high volume (many independent requests, each needing isolation), and cost-sensitive (paying for idle workspace time would dominate).
+
+Concrete examples:
+
+<BulletList>
+  <BulletItem heading="LLM tool-use code execution">
+    Anthropic's Claude or OpenAI's models call a "run this Python" tool. The tool needs an isolated environment to evaluate the code. e2b's API is built for exactly this: fresh sandbox per call, code runs, result returns, sandbox dies. See our [e2b comparison](/vs/e2b) for the trade-off shape.
+  </BulletItem>
+  <BulletItem heading="Untrusted code from external sources">
+    A platform that lets users submit code for evaluation: competitive programming judges, AI eval pipelines, sandbox-based plugin systems. Each submission is independent and untrusted. Ephemeral isolation is the right pattern.
+  </BulletItem>
+  <BulletItem heading="Data transformation pipelines">
+    A model produces a script; the script needs to run against a CSV; the result is a transformed CSV. Workflow-orchestration tools like Modal or Cloudflare's compute APIs are good fits.
+  </BulletItem>
+  <BulletItem heading="Browser-based vibe coding">
+    Browser sandboxes run user code as part of the editing experience. StackBlitz's WebContainers underlie [Bolt](/vs/bolt). Replit's hot-reload runtime backs [Replit Agent](/vs/replit). Ephemeral by necessity (the browser tab can close anytime), but the pattern fits the work: short-lived, demo-scale, resettable.
+  </BulletItem>
+</BulletList>
+
+What ephemeral does well: the cold-start cost is amortized across infinite future invocations because there is no future invocation. There's just the next one, which is also fresh. Cost is exclusively per-use. Security boundary is naturally short-lived, which limits attacker dwell time.
+
+What ephemeral does badly: any work that depends on persistent state. Installed dependencies, learned context, ongoing project state all have to be re-acquired every session. For a 5-minute task that's fine. For a 5-hour task, the cumulative cold-start cost dominates.
+
+## When persistent wins
+
+Persistent workstations are the right answer when the work is long-duration (minutes to days, occasionally weeks), stateful (installed dependencies, configuration, agent context, ongoing files all matter), coherent across sessions (the agent's "morning self" continues from the "evening self's" state), multi-session (the same project gets touched repeatedly with state surviving in between), and uses long-running tools (MCP servers, file watchers, language servers, dev servers all benefit from staying up).
+
+Concrete examples:
+
+<BulletList>
+  <BulletItem heading="A coding agent maintaining a codebase">
+    The agent has a project on disk, with `node_modules` installed, the test suite cached, the dev server warm. When a new task lands, the agent picks up from its last state. Cold-starting per session would mean re-installing dependencies every morning, re-warming caches every morning, re-reading project conventions every morning. Persistent runtimes amortize the warm-up cost across many sessions.
+  </BulletItem>
+  <BulletItem heading="Overnight runs">
+    A long [overnight Claude Code run](/blog/run-claude-code-overnight) needs the runtime to keep running while the user sleeps. Ephemeral sandboxes by definition can't do this; the session is the unit of life. Persistent workstations are the natural fit.
+  </BulletItem>
+  <BulletItem heading="Parallel agents with peering">
+    [Parallel-agent setups](/concepts/parallel-agents) (one agent codes, another reviews, a third documents) depend on shared filesystem snapshots and read-only peering between agents. Both are easier when the underlying workspaces persist; ephemeral peers would have to re-synchronize state every iteration.
+  </BulletItem>
+  <BulletItem heading="MCP servers and developer tools">
+    [MCP](/glossary/mcp) servers are designed to be long-lived. They index codebases, hold connections to external systems, cache results. Spinning them up per session loses the indexes and the caches. The right model for MCP is a persistent runtime where the server stays up alongside the agent.
+  </BulletItem>
+</BulletList>
+
+What persistent does well: warm context, installed dependencies, multi-session continuity, durability through interruptions. The cumulative effect is that the agent's first action of a new session is productive immediately, rather than spending the first minute re-discovering its own prior state.
+
+What persistent does badly: cost when idle. A workspace that exists 24/7 is paid for 24/7, even if the agent is only active for 4 of those hours. The cost-per-hour is lower than ephemeral, but there's no way to drop to zero when nothing is happening.
+
+## A worked comparison
+
+Same task, both architectures, honest accounting.
+
+Task: "upgrade all minor dependencies in this monorepo, run the test suite for each, open a PR per package."
+
+On an ephemeral sandbox, the sandbox spins up, clones the repo (cold), runs `npm install` (cold, several minutes), upgrades a single package, runs the test suite for that package only, opens a PR, exits. Then a new sandbox spins up for the next package: fresh clone, fresh install, etc. For 50 packages, you're paying for 50 cold installs. The job runs in roughly N times (clone plus install plus run) time, parallelizable but expensive.
+
+On a persistent workstation, the repo is already cloned. `node_modules` is already installed. The agent upgrades package 1, runs the relevant tests, opens a PR. Moves to package 2: `node_modules` is hot, only the changed package needs reinstalling. For 50 packages, the install cost is amortized across all of them. The job runs in roughly clone plus install plus N times run time.
+
+For this specific task, persistent wins on cost and time. The math reverses for "evaluate this code snippet"; there, ephemeral is the only sane pattern.
+
+## The products
+
+Mapping the runtime landscape to the two architectures.
+
+Pure ephemeral. e2b is sandbox-as-an-API. Tight cold-start, designed for tool-use. [/vs/e2b](/vs/e2b). Modal is function-as-a-service for ML workloads. Fast cold start, good ergonomics for batch. Cloudflare Workers and Lambda are generalist serverless compute, less agent-specific.
+
+Pure persistent. Ellul ships an agent workstation per agent. [/concepts/agent-workstation](/concepts/agent-workstation). Self-hosted Linux box is the original persistent workstation, real and underrated.
+
+Hybrid (warm pool, hibernate-and-resume). GitHub Codespaces persists workspaces, suspends when idle, resumes on access. [/vs/codespaces](/vs/codespaces). Daytona persists workspaces and supports hibernation. Open-source. [/vs/daytona](/vs/daytona). Sprites is a newer entrant in the agent-runtime space, with hybrid lifecycle. [/vs/sprites](/vs/sprites).
+
+The hybrid category is growing fastest. The next section is why.
+
+## The hybrid pattern (warm pool plus hibernate-and-resume)
+
+The pure-ephemeral / pure-persistent dichotomy doesn't last under pressure. Real workloads have a mix of short tool calls and long sessions. Pure ephemeral pays cold-start tax on the long tasks. Pure persistent pays idle tax on the short tasks. The natural answer is a runtime that adapts.
+
+The pattern that's emerging: workspace state persists on disk (the filesystem, the installed dependencies, the agent's context all survive between uses), compute is suspended when idle (when the agent is not actively running, the workspace's CPU drops to zero; the runtime hibernates the process, snapshots the memory, and releases the compute), and resume is fast (when activity returns, the runtime restores from snapshot in seconds, not minutes).
+
+The trade-offs:
+
+Warm-pool overhead. A small number of workspaces are kept hot in standby for instant response. This is a few percent of capacity but means the system is never fully cold.
+
+Snapshot / resume costs. Suspending and resuming has a real cost: typically a few hundred milliseconds to a few seconds per cycle. Aggressive hibernation policies can hit this often enough to noticeably degrade interactive feel.
+
+Complexity. The runtime has more states (active, suspending, suspended, resuming, terminated). Bugs in transitions cause user-visible flakiness if not handled carefully.
+
+For most agent workloads, the hybrid pattern is what you actually want. Pure ephemeral fits a narrow but important slice (tool-use, untrusted code execution, short transformations). Pure persistent fits the cases where instant resume matters more than idle cost (interactive vibe coding, always-on agents).
+
+## How Ellul approaches the trade-off
+
+Quick honest disclosure: we're a persistent-workstation company. We chose persistence as the default because the workloads we optimize for, coding agents working on real projects over hours and days, overwhelmingly benefit from warm context. We are adding hibernation in late 2026 to capture the idle-cost wins; the persistent default doesn't change.
+
+The features we ship that depend on persistence:
+
+Installed dependencies survive reboots. The agent's `~/.openclaw/`, `~/.claude/`, `~/.codex/` config and history persist across sessions. MCP servers stay up between agent sessions. The dev server can stay running while you sleep. [Parallel-agent peering](/concepts/parallel-agents) reads from a snapshot of another workstation's filesystem, which only makes sense if both workstations have persistent filesystems. The [Sovereign Shield](/glossary/sovereign-shield) holds long-lived OAuth tokens and session keys; rotating those per-session would be a UX disaster.
+
+If your workload is "evaluate this Python snippet," you don't want any of that, and you should use e2b or Modal. If your workload is "the agent maintains my project as long as I have a project to maintain," persistence is structural and the workstation pattern fits.
+
+## A decision tree
+
+Does the work need state to survive the session? No goes to ephemeral sandbox. Pick e2b or Modal. Yes goes to persistent or hybrid.
+
+Is the work mostly long sessions, with occasional gaps? Long sessions, mostly active goes to persistent. Pick Ellul or a self-hosted Linux box. Long sessions with significant idle time goes to hybrid. Pick Codespaces, Daytona, or wait for Ellul's hibernation rollout.
+
+Is cost-per-hour during idle a deal-breaker? Yes means hybrid is essential. Persistent will cost more than you want. No means persistent is fine; the simplicity is worth it.
+
+The shape that makes everything easy: the runtime fits the workload. Don't fight a pure-ephemeral runtime to do persistent work; don't pay for a persistent runtime to do ephemeral work; consider a hybrid when neither extreme fits.
+
+---
+
+## FAQ
+
+<Faq />
+
+---
+
+## References
+
+- e2b, *sandbox API design notes*, [e2b.dev](https://e2b.dev)
+- Daytona, *open-source dev environment*, [daytona.io](https://daytona.io)
+- GitHub, *Codespaces architecture*, [docs.github.com/en/codespaces](https://docs.github.com/en/codespaces)
+- Modal, *function-as-a-service for ML*, [modal.com](https://modal.com)
+- Karpathy, *Software 2.0* (on agent runtimes and persistence), [karpathy.medium.com](https://karpathy.medium.com/)
+
+<Cta
+  eyebrow="A persistent runtime built for the agent"
+  body="Ellul is a persistent-workstation runtime designed for coding agents that hold state across sessions. Bring Claude Code, Codex, OpenCode, or Cursor's CLI; the workstation keeps your dependencies hot and your agent's context warm."
+  primary={{ href: "https://console.ellul.ai/sign-up", label: "Get a workstation" }}
+  links={[
+    { href: "/concepts/agent-workstation", label: "Agent workstation concept →" },
+    { href: "/blog/agentic-coding", label: "What is agentic coding? →" },
+  ]}
+/>

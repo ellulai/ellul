@@ -1,0 +1,16 @@
+{
+  "vpsShell": {
+    "motd": {
+      "tagline": "Multi-App AI Workbench",
+      "deployedHeader": "Deployed Apps:",
+      "noAppsHint": "No apps yet. Deploy with: ellul-expose <name> <port>",
+      "aiHeader": "AI:",
+      "toolsInstalling": "Tools installing...",
+      "cmdsHeader": "Cmds:"
+    },
+    "unauthorizedPage": {
+      "body": "This server is privately managed.<br>Sign up to get your own cloud dev environment.",
+      "cta": "Get Started"
+    }
+  }
+}

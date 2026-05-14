@@ -1,0 +1,104 @@
+{
+  "agents": {
+    "claude-code": {
+      "name": "Claude Code",
+      "description": "Anthropic's terminal-first coding agent. Strong on multi-step planning, code review, and long-running refactors. Runs on Ellul as a long-lived process with persistent state across sessions.",
+      "hero": {
+        "eyebrow": "Agent · Anthropic",
+        "headline": "Claude Code on Ellul",
+        "sub": "Anthropic's coding agent, hosted on a persistent workstation that doesn't sleep. Same prompts, same behavior, no lid problem."
+      },
+      "supportedFeatures": [
+        "Long-running sessions across days",
+        "Persistent installed dependencies between sessions",
+        "BYOK with Anthropic API or Claude Pro / Max plan",
+        "MCP server support (Claude Code's native MCP client)",
+        "Passkey-gated git push, deploy, secret reads",
+        "Parallel sessions in adjacent workstations with read-only peering"
+      ],
+      "pricingNote": "Anthropic API or Claude Pro/Max plan (varies) for the model + Ellul $20 to $50/mo for the workstation. BYOK supported.",
+      "faq": {
+        "runs-identically": { "q": "Does Claude Code run identically on Ellul?", "a": "Yes. Claude Code is a CLI, and Ellul provisions a Linux workstation pre-configured for it. Your prompts, your config, and your project setup all transfer one-to-one. The behavior change is purely operational: the agent does not stop when your laptop sleeps." },
+        "claude-pro-vs-api-key": { "q": "Can I use Claude Pro instead of API key BYOK?", "a": "Yes. Claude Code on Ellul supports both. You can sign in with a Claude Pro subscription or use an Anthropic API key. The choice is between Anthropic's subscription pricing model and direct usage-based API pricing." },
+        "mcp-support": { "q": "How does Claude Code's MCP support work on Ellul?", "a": "Claude Code is one of the most mature MCP clients. MCP servers run as long-lived processes on the workstation alongside the agent. State persists between sessions, so you do not reconnect from scratch every time." },
+        "overnight": { "q": "Can I run Claude Code overnight on Ellul?", "a": "Yes, and it is the canonical use case. Queue a long task, close your laptop, sleep. The workstation keeps the session running. Privileged actions pause on the passkey gate so nothing irreversible happens unattended; merges and deploys wait for you to tap." },
+        "vs-builtin-permissions": { "q": "How is Ellul's passkey gate different from Claude Code's built-in permission prompts?", "a": "Claude Code's permission prompts run inside the agent process, and a sufficiently clever prompt injection can talk the agent into bypassing them. Ellul's gate runs in a separate, hardened process the agent cannot read, attach to, or prompt-inject. The agent decides what to attempt; the gate decides what is allowed to happen." }
+      }
+    },
+    "codex": {
+      "name": "Codex",
+      "description": "OpenAI's coding agent CLI. Strong on focused refactors and multi-file edits. Runs on Ellul as a long-lived process with persistent state and passkey-gated production access.",
+      "hero": {
+        "eyebrow": "Agent · OpenAI",
+        "headline": "Codex on Ellul",
+        "sub": "OpenAI's coding agent CLI, hosted on a persistent workstation. BYOK with your OpenAI API key; gated at the boundary, not by trust."
+      },
+      "supportedFeatures": [
+        "Long-running Codex sessions",
+        "Persistent dependencies between sessions",
+        "BYOK with OpenAI API key",
+        "MCP server support",
+        "Passkey-gated privileged actions",
+        "Parallel agents with read-only peering"
+      ],
+      "pricingNote": "OpenAI API usage (BYOK) for the model + Ellul $20 to $50/mo for the workstation.",
+      "faq": {
+        "runs-identically": { "q": "Does Codex run identically on Ellul?", "a": "Yes. Codex is a CLI, and Ellul provisions a Linux workstation with it pre-installed. Same flags, same config, same behavior. The agent's session decouples from your laptop's lifecycle." },
+        "subscription-vs-api-key": { "q": "Do I need an OpenAI subscription or just an API key?", "a": "An API key is sufficient for BYOK. Codex does not require a separate ChatGPT subscription on Ellul." },
+        "vs-claude-code": { "q": "How does Codex compare to Claude Code on Ellul?", "a": "Both run on the same workstation primitive. The decision is about model preference and CLI ergonomics. Codex against Claude Code is a model-and-loop choice, not an infrastructure choice." },
+        "overnight": { "q": "Can I run Codex unattended overnight?", "a": "Yes. Long unattended runs are the highest-value use case for moving Codex off your laptop. The workstation keeps the session live; the passkey gate ensures nothing irreversible happens before you tap." },
+        "api-key-handling": { "q": "How does Ellul handle my OpenAI API key?", "a": "Your key lives in a server-side vault that the agent process cannot read. When Codex needs to call the OpenAI API, the credential is injected through a separate broker process. Crash dumps, /proc reads, and prompt-injection paths cannot recover the key from the agent's process namespace." }
+      }
+    },
+    "cursor": {
+      "name": "Cursor (CLI)",
+      "description": "Run cursor-agent on an Ellul workstation alongside Claude Code, Codex, and OpenCode. Editor stays local; runtime is yours; Ellul integrates Cursor's ACP so the chat surface is first-class.",
+      "hero": {
+        "eyebrow": "Agent · Cursor",
+        "headline": "Cursor's CLI on Ellul",
+        "sub": "Keep Cursor as your editor on your laptop. Run its CLI agent on a persistent Ellul workstation. They compose; you don't have to choose."
+      },
+      "supportedFeatures": [
+        "Cursor CLI long-lived on the workstation",
+        "Cursor's native MCP server support",
+        "Pair with Cursor editor on your laptop as the client",
+        "Passkey-gated privileged actions",
+        "Parallel agent sessions in adjacent workstations",
+        "Persistent installed dependencies and branches"
+      ],
+      "pricingNote": "Cursor Pro $20/mo (editor + agent) + Ellul $20 to $50/mo (CLI runtime).",
+      "faq": {
+        "needs-cursor-subscription": { "q": "Do I need Cursor's subscription to use the CLI on Ellul?", "a": "Yes. Cursor's CLI is part of Cursor's product. You keep your existing Cursor subscription and run the CLI on the workstation as the runtime." },
+        "editor-still-works": { "q": "Will Cursor's editor still work pointed at the workstation?", "a": "Yes. Cursor's editor runs on your laptop as it always has. The CLI runs on the workstation. The two coordinate via Cursor's normal mechanisms; you keep the editor experience and gain the runtime." },
+        "agent-panel": { "q": "What about Cursor's agent panel?", "a": "Cursor's agent panel is local-first by design. For unattended work, the CLI on Ellul is the right surface. For inline editor work, the agent panel on your laptop is best. They serve different purposes." },
+        "parallel-sessions": { "q": "Can I run multiple cursor-agent sessions in parallel?", "a": "On Pro you can. Each runs in its own workstation with its own filesystem, branch, and process tree. Read-only peering lets sessions read each other without write access. The standard pattern is a coder agent and a reviewer agent on adjacent branches." },
+        "passkey-gate": { "q": "How does the passkey gate work with Cursor's CLI?", "a": "The CLI runs as a normal Linux process in the workstation. When it attempts a privileged action like git push, a deploy, or a secret read, Ellul's gate intercepts the call from outside the agent's process namespace and waits for a FIDO2 passkey approval. The agent cannot patch the gate, read its memory, or prompt-inject around it." }
+      }
+    },
+    "opencode": {
+      "name": "OpenCode",
+      "description": "Open-source agent runtime. Pluggable models, pluggable tools, terminal-first. On Ellul, OpenCode runs as a per-project server with shared session multiplexing for efficient parallel agents.",
+      "hero": {
+        "eyebrow": "Agent · Open source",
+        "headline": "OpenCode on Ellul",
+        "sub": "An open-source agent runtime, hosted on a persistent workstation. Pluggable models, pluggable tools, parallel-capable, gated at the boundary."
+      },
+      "supportedFeatures": [
+        "Per-project OpenCode server pool with session multiplexing",
+        "BYOK with any compatible model",
+        "Pluggable MCP servers",
+        "Persistent session state across workstation reboots",
+        "Passkey-gated privileged actions",
+        "Open-source, no vendor lock-in"
+      ],
+      "pricingNote": "Free OpenCode + your model API (BYOK) + Ellul $20 to $50/mo for the workstation.",
+      "faq": {
+        "why-server-pool": { "q": "Why does Ellul use a server pool for OpenCode?", "a": "OpenCode's process footprint is meaningful (~240 MB). Per-thread spawn would hit cgroup ceilings on small VPSes. Ellul runs one OpenCode server per project, multiplexes sessions through it, and reaps idle servers automatically. The model is invisible to users; they just get reliable parallel sessions." },
+        "byo-build": { "q": "Can I bring my own OpenCode build?", "a": "Yes. OpenCode is open source; if you want to run a custom fork, you can install it on the workstation directly. The pool model is the default; bring-your-own-build is the override." },
+        "models-supported": { "q": "What models does OpenCode support?", "a": "Anything OpenCode itself supports: Anthropic, OpenAI, Google, open-weight models via OpenRouter, or local inference. Ellul is model-agnostic; the agent picks." },
+        "survives-reboot": { "q": "Does OpenCode survive a workstation reboot?", "a": "Yes. OpenCode's session state is local-first and lives in the workstation's persistent filesystem. After a reboot, sessions resume where they left off; in-progress diffs, scratch files, and branches are unchanged." },
+        "gate-vs-autonomous": { "q": "How does Ellul's gate work with OpenCode's autonomous mode?", "a": "OpenCode has a configurable autonomous mode that lets the agent run multi-step plans without per-step approval. Ellul's gate intercepts the side-effecting calls (git push, deploys, secret reads) at the OS boundary, not at the agent's prompt. The autonomous mode runs as configured; the gate enforces 'the agent decides what to do, the human approves the consequential bit.'" }
+      }
+    }
+  }
+}

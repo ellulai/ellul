@@ -1,0 +1,86 @@
+---
+title: "Cross-Sandbox Sharing"
+description: "Granting one sandbox read access to another's source code, with isolation preserved."
+section: "Sandboxes"
+order: 2
+---
+
+Sandboxes are isolated by default. The agent in sandbox A cannot see sandbox B at all. Sometimes that is too strict, for example when a client app needs context from its server. Cross-sandbox sharing lets you grant read access while preserving the data-isolation boundary.
+
+## What sharing does
+
+When you grant sandbox A read access to sandbox B:
+
+- B's source code is rsync-copied as a frozen, read-only snapshot into A's workspace at `.shared/<B-id>/`.
+- The snapshot excludes secrets, environment files, credentials, and dependency directories.
+- The snapshot is read-only at the kernel level. The agent in A cannot modify B's source.
+- Permission gates remain scoped to A. The agent cannot request operations against B's database, secrets, or deployments.
+
+A sees the code. A cannot see the data. A cannot act on B.
+
+## What does not get copied
+
+The snapshot is curated. Excluded patterns:
+
+- Environment files (`.env`, `.envrc`, anything matching `.env*`).
+- Credential files (`credentials.json`, `service-account.json`, `.npmrc`, `.pypirc`, `.netrc`, `.htpasswd`, `.pgpass`).
+- Configuration directories that often hold tokens (`.zeroclaw`, `.claude`, `.codex`, `.cursor`, `.config`, `.vscode`, `.idea`, `.docker`).
+- Dependency directories (`node_modules`, `.yarn`, `.pnpm-store`).
+- Git internals that bloat copy size (`.git/objects`, `.git/lfs`).
+
+If you want the agent in A to see one of those (for example, your shared `.config` defaults), you have to copy the file into A's own workspace explicitly.
+
+## Granting access
+
+<Steps>
+  <Step number={1} title="Open the sandbox you want to be the reader (A)">
+    Go to **Settings > Security > Cross-Sandbox Access**.
+  </Step>
+  <Step number={2} title="Click 'Grant access from another sandbox'">
+    Select sandbox B from the list.
+  </Step>
+  <Step number={3} title="Confirm">
+    The platform takes a snapshot of B's source and mounts it read-only at `.shared/<B-id>/` inside A.
+  </Step>
+</Steps>
+
+The grant is recorded in the audit log on both sandboxes.
+
+## Refreshing the snapshot
+
+The snapshot is a point-in-time copy, not a live mount. If B's code changes after the grant, A still sees the older copy.
+
+To refresh, click **Refresh shared snapshot** in A's Cross-Sandbox Access panel. The platform takes a fresh snapshot.
+
+## Revoking access
+
+From the same panel, click **Revoke** next to the grant. The mount is removed immediately. Any active session in A loses visibility into B at that moment.
+
+Revocation is audit-logged.
+
+## Why permission gates remain scoped
+
+The four-layer gate scope check ensures that even when A has read access to B:
+
+1. The chat layer's tool resolver auto-denies sandbox-scoped tool calls (database, secrets, deployment, observability) that reference B from inside A.
+2. Permission requests for non-scoped tools are enriched with hints when B is mentioned.
+3. Sovereign Shield independently verifies any permission request that names a sandbox the requester has read access to.
+4. The agent's system prompt instructs it that shared snapshots are inspect-only.
+
+This means the agent in A cannot use B's source to manipulate you into approving a write against B. Even if you click approve in a popup, the platform refuses cross-sandbox writes.
+
+## Common use cases
+
+- A client codebase needs to mirror a server's API types. Grant the client read access to the server's source.
+- A documentation generator needs to read multiple sandboxes. Grant it read access to each.
+- A frontend app references shared component types. Grant it read access to the shared library sandbox.
+
+## What to avoid
+
+- Granting access to sandboxes that contain customer data in their source code. Even though secrets are excluded by pattern, project-internal data committed to the repository remains visible.
+- Granting access broadly. Smaller scopes are easier to audit.
+
+## Where to go next
+
+- [Permission Gates](/permissions/overview) explains the scope-check defence.
+- [Sandboxes](/concepts/sandboxes) covers the underlying isolation model.

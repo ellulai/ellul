@@ -1,0 +1,15 @@
+{
+  "localeMismatch": {
+    "title": "Switched to {newLocale}",
+    "body": "Your project rules (CLAUDE.md, AGENTS.md, .cursor/rules) are still in {createdLocale}. Ask your agent to rewrite them, or edit the files yourself.",
+    "dismiss": "Got it",
+    "localeNames": {
+      "en": "English",
+      "ja": "Japanese",
+      "ko": "Korean",
+      "de": "German",
+      "pt-BR": "Brazilian Portuguese",
+      "fr": "French"
+    }
+  }
+}

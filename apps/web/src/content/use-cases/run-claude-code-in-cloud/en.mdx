@@ -1,0 +1,62 @@
+Claude Code is the strongest coding agent shipping in May 2026: Claude Opus 4.7 leads Terminal-Bench 2.0 around 69% and posts SWE-bench Verified in the high 80s, paired with the deepest MCP integration in the industry and a per-action permissions model that's actually thoughtful about gating. Anthropic's "Remote Control" feature (released February 2026) lets you continue a local Claude Code session from a phone, tablet, or browser. There's only one problem with running Claude Code on your laptop: your laptop closes.
+
+Move the session itself onto a server that doesn't.
+
+## What changes when Claude Code lives on a workstation
+
+<Callout type="note" title="The pitch in one sentence">
+You keep your favorite editor on your laptop. Your Anthropic key stays in your account. The Claude Code session moves onto a workstation Ellul provisions, and the lid problem stops mattering.
+</Callout>
+
+Three things stop being painful:
+
+1. **Eight-hour runs become normal.** Kick off the big refactor at 11pm. The agent works through the night. You wake up to a draft PR.
+2. **Multiple sessions at once.** Two Claude Code sessions on different branches. No port collisions, no state collisions, no "wait, which window was the deploy?"
+3. **Passkey-gated production access.** The agent never sees your `~/.aws` or `GITHUB_TOKEN`. They live in a server-side vault. When a deploy needs them, the action pauses, you tap your passkey, the credential is brokered through a separate process.
+
+## How to set it up
+
+The setup is five minutes if you already have a Claude subscription.
+
+1. **Sign up.** Hobby ($20/mo) or Pro ($50/mo). No credit card for the trial.
+2. **Bring your Claude key.** Paste your Anthropic API key into Ellul's vault, or your Claude Pro/Max OAuth credential if you're on the subscription path. The key never leaves the vault.
+3. **Start a workstation.** A persistent sandbox provisions in roughly 90 seconds, pre-installed with Claude Code, Codex CLI, OpenCode, and Cursor's CLI.
+4. **Connect a passkey.** FIDO2 from your phone, laptop, or hardware key. This is what gates `git push`, `vercel deploy`, and any other privileged action.
+5. **Open a session.** Either through Ellul's chat UI in your browser, or by SSHing into the workstation and running `claude` directly.
+
+That's it. The session is yours until you cancel.
+
+## Pricing: flat, not metered
+
+<PricingTable
+  rows={[
+    { tier: "Hobby", price: "$20/mo", highlights: ["1 workstation", "BYO Claude key", "Passkey gate"] },
+    { tier: "Pro", price: "$50/mo", highlights: ["Multiple workstations", "Read-only peering", "Production credential vault"] },
+    { tier: "Anthropic", price: "Your existing Claude Pro/Max", highlights: ["Stays on your account", "Never re-billed by Ellul"] }
+  ]}
+/>
+
+## What it isn't
+
+<Callout type="warning" title="A few honest limitations">
+- **Inline completions** assume the agent is co-located with the editor on your laptop. Ellul's agent lives on a server, so you don't get them in your editor. Use Cursor on your laptop for inline completions, Claude Code on Ellul for the heavy work.
+- **Free tier limitations:** the Free tier exists, but it's an evaluation slot. One workstation, 60-minute session cap, hibernation after 30 minutes idle, fresh reset every 24 hours. Hobby ($20/mo) is the minimum tier for actual always-on work.
+- **Anthropic-managed agents:** Ellul is model-agnostic. If you specifically want Anthropic's managed cloud product, that's their cloud, not ours.
+</Callout>
+
+## When you'd use it
+
+The shape of work that changes most when you move Claude Code onto a workstation:
+
+- **Long unattended refactors.** Migrations, dependency upgrades, codebase-wide renames. The agent works while you sleep.
+- **Production-touching agents.** Anything where the agent runs `git push`, opens PRs against `main`, or talks to a real database.
+- **Multiple parallel sessions.** Coding, reviewing, documenting: three agents in three sandboxes, with read-only peering so the reviewer can see the coder's source without being able to write to it.
+- **Phone-driven approvals.** You're on the subway. Push notification. Tap your passkey. The agent's PR is merged.
+
+## See also
+
+- [Claude Code vs Cursor →](/vs/claude-code-vs-cursor)
+- [Claude Code vs Ellul →](/vs/claude-code)
+- [Why we built the gate outside the agent process →](/blog/claude-code-vs-cursor)
+
+<FAQ />

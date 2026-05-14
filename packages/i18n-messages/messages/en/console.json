@@ -1,0 +1,3141 @@
+{
+  "console": {
+    "meta": {
+      "title": "ellul.ai",
+      "description": "Turn your smartphone into a professional coding environment."
+    },
+    "notFound": {
+      "message": "Page not found.",
+      "backHome": "Back to Home"
+    },
+    "sidebar": {
+      "expandThreadsTooltip": "Expand threads",
+      "newThreadTooltip": "New thread",
+      "collapseTooltip": "Collapse sidebar",
+      "showScopedThreadsTooltip": "Show scoped threads",
+      "showThreadsFromTooltip": "Show threads from {scope}",
+      "pendingPermissionsBadge": "{count, plural, =0 {No pending permissions} =1 {1 permission pending} other {# permissions pending}}",
+      "threadsHeader": "Threads",
+      "dialogClose": "Close",
+      "rename": "Rename",
+      "delete": "Delete",
+      "threadCountVertical": "{count} threads",
+      "scopedTabDefault": "Scoped",
+      "allTabLabel": "All",
+      "noThreadsYet": "No threads yet",
+      "noThreadsHint": "Click + to start a conversation",
+      "untitledThread": "New thread"
+    },
+    "serverContext": {
+      "contextPlaceholder": "Enter context for AI tools...",
+      "filenamePlaceholder": "filename.md",
+      "readOnly": "Read only",
+      "unsaved": "Unsaved",
+      "saved": "Saved",
+      "save": "Save",
+      "preview": "Preview",
+      "edit": "Edit",
+      "noContent": "*No content*",
+      "globalContext": "Global Context",
+      "globalFallbackPreview": "CLAUDE.md",
+      "claudeSubtitle": "Claude CLI context",
+      "agentsSubtitle": "OpenCode / Codex agent rules",
+      "customContextSubtitle": "Custom context",
+      "customContextFiles": "Custom Context Files",
+      "newContextFile": "New Context File",
+      "noContextFiles": "No Context Files",
+      "noContextFilesHint": "Create context files to provide knowledge to AI coding assistants.",
+      "errorFetchFailed": "Failed to fetch context files",
+      "errorCannotConnect": "Cannot connect to file API",
+      "errorFetchFile": "Failed to fetch file",
+      "errorSave": "Failed to save",
+      "errorDelete": "Failed to delete",
+      "errorDeleteFile": "Failed to delete file",
+      "errorCreateFile": "Failed to create file",
+      "authRequiredTitle": "Authentication Required",
+      "sessionExpiredTitle": "Session Expired",
+      "authRequiredBody": "Your security credentials have expired or are invalid.",
+      "sessionExpiredBody": "Your session may have ended. Please re-authenticate to continue.",
+      "authenticating": "Authenticating...",
+      "loginWithPasskey": "Login with Passkey",
+      "refreshPage": "Refresh Page",
+      "retry": "Retry"
+    },
+    "serverStatus": {
+      "stepLabels": {
+        "starting": "Starting server",
+        "starting_dots": "Starting server...",
+        "byos_node_detected": "Node connected",
+        "writing_files": "Writing configuration files...",
+        "packages": "Installing system packages",
+        "packages_dots": "Installing system packages...",
+        "nodejs": "Setting up Node.js",
+        "nodejs_dots": "Setting up Node.js...",
+        "devtools": "Installing developer tools...",
+        "opencode": "Installing AI coding tools",
+        "opencode_dots": "Installing AI coding tools...",
+        "configuring": "Configuring server",
+        "configuring_dots": "Configuring server...",
+        "services": "Starting services...",
+        "ready": "Ready",
+        "settingUp": "Setting up..."
+      },
+      "title": "Server Status",
+      "stateActive": "active",
+      "descriptionProvisioning": "Your server is being set up. You'll have access once installation completes.",
+      "descriptionActive": "Your server is running and ready to use.",
+      "descriptionError": "There was an error provisioning your server.",
+      "estimatedTime": "This usually takes 3-4 minutes. Please wait...",
+      "fetchFailed": "Failed to fetch server status",
+      "errorFallback": "Something went wrong. Please try again or contact support.",
+      "retry": "Retry",
+      "ipAddressLabel": "IP Address",
+      "openTermius": "Open in Termius",
+      "liveUrl": "Live URL",
+      "siteUrlLabel": "Your Site URL",
+      "siteUrlHint": "Point your domain to this IP or use the sslip.io URL for instant HTTPS.",
+      "degradedSubsystems": "Degraded subsystems: {flags}",
+      "performanceWarning": "Your server is running low on memory. Consider upgrading for better performance.",
+      "sshConnection": "SSH Connection",
+      "teleportNote": "Access via Teleport (identity-based)"
+    },
+    "onboarding": {
+      "presets": {
+        "developer": {
+          "label": "Developer",
+          "description": "Full dev workflow with code, terminal, and every tool"
+        },
+        "studio": {
+          "label": "Studio",
+          "description": "Streamlined chat and preview for quick iteration"
+        }
+      },
+      "progress": {
+        "creatingSandbox": "Creating sandbox…",
+        "scaffolding": "Scaffolding project…",
+        "cloning": "Cloning repository…",
+        "writingMetadata": "Finishing setup…",
+        "installingDeps": "Installing dependencies…",
+        "detecting": "Detecting framework…",
+        "working": "Working…",
+        "cancelling": "Cancelling…"
+      },
+      "errors": {
+        "loadConnections": "Failed to load connections",
+        "enterName": "Please enter a sandbox name",
+        "duplicateName": "A sandbox with this name already exists",
+        "createFailed": "Failed to create sandbox",
+        "passkeyDeclined": "Passkey authorization was declined or did not complete",
+        "passkeyFailed": "Passkey authorization failed",
+        "importFailed": "Failed to import repository"
+      },
+      "choose": {
+        "title": "How would you like to start?",
+        "subtitle": "Scaffold a fresh project or clone an existing repo",
+        "compactPrompt": "How would you like to start?",
+        "scaffold": {
+          "title": "Scaffold a project",
+          "description": "Pick a framework and we'll wire up a working app in seconds"
+        },
+        "git": {
+          "title": "Clone from Git",
+          "description": "Import an existing repo from GitHub, GitLab, or Bitbucket"
+        }
+      },
+      "workspaceType": {
+        "title": "Create Your First Sandbox",
+        "subtitle": "Choose a workspace type to get started",
+        "compactPrompt": "Choose a workspace type"
+      },
+      "projectStructure": {
+        "title": "Project structure",
+        "subtitle": "How do you want to organize your code?",
+        "singleApp": "Single app",
+        "singleAppDescription": "One project, one framework. Best for most use cases.",
+        "monorepo": "Monorepo",
+        "monorepoDescription": "Turborepo workspace. Add apps and packages inside."
+      },
+      "framework": {
+        "title": "Pick a framework",
+        "subtitle": "Preconfigured stack. Change it later."
+      },
+      "name": {
+        "scaffoldHeading": "New {framework} project",
+        "scaffoldHeadingFallback": "New project",
+        "gitHeading": "Import from Git",
+        "scaffoldSubtitle": "Give your sandbox a name. You can rename it later.",
+        "gitSubtitle": "Name your sandbox, then connect your repo",
+        "label": "Sandbox Name",
+        "placeholder": "my-awesome-sandbox",
+        "hint": "This will create a directory for your sandbox"
+      },
+      "git": {
+        "title": "Connect Repository",
+        "subtitle": "Select a repository for {name}",
+        "providerLabel": "Connect a Git Provider",
+        "connectedTo": "Connected to {provider}.",
+        "connectAnother": "Connect another provider",
+        "addProvider": "Add"
+      },
+      "importing": {
+        "title": "Setting up your sandbox"
+      },
+      "buttons": {
+        "back": "Back",
+        "continue": "Continue",
+        "creating": "Creating...",
+        "createSandbox": "Create Sandbox",
+        "cancel": "Cancel",
+        "tryAgain": "Try again"
+      }
+    },
+    "workspaceExtensions": {
+      "core_chat": {
+        "name": "Chat",
+        "description": "AI chat interface for interacting with your workspace",
+        "tabs": {
+          "main": {
+            "label": "Chat",
+            "description": "AI-powered chat for building and iterating on your project"
+          }
+        }
+      },
+      "core_code": {
+        "name": "Code",
+        "description": "Code browser and editor",
+        "tabs": {
+          "main": {
+            "label": "Code",
+            "description": "Browse and edit your project files"
+          }
+        }
+      },
+      "core_preview": {
+        "name": "Live Preview",
+        "description": "Real-time preview of your running application",
+        "tabs": {
+          "main": {
+            "label": "Preview",
+            "description": "Live preview with hot reload - starts a dev server for your app"
+          }
+        }
+      },
+      "core_vault_notes": {
+        "name": "Vault Notes",
+        "description": "Persistent notes and knowledge base",
+        "tabs": {
+          "main": {
+            "label": "Notes",
+            "description": "Persistent notes and documentation"
+          }
+        }
+      },
+      "core_vault_graph": {
+        "name": "Vault Graph",
+        "description": "Knowledge graph visualization",
+        "tabs": {
+          "main": {
+            "label": "Graph",
+            "description": "Visual knowledge graph of your notes and connections"
+          }
+        }
+      },
+      "core_vault_scopes": {
+        "name": "Vault Scopes",
+        "description": "Scoped access control for vault entries",
+        "tabs": {
+          "main": {
+            "label": "Scopes",
+            "description": "Manage access scopes for vault entries"
+          }
+        }
+      },
+      "core_db_tables": {
+        "name": "Database Tables",
+        "description": "Browse database tables and data",
+        "tabs": {
+          "main": {
+            "label": "Tables",
+            "description": "Browse and manage your database tables"
+          }
+        }
+      },
+      "core_db_sql": {
+        "name": "SQL Editor",
+        "description": "Execute SQL queries",
+        "tabs": {
+          "main": {
+            "label": "SQL",
+            "description": "Interactive SQL query editor"
+          }
+        }
+      },
+      "core_db_bin": {
+        "name": "Database Bin",
+        "description": "Recycle bin for deleted database records",
+        "tabs": {
+          "main": {
+            "label": "Bin",
+            "description": "View and restore deleted records"
+          }
+        }
+      },
+      "core_db_settings": {
+        "name": "Database Settings",
+        "description": "Database configuration and management",
+        "tabs": {
+          "main": {
+            "label": "Settings",
+            "description": "Database connection, roles, and configuration"
+          }
+        }
+      },
+      "core_obs_health": {
+        "name": "Health Monitor",
+        "description": "Server health and performance metrics",
+        "tabs": {
+          "main": {
+            "label": "Health",
+            "description": "CPU, memory, and server health metrics"
+          }
+        }
+      },
+      "core_obs_gates": {
+        "name": "Gate Monitor",
+        "description": "Monitor sovereign gate activity",
+        "tabs": {
+          "main": {
+            "label": "Gates",
+            "description": "View gate requests, approvals, and audit trail"
+          }
+        }
+      },
+      "core_obs_development": {
+        "name": "Development Logs",
+        "description": "Dev server logs - visible when Preview is enabled",
+        "tabs": {
+          "main": {
+            "label": "Development",
+            "description": "Dev server and build logs (requires Preview tab)"
+          }
+        }
+      },
+      "core_obs_claw": {
+        "name": "ZeroClaw Monitor",
+        "description": "ZeroClaw agent activity monitoring",
+        "tabs": {
+          "main": {
+            "label": "ZeroClaw",
+            "description": "Monitor AI agent sessions and activity"
+          }
+        }
+      },
+      "core_settings_context": {
+        "name": "Context Settings",
+        "description": "AI context file management",
+        "tabs": {
+          "main": {
+            "label": "Context",
+            "description": "Manage AI context files (CLAUDE.md, etc.)"
+          }
+        }
+      },
+      "core_settings_secrets": {
+        "name": "Secrets Manager",
+        "description": "Environment variables and secret management",
+        "tabs": {
+          "main": {
+            "label": "Secrets",
+            "description": "Manage environment variables and secrets"
+          }
+        }
+      },
+      "core_settings_security": {
+        "name": "Security Settings",
+        "description": "Security tier, passkeys, and access control",
+        "tabs": {
+          "main": {
+            "label": "Security",
+            "description": "Manage security tier, passkeys, SSH keys, and permissions"
+          }
+        }
+      },
+      "core_int_zeroclaw": {
+        "name": "ZeroClaw",
+        "description": "ZeroClaw agent configuration - API keys, channels, and core files",
+        "tabs": {
+          "main": {
+            "label": "ZeroClaw",
+            "description": "Configure ZeroClaw API keys, communication channels, and core context files"
+          }
+        }
+      }
+    },
+    "navContexts": {
+      "workspace": "Workspace",
+      "deployed": "Deployed",
+      "vault": "Vault",
+      "database": "Database",
+      "observability": "Observability",
+      "settings": "Settings",
+      "integrations": "Integrations"
+    },
+    "intAiAgents": {
+      "header": {
+        "title": "ZeroClaw",
+        "description": "Configure ZeroClaw agent - API keys, communication channels, and core context files."
+      },
+      "tabs": {
+        "provider": "Providers",
+        "channels": "Channels",
+        "coreFiles": "Core Files"
+      }
+    },
+    "transitions": {
+      "provisioning": {
+        "title": "Setting up your environment",
+        "wait": "This is a one-time setup and takes 3-4 minutes. Please wait."
+      },
+      "upgrade": {
+        "title": "Upgrading your environment",
+        "step": {
+          "preparing": "Preparing upgrade...",
+          "preparingDetail": "Securing your workspace",
+          "allocating": "Allocating server resources...",
+          "allocatingDetail": "Claiming dedicated infrastructure",
+          "storage": "Setting up persistent storage...",
+          "storageDetail": "Creating encrypted block volume",
+          "transfer": "Transferring your data...",
+          "transferDetail": "Moving your projects and configuration",
+          "configuring": "Configuring your environment...",
+          "configuringDetail": "Applying server configuration",
+          "provisioning": "Provisioning infrastructure...",
+          "provisioningDetail": "Setting up your dedicated server",
+          "finalizing": "Finalizing...",
+          "finalizingDetail": "Almost there"
+        },
+        "newPlanLabel": "New Plan",
+        "freeBadge": "Free",
+        "elapsedSuffix": "elapsed",
+        "longerThanExpected": "Taking longer than expected...",
+        "preserved": "Your repos, files, and configurations are being preserved",
+        "refreshPage": "Refresh page",
+        "fallbackTier": "paid plan",
+        "tierCapacity": {
+          "hobby": "1 sandbox",
+          "pro": "5 sandboxes",
+          "shieldPro": "Proxy only"
+        },
+        "tierName": {
+          "hobby": "Hobby",
+          "pro": "Pro",
+          "shieldPro": "Shield Gateway"
+        }
+      },
+      "wake": {
+        "titleWaking": "Waking up your server",
+        "titleSetup": "Setting up your environment",
+        "restoring": "Restoring your workspace...",
+        "provisioning": "Provisioning infrastructure...",
+        "wakeFailed": "Wake failed",
+        "passkeyFailed": "Passkey authentication failed",
+        "preparing": "Preparing...",
+        "coldProvisioning": "Cold provisioning — this can take up to 10 minutes.",
+        "settingUpFresh": "Setting up a fresh server for your workspace...",
+        "takingMoment": "Taking a moment...",
+        "elapsedSuffix": "elapsed",
+        "tapPasskey": "Tap your passkey to unlock your encrypted volume.",
+        "usuallyFew": "This usually takes a few seconds.",
+        "retry": "Retry",
+        "refreshPage": "Refresh page"
+      },
+      "hibernate": {
+        "title": "Hibernating server",
+        "saving": "Saving your workspace...",
+        "subtitle": "Your data is being safely preserved. This usually takes 30-60 seconds."
+      }
+    },
+    "appGrid": {
+      "shipFirstSandbox": "Ship Your First Sandbox",
+      "noSandboxesYet": "No sandboxes deployed yet",
+      "noSandboxesHint": "Build something amazing and deploy it to get your own subdomain.",
+      "deployedSandboxes": "Deployed Sandboxes",
+      "sandboxCount": "{count, plural, =1 {# sandbox} other {# sandboxes}}",
+      "live": "Live"
+    },
+    "overview": {
+      "sandboxes": "Sandboxes",
+      "sandboxCount": "{count, plural, =1 {# sandbox} other {# sandboxes}}",
+      "newSandbox": "New Sandbox",
+      "searchPlaceholder": "Search...",
+      "sortRecent": "Recent",
+      "sortAlpha": "A — Z",
+      "sortAlphaDesc": "Z — A",
+      "noMatching": "No matching sandboxes",
+      "clearSearch": "Clear search",
+      "subline": {
+        "empty": "Empty",
+        "appsCount": "{count} apps"
+      },
+      "live": "Live",
+      "delete": "Delete",
+      "deleteSandboxTitle": "Delete Sandbox",
+      "deleteConfirmDescription": "This will permanently delete <name>{name}</name> and all its apps. Type the sandbox name to confirm.",
+      "deleteFailed": "Failed to delete sandbox",
+      "cancel": "Cancel",
+      "createSandboxTitle": "Create Sandbox"
+    },
+    "authWall": {
+      "connectionLost": "Connection Lost",
+      "sessionExpired": "Session Expired",
+      "connectionMessage": "Unable to connect to your server. Please check your connection and try again.",
+      "sessionMessage": "Your session has expired. Please authenticate to continue.",
+      "authenticating": "Authenticating...",
+      "loginPasskey": "Login with Passkey",
+      "refreshPage": "Refresh Page",
+      "authFailed": "Authentication failed"
+    },
+    "serverSwitcher": {
+      "selectServer": "Select Server",
+      "newServer": "New Server",
+      "products": {
+        "shieldGateway": "Shield Gateway",
+        "cloudPlatform": "Cloud Platform"
+      },
+      "fallbackName": "Server"
+    },
+    "vpsUpdateBanner": {
+      "title": "New features available",
+      "rebuildSingular": "Rebuild your server to unlock this feature:",
+      "rebuildPlural": "Rebuild your server to unlock these features:",
+      "features": {
+        "passkey": "Passkey authentication (Face ID / Touch ID)",
+        "pop": "Proof-of-Presence device binding",
+        "sshKeys": "SSH key management from dashboard",
+        "tierSwitch": "Security tier switching (Standard / Web-Locked)",
+        "terminalTokens": "Secure terminal session tokens",
+        "codeBrowser": "In-browser code editor",
+        "agentBridge": "AI agent bridge for tool access"
+      }
+    },
+    "agentUpdateBanner": {
+      "modeSwitchAuto": "Switch to Auto updates?",
+      "modeSwitchManual": "Switch to Manual updates?",
+      "modeAutoDescription": "Future signed manifests will apply automatically on the next heartbeat after each release is promoted to canary — no manual approval required.",
+      "modeManualDescription": "Future signed manifests will be downloaded and verified on your server, but will NOT apply until you explicitly click Update Now.",
+      "securityNoteAuto": "Security note: every manifest is still ML-DSA-65 signed by the platform and verified on your server before apply. Auto mode speeds up rollout; it does not weaken verification.",
+      "headsUpManual": "Heads up: Manual mode gives you final say over when updates apply, but if you forget to approve, your server will drift from the latest canary/stable version.",
+      "cancel": "Cancel",
+      "switching": "Switching…",
+      "enableAuto": "Enable Auto",
+      "enableManual": "Enable Manual",
+      "applyTitle": "Applying platform update…",
+      "applyDescription": "A signed update command is in flight on the server. The enforcer is staging {target}, running pre-flight checks, flipping symlinks, and restarting services. This usually takes 10-20 seconds; the banner will refresh automatically when it's done.",
+      "applyTargetFallback": "the new version",
+      "pendingTitle": "Platform update ready to apply",
+      "pendingDescription": "Manifest v{version} is staged, verified, and waiting on your go-ahead. Bundles are already downloaded on the server — applying is a fast service restart.",
+      "applying": "Applying…",
+      "updateNow": "Update Now",
+      "applyDialogTitle": "Apply platform update?",
+      "applyDialogDescription": "Manifest v{version} is signed by the platform and verified on your server. The bundles are already on disk — applying flips symlinks and restarts a few services.",
+      "applyWhatHappens": "What happens: the enforcer flips release symlinks and restarts file-api, agent-bridge, watchdog, and term-proxy. Expect a brief (~10-20s) interruption of the terminal, code browser, and AI chat. Your project files, databases, and sessions are untouched.",
+      "applyIfBreaks": "If anything breaks: the enforcer automatically rolls back to the previous version on component failure or crash-loop detection. No manual recovery needed.",
+      "applyUpdate": "Apply Update",
+      "lastFailedTitle": "Last update didn't complete cleanly",
+      "lastFailedPartial": "Some components restarted successfully; one or more failed and were rolled back.",
+      "lastFailedFull": "Every component in the last manifest was rolled back after a failed apply.",
+      "lastFailedSuffix": " Your server is running on the previous version.",
+      "lastFailedHint": "The next manifest published by the platform will automatically retry on this server. If this keeps failing, check the enforcer log on the VPS for the full stack trace.",
+      "rolledBackTitle": "Reverted to previous version",
+      "rolledBackDescription": "The most recent manifest was rolled back. Your server is stable on the previous version. The next published manifest will try again.",
+      "upToDateTitle": "Platform up to date",
+      "upToDateDescription": "Running manifest v{version}",
+      "upToDateEnforcer": " (enforcer {version})",
+      "waitingHeartbeatTitle": "Waiting for next heartbeat",
+      "waitingHeartbeatDescription": "Manifest v{version} is available. Your server will pull, verify, and stage it on the next heartbeat (within 10s), then appear here as ready to apply.",
+      "serverOnlineTitle": "Server online",
+      "serverOnlineDescription": "{enforcer}No install report yet this boot — that's normal if the server is already on the current manifest. The next platform release will apply automatically.",
+      "serverOnlineEnforcer": "Running enforcer {version}. ",
+      "waitingFirstPingTitle": "Waiting for first liveness ping",
+      "waitingFirstPingDescription": "This server hasn't checked in yet. Platform version and health will appear here within ~60s of the enforcer coming online. You can still switch between Auto and Manual update modes — the setting takes effect on the next sync.",
+      "liveness": {
+        "online": "Online",
+        "stale": "Stale",
+        "offline": "Offline",
+        "tooltipOnline": "Server pinged within the last 2 minutes.",
+        "tooltipStale": "Server's last liveness ping was delayed. Still reachable but slower than expected.",
+        "tooltipOffline": "Server has missed multiple liveness pings. It may be down, firewalled, or mid-reboot."
+      },
+      "mode": {
+        "auto": "Auto",
+        "manual": "Manual",
+        "tooltipAuto": "Auto: your server applies every verified manifest immediately on the next heartbeat.",
+        "tooltipManual": "Manual: your server stages + verifies updates but waits for you to apply them."
+      },
+      "toggleLabel": "Automatic updates",
+      "toggleDescriptionAuto": "Verified manifests apply automatically on the next heartbeat. Toggle off to review each update before it lands.",
+      "toggleDescriptionManual": "Verified manifests stage on the server and wait for your approval. Toggle on to apply updates automatically.",
+      "ariaApplyInProgress": "Platform update in progress",
+      "ariaPendingUpdate": "Pending platform update",
+      "ariaUpToDate": "Server is up to date",
+      "ariaApplyPending": "Apply pending update v{version}",
+      "ariaLiveness": "Liveness: {label}",
+      "ariaUpdateMode": "Update mode: {label}"
+    },
+    "dashboardShell": {
+      "subscriptionEnding": "Subscription ending",
+      "willBeDeletedOn": "Your server will be deleted on {date}. You have full access until then.",
+      "undoCancel": "Undo Cancel",
+      "billing": "Billing",
+      "dismiss": "Dismiss",
+      "loadStatusFailed": "Failed to load server status. Please try again.",
+      "retry": "Retry",
+      "paymentReceived": "Payment Received",
+      "confirmingSubscription": "Confirming your subscription...",
+      "demoMode": "Demo Mode — using mock data, no backend connected"
+    },
+    "byosEnroll": {
+      "title": "Add Your Own Server",
+      "subtitle": "Run the Sovereign Stack on your own hardware.",
+      "introTitle": "Bring Your Own Server",
+      "introBody": "Generate a one-time token, then run a single command on your Mac or Linux server to install the Sovereign Stack.",
+      "supportedPlatforms": "Supported platforms:",
+      "platformMac": "macOS 13+ (Apple Silicon or Intel)",
+      "platformLinux": "Debian / Ubuntu Linux",
+      "requirements": "Requirements:",
+      "reqRam": "2 GB RAM minimum",
+      "reqDisk": "10 GB free disk space",
+      "reqRoot": "Root / sudo access",
+      "runOnYourServer": "Run this on your server:",
+      "waitingForConnection": "Waiting for connection...",
+      "expiresIn": "Expires in {time}",
+      "sudoNote": "The command must be run with <code>sudo</code>. On macOS, you may see a prompt to install Command Line Tools — allow it.",
+      "nodeConnected": "Node Connected",
+      "nodeConnectedSubtitle": "{os} ({hostname})",
+      "cpuLabel": "CPU",
+      "cpuValue": "{cores} cores",
+      "ramLabel": "RAM",
+      "ramValue": "{gb} GB",
+      "diskLabel": "Disk",
+      "diskValue": "{gb} GB",
+      "confirmationCode": "Confirmation code",
+      "confirmationCodeNote": "Verify this matches the code shown in your terminal.",
+      "macosDiskNote": "If macOS shows a popup asking for disk access, click Allow for headless operation.",
+      "installingTitle": "Installing Sovereign Stack...",
+      "installingSubtitle": "This may take a few minutes. You can close this dialog — installation continues in the background.",
+      "serverSummary": "{os} · {cores} CPU · {ram} GB RAM",
+      "readyTitle": "Your server is ready!",
+      "readySummary": "{os} ({hostname}) · {cores} CPU · {ram} GB RAM",
+      "errorEnrollFailed": "Failed to create enrollment token",
+      "errorTokenFailed": "Failed to create token",
+      "errorFetchStatus": "Failed to fetch status",
+      "errorTokenExpired": "Enrollment token expired. Please generate a new one.",
+      "errorTokenExpiredCountdown": "Token expired. Please generate a new one.",
+      "cancel": "Cancel",
+      "close": "Close",
+      "generating": "Generating...",
+      "generateToken": "Generate Token",
+      "openDashboard": "Open Dashboard"
+    },
+    "activeServerDialogs": {
+      "tierNames": {
+        "cloud_platform_hobby": "Hobby",
+        "cloud_platform_pro": "Pro",
+        "shield_proxy_pro": "Shield Gateway",
+        "hobby": "Hobby",
+        "pro": "Pro",
+        "newPlan": "new plan",
+        "currentPlan": "current plan"
+      },
+      "tierCapacity": {
+        "cloud_platform_hobby": "1 workspace",
+        "cloud_platform_pro": "5 workspaces",
+        "shield_proxy_pro": "Proxy only",
+        "hobby": "1 workspace",
+        "pro": "5 workspaces"
+      },
+      "resize": {
+        "upgrading": "Upgrading your server",
+        "downgrading": "Downgrading your server",
+        "upgradingDots": "Upgrading your server...",
+        "downgradingDots": "Downgrading your server...",
+        "applyingConfig": "Applying new configuration...",
+        "verifyingHealth": "Verifying server health...",
+        "almostThere": "Almost there...",
+        "elapsed": "{seconds}s elapsed",
+        "remaining": " · ~{seconds}s remaining",
+        "takingLonger": " · Taking longer than expected...",
+        "newPlanLabel": "New Plan",
+        "preservedNote": "All your sandboxes, files, and configurations are preserved",
+        "refreshPage": "Refresh page"
+      },
+      "vpsAuth": {
+        "passkeyTitle": "Passkey Confirmation Required",
+        "authorizationTitle": "Authorization Required",
+        "passkeyDescription": "Confirm this {operation} with your passkey.",
+        "standardDescription": "Your server is protected. To {operation}, follow the steps below.",
+        "passkeyHelp": "Click the button below to confirm with your passkey (Face ID / Touch ID / Security Key).",
+        "warningPrefix": "Warning:",
+        "warningRebuild": " Rebuild will DELETE ALL DATA on your server.",
+        "warningDelete": " This will PERMANENTLY DESTROY your server.",
+        "cancel": "Cancel",
+        "waitingForPasskey": "Waiting for passkey...",
+        "confirmWithPasskey": "Confirm with Passkey"
+      }
+    },
+    "statusOverlays": {
+      "errorTitle": "Provisioning Failed",
+      "errorBody": "Something went wrong. Please try again.",
+      "errorAction": "Delete & Try Again",
+      "unlockingTitle": "Unlocking volume...",
+      "lockedTitle": "Volume locked",
+      "unlockingBody": "Decrypting your volume with your passkey...",
+      "lockedBody": "Your encrypted volume needs to be unlocked.",
+      "passkeyFailed": "Passkey failed",
+      "tapToUnlock": "Tap Passkey to Unlock",
+      "pendingDeletionTitle": "Server Scheduled for Deletion",
+      "pendingDeletionBody": "Your subscription has ended. Server will be deleted in 24 hours.",
+      "resubscribeNow": "Resubscribe Now",
+      "frozenTitle": "Server Suspended",
+      "frozenBody": "Your server has been temporarily suspended due to unusual activity detected by our automated security systems.",
+      "frozenReasonLabel": "Reason",
+      "dataSafeTitle": "Your data is safe",
+      "dataSafeBody": "All files, repos, and configurations are preserved while the server is suspended. If you believe this is a mistake, please contact support and we'll review and restore your server.",
+      "contactSupport": "Contact Support",
+      "checkStatus": "Check Status"
+    },
+    "auditLog": {
+      "title": "Audit Log",
+      "entries": "{count} entries",
+      "verifyIntegrity": "Verify Integrity",
+      "chainVerified": "Chain Verified",
+      "chainVerifiedDesc": "{count} entries verified. Hash chain intact.",
+      "integrityCompromised": "Integrity Compromised",
+      "chainBroken": "Chain broken at entry #{at}: {reason}",
+      "noEvents": "No audit events",
+      "events": {
+        "auth_success": "Login",
+        "auth_failure": "Login Failed",
+        "session_destroyed": "Logout",
+        "deploy": "Deploy",
+        "git_push": "Git Push",
+        "luks_init": "Volume Encrypted",
+        "luks_unlock": "Volume Unlocked"
+      }
+    },
+    "desktopTabBar": {
+      "manageGroupsTooltip": "Manage groups",
+      "newGroup": "New Group",
+      "groupsHeading": "Groups",
+      "deleteGroupTitle": "Delete {name}"
+    },
+    "frameworkPicker": {
+      "categoriesAriaLabel": "Framework categories",
+      "categories": {
+        "frontend": "Web Apps",
+        "backend": "APIs & Services",
+        "data": "Data & ML",
+        "mobile": "Mobile",
+        "monorepo": "Monorepo"
+      },
+      "simpleChoices": {
+        "frontend": {
+          "title": "Web App",
+          "description": "A full-stack app users can visit",
+          "detail": "Next.js · Tailwind preconfigured"
+        },
+        "backend": {
+          "title": "API",
+          "description": "A backend that serves data",
+          "detail": "Hono · TypeScript preconfigured"
+        }
+      }
+    },
+    "tabAddMenu": {
+      "manageTabs": "Manage tabs",
+      "manageTabsTitle": "Manage Tabs",
+      "currentTabs": "Current Tabs",
+      "addSection": "Add",
+      "upgrade": "Upgrade"
+    },
+    "terminalDrawer": {
+      "title": "Terminal",
+      "iframeTitle": "Terminal",
+      "minimize": "Minimize terminal",
+      "close": "Close terminal"
+    },
+    "permissionToast": {
+      "logs": "log access",
+      "env": "environment variable access",
+      "db": "database access",
+      "db_read": "database read",
+      "db_write": "database write",
+      "db_migrate": "database migration",
+      "db_full": "full database access",
+      "git": "git push",
+      "deploy": "deployment",
+      "tool": "tool use",
+      "wallet_spend": "wallet spend",
+      "vault_read": "vault read",
+      "exec": "sandbox execution",
+      "fallback": "{gate} access",
+      "describe": "Agent is requesting {kind}.",
+      "describeWithTool": "Agent is requesting {kind} ({tool}).",
+      "thread": "Thread {id}…",
+      "review": "Review",
+      "dismiss": "Dismiss"
+    },
+    "createStack": {
+      "title": "Create New Stack",
+      "description": "Deploy a cloud development environment powered by Hetzner Cloud",
+      "stackName": "Stack Name (optional)",
+      "namePlaceholder": "my-awesome-project",
+      "nameHint": "A friendly name for your stack. Leave empty for auto-generated name.",
+      "webTerminalTitle": "Web Terminal Access",
+      "webTerminalBody": "One click to access your server via browser. Add SSH keys later from inside your VPS using <code>sudo setup-ssh-key</code>",
+      "included": "What's included:",
+      "feature1": "2 workspaces (upgradeable)",
+      "feature2": "Node.js 20 + npm pre-installed",
+      "feature3": "AI coding assistant (OpenCode)",
+      "feature4": "HTTPS with automatic SSL certificates",
+      "createServer": "Create Stack",
+      "provisioning": "Provisioning...",
+      "provisioningHint": "This may take 3-4 minutes. Your server is being provisioned now.",
+      "createFailed": "Failed to create server"
+    },
+    "buildAttestation": {
+      "title": "Runtime build attestation",
+      "ariaLabel": "Runtime build attestation: {hash}",
+      "explainer": "Your server computes a sha256 of its own enforcer binary on every ping and stamps the first 12 hex chars here. Unforgeable — this suffix can only be produced by code that contains the runtime self-hash logic."
+    },
+    "gates": {
+      "logs": {
+        "label": "Log Access",
+        "description": "View unredacted application logs",
+        "ttl": "5 min"
+      },
+      "env": {
+        "label": "Secret Injection",
+        "description": "Run a single command with secrets injected",
+        "ttl": "30s",
+        "warning": "This grants the agent one-time access to inject secrets into a command. The gate closes immediately after use."
+      },
+      "db": {
+        "label": "Database Access",
+        "description": "General database access",
+        "ttl": "10 min"
+      },
+      "db_read": {
+        "label": "DB Read",
+        "description": "Read-only database queries (SELECT)",
+        "ttl": "10 min"
+      },
+      "db_write": {
+        "label": "DB Write",
+        "description": "Write database operations (INSERT/UPDATE/DELETE)",
+        "ttl": "5 min",
+        "warning": "This allows the agent to modify application data. Ensure you have backups."
+      },
+      "db_migrate": {
+        "label": "DB Migrate",
+        "description": "Run database schema migrations (DDL)",
+        "ttl": "5 min",
+        "warning": "This grants the agent temporary credentials to run schema migrations. Each approval is single-use."
+      },
+      "db_full": {
+        "label": "DB Full Access",
+        "description": "Unrestricted database access (owner role)",
+        "ttl": "5 min",
+        "warning": "This grants the agent full database owner credentials including DROP and TRUNCATE. Use with extreme caution."
+      },
+      "git": {
+        "label": "Git Push",
+        "description": "Push code to remote repository",
+        "ttl": "5 min",
+        "warning": "This allows the agent to push code to the remote git repository. Each approval creates a single-use token that expires in 5 minutes."
+      },
+      "deploy": {
+        "label": "Deploy",
+        "description": "Deploy application to production",
+        "ttl": "5 min",
+        "warning": "This allows the agent to deploy the application without manual authorization. Each approval creates a single-use token that expires in 5 minutes."
+      },
+      "request": {
+        "title": "Agent Request: {gate}",
+        "highRisk": "High Risk",
+        "elevatedRisk": "Elevated",
+        "description": "The AI agent is requesting temporary access to protected resources.",
+        "expiresAfter": "Auto-expires after {ttl}",
+        "agentReason": "Agent Reason",
+        "alwaysApproveExplainer": "“Always Approve” skips this popup but still issues one-time tokens per request. There is no persistent access.",
+        "deny": "Deny",
+        "denyTooltip": "Deny this single request",
+        "allowOnce": "Allow Once",
+        "allowOnceTooltip": "Grant this single request ({ttl})",
+        "neverAllow": "Never Allow",
+        "neverAllowTooltip": "Always deny for {scope}. Agent will skip without asking.",
+        "alwaysApprove": "Always Approve",
+        "alwaysApproveTooltip": "Auto-approve for {scope}. Change in Settings.",
+        "thisSandbox": "this sandbox",
+        "deniedToast": "{gate} denied",
+        "neverAllowToast": "{gate} will never be allowed for {scope}. Agent will skip silently.",
+        "alwaysApproveToast": "{gate} auto-approved for {scope}",
+        "grantedToast": "{gate} granted"
+      },
+      "statusBar": {
+        "open": "Gates Open:",
+        "revokeTooltip": "Click to revoke {gate}"
+      }
+    },
+    "tabAI": {
+      "connectorsTitle": "Connectors",
+      "connectorsDescription": "AI tools and provider keys shared across all workspaces on this server",
+      "toolsTitle": "AI Tools",
+      "toolsDescription": "Tools and provider routing for AI agents across all workspaces",
+      "dangerZone": "Danger Zone",
+      "wipeGbrainTitle": "Wipe gbrain memory",
+      "wipeGbrainDescription": "Permanently deletes all stored knowledge. gbrain stays enabled but starts fresh.",
+      "wipeGbrainConfirmTitle": "Wipe gbrain memory?",
+      "wipeGbrainConfirmDescription": "This permanently deletes all pages, links, and knowledge stored by your AI agents. gbrain will stay enabled but start with an empty database. This cannot be undone.",
+      "cancel": "Cancel",
+      "wiping": "Wiping...",
+      "wipeAllMemory": "Wipe all memory"
+    },
+    "tabHome": {
+      "general": "General",
+      "generalSubtitle": "Server details and status",
+      "plan": "Plan",
+      "uptime": "Uptime",
+      "since": "Since {date}",
+      "ipAddress": "IP Address",
+      "region": "Region",
+      "platformVersion": "Platform Version",
+      "platformVersionManifest": "(manifest v{version})",
+      "highUsage": "High Usage",
+      "highUsageHint": "Consider upgrading for more capacity.",
+      "billingTitle": "Plan",
+      "billingSubtitle": "Current plan and upgrade options",
+      "currentPlan": "Current Plan",
+      "updateRecovery": "Update Recovery",
+      "updateRecoverySubtitle": "Roll back to pre-update state",
+      "updateRecoveryDescription": "A pre-update snapshot is available. Roll back to restore your server to its state before the last update.",
+      "expires": "Expires {date}",
+      "rollingBack": "Rolling back...",
+      "rollback": "Rollback to Pre-Update State",
+      "aiTokenUsage": "AI Token Usage",
+      "aiCurrentPeriod": "Current billing period",
+      "used": "Used",
+      "remaining": "Remaining",
+      "remainingTokens": "{value}M tokens",
+      "resetsIn": "Resets in",
+      "dangerZone": "Danger Zone",
+      "dangerSubtitle": "These actions cannot be undone",
+      "rebuildServer": "Rebuild Server",
+      "deleteServer": "Delete Server",
+      "cannotRebuild": "Cannot rebuild while {state}",
+      "cannotDelete": "Cannot delete while {state}",
+      "deleteDialogTitle": "Delete Server?",
+      "deleteDialogDescription": "This will permanently delete your server and all data. Your subscription remains active.",
+      "deleteWarning": "Warning: All secrets will be permanently unrecoverable.",
+      "cancel": "Cancel",
+      "deleting": "Deleting...",
+      "rebuildDialogTitle": "Rebuild Server?",
+      "rebuildDialogDescription": "This will wipe everything and give you a fresh workspace. Your IP address and DNS will stay the same.",
+      "rebuildWarning": "Warning: All your files and projects will be permanently deleted.",
+      "rebuilding": "Rebuilding...",
+      "rollbackDialogTitle": "Rollback to Pre-Update State?",
+      "rollbackDialogDescription": "This will restore your server to the snapshot taken before the last platform update.",
+      "rollbackWhatHappens": "What happens: Your server's system disk will be restored to the pre-update state. Your project files and databases on persistent storage are not affected. System configuration changes since the update will be reverted.",
+      "rollbackExpires": "This snapshot expires {date}.",
+      "rollbackButton": "Rollback Server",
+      "copiedToClipboard": "Copied to clipboard",
+      "health": {
+        "ok": "Healthy",
+        "degraded": "Degraded",
+        "failing": "Failing",
+        "unknown": "Pending",
+        "tooltipOk": "Agent manifest applied successfully on the last report.",
+        "tooltipDegraded": "Last manifest apply rolled back or landed partial. Server is running the previous stable version.",
+        "tooltipFailing": "Last manifest apply failed. See server logs.",
+        "tooltipUnknown": "Server hasn't reported yet — waiting for first heartbeat."
+      },
+      "planDisplay": {
+        "hobbyLabel": "Hobby",
+        "hobbyCapacity": "1 workspace",
+        "proLabel": "Pro",
+        "proCapacity": "5 workspaces",
+        "shieldGatewayLabel": "Shield Gateway",
+        "shieldGatewayCapacity": "Proxy only"
+      }
+    },
+    "tabGit": {
+      "headerRepository": "Repository",
+      "headerGit": "Git",
+      "subtitleConnected": "Connected to a remote repository.",
+      "subtitleDisconnected": "Connect a provider to back up and version your code.",
+      "selectSandboxTitle": "Per-sandbox Git linking",
+      "selectSandboxHint": "Each sandbox has its own repository connection. Select a sandbox from the overview to configure Git.",
+      "redirectNotice": "Git provider connections have moved to the <strong>Integrations</strong> context. Repository linking for this sandbox is managed below.",
+      "encryptedNote": "Credentials are encrypted end-to-end",
+      "connected": "Connected",
+      "addProvider": "Add Provider",
+      "selectRepo": "Select a repository",
+      "connecting": "Connecting repository...",
+      "linkFailed": "Failed to link repository",
+      "back": "Back",
+      "deployInitiated": "Deploy initiated. The AI assistant is deploying your sandbox.",
+      "deployFailed": "Deploy failed: {message}",
+      "gitSyncInitiated": "Git sync initiated. The AI assistant is pushing your code.",
+      "gitSyncFailed": "Git sync failed: {message}",
+      "passkeyFailed": "Passkey authorization failed",
+      "passkeyRequired": "Passkey confirmation required. Please try again."
+    },
+    "tabEditor": {
+      "connecting": "Connecting",
+      "connectionFailed": "Connection failed",
+      "retry": "Retry",
+      "iframeTitle": "Code Browser"
+    },
+    "installingBanner": {
+      "title": "Installing dependencies",
+      "subtitle": "Preview will unlock once <code>npm install</code> finishes. You can edit code in the meantime."
+    },
+    "preview": {
+      "manualConfigBinaryNotFound": "Binary not found on PATH",
+      "manualConfigSpecMissing": "No preview command detected",
+      "manualConfigBinarySub": "We tried to run your dev command but couldn't find the binary. Edit it below, or run install first.",
+      "manualConfigSpecMissingSub": "We couldn't auto-detect how to start this app. Tell us the command to run.",
+      "manualPackageManager": "Detected package manager: <pm>{pm}</pm>",
+      "startCommandLabel": "Start command",
+      "startCommandHint": "Use <port>$PORT</port> to reference the port below. Binaries resolve through PATH (ancestor <bin>node_modules/.bin/</bin> dirs are included).",
+      "portLabel": "Port",
+      "portHint": "The port your dev server binds to. We route Caddy here.",
+      "startCommandRequired": "Start command is required",
+      "portInvalid": "Port must be a positive integer under 65536",
+      "saving": "Saving…",
+      "saveAndStart": "Save and start",
+      "cancel": "Cancel",
+      "networkError": "Network error",
+      "installingHint": "Installing dependencies — preview will be available when it finishes.",
+      "startFailed": "Failed to start preview: {reason}",
+      "rotateDevice": "Rotate device",
+      "refreshPreview": "Refresh preview",
+      "emptySandbox": "This sandbox is empty",
+      "previewNotAvailable": "Preview Not Available",
+      "previewOutOfSync": "Preview out of sync",
+      "previewAuthFailed": "Preview authorization failed",
+      "frontendLabel": "Frontend",
+      "backendLabel": "Backend",
+      "companionBadge": "Companion",
+      "installingShort": "Installing…",
+      "viewPreview": "View preview",
+      "previewLabel": "Preview",
+      "resourceBlockedTitle": "Not enough memory",
+      "resourceBlockedSub": "Your workspace doesn't have enough free memory to start this preview.",
+      "resourceVpsHas": "Your VPS has {totalMB} MB of RAM.",
+      "resourceFrameworkNeeds": "{framework} needs ~{peakMB} MB peak to start.",
+      "resourceAvailable": "{availableMB} MB is currently available.",
+      "resourceOtherPreviews": "{count, plural, one {# other preview} other {# other previews}} running.",
+      "resourceUpgradeHobby": "Upgrade to Pro (8 GB) for larger projects and concurrent previews.",
+      "resourceUpgradePro": "Need more headroom? Contact us for enterprise plans.",
+      "resourceUpgradeCta": "Upgrade to Pro",
+      "resourceContactCta": "Contact Us",
+      "resourceRetry": "Retry",
+      "resourceUsed": "Used: {mb} MB",
+      "resourceNeeded": "Needed: ~{mb} MB",
+      "resourceTotal": "Total: {mb} MB",
+      "editConfigHeadline": "Edit preview config",
+      "editConfigSubhead": "Tweak the start command, port, environment, or mode.",
+      "modeLabel": "Mode",
+      "modeHot": "Hot (HMR)",
+      "modeWarm": "Warm (prod build)",
+      "modeHint": "Hot runs the dev command with HMR. Warm runs the production build command.",
+      "envLabel": "Environment variables",
+      "envHint": "Key-value pairs exported before the start command. Use $PORT to reference the port.",
+      "addVariable": "+ Add variable",
+      "advancedLabel": "Advanced",
+      "prodStartLabel": "Production command",
+      "prodStartHint": "Used in warm mode. Falls back to the start command if empty.",
+      "runtimeLabel": "Runtime",
+      "prodEnvLabel": "Production env vars",
+      "prodEnvHint": "Applied only in warm mode, on top of base env.",
+      "saveAndRestart": "Save & restart",
+      "editConfig": "Edit config",
+      "envKeyPlaceholder": "KEY",
+      "envValuePlaceholder": "value",
+      "loadingConfig": "Loading config...",
+      "devCommandPlaceholder": "npm run dev",
+      "startCommandPlaceholder": "npm start",
+      "companionStartFailed": "Failed to start companion",
+      "companionToggleFailed": "Companion toggle failed",
+      "restart": "Restart",
+      "proxyPathPlaceholder": "/api",
+      "loadingApp": "Loading app...",
+      "serverRunning": "Server Running",
+      "portHeldMessage": "The preview port is held by a process the platform no longer tracks. Your code is fine — click Restart to auto-heal.",
+      "restartPreview": "Restart Preview",
+      "authorizing": "Authorizing..."
+    },
+    "apiDocs": {
+      "scanning": "Scanning for API documentation...",
+      "scanningHint": "Checking common OpenAPI spec paths",
+      "endpoints": "{count} endpoints",
+      "refreshSpec": "Refresh spec",
+      "base": "Base",
+      "models": "Models",
+      "baseUrl": "Base URL",
+      "startServerHint": "Start the dev server to detect API documentation automatically.",
+      "healing": "The AI assistant is adding an OpenAPI spec...",
+      "healingAttempts": "Attempt {current} of {max}. The sandbox will restart automatically once the spec is added.",
+      "exhausted": "Auto-detection couldn't add an OpenAPI spec.",
+      "exhaustedHint": "Add one manually to get interactive API docs here:",
+      "noSpec": "No OpenAPI spec detected. Add one to get interactive API docs here.",
+      "install": "Install: <pkg/>",
+      "installLabel": "Install:",
+      "manualSetupHint": "Add an OpenAPI/Swagger spec endpoint to your sandbox. Common paths:",
+      "openApiSpec": "OpenAPI Specification",
+      "parameters": "Parameters",
+      "name": "Name",
+      "in": "In",
+      "type": "Type",
+      "description": "Description",
+      "requestBody": "Request Body",
+      "required": "required",
+      "responses": "Responses",
+      "exampleLabel": "Example: {name}",
+      "deprecated": "deprecated",
+      "model": "model",
+      "properties": "{count} properties",
+      "backend": "backend"
+    },
+    "vault": {
+      "selectProject": "Select a project to view its knowledge vault",
+      "loadingIndex": "Loading vault index...",
+      "authRequired": "Vault requires an active session.",
+      "authRefreshHint": "Refresh the page to re-authenticate.",
+      "loadFailed": "Could not load vault.",
+      "loadFailedHint": "The vault service may not be available on this server yet.",
+      "retry": "Retry",
+      "title": "Knowledge Vault",
+      "indexHint": "Index your project's markdown files to enable wiki-links, graph view, and scoped search.",
+      "initialize": "Initialize vault",
+      "searchPlaceholder": "Search notes...",
+      "newNoteTooltip": "New note (Cmd+N)",
+      "rebuildIndexTooltip": "Rebuild index",
+      "noteCount": "{count} notes",
+      "noNotesYet": "No notes yet",
+      "createFirstNote": "Create first note",
+      "noResultsFor": "No results for “{query}”",
+      "saving": "Saving...",
+      "saved": "Saved",
+      "saveFailed": "Save failed",
+      "unsaved": "Unsaved",
+      "wordCount": "{count} words",
+      "previewTooltip": "Preview (Cmd+E)",
+      "editTooltip": "Edit (Cmd+E)",
+      "renameTooltip": "Rename / Move",
+      "deleteNoteTooltip": "Delete note",
+      "writingPlaceholder": "Start writing...",
+      "selectNoteToStart": "Select a note to get started",
+      "vaultEmpty": "Your vault is empty",
+      "browseHint": "Browse the file tree or search to find notes.",
+      "createFirstHint": "Create your first note to start building your knowledge base.",
+      "newNote": "New note",
+      "kbdNew": "new",
+      "kbdEdit": "edit",
+      "kbdSave": "save",
+      "newNoteTitle": "New Note",
+      "newNoteDescription": "Enter a path for the new note. Use slashes to create folders.",
+      "notePath": "Note path",
+      "notePathPlaceholder": "e.g. architecture/overview or meeting-notes",
+      "notePathHintPrefix": ".md extension added automatically. Use",
+      "notePathHintSuffix": "to organize in folders.",
+      "untitled": "untitled",
+      "inboxQuick": "inbox/quick-note",
+      "cancel": "Cancel",
+      "create": "Create",
+      "deleteNoteTitle": "Delete Note",
+      "deleteNoteConfirmPrefix": "Are you sure you want to delete",
+      "deleteNoteConfirmSuffix": "?",
+      "thisNote": "this note",
+      "deleteNoteWarning": "This will remove the file from disk and cannot be undone.",
+      "delete": "Delete",
+      "renameNoteTitle": "Rename / Move Note",
+      "renameNoteDescription": "Change the path to rename or move the note. The old name will be preserved as an alias for wiki-links.",
+      "newPath": "New path",
+      "renameHint": ".md extension added automatically.",
+      "rename": "Rename",
+      "createNoteFailed": "Failed to create note",
+      "deleteNoteFailed": "Failed to delete note",
+      "renameNoteFailed": "Failed to rename note",
+      "backlinks": {
+        "linkedMentions": "Linked mentions ({count})",
+        "restrictedSuffix": "+ {count} restricted",
+        "someRestricted": "Additional restricted notes link to this note.",
+        "severalRestricted": "Several restricted notes link to this note.",
+        "manyRestricted": "Many restricted notes link to this note."
+      },
+      "renderer": {
+        "properties": "Properties"
+      },
+      "graph": {
+        "refresh": "Refresh graph",
+        "zoomIn": "Zoom in",
+        "zoomOut": "Zoom out",
+        "truncated": "truncated",
+        "loading": "Loading...",
+        "stats": "{nodes} nodes, {edges} edges",
+        "restrictedSuffix": " | {count} restricted",
+        "restrictedNode": "Restricted"
+      },
+      "scopes": {
+        "title": "Vault Scopes",
+        "subtitle": "Define server-side projections that control what agents and collaborators can see.",
+        "newScope": "New scope",
+        "loadingScopes": "Loading scopes...",
+        "createTitle": "Create Scope",
+        "createDescription": "Define rules to control what agents and collaborators can see in this vault.",
+        "name": "Name",
+        "namePlaceholder": "agent-research-scope",
+        "description": "Description",
+        "descriptionPlaceholder": "What this scope is for...",
+        "defaultAction": "Default action",
+        "defaultExclude": "Exclude (deny by default)",
+        "defaultInclude": "Include (allow by default)",
+        "boundaryDisclosure": "Boundary disclosure",
+        "agentDefault": "Agent default",
+        "rules": "Rules",
+        "addRule": "+ Add rule",
+        "rulesHint": "Top-to-bottom evaluation, last match wins.",
+        "noRulesYet": "No rules yet. Add a rule to get started.",
+        "ruleTypeFolderGlob": "Folder glob",
+        "ruleTypeTag": "Tag",
+        "ruleTypeFrontmatter": "Frontmatter",
+        "ruleTypeNotePath": "Note path",
+        "folderGlobPlaceholder": "research/**",
+        "tagPlaceholder": "project/backend",
+        "notePathPlaceholder": "specific-note.md",
+        "frontmatterKeyPlaceholder": "key",
+        "frontmatterValuePlaceholder": "value",
+        "opExists": "exists",
+        "opEq": "=",
+        "opNeq": "!=",
+        "actionInclude": "Include",
+        "actionExclude": "Exclude",
+        "cancel": "Cancel",
+        "createScope": "Create Scope",
+        "deleteConfirm": "Delete this scope? This will invalidate all vault sessions using it.",
+        "createFailed": "Failed to create scope",
+        "activeScopes": "Active scopes",
+        "noScopesDefined": "No scopes defined",
+        "noScopesHint": "Create a scope to control what agents and collaborators can see.",
+        "agentDefaultBadge": "Agent Default",
+        "boundaryDisclosureBadge": "Boundary Disclosure",
+        "rulesCount": "{count, plural, =1 {# rule} other {# rules}}",
+        "version": "v{version}",
+        "rulesLabel": "Rules",
+        "defaultPrefix": "default: {default}",
+        "noRulesDefault": "No rules defined. Using default action: {default}.",
+        "delete": "Delete",
+        "settingsTitle": "Vault Scopes",
+        "settingsSubtitle": "Control what agents and collaborators see in the knowledge vault. Scopes define server-side projections. Agents never access out-of-scope data.",
+        "settingsLoading": "Loading scopes...",
+        "settingsNoScopes": "No scopes defined. Create scopes in the Vault > Scopes tab to control agent knowledge access.",
+        "settingsBoundaryBadge": "Boundary",
+        "settingsScopeMeta": "v{version} · {count} rules · default: {default}",
+        "settingsManageHintPrefix": "Manage scopes in the",
+        "settingsManageHintLink": "Vault > Scopes",
+        "settingsManageHintSuffix": "tab. Changes invalidate active vault sessions immediately."
+      },
+      "share": {
+        "title": "Share Note",
+        "descriptionPrefix": "Create a share link for",
+        "policyLabel": "Sharing Policy",
+        "policyInternal": "Internal only",
+        "policyExternal": "External",
+        "expiresLabel": "Expires after",
+        "expiry1h": "1 hour",
+        "expiry24h": "24 hours",
+        "expiry7d": "7 days",
+        "expiry30d": "30 days",
+        "expiryNever": "Never",
+        "maxUsesLabel": "Max uses",
+        "maxUsesPlaceholder": "Unlimited",
+        "maxUsesHint": "Leave empty for unlimited use.",
+        "linkCreated": "Share link created",
+        "cancel": "Cancel",
+        "createLink": "Create link",
+        "done": "Done",
+        "copied": "Copied",
+        "copyLink": "Copy link",
+        "createFailed": "Failed to create link"
+      }
+    },
+    "security": {
+      "permissionAsk": "Ask Every Time",
+      "permissionAllowAlways": "Always Approve",
+      "permissionNever": "Never Allow",
+      "permissionInherit": "Inherit from gate",
+      "permissionAllowSession": "Auto-approve (session)",
+      "inheritedSuffix": "(inherited)",
+      "resetToDefault": "Reset to default",
+      "agentPermissionsTitle": "Agent Permissions",
+      "selectSandbox": "Select a sandbox to configure agent permissions.",
+      "agentPermissionsSubtitle": "Control what the AI agent can do.",
+      "oneTimeActions": "One-time actions",
+      "oneTimeActionsHint": "Each request generates a single-use token. Authorized via the Actions menu in chat.",
+      "writeAccess": "Write access",
+      "writeAccessHint": "Time-limited write access to protected resources.",
+      "readAccessTitle": "Read Access",
+      "readAccessSubtitle": "Control what the AI agent can read.",
+      "timeLimitedAccess": "Time-limited access",
+      "timeLimitedAccessHint": "Opens a temporary window (30s to 10 min). Authorized via popup when the agent requests it.",
+      "connectedToolPermissionsTitle": "Connected Tool Permissions",
+      "connectedToolPermissionsSubtitle": "Per-tool permissions for connected integrations. Override the gate-level default for individual tools.",
+      "providerNeon": "Neon Database",
+      "providerSupabase": "Supabase",
+      "providerStripe": "Stripe API",
+      "providerVercel": "Vercel",
+      "providerGithub": "GitHub",
+      "providerTurso": "Turso",
+      "providerPlanetscale": "PlanetScale",
+      "capabilityDatabaseRead": "Database read",
+      "capabilityDatabaseWrite": "Database write",
+      "capabilityDatabaseSchema": "Database schema",
+      "capabilityExecutionShell": "Execution shell",
+      "capabilityNetworkEgress": "Network egress",
+      "capabilityDeploymentTrigger": "Deploy trigger",
+      "capabilitySecretsRead": "Secret read",
+      "capabilitySecretsWrite": "Secret write",
+      "capabilityGitRead": "Git read",
+      "capabilityGitWrite": "Git write",
+      "capabilityFilesystemRead": "File read",
+      "capabilityFilesystemWrite": "File write",
+      "capabilityExternalRead": "External read",
+      "capabilityExternalWrite": "External write",
+      "capabilityExternalAdmin": "External admin",
+      "defaultBadge": "Default",
+      "quarantinedUnhealthy": "{count} unhealthy",
+      "quarantinedDisabled": "{count} agent-disabled",
+      "quarantinedSuffix": "{summary} {count, plural, =1 {connection} other {connections}} — review in Integrations",
+      "gateStatusTitle": "Gate Status",
+      "gateOpenBadge": "{count} open",
+      "openLabel": "Open",
+      "lockedLabel": "Locked",
+      "revoke": "Revoke",
+      "encryptionFingerprintTitle": "Encryption Fingerprint",
+      "encryptionFingerprintHint": "Identifies the public key encrypting your secrets. Unexpected changes may indicate key rotation or compromise.",
+      "copyFingerprint": "Copy fingerprint",
+      "dangerZoneTitle": "Danger Zone",
+      "deleteSandboxTitle": "Delete this sandbox",
+      "deleteSandboxBodyPrefix": "Once you delete a sandbox, there is no going back. This will permanently delete the",
+      "deleteSandboxBodySuffix": "directory and all its contents.",
+      "deleteSandboxButton": "Delete this sandbox",
+      "deleteConfirmTypePrefix": "To confirm, type",
+      "deleteConfirmTypeSuffix": "below:",
+      "deleteConfirmPlaceholder": "Type sandbox name to confirm",
+      "deleteFailed": "Failed to delete sandbox",
+      "cancel": "Cancel",
+      "deleting": "Deleting...",
+      "deletePermanently": "Delete permanently"
+    },
+    "observability": {
+      "activeDevServers": "Active Dev Servers",
+      "noActiveDevServers": "No active dev servers",
+      "noActiveDevServersHint": "Start a preview from the Workspace to see logs here",
+      "idle": "Idle",
+      "phase": {
+        "ready": "ready",
+        "installing": "installing",
+        "starting": "starting",
+        "error": "error",
+        "crashed": "crashed",
+        "idle": "idle"
+      },
+      "autoHealing": "auto-healing",
+      "healFailed": "heal failed",
+      "noLogYet": "No log output yet",
+      "noDeployment": "No deployment found",
+      "noDeploymentHint": "Deploy your sandbox from the Workspace to see production status",
+      "deployed": "Deployed",
+      "application": "Application",
+      "domain": "Domain",
+      "directory": "Directory",
+      "applicationLogs": "Application Logs",
+      "logsComingSoon": "Production log streaming coming soon",
+      "logsHint": "Use the terminal for live log access",
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "lastSync": "Last sync: {time}",
+      "cpu": "CPU",
+      "memory": "Memory",
+      "activeSessions": "Active Sessions",
+      "noActiveSessions": "No active CLI sessions",
+      "services": "Services",
+      "serviceTerminal": "Terminal",
+      "serviceSsh": "SSH",
+      "serviceRealtime": "Realtime WS",
+      "running": "Running",
+      "stopped": "Stopped",
+      "zeroclawTitle": "ZeroClaw",
+      "zeroclawTagline": "Rust Native",
+      "refresh": "Refresh",
+      "active": "Active",
+      "offline": "Offline",
+      "watchdogUnreachable": "Could not reach watchdog service",
+      "dedicatedSubprocess": "Dedicated Subprocess",
+      "perProjectIsolate": "Per-Project Isolate",
+      "memoryUnit": "MB",
+      "memoryLabel": "Memory",
+      "uptimeLabel": "Uptime",
+      "coldStartUnit": "ms",
+      "coldStartLabel": "Cold Start",
+      "runtimeUnavailable": "Runtime service not available",
+      "cliCredentialsTitle": "CLI Credentials",
+      "configured": "Configured",
+      "notConfigured": "Not configured",
+      "quickActions": "Quick Actions",
+      "restartServices": "Restart Services",
+      "restartServicesHint": "Restarts agent-bridge, terminal proxy, and related services",
+      "restartConfirm": "Restart enforcer and watchdog services? Active sessions may be briefly interrupted.",
+      "restartSuccess": "Services restarted successfully",
+      "restartPartial": "Some services failed to restart",
+      "restartFailed": "Failed to restart services",
+      "troubleshooting": "Troubleshooting",
+      "gatewayNotRunningTitle": "Gateway not running",
+      "gatewayNotRunningFix": "Try Restart Services above. If the gateway won't start, check if your API keys are configured in Settings → Claw → Providers.",
+      "excessiveRestartsTitle": "Excessive restarts detected",
+      "excessiveRestartsFix": "The gateway is crash-looping. Check your Claw core files for syntax errors, or try removing and re-adding your API key.",
+      "watchdogUnreachableTitle": "Watchdog unreachable",
+      "watchdogUnreachableFix": "The watchdog service may be down. Try Restart Services. If that fails, the server may need a full reboot from the Settings → Danger Zone.",
+      "allOperational": "All systems operational"
+    },
+    "connectionGroup": {
+      "routeRoleDbDefault": "Database default",
+      "routeRoleDeployDefault": "Deploy default",
+      "routeRoleGitDefault": "Git default",
+      "deleteWarningStopDb": "Stop DATABASE_URL injection",
+      "deleteWarningRemoveDb": "Remove DB actions",
+      "deleteWarningRemoveAgentDb": "Remove agent access to database tools",
+      "deleteWarningStopDeploy": "Stop deploy triggers",
+      "deleteWarningRemoveDeploy": "Remove deploy actions",
+      "deleteWarningRemoveAgentDeploy": "Remove agent access to deploy tools",
+      "deleteWarningStopGit": "Stop Git credential injection",
+      "deleteWarningRemoveGit": "Remove Git actions",
+      "deleteWarningRemoveAgentGit": "Remove agent access to Git tools",
+      "deleteWarningGenericConnections": "Remove all connections in this group",
+      "deleteWarningGenericTools": "Remove agent access to tools",
+      "providerCustom": "Custom MCP",
+      "transportSse": "SSE",
+      "transportStreamableHttp": "Streamable HTTP",
+      "transportStdio": "stdio",
+      "groupUpdated": "Group updated",
+      "updateGroupFailed": "Failed to update group",
+      "groupDeleted": "Group deleted",
+      "deleteGroupFailed": "Failed to delete group",
+      "defaultUpdated": "Default connection updated",
+      "setDefaultFailed": "Failed to set default",
+      "agentExposureFailed": "Failed to update agent exposure",
+      "connectionRemoved": "Connection removed",
+      "removeConnectionFailed": "Failed to remove connection",
+      "mcpAdded": "MCP connection added",
+      "addConnectionFailed": "Failed to add connection",
+      "discoveryNotAvailable": "Discovery not available yet",
+      "discoverySuccess": "Connection verified — tools are discovered by the agent on the server",
+      "discoveryFailed": "Discovery failed",
+      "editName": "Click to edit name",
+      "editGroup": "Edit group",
+      "deleteGroup": "Delete group",
+      "noConnectionsConfigured": "No connections configured yet.",
+      "connectionCount": "{count, plural, =1 {# connection} other {# connections}}",
+      "noConnectionsYet": "No connections yet.",
+      "addToStart": "Add a connection to get started.",
+      "tools": "Tools",
+      "discoverTools": "Discover Tools",
+      "addConnection": "Add Connection",
+      "deleteRoleGroupTitle": "Delete Role Group",
+      "deleteRoleGroupSubtitle": "This group is your {role}.",
+      "roleGroupFallback": "role group",
+      "deletingWill": "Deleting it will:",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "default": "Default",
+      "setAsDefault": "Set as Default",
+      "changeRepo": "Change Repo",
+      "selectRepo": "Select Repo",
+      "hideTools": "Hide Tools",
+      "viewTools": "View Tools",
+      "remove": "Remove",
+      "searchRepos": "Search repositories...",
+      "noReposFound": "No repositories found",
+      "newRepo": "New",
+      "createNewRepo": "Create a new repository",
+      "repositoryLinked": "Repository linked",
+      "repositoryLinkFailed": "Failed to link repository",
+      "whatToConnect": "What do you want to connect?",
+      "customMcpServer": "Custom MCP Server",
+      "back": "Back",
+      "name": "Name",
+      "namePlaceholder": "My MCP Server",
+      "url": "URL",
+      "urlPlaceholder": "https://mcp.example.com/sse",
+      "transport": "Transport",
+      "authToken": "Auth Token",
+      "authTokenOptional": "(optional)",
+      "authTokenPlaceholder": "Bearer token or API key",
+      "connect": "Connect"
+    },
+    "customDomain": {
+      "title": "Custom domain",
+      "loading": "Loading…",
+      "sovereignNotice": "Custom domains are not yet supported on sovereign mode. Your LUKS key is bound to your current origin; supporting multiple origins requires adding a new LUKS slot, which is planned for a future release.",
+      "statusPendingValidation": "Awaiting DNS verification",
+      "statusValidating": "Verifying DNS…",
+      "statusIssuingCert": "Issuing TLS certificate…",
+      "statusActive": "Active",
+      "statusValidationFailed": "DNS verification failed",
+      "statusCertFailed": "Certificate issuance failed",
+      "statusSuspended": "Suspended",
+      "activeNotice": "Active — your VPS now responds on https://{hostname}",
+      "remove": "Remove",
+      "removeConfirm": "Remove this custom domain? Your VPS will stop serving on it immediately.",
+      "passkeyNotice": "Your custom domain is a separate origin for security. You'll register a passkey the first time you visit https://{hostname}, even if you've already registered one on your default URL. Both URLs will continue to work.",
+      "dnsVerification": "DNS verification",
+      "dnsVerificationHint": "Add this {type} record at your DNS provider for {hostname}:",
+      "dnsLabelName": "Name",
+      "dnsLabelValue": "Value",
+      "checkStatusNow": "Check status now",
+      "cancel": "Cancel",
+      "intro": "Connect your own domain to this VPS. Cloudflare will handle DNS verification and issue a TLS certificate automatically. This normally takes a few minutes.",
+      "yourDomain": "Your domain",
+      "domainPlaceholder": "app.acme.com",
+      "termsAccept": "I confirm I own or control this domain and agree not to use it to impersonate Ellul or any third party.",
+      "addDomain": "Add domain",
+      "requestFailed": "Request failed"
+    },
+    "notificationSettings": {
+      "title": "Push Notifications",
+      "disableAll": "Disable all",
+      "enableAll": "Enable all",
+      "categories": {
+        "gateRequest": "Gate requests",
+        "gateRequestDesc": "Agent needs permission to deploy, push, or access data",
+        "cliPrompt": "Agent questions",
+        "cliPromptDesc": "Agent is waiting for your input",
+        "taskComplete": "Task complete",
+        "taskCompleteDesc": "Agent finished working on a task",
+        "taskError": "Task errors",
+        "taskErrorDesc": "Agent encountered a problem",
+        "serverStatus": "Server status",
+        "serverStatusDesc": "Server started, stopped, or hibernating",
+        "deployStatus": "Deployments",
+        "deployStatusDesc": "Deployment configuration changes"
+      }
+    },
+    "languagePicker": {
+      "ariaLabel": "Language",
+      "selectLanguage": "Select language",
+      "currentLanguage": "Current language: {language}"
+    },
+    "desktopHeader": {
+      "platformSettings": "Platform Settings",
+      "online": "Online",
+      "offline": "Offline"
+    },
+    "app": {
+      "redirecting": "Redirecting...",
+      "switchingApps": "Switching apps..."
+    },
+    "appSelector": {
+      "noProjects": "No projects",
+      "selectScope": "Select Scope",
+      "monorepoRoot": "Monorepo"
+    },
+    "workspaceContent": {
+      "files": "Files",
+      "changes": "Changes",
+      "search": "Search",
+      "refresh": "Refresh"
+    },
+    "contextContent": {
+      "noSandbox": "No sandbox yet",
+      "createSandboxHint": "Create a sandbox from the overview to start provisioning databases."
+    },
+    "mobileDashboard": {
+      "governanceTier": "Governance Tier",
+      "governanceHint": "Secrets & security management - upgrade for workspace, deploy & preview",
+      "upgrade": "Upgrade",
+      "establishingSession": "Establishing secure session",
+      "verifyingCredentials": "Verifying credentials",
+      "passkeyAuthMessage": "Please authenticate with your passkey to continue.",
+      "groups": {
+        "created": "Created \"{name}\" group",
+        "createFailed": "Failed to create group",
+        "deleted": "Group deleted",
+        "deleteFailed": "Failed to delete group"
+      }
+    },
+    "mobileBottomNav": {
+      "groups": "Groups",
+      "newGroup": "New Group"
+    },
+    "chatGrid": {
+      "title": "Chats",
+      "emptyTitle": "No chats yet",
+      "emptyHint": "Start a chat to see it appear here.",
+      "lastActive": "Last active {time}",
+      "removeFromGrid": "Remove from grid",
+      "addThread": "Add Thread"
+    },
+    "clawChannels": {
+      "title": "Channels",
+      "subtitle": "Configure inbound channels for your agent",
+      "subtitleConsole": "Connect messaging platforms to your ZeroClaw runtime. Channels run simultaneously with full isolation.",
+      "addChannel": "Add Channel",
+      "noChannels": "No channels configured",
+      "noChannelsHint": "Add a channel to let your agent send and receive messages.",
+      "saved": "Saved",
+      "saveFailed": "Failed to save",
+      "saving": "Saving...",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "deleteChannelTitle": "Remove Channel?",
+      "deleteChannelDesc": "This will remove the channel and revoke its credentials. The agent will no longer receive messages from this channel.",
+      "removing": "Removing...",
+      "remove": "Remove",
+      "channelType": "Channel type",
+      "label": "Label",
+      "connected": "Connected",
+      "notConfigured": "Not configured",
+      "viewSetupGuide": "View setup guide",
+      "telegramName": "Telegram",
+      "telegramDescription": "Bot API via grammÿ; supports groups.",
+      "telegramBotTokenLabel": "Bot Token",
+      "telegramBotTokenHelp": "Create a bot via @BotFather on Telegram.",
+      "discordName": "Discord",
+      "discordDescription": "Discord Bot API + Gateway; supports servers, channels, and DMs.",
+      "discordTokenLabel": "Bot Token",
+      "discordTokenPlaceholder": "Your Discord bot token",
+      "discordTokenHelp": "Get your bot token from the Discord Developer Portal. Enable Message Content and Server Members intents.",
+      "whatsappConnected": "WhatsApp connected successfully!",
+      "whatsappPairingHint": "WhatsApp uses QR-based pairing. Click below to generate a QR code, then scan it with your phone.",
+      "startPairing": "Start Pairing",
+      "retry": "Retry"
+    },
+    "clawCoreFiles": {
+      "title": "Core Files",
+      "subtitle": "Bootstrap persona, identity, and tool guidance.",
+      "refresh": "Refresh",
+      "noFiles": "No workspace files found",
+      "noFilesHint": "ZeroClaw runtime identity files will appear here once the isolate is initialized.",
+      "saved": "Saved",
+      "edit": "Edit",
+      "cancel": "Cancel",
+      "save": "Save",
+      "today": "today",
+      "oneDayAgo": "1d ago",
+      "daysAgo": "{count}d ago"
+    },
+    "serverSettings": {
+      "domainsTitle": "Domains",
+      "domainsSubtitle": "Custom domains and SSL",
+      "modalTitle": "Platform Settings",
+      "tabs": {
+        "general": "General",
+        "appearance": "Appearance",
+        "domains": "Domains",
+        "billing": "Billing",
+        "context": "Context"
+      },
+      "product": "Product",
+      "productCloudSandbox": "Cloud Sandbox - Secure AI development environment",
+      "productCloudPlatform": "Cloud Platform - Full stack development and hosting",
+      "productShieldProxy": "Shield Proxy - Local agent security firewall",
+      "desktopLayout": "Desktop Layout",
+      "desktopLayoutHint": "Workspace arrangement on larger screens",
+      "modeFocus": "Focus",
+      "modeFocusDesc": "Full-width tabs with built-in sidebar",
+      "modeStudio": "Studio",
+      "modeStudioDesc": "Side-by-side chat and preview",
+      "language": "Language",
+      "languageHint": "Display language for console, chat, code browser, and docs"
+    },
+    "tlsCard": {
+      "title": "Deployment Model",
+      "subtitle": "Choose how your server connects to the internet. Both options included in all plans.",
+      "active": "Active",
+      "unavailable": "Unavailable",
+      "cloudflareTitle": "Cloudflare Edge",
+      "cloudflareDescription": "DDoS protection, global CDN, edge caching. Cloudflare terminates TLS at edge. Origin cert + Authenticated Origin Pulls secures the connection.",
+      "directTitle": "Direct Connect",
+      "directDescription": "True E2E encryption via Let's Encrypt. No third-party sees decrypted traffic. DNS-only routing, compliance-ready.",
+      "quotaExhaustedTitle": "Let's Encrypt quota exhausted",
+      "quotaExhaustedDesc": "{used}/{limit} certificates used this week. Resets in {resetIn}.",
+      "quotaIndicator": "Let's Encrypt: {used}/{limit} certs used this week",
+      "switchingModel": "Switching deployment model...",
+      "reauthRequired": "Re-authentication required",
+      "reauthHint": "Domain changed. Redirecting to passkey login on the new domain...",
+      "switchFailed": "Failed to switch model",
+      "rateLimited": "{error}. Resets in {resetIn}",
+      "fetchFailed": "Failed to fetch server",
+      "fetchQuotaFailed": "Failed to fetch quota",
+      "switchFailedFallback": "Failed to switch deployment model"
+    },
+    "webLockCard": {
+      "title": "Environment Lock",
+      "subtitle": "Choose your security tier",
+      "currentTier": "Current Tier",
+      "settings": "Settings",
+      "upgrade": "Upgrade",
+      "switching": "Switching...",
+      "saved": "Saved",
+      "lockNameDefault": "Web Lock",
+      "lockNameCli": "Environment Lock",
+      "privacyNameDefault": "Privacy Lock",
+      "privacyNameCli": "Environment Privacy",
+      "subjectDefault": "workspace",
+      "subjectCli": "environment",
+      "tierLabel": {
+        "standard": "Standard",
+        "webLock": "Web Lock",
+        "privacyLock": "Privacy Lock",
+        "webLocked": "Web Locked",
+        "privateLocked": "Private Locked",
+        "settingUp": "Setting Up",
+        "configuring": "Configuring"
+      },
+      "tierShortLabel": {
+        "standard": "Standard",
+        "web": "Web",
+        "privacy": "Privacy"
+      },
+      "tierDescription": {
+        "standard": "Basic authentication with session tokens",
+        "webLock": "Passkey authentication with proof of possession",
+        "privacyLock": "Encrypted volume - even we can't read your data",
+        "standardLong": "Protected by your ellul.ai login",
+        "webLockedLong": "Protected by Face ID / Touch ID",
+        "privateLockedLong": "Encrypted volume with passkey authentication"
+      },
+      "userMessage": {
+        "standard": "Protected by your ellul.ai login. At risk if we're breached or your account is hacked.",
+        "webLocked": "Protected by Face ID / Touch ID. Safe even if we're breached.",
+        "privateLocked": "Volume encrypted with LUKS2. Protected by Face ID / Touch ID. Data unreadable without your passkey."
+      },
+      "permanent": "Permanent",
+      "active": "Active",
+      "incomplete": "Incomplete",
+      "settingUpEllipsis": "Setting up...",
+      "levelDescription": {
+        "off": "Your {subject} uses standard security. Enable Web Lock for passkey protection.",
+        "webLocked": "Your {subject} is protected by your passkey. Enable Privacy Lock to encrypt your data.",
+        "privacyLocked": "Your {subject} is fully protected. Passkey access and encrypted data - even we can't read it.",
+        "setupIncomplete": "Your {subject} lock is partially enabled. Complete setup to fully protect your {subject}.",
+        "transitioning": "Your {subject} security is being configured."
+      },
+      "cta": {
+        "enableWebLock": "Enable Web Lock",
+        "enablePrivacyLock": "Enable Privacy Lock",
+        "manageSecurity": "Manage Security",
+        "completeSetup": "Complete Setup",
+        "pleaseWait": "Please wait..."
+      },
+      "recoveryCodesAvailable": "Recovery codes available in your settings",
+      "volumeEncryptionActive": "Volume encryption active (managed by platform)",
+      "encryptedAtRest": "Your data is encrypted at rest - protected even when your server is off.",
+      "privacyLockPermanent": "Privacy Lock is permanent and cannot be reversed.",
+      "lostPasskey": "Lost your passkey?",
+      "lostPasskeyHint": "Use your recovery codes to regain access. If you have no recovery codes, contact support - your data remains encrypted and safe, but access requires your original passkey device.",
+      "passkeyProtects": "Passkey protects web access. SSH available separately. Upgrade to Privacy Lock to encrypt your data, or downgrade to Standard.",
+      "standardSecurityNote": "Standard security uses session tokens. Enable Web Lock to add passkey authentication with proof-of-possession - every request cryptographically proves your device.",
+      "connecting": "Connecting...",
+      "downgradeToStandard": "Downgrade to Standard",
+      "manageLock": "Manage Lock",
+      "advanced": "Advanced",
+      "webTerminalLabel": "Web Terminal:",
+      "webTerminalEnabled": "Enabled",
+      "webTerminalDisabled": "Disabled",
+      "webTerminalPasskeyRequired": "Passkey Required",
+      "sshAccessLabel": "SSH Access:",
+      "sshEnabled": "Enabled",
+      "sshDisabled": "Disabled",
+      "sshDynamic": "Dynamic",
+      "safeIfBreached": "Safe even if platform is breached",
+      "atRiskIfBreached": "At risk if platform is breached",
+      "privacyLockActive": "Privacy Lock Active",
+      "dataEncryptedNote": "Your data is encrypted. This cannot be reversed.",
+      "downgradeWillReduce": "This will reduce your security",
+      "downgradeWillReduceBody": "Removes passkey requirement and proof-of-possession verification. If the platform is compromised, attackers could access your {subject}.",
+      "removePasskeyFrom": "Remove passkey protection from your {subject}.",
+      "downgrading": "Downgrading...",
+      "confirmDowngrade": "Confirm Downgrade",
+      "lockEnabledToast": "{lockName} enabled.",
+      "downgradedToast": "Downgraded to Standard.",
+      "downgradeFailed": "Failed to downgrade",
+      "cancel": "Cancel"
+    },
+    "shieldSetup": {
+      "title": "Shield Setup",
+      "next": "Next",
+      "back": "Back",
+      "done": "Done",
+      "settingUp": "Setting up Shield Gateway",
+      "onlyOnce": "This only happens once. Future logins are instant.",
+      "step": {
+        "accountCreated": "Account created",
+        "paymentConfirmed": "Payment confirmed",
+        "provisioningServer": "Provisioning server",
+        "provisioningStarting": "Starting...",
+        "settingUpPasskey": "Setting up passkey",
+        "connectingToServer": "Connecting to server...",
+        "connectingToCli": "Connecting to CLI"
+      },
+      "tokenTimeoutBody": "Could not connect to your server. It may still be starting up.",
+      "tryAgain": "Try again",
+      "redirecting": "Redirecting to set up your passkey..."
+    },
+    "configVerify": {
+      "title": "Server Configuration Transparency",
+      "subtitle": "Verify that your server is running exactly what ellul.ai promised.",
+      "fetching": "Fetching configuration...",
+      "error": "Error",
+      "fetchFailed": "Failed to fetch config",
+      "integrityVerified": "Integrity Verified",
+      "integrityVerifiedDesc": "The configuration hash computed in your browser matches the hash stored on our servers.",
+      "integrityMismatch": "Integrity Mismatch",
+      "integrityMismatchDesc": "Warning: The hashes do not match. This could indicate tampering.",
+      "configHashLabel": "Configuration Hash (SHA-256)",
+      "verifyOnYourServer": "Verify on Your Server",
+      "verifyIntro": "To complete the chain of custody, run this command on your server and compare the hash:",
+      "scriptIntro": "This script will:",
+      "scriptStepHash": "Calculate the SHA-256 hash of your server's cloud-init",
+      "scriptStepRootKeys": "Check for unauthorized root SSH keys",
+      "scriptStepFirewall": "Verify firewall rules block spam/mining",
+      "scriptStepMiner": "Scan for crypto miner processes",
+      "publicKeyFingerprintLabel": "Server Public Key Fingerprint",
+      "publicKeyFingerprintHint": "Compare with: <code>ellul-env fingerprint</code> on your server",
+      "cloudInitLabel": "Cloud-Init Configuration",
+      "yamlHide": "Hide YAML",
+      "yamlShow": "Show YAML",
+      "yamlNote": "This is the exact YAML that was sent to Hetzner when your server was provisioned. It contains no secrets (tokens are injected at runtime)."
+    },
+    "vscodeConnect": {
+      "fetchStatusFailed": "Failed to fetch server status",
+      "noDomainConfigured": "Server has no domain configured yet.",
+      "genericError": "Something went wrong",
+      "loadingFallback": "Loading...",
+      "connectingMessage": "Connecting to your server...",
+      "signInTitle": "Sign in to continue",
+      "signInSubtitle": "Authenticate to connect your server to VS Code",
+      "continueWithGitHub": "Continue with GitHub",
+      "continueWithGoogle": "Continue with Google",
+      "termsAcceptance": "By signing in, you agree to our terms of service.",
+      "connectionFailedTitle": "Connection Failed",
+      "connectionFailedHint": "Close this tab and try again from VS Code.",
+      "noNonceTitle": "VS Code Connection",
+      "noNonceBodyBefore": "Use the ",
+      "noNonceBodyBadge": "Connect to Server",
+      "noNonceBodyAfter": " command in VS Code to start the connection flow.",
+      "noServerTitle": "No Server Found",
+      "noServerBody": "Create a server first, then connect from VS Code.",
+      "goToDashboard": "Go to Dashboard",
+      "notReadyTitle": "Server Not Ready",
+      "notReadyBodyBefore": "Your server is ",
+      "notReadyBodyAfter": ". Try again once it's active.",
+      "dashboard": "Dashboard"
+    },
+    "enableLock": {
+      "title": "Enable Web Lock",
+      "subtitle": "Web Lock requires a passkey for every action",
+      "passkey": "Passkey",
+      "next": "Next",
+      "back": "Back",
+      "cancel": "Cancel",
+      "enabling": "Enabling...",
+      "enable": "Enable Web Lock",
+      "browserNotSupportedTitle": "Browser Not Supported",
+      "browserNotSupportedBody": "{lockName} requires WebAuthn. Use Chrome, Safari, or Firefox.",
+      "close": "Close",
+      "enableTitleWebLock": "Enable {lockName}",
+      "enableTitlePrivacyLock": "Enable {privacyName}",
+      "encryptDescription": "Encrypt all data on your {subject}.",
+      "protectDescription": "Protect your {subject} with your passkey.",
+      "webLockProtects": "Web Lock protects your web access:",
+      "webLockBullet1": "- Passkey (Face ID / Touch ID) required for browser access",
+      "webLockBullet2": "- Every request cryptographically proves your device",
+      "webLockBullet3": "- SSH access remains available separately",
+      "webLockBullet4": "- You can downgrade back to Standard at any time",
+      "privacyLockEncrypts": "Privacy Lock encrypts everything on your server:",
+      "privacyLockBullet1": "- Source code, project files, and databases",
+      "privacyLockBullet2": "- API keys, secrets, and environment variables",
+      "privacyLockBullet3": "- Chat history and agent credentials",
+      "privacyLockBullet4": "- Server configuration and TLS certificates",
+      "privacyLockEncryptedNote": "All data is encrypted at rest with keys only you control. Not even ellul.ai staff can read your data.",
+      "cannotBeUndone": "This cannot be undone",
+      "cannotBeUndoneBody": "Privacy Lock is permanent. Once encryption is enabled, it cannot be reversed. Make sure you have access to your passkey device before proceeding.",
+      "oneTapHint": "One tap with Face ID / Touch ID to set up everything.",
+      "enablePrivacyLock": "Enable Privacy Lock",
+      "registeringPasskey": "Registering passkey",
+      "completeBiometric": "Complete Face ID / Touch ID to continue",
+      "protectingSubject": "Protecting your {subject}...",
+      "mayTakeMoment": "This may take a moment",
+      "lockEnabled": "{lockName} Enabled",
+      "saveRecovery": "Save your recovery information below. It will not be shown again.",
+      "accessRecovery": "Access recovery",
+      "accessRecoveryHint": "Use these if you lose your passkey device.",
+      "copied": "Copied",
+      "copyAccessCodes": "Copy Access Codes",
+      "privacyLockRecoveryNote": "Your access recovery codes from Web Lock are still valid. Use them if you lose your passkey device.",
+      "dataRecovery": "Data recovery",
+      "dataRecoveryHint": "Use this if you need to recover your data independently.",
+      "copyRecoveryKey": "Copy Recovery Key",
+      "savedEverything": "I've Saved Everything",
+      "errors": {
+        "syncPending": "Web Lock enabled, but encryption credential sync is pending. Privacy Lock will be available once your server reconnects.",
+        "setupFailed": "Setup failed",
+        "cancelled": "Cancelled. Try again when ready."
+      },
+      "recoveryCodesHeader": "{lockName} - Access Recovery Codes",
+      "recoveryCodesFooter": "Save these codes securely. Each can only be used once."
+    },
+    "secrets": {
+      "title": "Secrets",
+      "subtitle": "Encrypted credentials available to your apps",
+      "addSecret": "Add Secret",
+      "addVariable": "Add Variable",
+      "saveAll": "Save all",
+      "saveChanges": "Save Changes",
+      "savedSuccessfully": "Saved successfully",
+      "key": "Key",
+      "value": "Value",
+      "save": "Save",
+      "saving": "Saving...",
+      "delete": "Delete",
+      "deleting": "Deleting...",
+      "edit": "Edit",
+      "cancel": "Cancel",
+      "noSecrets": "No secrets yet",
+      "noSecretsHint": "Add a secret to make it available to your apps.",
+      "show": "Show",
+      "hide": "Hide",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copiedExclaim": "Copied!",
+      "envProduction": "Production",
+      "envDevelopment": "Development",
+      "envProductionLabel": "Production secrets",
+      "envDevelopmentLabel": "Development secrets",
+      "revealAll": "Reveal All",
+      "hideAll": "Hide All",
+      "importEnv": "Import .env",
+      "noEnvVars": "No environment variables",
+      "noEnvVarsHint": "Add variables like API_KEY, SECRET_TOKEN",
+      "managedByIntegrations": "Managed by Integrations",
+      "managedByIntegrationsHint": "Managed by Integrations — edit in the Integrations context",
+      "managedByIntegrationsNote": "These variables are managed by Integrations. To modify, use the Integrations context.",
+      "newVariables": "New Variables",
+      "keyPlaceholder": "KEY_NAME",
+      "valuePlaceholder": "value",
+      "deleteSecretTitle": "Delete Secret?",
+      "deleteSecretDescription": "This will permanently delete <strong>{name}</strong>.",
+      "importDialogTitle": "Import .env File",
+      "importDialogDescription": "Paste your .env file contents or upload a file. Values are encrypted before upload.",
+      "chooseEnvFile": "Choose .env file",
+      "orPasteBelow": "or paste below",
+      "importTextareaPlaceholder": "DATABASE_URL=postgresql://...\nAPI_KEY=sk-...\nSECRET_TOKEN=abc123",
+      "variablesDetected": "{count, plural, =1 {# variable detected} other {# variables detected}}",
+      "warnings": "Warnings:",
+      "encrypting": "Encrypting...",
+      "importSecretsCount": "Import {count, plural, =1 {# Secret} other {# Secrets}}",
+      "secretsImportedSuccess": "{count, plural, =1 {# secret} other {# secrets}} imported successfully.",
+      "sensitivityLabel": {
+        "sensitive": "Sensitive",
+        "plain": "Plain",
+        "secret": "Secret"
+      },
+      "exposureBadge": {
+        "public": "Public",
+        "safe": "Safe",
+        "seen": "Seen",
+        "rotate": "Rotate",
+        "publicTitle": "Classified as non-secret",
+        "rotatedTitle": "Value rotated since last agent exposure",
+        "notSeenTitle": "Agent has not seen this secret",
+        "acknowledgedTitle": "Agent has seen this value (acknowledged)",
+        "rotateTitle": "Agent has seen current value. Rotate recommended.",
+        "notExposed": "Not exposed to agent"
+      },
+      "classifyMenu": {
+        "secret": "Secret",
+        "plain": "Public (no rotation alert)",
+        "acknowledge": "Acknowledge (dismiss warning)"
+      },
+      "rotation": {
+        "warning": "Agent has seen current value. Consider rotating.",
+        "dismiss": "Dismiss"
+      },
+      "actions": {
+        "hideValue": "Hide value",
+        "revealValue": "Reveal value",
+        "copyValue": "Copy value",
+        "editValue": "Edit value",
+        "deleteAction": "Delete"
+      },
+      "errors": {
+        "publicKeyUnavailable": "Server public key not available",
+        "invalidVariableName": "Invalid variable name: {key}. Must start with a letter or underscore.",
+        "saveSecrets": "Failed to save secrets",
+        "saveSecret": "Failed to save secret",
+        "deleteSecret": "Failed to delete secret",
+        "loadValues": "Failed to load secret values",
+        "readValues": "Failed to read secret values",
+        "importSecrets": "Failed to import secrets",
+        "clipboardUnavailable": "Clipboard not available. Copy manually.",
+        "fetchPublicKey": "Failed to fetch public key"
+      },
+      "envParse": {
+        "noEquals": "Line {line}: No '=' found",
+        "invalidKey": "Line {line}: Invalid key \"{key}\"",
+        "unterminatedDouble": "Line {line}: Unterminated double quote",
+        "unterminatedSingle": "Line {line}: Unterminated single quote"
+      }
+    },
+    "tierSelector": {
+      "title": "Plan",
+      "subtitle": "Choose the right plan for your needs",
+      "currentPlan": "Current Plan",
+      "switchTo": "Switch to {plan}",
+      "switching": "Switching...",
+      "loadingPlans": "Loading plans...",
+      "loadFailed": "Failed to load plan options",
+      "downgradeScheduled": "Downgrade scheduled",
+      "downgradeScheduledBody": "Your plan changes to <plan></plan> ({interval}) on <date></date>. You keep full access to your current plan until then.",
+      "cancel": "Cancel",
+      "upgradeInProgress": "Upgrade in progress",
+      "upgradeInProgressBody": "Your server is upgrading to <plan></plan>. This usually takes 1-2 minutes.",
+      "downgradeScheduledSuccess": "Downgrade scheduled",
+      "paymentConfirmed": "Payment confirmed",
+      "planChangedSuccess": "Plan changed successfully",
+      "chargedAmount": "Charged: ${amount} (prorated)",
+      "newAiProxyToken": "New AI Proxy Token (save this):",
+      "planChangeFailed": "Plan change failed",
+      "ctaScheduled": "Scheduled",
+      "ctaUpgrade": "Upgrade",
+      "ctaDowngrade": "Downgrade",
+      "manageSubscription": "Manage subscription or cancel",
+      "downgradeTo": "Downgrade to {name}",
+      "upgradeTo": "Upgrade to {name}",
+      "calculatingCost": "Calculating exact cost...",
+      "dueTodayProrated": "Due today (prorated)",
+      "thenAnnually": "Then annually",
+      "thenMonthly": "Then monthly",
+      "perYear": "/yr",
+      "perMonth": "/mo",
+      "takesEffectOn": "Takes effect on",
+      "newAnnualRate": "New annual rate",
+      "newMonthlyRate": "New monthly rate",
+      "keepFullAccess": "You keep full access to your current plan until then",
+      "processing": "Processing...",
+      "scheduleDowngrade": "Schedule Downgrade",
+      "confirmUpgrade": "Confirm Upgrade"
+    },
+    "sessionExtend": {
+      "stillWorking": "Still working?",
+      "hibernateSoon": "Your session will hibernate soon",
+      "hibernatingIn": "Hibernating in",
+      "renewing": "Renewing...",
+      "keepWorking": "Keep Working",
+      "upgradeNoLimits": "Upgrade: No Time Limits",
+      "letItSleep": "Let it sleep",
+      "renewalsRemaining": "{count, plural, =1 {# renewal remaining today} other {# renewals remaining today}}",
+      "stillThereTitle": "Still there? - ellul.ai",
+      "renewalLimitReached": "Daily renewal limit reached. Upgrade for unlimited sessions!",
+      "renewFailed": "Failed to renew session"
+    },
+    "policiesCard": {
+      "title": "Policies",
+      "subtitle": "Custom policies that govern agent actions",
+      "noPolicies": "No active policies"
+    },
+    "policyProposalsCard": {
+      "title": "Policy Proposals",
+      "subtitle": "Suggestions from the agent for new policies",
+      "noProposals": "No pending proposals"
+    },
+    "modelProviders": {
+      "title": "API Key",
+      "subtitle": "Free models are included with your workspace. No API key needed. Add your API key to use premium models across all your projects. Supports Anthropic, OpenAI, OpenRouter, and Google.",
+      "apiKey": "API Key",
+      "configured": "Configured",
+      "notSet": "Not set",
+      "update": "Update",
+      "remove": "Remove",
+      "byok": "Bring your own API key for direct provider access. Applies to all ZeroClaw isolates across your workspace.",
+      "providerLabel": {
+        "anthropic": "Anthropic",
+        "openai": "OpenAI",
+        "openrouter": "OpenRouter",
+        "google": "Google",
+        "googleAi": "Google AI"
+      },
+      "keyPlaceholder": "Paste your API key...",
+      "modelIdPlaceholder": "e.g. anthropic/claude-sonnet-4, meta-llama/llama-3.3-70b-instruct:free",
+      "browseModelsPrefix": "Browse models at",
+      "browseModelsSuffix": ". Leave blank for default (Gemma 3n, free).",
+      "save": "Save",
+      "cancel": "Cancel",
+      "getKey": "Get a key:"
+    },
+    "securitySettings": {
+      "title": "Account Security",
+      "oauthProtected": "OAuth Protected",
+      "providerName": {
+        "github": "GitHub",
+        "google": "Google"
+      },
+      "securedThrough": "Your account is secured through {provider} OAuth authentication.",
+      "signedInWith": "Signed in with {provider}",
+      "twoFactor": "Two-Factor Authentication",
+      "twoFactorBody": "Two-factor authentication (2FA) for your ellul.ai account is managed through your {provider} account. When you sign in, {provider} handles the authentication process, including any 2FA you have enabled there.",
+      "manageProviderSecurity": "Manage {provider} Security",
+      "hideTip": "Hide tip",
+      "whyOauth": "Why OAuth?",
+      "whyOauthHeader": "Why we use OAuth authentication:",
+      "whyOauthBullet1": "No passwords to remember or manage",
+      "whyOauthBullet2": "Leverage {provider}'s enterprise-grade security",
+      "whyOauthBullet3": "2FA, passkeys, and security keys handled by your provider",
+      "whyOauthBullet4": "Automatic protection from phishing attacks",
+      "whyOauthBullet5": "Single source of truth for your identity",
+      "recommendedHeader": "Recommended Security Steps",
+      "recommended1": "Enable 2FA on your {provider} account for maximum security",
+      "recommended2": "Use a hardware security key (YubiKey) or passkey for phishing-resistant login",
+      "recommended3": "Review your {provider} account's authorized applications regularly",
+      "teleportHeader": "Server Access (Teleport)",
+      "teleportBody": "Your ellul.ai servers use Teleport for identity-based SSH access. When you connect to your server, Teleport issues a short-lived certificate based on your verified email address (<email></email>).",
+      "teleportBullet1": "Certificates expire in 12 hours (auto-renewed on login)",
+      "teleportBullet2": "No static SSH keys to manage or leak",
+      "teleportBullet3": "All sessions are recorded for audit",
+      "teleportBullet4": "Access automatically revoked when you sign out"
+    },
+    "securityCard": {
+      "title": "Connection & Sovereignty",
+      "subtitle": "Control how you and ellul.ai can access your server",
+      "connected": "Connected",
+      "airGapped": "Air-Gapped",
+      "disconnected": "Disconnected",
+      "tooltipConnected": "Your server is polling for security updates.",
+      "tooltipAirGapped": "Your server is in Air-Gap Mode.\nDashboard toggles are disabled.",
+      "tooltipDisconnected": "We cannot reach your server. It may be offline or in Air-Gap Mode.",
+      "lastSyncPrefix": "Last sync:",
+      "secondsAgo": "{count}s ago",
+      "minutesAgo": "{count}m ago",
+      "hoursAgo": "{count}h ago",
+      "sovereignActive": "Sovereign Mode Active",
+      "sovereignActiveBody": "Your server is fully sovereign. ellul.ai has <strong>zero access</strong>. Dashboard toggles are disabled. Only SSH can reach your server.",
+      "webTerminalAccess": "Web Terminal Access",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "webTerminalEnabledBody": "Access your server via the browser. ellul.ai can generate terminal tokens.",
+      "webTerminalDisabledBody": "The <code>ttyd</code> process on your server is <strong>stopped</strong>. No one (including ellul.ai) can access the terminal.",
+      "ttydProcess": "ttyd process:",
+      "running": "RUNNING",
+      "stopped": "STOPPED",
+      "sshAccessTitle": "SSH Access",
+      "port22Open": "Port 22 Open",
+      "port22Closed": "Port 22 Closed",
+      "sshEnabledBody": "Connect with any SSH client. You control your keys.",
+      "sshDisabledBody": "Port 22 is <strong>closed</strong> via firewall. SSH connections are blocked.",
+      "sshKeyLockedTitle": "Key locked to your server",
+      "sshKeyLockedBody": "Your SSH key is permanently installed. For security, ellul.ai cannot inject or replace keys after the first install. To add more keys, SSH in and run:",
+      "port22Label": "Port 22 (SSH):",
+      "open": "OPEN",
+      "closed": "CLOSED",
+      "enforcementNotice": "Changes are enforced within <strong>30 seconds</strong>. The <code>ellul-enforcer</code> daemon on your server polls for updates and physically starts/stops services.",
+      "sovereignSecurityNotice": "Sovereign Security Notice",
+      "sovereignSecurityBody": "ellul.ai does not hold your keys. If you disable both Terminal and SSH access, or enter Sovereign/Air-Gap mode, <strong>we cannot recover access for you</strong>."
+    },
+    "policies": {
+      "title": "Policies",
+      "subtitle": "Code quality and safety rules enforced before execution.",
+      "addPolicy": "Add policy",
+      "noPolicies": "No policies configured.",
+      "section": {
+        "safety": "Safety",
+        "safetyDesc": "Platform safety rules. Cannot be disabled.",
+        "codeQuality": "Code Quality",
+        "codeQualityDesc": "Code quality standards enforced during analysis.",
+        "custom": "Custom",
+        "customDesc": "Workspace-specific rules you've added."
+      },
+      "viewSource": "View source",
+      "edit": "Edit",
+      "delete": "Delete",
+      "policyUpdated": "Policy updated",
+      "policyDeleted": "Policy deleted",
+      "policyCreated": "Policy created",
+      "policySaved": "Policy saved",
+      "newPolicy": "New Policy",
+      "editPolicy": "Edit Policy",
+      "newPolicyDescription": "Define a tree-sitter query to enforce a code quality or safety rule.",
+      "editPolicyDescription": "Modify the policy query, description, or error message.",
+      "name": "Name",
+      "namePlaceholder": "no-eval",
+      "nameHint": "Lowercase letters, digits, and hyphens. Cannot be changed after creation.",
+      "description": "Description",
+      "descriptionPlaceholder": "Blocks eval() calls to prevent code injection.",
+      "severity": "Severity",
+      "severityError": "Error (blocks execution)",
+      "severityWarning": "Warning (log only)",
+      "errorMessage": "Error message shown to agent",
+      "errorMessagePlaceholder": "Do not use eval(). It enables arbitrary code execution. Use ast.literal_eval() instead.",
+      "errorMessageHint": "Be specific. This tells the agent exactly what to do instead.",
+      "treeSitterQuery": "Tree-sitter Query",
+      "queryHintPrefix": "Use",
+      "queryHintMiddle": "markers to define per-language queries. Each section must include a",
+      "queryHintSuffix": "capture.",
+      "cancel": "Cancel",
+      "create": "Create policy",
+      "saveChanges": "Save changes",
+      "errors": {
+        "fetchPolicies": "Failed to fetch policies",
+        "createFailed": "Failed to create policy",
+        "nameRequired": "Name is required.",
+        "nameInvalid": "Name must be lowercase letters, digits, and hyphens only (e.g., no-eval).",
+        "messageRequired": "Error message is required. This tells the agent what it did wrong.",
+        "queryRequired": "Query source is required.",
+        "noLangSections": "No ; @lang sections found. Add at least one language section with a query.",
+        "unknownLang": "Unknown language \"{lang}\" in ; @lang section. Supported: {supported}",
+        "emptyBody": "Empty query body for {langs}. Each language section needs a tree-sitter query.",
+        "missingViolation": "Missing @violation capture in {langs} section. The query must include @violation to mark the matched node.",
+        "generic": "Failed"
+      }
+    },
+    "policyProposals": {
+      "agentProposals": "Agent Proposals",
+      "pendingCount": "{count} pending",
+      "introBody": "Your AI agent is requesting policy changes. Review and approve or deny.",
+      "approve": "Approve",
+      "deny": "Deny",
+      "approvedToast": "Proposal approved — policy updated",
+      "deniedToast": "Proposal denied",
+      "approveFailed": "Failed to approve",
+      "denyFailed": "Failed to deny proposal"
+    },
+    "crossProject": {
+      "title": "Shared Access",
+      "subtitle": "Grant this sandbox read-only access to other sandboxes' source code and preview. Files appear at <code>.shared/&lt;sandbox&gt;</code>. Grants are sandbox-scoped — all apps inside the granted sandbox are exposed.",
+      "noOtherSandboxes": "No other sandboxes on this server",
+      "visibleTo": "Visible to",
+      "readsThisSandbox": "reads this sandbox",
+      "sourcePreview": "source + preview",
+      "changesNote": "Changes apply on next agent spawn. Shared files are read-only snapshots.",
+      "grantFailed": "Failed to grant access",
+      "revokeFailed": "Failed to revoke access"
+    },
+    "sshKeys": {
+      "title": "SSH Keys",
+      "subtitle": "SSH keys authorized to access your server",
+      "addKey": "Add Key",
+      "addSshKey": "Add SSH Key",
+      "noKeys": "No SSH keys",
+      "noKeysHint": "Add an SSH key to enable terminal access.",
+      "noKeysHintStandard": "No SSH keys configured. Add a key to enable SSH access.",
+      "noKeysHintWebLocked": "No SSH keys configured. SSH server is disabled.",
+      "name": "Name",
+      "publicKey": "Public Key",
+      "publicKeyRequired": "Public key is required",
+      "connectingToServer": "Connecting to server...",
+      "connectionFailed": "Connection failed. Please refresh the page.",
+      "namePlaceholder": "e.g. macbook-pro",
+      "keyNamePlaceholder": "Key name (optional)",
+      "keyPlaceholder": "ssh-ed25519 AAAA... or ssh-rsa AAAA...",
+      "defaultKeyName": "SSH Key",
+      "addKeyTitle": "Add SSH Key",
+      "saving": "Saving...",
+      "save": "Save",
+      "cancel": "Cancel",
+      "remove": "Remove",
+      "removing": "Removing...",
+      "addFailed": "Failed to add key",
+      "removeFailed": "Failed to remove key",
+      "footerStandard": "Keys are stored directly on your server via JWT authentication.",
+      "footerWebLocked": "Face ID / Touch ID required. Changes applied directly to your server."
+    },
+    "git": {
+      "createRepo": {
+        "title": "Create Repository",
+        "dialogDescription": "Create a new repository on {provider} to back up your code.",
+        "name": "Repository name",
+        "namePlaceholder": "my-project",
+        "nameValidationError": "Only letters, numbers, hyphens, dots, and underscores",
+        "visibility": "Visibility",
+        "private": "Private",
+        "public": "Public",
+        "createFailed": "Failed to create repository",
+        "creating": "Creating...",
+        "create": "Create Repository",
+        "cancel": "Cancel"
+      },
+      "linkedRepo": {
+        "title": "Linked Repository",
+        "branch": "Default branch: {branch}",
+        "private": "Private",
+        "public": "Public",
+        "syncing": "Syncing...",
+        "lastPush": "Last push: {time}",
+        "neverPushed": "Never pushed",
+        "import": "Import code",
+        "importing": "Importing...",
+        "change": "Change repo",
+        "unlink": "Unlink",
+        "unlinking": "Unlinking..."
+      },
+      "providerCard": {
+        "github": "GitHub",
+        "gitlab": "GitLab",
+        "bitbucket": "Bitbucket",
+        "githubDescription": "Most popular for open source and teams",
+        "gitlabDescription": "Built-in CI/CD and DevOps platform",
+        "bitbucketDescription": "Integrated with Atlassian tools",
+        "comingSoon": "Coming soon",
+        "connect": "Connect",
+        "connecting": "Connecting...",
+        "unavailable": "Unavailable"
+      },
+      "repoPicker": {
+        "title": "Pick a repository",
+        "search": "Search repositories...",
+        "newButton": "New",
+        "noRepos": "No repositories found",
+        "noMatching": "No repositories match your search",
+        "createNew": "Create a new repository",
+        "loading": "Loading repositories...",
+        "loadFailed": "Failed to load repositories. Please try again.",
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "daysAgo": "{count}d ago",
+        "monthsAgo": "{count}mo ago",
+        "yearsAgo": "{count}y ago",
+        "githubManageAccess": "Don't see a repository? Manage access on GitHub"
+      }
+    },
+    "integrations": {
+      "title": "Integrations",
+      "subtitle": "Connect your agent to external tools",
+      "noConnections": "No connections yet",
+      "noConnectionsHint": "Add a tool group to connect external services.",
+      "addGroup": "Add Group",
+      "createGroup": {
+        "title": "Create Connection Group",
+        "name": "Name",
+        "namePlaceholder": "e.g. Production Database",
+        "icon": "Icon",
+        "systemRouteRole": "System Route Role",
+        "optional": "(optional)",
+        "create": "Create",
+        "cancel": "Cancel",
+        "creating": "Creating..."
+      },
+      "groupTab": {
+        "exposure": "Agent Exposure",
+        "exposureEnabled": "Enabled",
+        "exposureDisabled": "Disabled",
+        "default": "Default",
+        "setDefault": "Set as default",
+        "removeConnection": "Remove",
+        "addConnection": "Add Connection"
+      },
+      "toolReview": {
+        "title": "Review Tools",
+        "approve": "Approve",
+        "deny": "Deny",
+        "details": "Details",
+        "noTools": "No tools to review",
+        "capabilities": {
+          "database_read": "Database read",
+          "database_write": "Database write",
+          "database_schema": "Database schema",
+          "execution_shell": "Execution shell",
+          "network_egress": "Network egress",
+          "deployment_trigger": "Deploy trigger",
+          "secrets_read": "Secret read",
+          "secrets_write": "Secret write",
+          "git_read": "Git read",
+          "git_write": "Git write",
+          "filesystem_read": "File read",
+          "filesystem_write": "File write",
+          "external_read": "External read",
+          "external_write": "External write",
+          "external_admin": "External admin"
+        },
+        "confidence": {
+          "high": "High confidence",
+          "medium": "Medium confidence",
+          "low": "Low confidence"
+        },
+        "unclassified": "Unclassified",
+        "noCalls": "No calls",
+        "oneCall": "1 call",
+        "manyCalls": "{count} calls",
+        "justNow": "Just now",
+        "minutesAgo": "{count}m ago",
+        "hoursAgo": "{count}h ago",
+        "daysAgo": "{count}d ago",
+        "noToolsDiscoveredYet": "No tools discovered yet.",
+        "toolsAppearOnceConnected": "Tools will appear here once the MCP server is connected.",
+        "summaryDiscovered": "{count} discovered",
+        "summaryApproved": "{count} approved",
+        "summaryNeedsReview": "{count} needs review",
+        "summaryRejected": "{count} rejected",
+        "sectionApproved": "Approved",
+        "sectionNeedsReview": "Needs Review",
+        "sectionRejected": "Rejected",
+        "quarantined": "Quarantined",
+        "rejected": "Rejected",
+        "classificationLabel": "Classification: {label}",
+        "confidenceLabel": "Confidence: {label}",
+        "reasonLabel": "Reason: “{reason}”",
+        "approveAs": "Approve as...",
+        "rejectAction": "Reject",
+        "rejectedByUserSuffix": " (rejected by user)"
+      }
+    },
+    "contexts": {
+      "appsList": {
+        "authFailed": "Authentication failed. Please re-authenticate to access sandboxes.",
+        "cannotConnect": "Cannot connect to server",
+        "creationInProgress": "Creation already in progress",
+        "cancelled": "Cancelled",
+        "createFailed": "Failed to create sandbox",
+        "cloneFailed": "Failed to clone repo",
+        "deleteFailed": "Failed to delete sandbox"
+      },
+      "workbench": {
+        "missingRequestId": "Missing request ID — cannot respond to this gate. Refresh and try again.",
+        "noActiveSandbox": "No active sandbox selected",
+        "operatorKeyUnavailable": "Operator key not available"
+      },
+      "codeToken": {
+        "platformTokenFailed": "Failed to get platform token",
+        "noPlatformJwt": "No platform JWT received",
+        "createSessionFailed": "Failed to create code session",
+        "establishCookieFailed": "Failed to establish code session cookie",
+        "establishSessionFailed": "Failed to establish code session",
+        "securityInitFailed": "Security initialization failed. Please re-authenticate.",
+        "authFailed": "Authentication failed. Please re-authenticate.",
+        "authRequired": "Authentication required. Please re-authenticate."
+      }
+    },
+    "notifications": {
+      "gateRequest": {
+        "title": "Action Required",
+        "body": "Agent needs permission: {permission}",
+        "bodyWithReason": "Agent needs permission: {permission} — {reason}"
+      },
+      "cliPrompt": {
+        "title": "Agent needs your input",
+        "body": "The AI agent is waiting for your response"
+      },
+      "taskComplete": {
+        "title": "Task completed",
+        "body": "The AI agent has finished its task"
+      },
+      "taskError": {
+        "title": "Task failed",
+        "body": "The AI agent encountered an error"
+      },
+      "serverReady": {
+        "title": "Server ready",
+        "body": "Your server is now running"
+      },
+      "serverHibernated": {
+        "title": "Server hibernated",
+        "body": "Your server has gone to sleep"
+      },
+      "deployment": {
+        "title": "Deployment updated",
+        "bodyNamed": "{name} deployment changed",
+        "body": "Deployment configuration updated"
+      }
+    },
+    "hooks": {
+      "clawChannels": {
+        "loadFailed": "Cannot load channel configuration",
+        "saveFailed": "Failed to save channel configuration"
+      },
+      "clawWorkspace": {
+        "loadFailed": "Cannot load workspace files",
+        "saveFailed": "Failed to save file"
+      },
+      "llmKeys": {
+        "loadFailed": "Failed to fetch LLM key status",
+        "saveFailed": "Failed to save key: {status}",
+        "removeFailed": "Failed to remove key"
+      }
+    },
+    "database": {
+      "card": {
+        "heading": "Database",
+        "loading": "Checking database...",
+        "pgUnavailable": "PostgreSQL is not available on this server.",
+        "pgUnavailableHint": "This may be temporary — the server will attempt auto-recovery.",
+        "checking": "Checking...",
+        "retry": "Retry",
+        "active": "Active",
+        "psqlVersion": "PostgreSQL 16",
+        "rolesLabel": "Roles",
+        "infoBanner": "DATABASE_URL is auto-configured in your sandbox secrets. The agent accesses data through a gated query proxy.",
+        "deleteConfirmTitle": "Delete database?",
+        "deleteConfirmBody": "This permanently deletes <strong>{database}</strong> and all data. This cannot be undone.",
+        "cancel": "Cancel",
+        "deleteForever": "Delete Forever",
+        "deleteDatabase": "Delete Database",
+        "noDatabase": "No database yet",
+        "noDatabaseHint": "Add a PostgreSQL database. A <code>DATABASE_URL</code> will be injected into your sandbox secrets.",
+        "creating": "Creating...",
+        "addDatabase": "Add Database",
+        "isolationHint": "Each app gets isolated roles. The agent can only access data through the gated query proxy.",
+        "createDefaultError": "Failed to create database",
+        "fetchInfoFailed": "Failed to fetch database info",
+        "createSuccess": "Database created. DATABASE_URL injected into secrets.",
+        "deleteSuccess": "Database deleted",
+        "deleteDefaultError": "Failed to delete database",
+        "roleApp": "App",
+        "roleAppDesc": "DML: read & write",
+        "roleReadonly": "Read-only",
+        "roleReadonlyDesc": "SELECT only",
+        "roleOwner": "Owner",
+        "roleOwnerDesc": "DDL: full schema"
+      },
+      "browser": {
+        "loadingDatabases": "Loading databases...",
+        "pgUnavailableTitle": "PostgreSQL Unavailable",
+        "pgUnavailableDescription": "The database engine is currently starting up or recovering.",
+        "checkAgain": "Check Again",
+        "errorTitle": "Database Error",
+        "errorFallback": "Failed to load databases",
+        "retry": "Retry",
+        "noDatabasesTitle": "No databases in this sandbox",
+        "noDatabasesHint": "Databases live at the sandbox level and are shared by every app you scaffold inside it. <code>DATABASE_URL</code> gets injected automatically.",
+        "createDatabase": "Create database",
+        "sandboxLabel": "Sandbox",
+        "sandboxTitle": "Databases live at the sandbox level. Every app inside {sandboxId} inherits DATABASE_URL.",
+        "select": "Select",
+        "devBadge": "Dev",
+        "prodBadge": "Prod",
+        "newDatabase": "New database",
+        "selectTable": "Select table",
+        "filterTables": "Filter tables...",
+        "noMatchingTables": "No matching tables",
+        "noTablesYet": "No tables yet",
+        "createTable": "Create table",
+        "tabTables": "Tables",
+        "tabSql": "SQL",
+        "tabBin": "Bin",
+        "tabSettings": "Settings",
+        "refresh": "Refresh",
+        "createDialogTitle": "New Database",
+        "createDialogDescription": "Create a new PostgreSQL database for this sandbox.",
+        "databaseLabel": "Database Label",
+        "databaseLabelPlaceholder": "e.g. production, staging, test",
+        "databaseLabelHint": "Lowercase letters, numbers, and underscores only.",
+        "cancel": "Cancel",
+        "create": "Create",
+        "dropDialogTitle": "Delete Database",
+        "dropDialogDescription": "This will permanently delete <strong>{label}</strong> and all its data.",
+        "dropAssignedBoth": "This database is assigned as both development and production.",
+        "dropAssignedDev": "This database is assigned as development.",
+        "dropAssignedProd": "This database is assigned as production.",
+        "deleteForever": "Delete Forever",
+        "createSuccess": "Database created",
+        "deleteSuccess": "Database deleted"
+      },
+      "lite": {
+        "loading": "Checking database...",
+        "pgUnavailable": "PostgreSQL is not available on this server.",
+        "pgUnavailableHint": "Upgrade your plan to enable database support.",
+        "addDatabaseTitle": "Add a Database",
+        "addDatabaseHint": "Create a PostgreSQL database for your sandbox. A <code>DATABASE_URL</code> will be auto-configured in your environment.",
+        "creating": "Creating...",
+        "createDatabase": "Create Database",
+        "createSuccess": "Database created. DATABASE_URL injected into your sandbox.",
+        "deleteSuccess": "Database deleted",
+        "renameSuccess": "Database renamed",
+        "active": "Active",
+        "infoBanner": "DATABASE_URL is auto-configured in your sandbox environment. The AI agent accesses data through a gated query proxy.",
+        "deleteConfirmTitle": "Delete database?",
+        "deleteConfirmBody": "This permanently deletes all data. This cannot be undone.",
+        "cancel": "Cancel",
+        "deleteForever": "Delete Forever",
+        "deleteDatabase": "Delete Database"
+      },
+      "tables": {
+        "searchTables": "Search tables...",
+        "noMatchingTables": "No matching tables",
+        "noTablesYet": "No tables yet",
+        "newTable": "New table",
+        "selectTablePrompt": "Select a table to browse",
+        "selectFromSidebar": "Choose a table from the sidebar",
+        "selectFromSidebarOrCreate": "Choose a table from the sidebar or create one",
+        "createTable": "Create Table",
+        "columnsTab": "Columns",
+        "tableTab": "Table",
+        "searchColumnsOrData": "Search columns or data...",
+        "searchHint": "Type a column name to zoom in, or search data in current column",
+        "noColumns": "No columns",
+        "rowAction": "Row",
+        "csvAction": "CSV",
+        "schemaAction": "Schema",
+        "filtered": "Filtered",
+        "filter": "Filter",
+        "filterValuePlaceholder": "Value...",
+        "applyFilter": "Apply",
+        "cancelFilter": "Cancel",
+        "clearFilter": "Clear",
+        "addColumn": "Column",
+        "dropTable": "Drop Table",
+        "noMatchingRows": "No matching rows",
+        "emptyTable": "Empty table",
+        "nullDisplay": "NULL",
+        "page": "Page {page}",
+        "rowRange": "{start}-{end} of {total}",
+        "nullable": "nullable",
+        "columnsCount": "{columns} columns · {rows} rows",
+        "atLeastOneColumnRequired": "At least one column must have a name",
+        "tableCreated": "Table \"{name}\" created",
+        "tableDropped": "Table \"{name}\" dropped",
+        "columnAdded": "Column \"{name}\" added",
+        "rowInserted": "Row inserted",
+        "rowDeleted": "Row deleted",
+        "csvCopied": "Copied to clipboard as CSV",
+        "zoomOut": "Zoom out"
+      },
+      "tableDialogs": {
+        "createTitle": "Create Table",
+        "createDescription": "Define your table schema in <strong>{db}</strong>.",
+        "tableName": "Table Name",
+        "tableNamePlaceholder": "users",
+        "columnsLabel": "Columns",
+        "addColumnButton": "Add Column",
+        "columnNamePlaceholder": "column_name",
+        "nullable": "Nullable",
+        "defaultValuePlaceholder": "Default value",
+        "cancel": "Cancel",
+        "create": "Create",
+        "dropTitle": "Drop Table",
+        "dropDescription": "Permanently delete <strong>{name}</strong> and all its data.",
+        "dropConfirm": "Drop Table",
+        "addColumnTitle": "Add Column",
+        "addColumnDescription": "Add a column to <strong>{name}</strong>.",
+        "columnNameLabel": "Column Name",
+        "columnNameInputPlaceholder": "email",
+        "typeLabel": "Type",
+        "defaultOptionalLabel": "Default (optional)",
+        "defaultOptionalPlaceholder": "'default_value'",
+        "addColumn": "Add Column",
+        "insertRowTitle": "Insert Row",
+        "insertRowDescription": "Add a row to <strong>{name}</strong>.",
+        "nullPlaceholder": "NULL",
+        "requiredPlaceholder": "required",
+        "insert": "Insert",
+        "deleteRowTitle": "Delete Row",
+        "deleteRowDescription": "Permanently delete this row.",
+        "moreFields": "+{count} more",
+        "delete": "Delete"
+      },
+      "sql": {
+        "queryPlaceholder": "SELECT * FROM users LIMIT 10;",
+        "fullSqlAccess": "Full SQL access",
+        "run": "Run",
+        "rowsCountSingular": "{count} row",
+        "rowsCountPlural": "{count} rows",
+        "queryExecutedNoRows": "Query executed. No rows returned.",
+        "writePromptTitle": "Write SQL and press Run",
+        "writePromptHint": "Full DDL + DML support",
+        "destructiveTitle": "Destructive Operation",
+        "destructiveDescription": "This query will permanently modify or delete data. This cannot be undone.",
+        "typeConfirmLabel": "Type CONFIRM to proceed",
+        "confirmPlaceholder": "CONFIRM",
+        "cancel": "Cancel",
+        "execute": "Execute",
+        "nullDisplay": "NULL",
+        "rowLabel": "Row {index}"
+      },
+      "settings": {
+        "databasesHeading": "Databases",
+        "developmentBadge": "Development",
+        "productionBadge": "Production",
+        "unsetDev": "Unset Dev",
+        "setDev": "Set Dev",
+        "unsetProd": "Unset Prod",
+        "setProd": "Set Prod",
+        "newDatabase": "New Database",
+        "schemaHeading": "Schema: {label}",
+        "createTable": "Create Table",
+        "noTablesInDatabase": "No tables in this database",
+        "columnsCount": "{count} cols",
+        "rowsCount": "{count} rows",
+        "browse": "Browse",
+        "notNull": "NOT NULL",
+        "connectionHeading": "Connection",
+        "engineLabel": "Engine",
+        "engineValue": "PostgreSQL",
+        "hostLabel": "Host",
+        "hostValue": "localhost",
+        "portLabel": "Port",
+        "portValue": "5432",
+        "authLabel": "Auth",
+        "authValue": "scram-sha-256",
+        "databaseUrlAutoInjected": "DATABASE_URL is automatically injected into your sandbox secrets when a database is assigned.",
+        "backupsHeading": "Backups",
+        "createBackup": "Create Backup",
+        "backupCreated": "Backup created",
+        "noBackupsTitle": "No backups yet",
+        "noBackupsHint": "Create a pg_dump backup of all databases for this sandbox",
+        "restore": "Restore",
+        "backupsLocation": "Backups are stored on your server at /var/backups/ellul/postgres/",
+        "developmentDbUpdated": "Development database updated",
+        "productionDbUpdated": "Production database updated",
+        "databaseRestored": "Database restored from backup",
+        "restoreTitle": "Restore from Backup",
+        "restoreDescription": "This will replace all data in the current database. A pre-restore backup will be created automatically.",
+        "typeRestoreLabel": "Type RESTORE to proceed",
+        "restorePlaceholder": "RESTORE",
+        "cancel": "Cancel",
+        "restoreConfirm": "Restore"
+      },
+      "bin": {
+        "softDeletedRows": "Soft-deleted rows",
+        "refresh": "Refresh",
+        "audited": "Audited",
+        "auditedTooltip": "All recover and purge operations are recorded in the tamper-evident crypto audit log (Ed25519 hash chain)",
+        "searchPlaceholder": "Search deleted rows...",
+        "selectionBadge": "{selected} of {total} on page",
+        "recover": "Recover",
+        "purge": "Purge",
+        "noTablesWithSoftDelete": "No tables with soft-delete",
+        "softDeleteRequirement": "Tables need <code>deleted_at</code> and <code>deleted_by</code> columns",
+        "purgeAllInTable": "Purge all in table",
+        "selectTable": "Select table...",
+        "tableOptionLabel": "{name} ({count} deleted)",
+        "noSoftDeleteMobile": "No tables with soft-delete columns",
+        "selectTableToView": "Select a table to view deleted rows",
+        "selectTableHint": "When the AI agent deletes rows, they are soft-deleted with a timestamp. You can recover or permanently purge them here.",
+        "loading": "Loading deleted rows...",
+        "noMatchingDeleted": "No deleted rows matching \"{query}\"",
+        "noDeletedRows": "No deleted rows in {table}",
+        "tryDifferentSearch": "Try a different search term",
+        "rowsAppearHere": "Rows deleted by the AI agent will appear here for recovery",
+        "clearSearch": "Clear search",
+        "primaryKeyTooltip": "Primary key (used for row identification)",
+        "recoverThisRow": "Recover this row",
+        "permanentlyDelete": "Permanently delete",
+        "nullDisplay": "null",
+        "deleted": "deleted",
+        "moreColumns": "+{count} more columns",
+        "rowsRecoveredSingular": "{count} row recovered",
+        "rowsRecoveredPlural": "{count} rows recovered",
+        "rowsPurgedSingular": "{count} row permanently deleted",
+        "rowsPurgedPlural": "{count} rows permanently deleted",
+        "allPurgedSuccess": "All deleted rows permanently purged",
+        "deletedRowsCountSingular": "{count} deleted row",
+        "deletedRowsCountPlural": "{count} deleted rows",
+        "matchingQuery": " matching \"{query}\"",
+        "noPk": "No PK",
+        "noPkTooltip": "This table has no primary key. Row identification uses all columns, which may be unreliable with duplicate rows. Add a primary key for safer recovery."
+      },
+      "binDialogs": {
+        "recoverTitleSingular": "Recover {count} row",
+        "recoverTitlePlural": "Recover {count} rows",
+        "recoverDescription": "This will set <code>deleted_at</code> and <code>deleted_by</code> back to NULL, restoring the rows to active state. The rows will appear in normal queries again.",
+        "rowsIdentifiedByPk": "Rows identified by primary key ({columns})",
+        "cancel": "Cancel",
+        "recover": "Recover",
+        "purgeTitle": "Permanently delete rows",
+        "purgeAllDescription": "This will permanently delete <strong>ALL</strong> soft-deleted rows from \"{table}\". This action is irreversible and will be recorded in the audit log.",
+        "purgeSelectionDescriptionSingular": "This will permanently delete {count} row from \"{table}\". This action is irreversible and will be recorded in the audit log.",
+        "purgeSelectionDescriptionPlural": "This will permanently delete {count} rows from \"{table}\". This action is irreversible and will be recorded in the audit log.",
+        "typePurgeToConfirm": "Type <code>purge</code> to confirm",
+        "purgePlaceholder": "purge",
+        "purgeForever": "Purge Forever"
+      }
+    },
+    "lib": {
+      "preferredLocale": {
+        "saveFailed": "Couldn't save your language preference ({message})"
+      },
+      "regions": {
+        "fallback": "—",
+        "us-east": {
+          "name": "US East",
+          "detail": "Virginia"
+        },
+        "us-west": {
+          "name": "US West",
+          "detail": "Oregon"
+        },
+        "eu-central": {
+          "name": "EU Central",
+          "detail": "Germany"
+        },
+        "eu-north": {
+          "name": "EU North",
+          "detail": "Finland"
+        },
+        "asia-pacific": {
+          "name": "Asia Pacific",
+          "detail": "Singapore"
+        }
+      }
+    },
+    "terms": {
+      "metaTitle": "Terms of Service | ellul.ai",
+      "metaDescription": "ellul.ai Terms of Service and Acceptable Use Policy",
+      "backToHome": "← Back to Home",
+      "title": "Terms of Service",
+      "lastUpdated": "Last updated: January 2025",
+      "sections": {
+        "acceptance": {
+          "heading": "1. Acceptance of Terms",
+          "paragraphs": [
+            "By accessing or using ellul.ai (\"Service\"), you agree to be bound by these Terms of Service (\"Terms\"). If you do not agree to these Terms, you may not use the Service. We reserve the right to update these Terms at any time, and your continued use of the Service constitutes acceptance of any changes."
+          ]
+        },
+        "description": {
+          "heading": "2. Service Description",
+          "intro": "ellul.ai provides cloud-based virtual private servers (VPS) with pre-configured development environments. The Service includes:",
+          "bullets": [
+            "Provisioning and management of cloud servers",
+            "Web-based terminal access",
+            "Pre-installed development tools and AI coding assistants",
+            "Automatic HTTPS/SSL certificates",
+            "Custom subdomain allocation"
+          ]
+        },
+        "acceptableUse": {
+          "heading": "3. Acceptable Use Policy",
+          "introBefore": "You agree to use the Service only for lawful purposes. The following activities are ",
+          "introEmphasis": "strictly prohibited",
+          "introAfter": ":",
+          "prohibitedHeading": "Prohibited Activities",
+          "bullets": [
+            { "term": "Cryptocurrency Mining:", "body": " Running any cryptocurrency mining software, including but not limited to Bitcoin, Ethereum, Monero, or any other blockchain-based mining operations" },
+            { "term": "Spam & Bulk Email:", "body": " Sending unsolicited bulk emails, spam, or operating mail servers for mass distribution" },
+            { "term": "DDoS & Network Attacks:", "body": " Launching or participating in distributed denial-of-service attacks, network scanning, or any form of cyber attack" },
+            { "term": "Illegal Content:", "body": " Hosting, distributing, or linking to illegal content including but not limited to child exploitation material, pirated software, or content that violates intellectual property rights" },
+            { "term": "Phishing & Fraud:", "body": " Operating phishing sites, scam operations, or any fraudulent schemes" },
+            { "term": "Malware Distribution:", "body": " Hosting, creating, or distributing malicious software, viruses, trojans, or any harmful code" },
+            { "term": "Proxy/VPN Services:", "body": " Operating public proxy servers, VPN services, or Tor exit nodes without prior written approval" },
+            { "term": "Resource Abuse:", "body": " Intentionally consuming excessive resources in a way that impacts other users or infrastructure stability" }
+          ],
+          "consequenceBefore": "Violation of this Acceptable Use Policy may result in ",
+          "consequenceEmphasis": "immediate termination without refund",
+          "consequenceAfter": " and potential reporting to law enforcement authorities."
+        },
+        "responsibilities": {
+          "heading": "4. Account Responsibilities",
+          "intro": "You are responsible for:",
+          "bullets": [
+            "Maintaining the security of your account credentials and SSH keys",
+            "All activities that occur under your account",
+            "Ensuring your use complies with all applicable laws",
+            "Backing up your data (ellul.ai does not provide data backups)",
+            "Keeping your contact information current"
+          ]
+        },
+        "payment": {
+          "heading": "5. Payment Terms",
+          "intro": "Payment is processed through Stripe. By subscribing to the Service:",
+          "bullets": [
+            "You authorize recurring charges to your payment method on a monthly basis",
+            "Prices are subject to change with 30 days notice to existing subscribers",
+            "Refunds are provided at our sole discretion, except in cases of Terms violations where no refund will be issued",
+            "Server resources are billed from the moment of provisioning until deletion"
+          ]
+        },
+        "termination": {
+          "heading": "6. Service Termination",
+          "intro": "We reserve the right to suspend or terminate your account and access to the Service:",
+          "bullets": [
+            { "emphasis": "Immediately and without refund", "body": " for violations of the Acceptable Use Policy" },
+            { "emphasis": "With 7 days notice", "body": " for non-payment or other Terms violations" },
+            { "emphasis": "At any time", "body": " if required by law or to protect our infrastructure" }
+          ],
+          "outro": "Upon termination, all server data will be permanently deleted. You are responsible for exporting any data before account termination."
+        },
+        "infrastructure": {
+          "heading": "7. Infrastructure & Third Parties",
+          "paragraphs": [
+            "ellul.ai servers are provisioned on Hetzner Cloud infrastructure. Your use of the Service is also subject to Hetzner's Terms of Service and Acceptable Use Policy. We may share information with Hetzner as necessary to investigate abuse reports or comply with their policies."
+          ]
+        },
+        "liability": {
+          "heading": "8. Limitation of Liability",
+          "intro": "THE SERVICE IS PROVIDED \"AS IS\" WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED. TO THE MAXIMUM EXTENT PERMITTED BY LAW:",
+          "bullets": [
+            "We do not guarantee 100% uptime or availability of the Service",
+            "We are not liable for any data loss, business interruption, or damages arising from your use of the Service",
+            "Our total liability shall not exceed the amount you paid for the Service in the 3 months preceding the claim",
+            "We are not responsible for third-party services, APIs, or tools you choose to use on your servers"
+          ]
+        },
+        "indemnification": {
+          "heading": "9. Indemnification",
+          "paragraphs": [
+            "You agree to indemnify and hold harmless ellul.ai, its officers, directors, employees, and agents from any claims, damages, losses, or expenses (including legal fees) arising from your use of the Service, violation of these Terms, or infringement of any third-party rights."
+          ]
+        },
+        "law": {
+          "heading": "10. Governing Law",
+          "paragraphs": [
+            "These Terms shall be governed by and construed in accordance with the laws of the United Kingdom, without regard to its conflict of law provisions. Any disputes arising from these Terms shall be resolved in the courts of England and Wales."
+          ]
+        },
+        "contact": {
+          "heading": "11. Contact",
+          "intro": "For questions about these Terms or to report abuse, contact us at: "
+        }
+      },
+      "footer": {
+        "privacy": "Privacy Policy",
+        "home": "Home"
+      }
+    },
+    "privacy": {
+      "metaTitle": "Privacy Policy | ellul.ai",
+      "metaDescription": "ellul.ai Privacy Policy - How we collect, use, and protect your data",
+      "backToHome": "← Back to Home",
+      "title": "Privacy Policy",
+      "lastUpdated": "Last updated: January 2025",
+      "sections": {
+        "introduction": {
+          "heading": "1. Introduction",
+          "paragraphs": [
+            "ellul.ai (\"we\", \"our\", \"us\") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our cloud development platform."
+          ]
+        },
+        "informationCollected": {
+          "heading": "2. Information We Collect",
+          "accountHeading": "Account Information",
+          "accountBullets": [
+            "Email address (from OAuth provider)",
+            "Name (from OAuth provider)",
+            "Profile picture (from OAuth provider)",
+            "OAuth provider identifiers (GitHub, Google)"
+          ],
+          "metadataHeading": "Server Metadata",
+          "metadataBullets": [
+            "Server IP addresses",
+            "Server status and configuration",
+            "Resource usage metrics (CPU, memory)",
+            "Creation and deletion timestamps"
+          ],
+          "paymentHeading": "Payment Information",
+          "paymentBody": "Payment processing is handled entirely by Stripe. We do not store credit card numbers or banking details. We only receive confirmation of payment status and subscription information from Stripe.",
+          "doNotCollectHeading": "What We DO NOT Collect",
+          "doNotCollectBullets": [
+            { "term": "Server Contents:", "body": " We have zero access to files, code, or data on your servers" },
+            { "term": "SSH Keys:", "body": " Your SSH keys are transmitted once during provisioning and immediately forgotten" },
+            { "term": "Terminal Sessions:", "body": " We do not log, record, or monitor your terminal activity" },
+            { "term": "User Secrets:", "body": " Environment variables are encrypted client-side and we cannot decrypt them" }
+          ]
+        },
+        "howWeUse": {
+          "heading": "3. How We Use Your Information",
+          "intro": "We use the information we collect to:",
+          "bullets": [
+            "Provision and manage your cloud servers",
+            "Process payments and manage subscriptions",
+            "Send important service notifications",
+            "Detect and prevent abuse of the platform",
+            "Improve the Service and develop new features",
+            "Comply with legal obligations"
+          ]
+        },
+        "dataSharing": {
+          "heading": "4. Data Sharing",
+          "intro": "We share your information only with:",
+          "providersHeading": "Service Providers",
+          "providersBullets": [
+            { "term": "Hetzner Cloud:", "body": " Server provisioning (receives server configuration)" },
+            { "term": "Stripe:", "body": " Payment processing (receives billing information)" },
+            { "term": "Cloudflare:", "body": " DNS management (receives domain information)" },
+            { "term": "Neon:", "body": " Database hosting (stores encrypted account data)" }
+          ],
+          "legalHeading": "Legal Requirements",
+          "legalBody": "We may disclose information if required by law, court order, or government request, or to protect our rights, property, or safety.",
+          "noSaleEmphasis": "We do not sell your personal information",
+          "noSaleSuffix": " to third parties for marketing purposes."
+        },
+        "security": {
+          "heading": "5. Data Security",
+          "intro": "We implement industry-standard security measures:",
+          "bullets": [
+            "All data transmitted over HTTPS/TLS encryption",
+            "Sensitive data encrypted at rest (AES-256)",
+            "Per-server JWT secrets for terminal authentication",
+            "Zero-knowledge encryption for user secrets (BYOK)",
+            "Regular security audits and monitoring"
+          ]
+        },
+        "retention": {
+          "heading": "6. Data Retention",
+          "bullets": [
+            { "term": "Active Accounts:", "body": " Data retained while your account is active" },
+            { "term": "Deleted Servers:", "body": " Server data permanently deleted upon server deletion" },
+            { "term": "Closed Accounts:", "body": " Account data deleted within 30 days of account closure" },
+            { "term": "Legal Holds:", "body": " Some data may be retained longer if required by law" }
+          ]
+        },
+        "rights": {
+          "heading": "7. Your Rights",
+          "intro": "Depending on your location, you may have the following rights:",
+          "bullets": [
+            { "term": "Access:", "body": " Request a copy of your personal data" },
+            { "term": "Correction:", "body": " Request correction of inaccurate data" },
+            { "term": "Deletion:", "body": " Request deletion of your account and data" },
+            { "term": "Portability:", "body": " Request your data in a portable format" },
+            { "term": "Objection:", "body": " Object to certain processing of your data" }
+          ],
+          "outro": "To exercise these rights, contact us at "
+        },
+        "cookies": {
+          "heading": "8. Cookies",
+          "intro": "We use essential cookies for:",
+          "bullets": [
+            { "term": "Authentication:", "body": " Session cookies to keep you logged in" },
+            { "term": "Terminal Access:", "body": " Secure cookies for web terminal authentication" }
+          ],
+          "outro": "We do not use tracking cookies or third-party analytics that track you across websites."
+        },
+        "transfers": {
+          "heading": "9. International Transfers",
+          "paragraphs": [
+            "Your data may be processed in the European Union (Hetzner servers) and the United States (Stripe, cloud services). We ensure appropriate safeguards are in place for international data transfers in compliance with applicable data protection laws."
+          ]
+        },
+        "children": {
+          "heading": "10. Children's Privacy",
+          "paragraphs": [
+            "The Service is not intended for users under 18 years of age. We do not knowingly collect personal information from children. If you believe we have collected information from a child, please contact us immediately."
+          ]
+        },
+        "changes": {
+          "heading": "11. Changes to This Policy",
+          "paragraphs": [
+            "We may update this Privacy Policy from time to time. We will notify you of significant changes by email or through the Service. Your continued use of the Service after changes constitutes acceptance of the updated policy."
+          ]
+        },
+        "contact": {
+          "heading": "12. Contact Us",
+          "intro": "For privacy-related questions or concerns:",
+          "emailLabel": "Email: "
+        }
+      },
+      "footer": {
+        "terms": "Terms of Service",
+        "home": "Home"
+      }
+    },
+    "connection": {
+      "title": "Connection issue",
+      "retryingMessage": "Unable to reach the server. Retrying automatically...",
+      "retryNow": "Retry now"
+    },
+    "toasts": {
+      "serverUpdated": "Server updated successfully",
+      "passkeyConfirm": "Confirm with your passkey to {operation} this server.",
+      "rebuildStarted": "Server rebuild started",
+      "rebuildDescription": "Your new AI proxy token has been generated.",
+      "updateQueued": "Update queued",
+      "updateQueuedDescription": "A signed apply-pending-update command is on its way to the server. Services will restart momentarily.",
+      "autoUpdatesEnabled": "Auto updates enabled",
+      "manualUpdatesEnabled": "Manual updates enabled",
+      "autoUpdatesDescription": "Future platform updates will apply automatically.",
+      "manualUpdatesDescription": "Future updates will stage and wait for your approval.",
+      "passkeyChangePlan": "Confirm with your passkey to change your plan.",
+      "passkeyFailed": "Passkey confirmation failed"
+    },
+    "createServer": {
+      "title": "Deploy Server",
+      "description": "Create your ellul.ai development environment.",
+      "terminalAccessTitle": "Web Terminal Access",
+      "terminalAccessDescription": "One click to access your server via browser. Add SSH keys later from inside your VPS.",
+      "sandboxWarning": "This is a daily sandbox. Your workspace persists for 24 hours then resets. Upgrade to Standard ($25/mo) to keep your files forever.",
+      "planIncludes": "{plan} Plan Includes:",
+      "oneWorkspace": "1 workspace",
+      "twoWorkspaces": "2 workspaces",
+      "nodejs": "Node.js 20 + npm pre-installed",
+      "opencode": "AI coding assistant (OpenCode)",
+      "https": "HTTPS with automatic SSL",
+      "upgradeable": "Upgradeable between tiers",
+      "afterDeployNote": "After deployment, you can add SSH keys from the terminal using <code>sudo setup-ssh-key</code> and upgrade your security tier from the dashboard.",
+      "cancel": "Cancel",
+      "deploying": "Deploying..."
+    },
+    "updateNudge": {
+      "requiresUpdate": "{feature} requires a server update",
+      "applying": "Applying…",
+      "updateNow": "Update Now",
+      "willStage": "Your server will stage the update on its next heartbeat.",
+      "inProgress": "Update in progress…"
+    },
+    "errorBoundary": {
+      "cannotCommunicate": "Unable to communicate with your server.",
+      "stillRunning": "Your server is still running securely.",
+      "retry": "Retry"
+    },
+    "aiTools": {
+      "auto": "Auto",
+      "noKeys": "No keys configured",
+      "providers": "Providers",
+      "addKeysHint": "Add keys above to connect",
+      "gbrainRam": "~256 MB RAM",
+      "gbrainDescription": "Persistent memory for your AI agents",
+      "byAuthor": "by {author}",
+      "requiresRam": "Requires Pro plan",
+      "runningOnPort": "Running on port {port}",
+      "gstackDisk": "~310 MB disk",
+      "gstackDescription": "30+ skills for AI coding agents",
+      "notAvailable": "Not available on this VPS",
+      "skillsActive": "Skills active for all agents",
+      "operationFailed": "Operation failed"
+    },
+    "connectors": {
+      "failedToSave": "Failed to save key",
+      "removeTitle": "Remove API key?",
+      "removeDescription": "This will remove the {label} API key from this server. AI tools using this provider will lose access until a new key is added.",
+      "cancel": "Cancel",
+      "removing": "Removing...",
+      "removeKey": "Remove key",
+      "pastePlaceholder": "Paste token or code here...",
+      "signInTo": "Sign in to {label}",
+      "nowConnected": "{label} is now connected.",
+      "followInstructions": "Follow the instructions below to authenticate {label}.",
+      "startingAuth": "Starting auth session...",
+      "authExited": "Auth exited with code {code}",
+      "send": "Send",
+      "done": "Done",
+      "save": "Save",
+      "update": "Update",
+      "apiKey": "API Key",
+      "signIn": "Sign in",
+      "signedIn": "Signed in",
+      "getKey": "Get key"
+    },
+    "environmentLock": {
+      "standardLabel": "Standard",
+      "standardDescription": "Protected by your ellul.ai login",
+      "standardUserMessage": "Protected by your ellul.ai login. At risk if we're breached or your account is hacked.",
+      "webLockedLabel": "Web Locked",
+      "webLockedDescription": "Protected by Face ID / Touch ID",
+      "webLockedUserMessage": "Protected by Face ID / Touch ID. Safe even if we're breached.",
+      "privateLockedLabel": "Private Locked",
+      "privateLockedDescription": "Encrypted volume with passkey authentication",
+      "privateLockedUserMessage": "Volume encrypted with LUKS2. Protected by Face ID / Touch ID. Data unreadable without your passkey.",
+      "settingUp": "Setting up...",
+      "pleaseWait": "Please wait..."
+    }
+  }
+}

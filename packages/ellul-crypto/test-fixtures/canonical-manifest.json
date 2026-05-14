@@ -1,0 +1,38 @@
+{
+  "signature": "AQID_fake_signature_base64_placeholder==",
+  "version": 1,
+  "chunks": [
+    {
+      "sizeBytes": 67108864,
+      "index": 0,
+      "sha256": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+    },
+    {
+      "sha256": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+      "index": 1,
+      "sizeBytes": 33554432
+    }
+  ],
+  "targetServerId": null,
+  "merkleRootHash": "deadbeef01234567890abcdef01234567890abcdef01234567890abcdef012345",
+  "sourceTier": "hobby\u2014starter",
+  "volumeLayout": {
+    "luksPayloadOffset": 32768,
+    "luksHeaderHash": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce",
+    "sectorSize": 512,
+    "luksVersion": 2,
+    "physicalSectorSize": 4096
+  },
+  "serverId": "srv-abc123",
+  "snapshotVersion": 42,
+  "timestamp": "2026-03-30T12:00:00Z",
+  "sourceVolumeId": "vol-xyz789",
+  "encryptionMode": "luks2",
+  "volumeSizeBytes": 100663296,
+  "volumeSectorSize": 512,
+  "chunkSizeBytes": 67108864,
+  "chunkCount": 2,
+  "bootstrapIntegrityHash": "47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU",
+  "signingKeyFingerprint": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+  "signedBy": "vps-migration-key"
+}

@@ -1,0 +1,38 @@
+{
+  "footer": {
+    "featured": "注目",
+    "product": {
+      "label": "プロダクト",
+      "autonomy": "自律",
+      "composition": "連携",
+      "howItWorks": "仕組み",
+      "safety": "安全性",
+      "pricing": "料金"
+    },
+    "resources": {
+      "label": "リソース",
+      "documentation": "ドキュメント",
+      "quickStart": "クイックスタート",
+      "sovereignModel": "主権モデル",
+      "security": "セキュリティホワイトペーパー",
+      "tierComparison": "プラン比較",
+      "faq": "よくある質問"
+    },
+    "explore": {
+      "label": "探索",
+      "blog": "ブログ",
+      "comparisons": "比較",
+      "concepts": "コンセプト",
+      "solutions": "ソリューション",
+      "glossary": "用語集",
+      "agents": "エージェント",
+      "mcp": "MCP連携"
+    },
+    "company": {
+      "label": "会社",
+      "github": "GitHub",
+      "privacy": "プライバシー",
+      "terms": "利用規約"
+    }
+  }
+}

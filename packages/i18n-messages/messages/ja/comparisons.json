@@ -1,0 +1,1775 @@
+{
+  "comparisons": {
+    "cursor": {
+      "competitor": {
+        "tagline": "クラウドエージェントとCLIを備えたAIエディタ"
+      },
+      "meta": {
+        "title": "Cursor vs Ellul：エディタとクラウドエージェントか、自前のワークステーションか",
+        "description": "Cursorはエディタ、CLI、Cloud Agentsを提供します。EllulはCursorのAgent SDKをチャットに統合し、cursor-agent（とClaude Code、Codex、OpenCode）をパスキーゲートされたあなたのワークステーション上で動かします。"
+      },
+      "hero": {
+        "eyebrow": "Cursor vs Ellul",
+        "headline": "Cursorのランタイムか、あなたのか。",
+        "sub": "Cursorのエディタは比類なく、2026年現在はCLIとCloud Agentプロダクトも提供します。EllulはCursorのAgent SDKをチャットに統合し、cursor-agent（Claude Code、Codex、OpenCodeと並んで）をあなたが所有するワークステーション上で動かします。比較の論点は「Cursorのエージェントが他の場所でも動くか」よりも「どのランタイムの中で動かすか」です。"
+      },
+      "ellulPitch": "あなたなしでエージェントが、あなたが所有するインフラで作業するすべての作業。一晩のラン。複数ベンダーからの並列エージェント。Cursorの認証ではなくあなたのパスキーでゲートされる、git pushやデータベースマイグレーションといった本番クレデンシャル操作。8時間かかる長いリファクタリング。地下鉄でスマートフォンからタスクを引き継ぐ。CursorのCloud AgentsはCursorのランタイムに作業を載せます。Ellulはあなたのランタイムに載せます。",
+      "competitorPitch": "Cursorの編集体験は2026年において比類のないものです。インライン補完、Command-K、コードベースインデックス、エージェントパネル。すべてカテゴリ最強です。cursor-agent CLIは同じループをターミナルにもたらし、Cloud Agents（Cursorのホストランタイム）はあなたがラップトップを閉じても動き続けます。Cursorのエコシステムが合うなら、その中だけに留まるのも良い選択です。",
+      "fundamentalDifference": "Cursorはエディタ、エージェント、そして（次第に）ランタイムを1つのバンドルとして売っています。Ellulはあなたが選ぶエージェント（Cursorのものを含む）の下のランタイムです。EllulはCursorのAgent SDKをチャット体験に統合し、すべてのワークステーションにcursor-agentを事前インストールします。あなたはCursorのエディタとCLIを使い続けますが、エージェントプロセスはあなたが制御するインフラ上で稼働し、パスキーゲート、並列エージェント間ピアリング、Claude Code・Codex・OpenCodeをまたぐモデルに依存しないBYOKを同じワークステーション内で利用できます。",
+      "features": {
+        "where-agent-runs": {
+          "capability": "エージェントが動く場所",
+          "ellul": "あなたが所有・制御するユーザ専用VPS",
+          "competitor": "ローカル（エディタ＋CLI）またはCursorのホストランタイム（Cloud Agents）",
+          "note": "CursorのCloud AgentsはCursor管理のインフラで稼働します。Ellulはあなた専用のユーザ専用VPSで稼働します。"
+        },
+        "survives-lid-close": {
+          "capability": "ふたを閉じても生き残る",
+          "ellul": "はい（ワークステーションが永続）",
+          "competitor": "Cloud Agents経由ならはい。ローカルエディタ／CLIセッションはいいえ"
+        },
+        "parallel-multi-vendor": {
+          "capability": "複数ベンダーからの並列エージェント",
+          "ellul": "はい（Claude Code、Codex、Cursor、OpenCodeを1つのワークステーションに、互いに読み取り専用ピアリング）",
+          "competitor": "Cursorのエージェントのみ"
+        },
+        "editor-experience": {
+          "capability": "エディタ体験",
+          "ellul": "ブラウザのファイルブラウザ＋ターミナル。エディタとしてはローカルのCursorとペア",
+          "competitor": "カテゴリ最強のネイティブエディタ体験"
+        },
+        "inline-completions": {
+          "capability": "インライン補完",
+          "ellul": "ラップトップ上のCursor経由、ランタイムとしてのEllulとペア",
+          "competitor": "はい（瞬時、エディタにネイティブ）"
+        },
+        "privileged-action-gating": {
+          "capability": "特権アクションのゲーティング",
+          "ellul": "FIDO2パスキー、エージェントプロセスの外側でサーバ側強制",
+          "competitor": "エディタのパーミッションプロンプト（プロセス内、スキップ可能）"
+        },
+        "credentials-location": {
+          "capability": "クレデンシャルの保存場所",
+          "ellul": "サーバサイドのvault、呼び出しごとにエージェントへ仲介",
+          "competitor": "ローカルマシン（~/.aws、~/.ssh、1Password CLI）またはCloud Agents用のCursor管理"
+        },
+        "cursor-sdk-integration": {
+          "capability": "Cursor Agent SDK統合",
+          "ellul": "はい（EllulのチャットサーフェスがCursorのACPを話すため、cursor-agentが他のCLIと並ぶ第一級アダプタとして動作）",
+          "competitor": "定義上Cursor製品にネイティブ"
+        },
+        "phone-approvals": {
+          "capability": "承認のためのスマートフォンアクセス",
+          "ellul": "はい（チャット、ファイル、登録済み任意デバイスからのパスキー承認）",
+          "competitor": "限定的（Cloud AgentsはWeb UIあり、パスキーゲートなし）"
+        }
+      },
+      "pricing": {
+        "entry": {
+          "tier": "エントリー",
+          "ellul": "$20/月 個人",
+          "competitor": "Pro $20/月"
+        },
+        "mid": {
+          "tier": "ミッド",
+          "ellul": "$50/月 プロ",
+          "competitor": "Pro+ $60/月"
+        },
+        "heavy": {
+          "tier": "ヘビー",
+          "ellul": "プロは並列ワークステーション＋ピアリングを含む",
+          "competitor": "Ultra $200/月"
+        },
+        "teams": {
+          "tier": "チーム",
+          "ellul": "シート単位（要問い合わせ）",
+          "competitor": "Business $40/シート/月"
+        },
+        "byok-model-key": {
+          "tier": "BYOKモデルキー",
+          "ellul": "はい（サポートする全エージェントでBYOK）",
+          "competitor": "オート/ルーター。一部BYOKオプション"
+        }
+      },
+      "verdict": {
+        "headline": "エディタとエージェントとしてはCursor、エージェントを抱えるランタイムとしてはEllul。",
+        "body": "私たちが話すシニアエンジニアの多くは両方に支払っています。エディタとしてのCursorはラップトップに残り、cursor-agentやその他のCLIはEllulワークステーションに住みます。CursorのCloud Agentsは、Cursorのエコシステム内に完全に留まりたい場合の選択肢です。Ellulは、エージェントが動く場所の主権、複数ベンダーの並列エージェント、ランタイムが強制するパスキーゲートが欲しい場合の選択肢です。"
+      },
+      "whenToUseCompetitor": {
+        "editor-heavy-day": "1日の90％以上をエディタ内でエージェントによるインラインアシストと共に過ごす。",
+        "short-cycle": "作業が短サイクル：プロンプト、結果を見る、受け入れる、次に進む。",
+        "no-extra-credentials": "ラップトップに既にあるもの以上のクレデンシャルを必要としない。",
+        "cursor-runtime-fine": "Cursorがエージェントのランタイム（ローカルまたはCloud Agents）を所有することに満足している。"
+      },
+      "whenToUseEllul": {
+        "long-tasks-walk-away": "あなたが所有するインフラで長いタスクを開始し、その場を離れたい。",
+        "parallel-multi-vendor": "複数のエージェントを並列で動かしたい：コーディング（Claude Code）、レビュー（cursor-agent）、ドキュメント（OpenCode）。",
+        "real-infra-passkey": "エージェントが本物のインフラ（GitHub、Vercel、本番データベース）に触れる必要があり、それらのクレデンシャルをCursorの認証ではなくあなたのパスキーでゲートしたい。",
+        "passkey-every-action": "すべての特権アクションに対して、エージェントプロセスの外側で強制されるパスキー承認が欲しい。",
+        "keep-editor-swap-runtime": "エディタ（Cursorなど）はそのままで、ランタイムだけを差し替えたい。"
+      },
+      "faq": {
+        "use-cursor-with-ellul": {
+          "q": "CursorとEllulを一緒に使えますか？",
+          "a": "はい。多くのお客様がそうしています。エディタとしてのCursorはラップトップに残り、cursor-agentはEllul上のワークステーション内のエージェントCLIの1つとして動きます。EllulのチャットサーフェスはCursorのAgent Communication Protocol（ACP）を話すため、統合は第一級です。エディタ体験を維持しつつ、自前のランタイムを得られます。"
+        },
+        "about-cloud-agents": {
+          "q": "CursorのCloud Agentsはどうですか？",
+          "a": "Cursorは2026年にCloud Agentsをリリースしました。会話をCursorのホストランタイムに送り、あなたが離れている間も動き続けます。トレードオフは「誰のランタイムが作業を所有するか」です。Cloud AgentsはCursor管理のインフラ上でCursor管理のクレデンシャルで動きます。Ellulは同じ形のケイパビリティを、あなたが所有するユーザ専用VPSの上で、パスキーゲートされた特権アクションとマルチエージェントピアリングと共に提供します。"
+        },
+        "pay-for-both": {
+          "q": "なぜ両方に支払うのですか？",
+          "a": "違う仕事だからです。Cursorはキーボードでのインラインアシスト用、カテゴリ最強のエディタ体験です。Ellulはあなたが制御するインフラでの無人ラン、複数ベンダーの並列エージェント、エージェントプロセスの外側でゲートされるクレデンシャル操作のためのものです。私たちが話すシニアエンジニアの多くが両方に支払っています。"
+        },
+        "ellul-inline-completions": {
+          "q": "Ellulにインライン補完はありますか？",
+          "a": "ありません。インライン補完は、エージェントがあなたのマシン上のエディタと同居していることを前提とします。Ellulのエージェントはサーバ上に住みます。インライン補完と自前のランタイムの両方が欲しい場合は、ラップトップでCursor、サーバでEllulを動かし、Ellul上のcursor-agentが長時間稼働の作業を担当します。"
+        },
+        "cursor-vs-ellul-security": {
+          "q": "CursorはEllulより安全ですか？",
+          "a": "脅威モデルが違います。Cursorのローカルエージェントは、あなたのファイルシステムへのOSレベルアクセスをあなたと同じだけ持ちます。すべてのクレデンシャルファイル、すべてのブラウザクッキー、すべてのSSHキー。Cloud AgentsはそれをCursor管理のインフラとCursor管理のクレデンシャルに移します。Ellulのエージェントは隔離されたユーザ専用VPS内で動き、クレデンシャルはサーバサイドのvaultに置かれ、エージェントがptraceできない別プロセスでゲートされます。カーネルで強制された隔離とパスキーゲートされた特権アクションが欲しい場合、アーキテクチャは比較になりません。"
+        }
+      }
+    },
+    "claude-code": {
+      "competitor": {
+        "tagline": "Anthropicのコーディングエージェント CLI"
+      },
+      "meta": {
+        "title": "Claude Code vs Ellul：ローカルエージェントか永続ワークステーションか",
+        "description": "Claude Codeはあなたのラップトップで動くAnthropicのコーディングエージェントCLIです。EllulはClaude Code（とCodex、Cursor、OpenCode）を、決して閉じない永続的なクラウドワークステーション上で動かします。"
+      },
+      "hero": {
+        "eyebrow": "Claude Code vs Ellul",
+        "headline": "エージェントと、エージェントが住む場所。",
+        "sub": "Claude Codeはエージェントです。Ellulはエージェントが動くコンピュータです。Claude Codeをローカルで動かすこともできれば、Ellul上で動かすこともできます。同じエージェント、違う住まい。"
+      },
+      "ellulPitch": "ラップトップ上のClaude Codeには解決不可能な問題があります。ふたを閉じれば止まることです。Anthropicの「Remote Control」機能は別のデバイスから入力をリレーしますが、セッション自体は依然としてラップトップ上に住みます。Ellulはセッションそのものを永続的なワークステーションに移します。同じエージェント、新しい住まい。",
+      "competitorPitch": "エージェントそのもの。Anthropicのエージェント品質は卓越しています。Claude Opus 4.7はTerminal-Bench 2.0をリードし（約69％）、SWE-bench Verifiedで80後半を出します。コードレビューと多段階計画も強力です。CLI体験はクリーン。MCP統合は業界で最も深い。パーミッションモデルは、ローカルエージェントのなかで最も思慮深いアクション単位ゲーティングです。",
+      "fundamentalDifference": "Claude Codeは2026年において最強のコーディングエージェントの1つです。私たちもデフォルトとしています。問題はClaude CodeかEllulか、ではありません。Claude Codeをどこに住まわせたいか、です。ふたを閉じれば止まるラップトップの上か。それとも夜通し走るEllulの上か。",
+      "features": {
+        "where-agent-runs": {
+          "capability": "エージェントが動く場所",
+          "ellul": "永続的なクラウドワークステーション",
+          "competitor": "あなたのラップトップ（またはRemote Controlでのリレー）"
+        },
+        "survives-lid-close": {
+          "capability": "ラップトップを閉じても生き残る",
+          "note": "ラップトップがスリープするとセッションが終わります。"
+        },
+        "per-action-gating": {
+          "capability": "アクション単位のパーミッションゲート",
+          "ellul": "FIDO2パスキー、サーバ強制",
+          "competitor": "はい、プロセス内"
+        },
+        "gate-bypass-protection": {
+          "capability": "ゲートを回避できない（ゲートはエージェントの外側で強制）",
+          "note": "Claude Codeのゲートはエージェントプロセス内で動きます。Ellulのゲートは別プロセスで動きます。"
+        },
+        "run-claude-code": {
+          "capability": "Claude Codeを動かす",
+          "ellul": "はい（デフォルト）"
+        },
+        "run-other-agents": {
+          "capability": "Codex / Cursor CLI / OpenCodeを動かす"
+        },
+        "parallel-sessions": {
+          "capability": "並列セッション",
+          "ellul": "ユーザごとに複数",
+          "competitor": "マシンごとに1つ"
+        },
+        "mcp-server-access": {
+          "capability": "MCPサーバアクセス",
+          "ellul": "ローカル＋永続的なサーバサイドMCP",
+          "competitor": "ローカルMCPサーバ"
+        },
+        "credentials-location": {
+          "capability": "クレデンシャルの保存場所",
+          "ellul": "サーバvault、ゲート付き注入",
+          "competitor": "あなたのラップトップ"
+        }
+      },
+      "pricing": {
+        "anthropic-subscription": {
+          "tier": "Anthropicサブスクリプション",
+          "ellul": "BYOK（あなたのClaude Pro/Maxを持ち込み）",
+          "competitor": "Pro $20/月、Max $100または$200/月"
+        },
+        "workstation": {
+          "tier": "ワークステーション",
+          "ellul": "$20/月 個人または$50/月 プロ",
+          "competitor": "n/a"
+        },
+        "total-monthly-pro": {
+          "tier": "月額合計（プロ）",
+          "ellul": "$70（$20 Claude Pro + $50 Ellul プロ）",
+          "competitor": "$20（Claude Proのみ）",
+          "note": "支払っているのはエージェントではなく、ワークステーションです。"
+        }
+      },
+      "verdict": {
+        "headline": "同じエージェント、違う住まい。ラップトップのふたが問題なら、Ellul上でClaude Codeを使ってください。",
+        "body": "Anthropicは素晴らしいエージェントを出荷します。私たちはそれをあなたが寝ている間に走らせるためのワークステーションを出荷します。あなた自身のClaudeサブスクリプションを持ち込んでください。Ellulはコンピュータの分だけ請求します。"
+      },
+      "whenToUseCompetitor": {
+        "trying-claude-code": "Claude Codeを初めて試していて、ワークステーションにコミットせずにエージェント品質を感じたい。",
+        "fast-bounded": "作業が高速かつ境界づけられている。エディタを超えてエージェントが生き続けるべきではない短サイクル。",
+        "no-prod-credentials": "本番クレデンシャルに触れる必要がない。"
+      },
+      "whenToUseEllul": {
+        "keep-running-after-lid-close": "ラップトップを閉じた後もClaude Codeに動き続けてほしい。",
+        "parallel-sessions-no-clash": "ポートを衝突させずに2〜3つのClaude Codeセッションを並列で動かしたい。",
+        "safe-git-push-deploy": "git pushとデプロイをパスキーでゲートし、クレデンシャルを決してエージェントのプロセスに入れない安全な操作にしたい。",
+        "switch-between-clis": "ワークステーションを変えずにClaude Code、Codex、OpenCode、Cursorを切り替えたい。"
+      },
+      "faq": {
+        "byok-claude": {
+          "q": "自分のClaude Pro/MaxサブスクリプションをEllulに持ち込めますか？",
+          "a": "はい。EllulはBYOK（あなた自身のキーを持ち込む）です。Claudeサブスクリプションはあなたのものです。Ellulはワークステーションの分だけ請求します。"
+        },
+        "remote-control-replace": {
+          "q": "Anthropicの「Remote Control」はEllulを置き換えますか？",
+          "a": "いいえ。Remote Controlは別のデバイスからClaude Codeセッションにメッセージを送れる機能です。セッション自体は依然としてラップトップ上に住み、ラップトップがスリープすれば止まります。Ellulはセッションを、決してスリープしないサーバに移します。"
+        },
+        "gate-vs-permissions": {
+          "q": "EllulのゲートとClaude Codeのパーミッションは何が違いますか？",
+          "a": "Claude Codeのパーミッションはエージェントプロセス内で強制されます。ソフトウェア工学の基準では強力ですが、エージェントへのコード編集アクセスを持つ者によって原理上回避可能です。Ellulのゲートは、エージェントが読めず、アタッチできず、シグナルも送れない別プロセスで強制されます。エージェントは慣行ではなくOSレベルで、文字どおりクレデンシャルを抜き出せません。"
+        },
+        "cloud-claude-code": {
+          "q": "Anthropicはクラウド版Claude Codeを出しますか？",
+          "a": "platform.claude.comでClaude Managed Agentsを出荷しています。Anthropicのクラウドとモデルに紐付くマネージドエージェント製品です。Ellulはモデルに依存しません。同じワークステーションがClaude Code、Codex、Cursor、OpenCodeを動かします。スコープが違います。"
+        },
+        "mcp-servers": {
+          "q": "MCPサーバはどうですか？",
+          "a": "Ellulは、ワークステーション内のローカル、または長時間稼働のサーバサイドプロセスとしてMCPサーバを動かします。GPUや永続的な状態を必要とするローカルMCPが、ふたを閉じるたびにワークステーションが取り壊されないため、実際に機能します。"
+        }
+      }
+    },
+    "claude-code-vs-cursor": {
+      "competitor": {
+        "tagline": "ラップトップ上のAIコードエディタ"
+      },
+      "meta": {
+        "title": "Claude Code vs Cursor：エージェントはどこに住むべきか",
+        "description": "Claude CodeとCursorを真っ向から比較：エージェント品質、エディタ表面、そしてどちらのベンダーも問わせたくない問い。ラップトップを閉じたとき、エージェントはどこで動くのか。"
+      },
+      "hero": {
+        "eyebrow": "Claude Code vs Cursor",
+        "headline": "エージェント対エディタ、そしてどちらが住む場所。",
+        "sub": "Claude Codeはエージェント品質で勝ちます。Cursorはエディタの完成度で勝ちます。両方ともラップトップで動きます。これがその一騎打ちと、どちらも売っていない3つ目の選択肢です。"
+      },
+      "ellulPitch": "スリープしないワークステーション上のClaude Code。複数のセッションを並列で動かし、すべての特権アクションをパスキーでゲートし、クレデンシャルをエージェントプロセスから隔離します。Claude/Codex/Cursor CLIのサブスクリプションはあなた自身のものを持ち込んでください。Ellulはモデルではなくワークステーションの分だけ請求します。",
+      "competitorPitch": "Cursorのエディタ体験は2026年においてカテゴリ最強です。インライン補完は瞬時。コードベースインデックスは深い。Command-Kは1週間で反射になります。1日の90％をエディタで過ごすなら、Cursorの表面は越えがたい。",
+      "fundamentalDifference": "Claude Codeはエージェント。Cursorはエディタ。Ellulはエージェントが動くコンピュータです。私たちが話すシニアエンジニアの多くは、モデルにClaude Code、キーボードにCursorを使い、その後Claude CodeをEllul上で動かしてふた問題を解消しています。",
+      "features": {
+        "where-agent-runs": {
+          "capability": "エージェントが動く場所",
+          "ellul": "永続的なクラウドワークステーション",
+          "competitor": "あなたのラップトップ"
+        },
+        "agent-quality": {
+          "capability": "エージェント品質（Terminal-Bench 2.0、2026年5月）",
+          "ellul": "Claude Codeデフォルト。Codex / OpenCodeはオプション",
+          "competitor": "Cursorエージェントパネル＋サードパーティモデルルーティング",
+          "note": "エージェントが動く場所とは独立。"
+        },
+        "inline-completions": {
+          "capability": "インライン補完",
+          "note": "インライン補完は、エージェントがエディタと同居していることを前提とします。ラップトップでCursor、サーバでEllul。両者は組み合わせ可能です。"
+        },
+        "cmd-k-refactors": {
+          "capability": "Command-K / Cmd-Kリファクタ"
+        },
+        "codebase-indexing": {
+          "capability": "コードベースインデックス",
+          "ellul": "ワークステーションごと、永続的",
+          "competitor": "マシンごと、一過性"
+        },
+        "survives-lid-close": {
+          "capability": "ふたを閉じる／スリープしても生き残る"
+        },
+        "parallel-sessions": {
+          "capability": "並列エージェントセッション",
+          "ellul": "ワークステーションごとに複数の隔離サンドボックス",
+          "competitor": "一度に1つ"
+        },
+        "per-action-gating": {
+          "capability": "アクション単位の特権アクションゲート",
+          "ellul": "FIDO2パスキー、別プロセスでサーバ強制",
+          "competitor": "OSレベルプロンプト（スキップ可能）"
+        },
+        "credentials-location": {
+          "capability": "クレデンシャルの保存場所",
+          "ellul": "サーバvault、エージェントプロセス内には決してなし",
+          "competitor": "あなたのマシン（~/.aws、~/.ssh、ブラウザクッキー）"
+        },
+        "run-other-agents": {
+          "capability": "他のエージェント（Claude Code、Codex、OpenCode）を動かす",
+          "note": "CursorのCLIもEllul上で動きます。"
+        },
+        "phone-approvals": {
+          "capability": "モバイル／スマートフォンアクセス",
+          "ellul": "パスキー紐付けデバイスからのタップ承認"
+        },
+        "time-to-first-run": {
+          "capability": "最初のエージェント実行までの時間",
+          "ellul": "サインアップから5分",
+          "competitor": "インストール＋プロビジョニング＋設定"
+        }
+      },
+      "pricing": {
+        "hobby": {
+          "tier": "個人",
+          "ellul": "$20/月（個人）",
+          "competitor": "$20/月（Pro）",
+          "note": "Cursor Proがデフォルトのサブスクリプション階層です。"
+        },
+        "pro": {
+          "tier": "プロ",
+          "ellul": "$50/月（プロ）",
+          "competitor": "$40/月（Businessシート単位）"
+        },
+        "byok-model-key": {
+          "tier": "BYOKモデルキー",
+          "ellul": "はい（Anthropic、OpenAI、Googleなど）",
+          "competitor": "一部のプロバイダーで対応"
+        }
+      },
+      "verdict": {
+        "headline": "ラップトップ上のインライン編集にはCursor。エージェント自体にはClaude Code。Claude CodeをEllul上で動かしてふた問題を解消する。",
+        "body": "1つだけ選ぶよう迫られたら、2026年4月時点での答えは、短サイクルのエディタ内作業にはCursor、無人ランに近い作業にはClaude Codeです。興味深い問いは、そのどちらかをカバンで持ち運ぶマシンで動かすべきかどうかです。"
+      },
+      "whenToUseCompetitor": {
+        "editor-heavy-day": "1日の90％以上をエディタ内でエージェントによるインラインアシストと共に過ごす。",
+        "short-cycle": "作業が短サイクル：プロンプト、結果を見る、受け入れる、次に進む。",
+        "best-inline-completions": "業界最高のインライン補完体験が欲しい。",
+        "no-extra-credentials": "ラップトップに既にあるもの以上のクレデンシャルを必要としない。"
+      },
+      "whenToUseEllul": {
+        "overnight-runs-laptop-closed": "ラップトップを開けっぱなしにせずに、Claude Code（またはCodex、CursorのCLI）を一晩動かしたい。",
+        "parallel-sessions-no-clash": "状態の衝突なしに複数の並列エージェントセッションを動かしたい。",
+        "real-infra-no-laptop": "エージェントが本物のインフラ（GitHub、Vercel、本番データベース）に触れる必要があり、そのクレデンシャルをラップトップに置きたくない。",
+        "passkey-gated-git-push": "エージェントが文字どおり回避できない、パスキーゲート付きのgit pushとデプロイが欲しい。",
+        "move-agent-keep-editor": "お気に入りのエディタ（Cursorなど）を維持し、エージェントだけを移したい。"
+      },
+      "faq": {
+        "claude-code-vs-cursor-better": {
+          "q": "Claude CodeはCursorより優れていますか？",
+          "a": "違う製品です。Claude Codeのエージェント品質は2026年でリードしています。Claude Opus 4.7はTerminal-Bench 2.0（約69％）の頂点におり、SWE-bench Verifiedで80後半を出し、より深いコードレビューと多段階計画の信頼性が高いです。Cursorのエディタ表面はカテゴリ最強：インライン補完、Command-K、コードベースインデックス。私たちが話すシニアエンジニアの多くは両方を使っています。"
+        },
+        "run-claude-code-on-cursor": {
+          "q": "CursorでClaude Codeを動かせますか？",
+          "a": "CursorとClaude Codeはあなたのラップトップ上で共存します。Cursorはエディタ。Claude Codeはターミナルから起動するCLIです。衝突しませんが、両方ともあなたのマシンで動くため、両方ともラップトップがスリープすれば止まります。"
+        },
+        "cursor-cloud-agent": {
+          "q": "Cursorにはクラウドエージェント製品がありますか？",
+          "a": "Cursorは2026年にCloud Agentsとcursor-agent CLI、加えて他のアプリに同じランタイムを埋め込めるCursor SDKをリリースしました。Cloud Agentsは会話をCursorのホストランタイムに送り、ラップトップを閉じている間も動き続けます。Ellulのポジショニングはその隣にあります。同じ形のケイパビリティを、あなたが所有するユーザ専用VPSの上で、パスキーゲート付きの特権アクション、複数ベンダーの並列エージェント（Claude Code、Codex、OpenCodeをcursor-agentと並べて）、CursorのAgent Communication Protocol統合により第一級のチャット表面と共に提供します。"
+        },
+        "anthropic-cloud-claude-code": {
+          "q": "AnthropicにクラウドClaude Codeはありますか？",
+          "a": "AnthropicはplatformClaude Managed Agentsをplatform.claude.comに、Claude Codeに「Remote Control」機能を出荷し、別のデバイスからセッションにメッセージを送れます。両方ともAnthropicのクラウドとモデルに紐付きます。Ellulはモデルに依存しません。同じワークステーションがClaude Code、Codex、OpenCode、CursorのCLIを動かします。"
+        },
+        "pay-for-both": {
+          "q": "なぜCursorとEllulの両方に支払うのですか？",
+          "a": "違う仕事だからです。Cursorはキーボードでのインラインアシスト用。Ellulは無人作業、並列エージェント、クレデンシャルに触れる操作のためのものです。ラップトップでCursor、Ellul上のエージェント。これが私たちが見る最も一般的な構成です。"
+        },
+        "cursor-more-secure-than-claude-code-on-ellul": {
+          "q": "CursorはEllul上のClaude Codeより安全ですか？",
+          "a": "いいえ。Cursorのエージェントは、あなたのファイルシステムへのOSレベルアクセスをあなたと同じだけ持ちます。すべてのクレデンシャルファイル、すべてのブラウザクッキー、すべてのSSHキー。Ellulのエージェントは隔離サンドボックス内で動き、クレデンシャルはサーバサイドのvaultに置かれ、エージェントが読めずアタッチもできない別プロセスでゲートされます。脅威モデルが根本的に違います。"
+        }
+      }
+    },
+    "codespaces": {
+      "competitor": {
+        "tagline": "人間のためのクラウド開発環境"
+      },
+      "meta": {
+        "title": "GitHub Codespaces vs Ellul：開発環境かエージェントの住まいか",
+        "description": "GitHub Codespacesはブラウザでコードを書く人間のために作られました。EllulはAIエージェントのために作られています：ゲート、並列、エージェントネイティブ。プロダクトの形は誰のためかから決まります。"
+      },
+      "hero": {
+        "eyebrow": "Codespaces vs Ellul",
+        "headline": "人間のためか、エージェントのためか。",
+        "sub": "GitHub Codespacesはブラウザでコードを書く人間のためのクラウド開発環境の標準です。Ellulはエージェントのために作られています：ゲート、並列、エージェントネイティブ。プロダクトの形は誰のためかから決まります。"
+      },
+      "ellulPitch": "エージェントが作業を行い、人間が承認するすべての作業。Codespacesには無人で動くエージェントの概念も、FIDO2ゲートも、エージェントごとの隔離も、ピアリングプリミティブもありません。私たちはエージェントを第一に作りました。",
+      "competitorPitch": "GitHubネイティブ。無料枠あり。GitHubエコシステムとの密な統合。ブラウザでコードを書く人間で、作業がGitHubにあるなら、Codespacesは優れています。",
+      "fundamentalDifference": "Codespacesの設計前提：人間がエディタにいて、エージェント（Copilot）が補助する。Ellulの前提：エージェントがワークステーションにいて、人間が危険な部分を承認する。キーボードの前にいるのが誰かを変えると、ほぼすべてのプロダクト判断が変わります。ゲート、並列性、ピアリング、クレデンシャル処理。",
+      "features": {
+        "designed-for": {
+          "capability": "対象",
+          "ellul": "AIエージェント（人間が承認）",
+          "competitor": "人間の開発者"
+        },
+        "always-on": {
+          "capability": "常時稼働",
+          "ellul": "デフォルトで常時稼働",
+          "competitor": "30分のアイドル後に自動サスペンド"
+        },
+        "per-agent-isolation": {
+          "capability": "エージェントごとの隔離",
+          "ellul": "エージェントごとのワークステーション",
+          "competitor": "リポジトリごとに1つのCodespace"
+        },
+        "passkey-gates": {
+          "capability": "FIDO2パスキーゲート"
+        },
+        "read-only-peering": {
+          "capability": "エージェント間の読み取り専用ピアリング"
+        },
+        "github-actions": {
+          "capability": "GitHub Actions統合",
+          "ellul": "統合経由",
+          "competitor": "ネイティブ"
+        },
+        "free-tier": {
+          "capability": "無料枠",
+          "competitor": "月60時間無料"
+        },
+        "bring-any-agent": {
+          "capability": "任意のエージェントを持ち込み（Claude、Codex、Cursor、OpenCode）",
+          "note": "CodespacesはCopilot中心です。"
+        }
+      },
+      "pricing": {
+        "free-tier": {
+          "tier": "無料枠",
+          "ellul": "なし",
+          "competitor": "月60時間無料"
+        },
+        "hobby-occasional": {
+          "tier": "個人／たまに利用",
+          "ellul": "$20/月固定",
+          "competitor": "無料時間後は従量課金"
+        },
+        "daily-driver": {
+          "tier": "デイリードライバー",
+          "ellul": "$50/月固定（プロ）",
+          "competitor": "従量課金、週40時間以上では多くなりがち"
+        }
+      },
+      "verdict": {
+        "headline": "Codespacesはブラウザでタイプする人間のため。Ellulは作業を行うエージェントのため。",
+        "body": "エージェント利用が軽いCopilotインラインアシスト程度なら、Codespacesの無料枠は良い取引です。無人の一晩のラン、複数の並列エージェント、ゲート付きの本番アクセスが欲しいなら、それは違う形のプロダクトです。"
+      },
+      "whenToUseCompetitor": {
+        "human-typing-browser": "ブラウザベースのVS Codeでコードをタイプする人間である。",
+        "github-standardized": "チームがすべてGitHubで標準化している。",
+        "free-tier-occasional": "たまにあるクラウド作業のために無料枠が欲しい。",
+        "light-copilot-assists": "エージェント利用が軽いCopilotインラインアシスト程度。"
+      },
+      "whenToUseEllul": {
+        "agent-not-at-keyboard": "キーボードの前にいない間にエージェントに作業させたい。",
+        "multi-parallel-each-workstation": "それぞれ自前のワークステーションを持つ複数のエージェントを並列で動かしたい。",
+        "passkey-gates-on-actions": "git pushとデプロイにパスキーゲートが欲しい。",
+        "choose-agent-not-copilot": "Copilotに縛られず、エージェント（Claude、Codex、Cursor、OpenCode）を選びたい。"
+      },
+      "faq": {
+        "claude-code-or-cursor-in-codespace": {
+          "q": "CodespaceでClaude CodeやCursorを動かすことはできないのですか？",
+          "a": "できます。実際にやっている人もいます。問題は構造的です：Codespacesはアイドル時に自動サスペンドし、エージェントの特権アクションへのゲートモデルがなく、ピアリングプリミティブがなく、クレデンシャルはアクション単位の承認なしにGitHub接続環境にあります。短いセッションには機能しますが、無人の一晩のランには苦痛です。"
+        },
+        "ellul-free-tier": {
+          "q": "Ellulに無料枠はありますか？",
+          "a": "ありません。無料枠は私たちがサービスするシニアエンジニアとは違うICPを引き寄せると分かりました。後で追加するかもしれません。"
+        },
+        "codespaces-cheaper-occasional": {
+          "q": "Codespacesはたまに使うなら安いですか？",
+          "a": "はい。月60時間の無料に従量課金を加えれば、週1回Codespaceするなら月20ドル固定より安いです。Ellulはワークステーションが常時稼働しているデイリードライバー利用向けです。"
+        },
+        "github-agent-first-codespace": {
+          "q": "GitHubはエージェント第一のCodespaceを出しますか？",
+          "a": "Copilotに紐付くエージェント機能は出荷しています。それがゲートとピアリングを備えた本物のエージェントワークステーションに収束するかは未知数です。それまでは、Ellulはこれら特定の軸で何年も先んじています。"
+        },
+        "codespaces-and-ellul-together": {
+          "q": "CodespacesとEllulを一緒に使えますか？",
+          "a": "はい。衝突しません。ブラウザ内の人間によるコーディングにはCodespaces、無人のエージェントランにはEllul。料金体系は独立しています。"
+        }
+      }
+    },
+    "daytona": {
+      "competitor": {
+        "tagline": "ステートフルなワークスペースプリミティブ"
+      },
+      "meta": {
+        "title": "Daytona vs Ellul：ワークスペースプリミティブかプロダクトか",
+        "description": "Daytonaは開発者環境を構築するプラットフォームエンジニア向けのワークスペースプリミティブです。Ellulはワークスペースプリミティブを内部で利用する、組み立て済みで意見の強いエージェントワークステーションです。"
+      },
+      "hero": {
+        "eyebrow": "Daytona vs Ellul",
+        "headline": "プリミティブか、その上に作られたプロダクトか。",
+        "sub": "Daytonaのドキュメントは開発者環境を構築するプラットフォームエンジニアを対象にしています。Ellulはエンジニアがサインアップする組み立て済みプロダクトです。対象者が違います。"
+      },
+      "ellulPitch": "Daytonaにはしっかりした基礎がありますが、エージェント特化のUX、パスキーゲート、ピアリングプリミティブ、統合がありません。私たちはその上のレイヤーを作りました。シニアエンジニアはEllulにサインアップして5分で生産的になれます。",
+      "competitorPitch": "無制限の永続性とクリーンなSDKを備えたステートフルワークスペース。プラットフォームエンジニア向けの強力なプリミティブ。オープンソース姿勢は誠実です。",
+      "fundamentalDifference": "DaytonaはKubernetesがコンテナに対するように、開発環境に対するものです。組み立てを必要とする強力なプリミティブ。Ellulは組み立て済みの体験：チャット、ゲート、ピアリング、統合。プラットフォームチームがあって自前の内部エージェントプラットフォームを構築したいならDaytonaが妥当です。今日エージェントを使いたいなら、Ellulが答えです。",
+      "features": {
+        "target-audience": {
+          "capability": "対象者",
+          "ellul": "エージェントを使うシニアエンジニア",
+          "competitor": "開発環境を構築するプラットフォームエンジニア"
+        },
+        "stateful-persistence": {
+          "capability": "ステートフル永続性",
+          "ellul": "はい（無制限）",
+          "competitor": "はい（無制限）"
+        },
+        "builtin-chat": {
+          "capability": "ビルトインのエージェントチャット"
+        },
+        "passkey-gating": {
+          "capability": "パスキーゲーティング（FIDO2）"
+        },
+        "read-only-peering": {
+          "capability": "エージェント間の読み取り専用ピアリング"
+        },
+        "integrations": {
+          "capability": "GitHub / Vercel / Neon統合",
+          "ellul": "ビルトイン、ゲート付き",
+          "competitor": "汎用SDKアクセス"
+        },
+        "open-source": {
+          "capability": "オープンソース",
+          "ellul": "部分的（エージェントランタイム、サンドボックスプリミティブ）",
+          "competitor": "はい（ワークスペースプリミティブ）"
+        },
+        "time-to-first-run": {
+          "capability": "最初のエージェント実行までの時間",
+          "ellul": "5分（サインアップ）",
+          "competitor": "数時間〜数日（プロダクトを構築）"
+        }
+      },
+      "pricing": {
+        "hobby": {
+          "tier": "個人",
+          "ellul": "$20/月固定",
+          "competitor": "無料（セルフホスト）＋クラウドコスト"
+        },
+        "pro": {
+          "tier": "プロ",
+          "ellul": "$50/月固定",
+          "competitor": "セルフホスト＋運用コスト"
+        },
+        "total-individual": {
+          "tier": "総コスト（個人）",
+          "ellul": "$20〜$50/月",
+          "competitor": "クラウド＋運用時間。個人では通常それ以上"
+        }
+      },
+      "verdict": {
+        "headline": "プラットフォームチームにはDaytona。個人のシニアエンジニアにはEllul。",
+        "body": "あなたの仕事が開発者プラットフォームを作ることなら、Daytonaは妥当なプリミティブです。あなたの仕事がエージェントとコードを出荷することなら、Ellulはサインアップする組み立て済みプロダクトです。"
+      },
+      "whenToUseCompetitor": {
+        "platform-team-internal": "プラットフォームチームがあり、社内開発者プラットフォームを構築したい。",
+        "workspace-primitives-extend": "自分で拡張できるワークスペースプリミティブが必要。",
+        "oss-priority-time-control": "オープンソースが優先で、コントロールのために時間を取引する。"
+      },
+      "whenToUseEllul": {
+        "use-agent-not-build-platform": "プラットフォームを構築するのではなく、エージェントを使いたい。",
+        "gates-peering-integrations-oob": "パスキーゲート、ピアリング、統合が箱から出して欲しい。",
+        "productive-minutes-not-weeks": "数週間ではなく数分で生産的になりたい。"
+      },
+      "faq": {
+        "build-ellul-on-daytona": {
+          "q": "DaytonaでEllulを構築できますか？",
+          "a": "原理上は可能です。Daytonaはワークスペースプリミティブを提供します。Ellulはおおよそ18ヶ月分の追加プロダクトエンジニアリングです：チャット、ゲート、ピアリング、統合、ID、課金。私たちはすでに作りました。"
+        },
+        "ellul-uses-daytona": {
+          "q": "Ellulは内部でDaytonaを使っていますか？",
+          "a": "いいえ。私たちのサンドボックスは、ゲートをエージェントプロセスの外側で強制することを要求するセキュリティモデルを持つ別のスタック上に構築されています。既製のワークスペースプリミティブにはこれは含まれません。"
+        },
+        "daytona-oss-story": {
+          "q": "Daytonaのオープンソースの話はどうですか？",
+          "a": "尊重します。オープンソースのワークスペースプリミティブには価値があります。Ellulが動作する1レイヤー下に住んでいます。Ellulが出荷する完全プロダクトはまだオープンソースではありません。"
+        },
+        "daytona-cheaper": {
+          "q": "Daytonaの方が安いですか？",
+          "a": "Daytonaはセルフホストすれば無料ですが、それを動かすクラウドのコストがかかります。セルフホストのDaytonaワークスペース運用コストに、その上にエージェントプロダクトを構築するコストを加えると、通常は個人エンジニアにとってEllulの月20〜50ドルを超えます。"
+        },
+        "daytona-passkey-gate": {
+          "q": "Daytonaにパスキーゲートはありますか？",
+          "a": "ありません。Daytonaはワークスペースプリミティブを提供します。認可とゲートはその上で組み立てるものです。Ellulは意見を持ったFIDO2強制ゲートをプロダクトの一部として出荷します。"
+        }
+      }
+    },
+    "e2b": {
+      "competitor": {
+        "tagline": "AIアプリケーション向けサンドボックスSDK"
+      },
+      "meta": {
+        "title": "E2B vs Ellul：一過性の実行か永続的なエージェントか",
+        "description": "E2BはFirecracker microVMで一過性のコード実行サンドボックスを提供します（Proでは24時間上限）。Ellulはアカウント期間中続く永続的なエージェントワークステーションです。"
+      },
+      "hero": {
+        "eyebrow": "E2B vs Ellul",
+        "headline": "一過性のコード実行か、永続的なエージェント作業か。",
+        "sub": "E2Bはサンドボックス内での短いコード実行のためです。Ellulはワークステーションに無期限に住むエージェントのためです。違う問題。"
+      },
+      "ellulPitch": "永続性。Ellulワークステーションはアカウント期間中あなたのものです。インストールしたパッケージ、設定、進行中のブランチは置いた場所に残ります。E2Bサンドボックスはそうではありません。",
+      "competitorPitch": "強力な隔離を備えたFirecracker microVM。「サンドボックスでユーザコードを実行する」機能を構築するための堅牢なSDK。コードインタープリタや信頼できない入力のシナリオに正しいプリミティブです。",
+      "fundamentalDifference": "E2Bサンドボックスは設計上一過性です。コード実行呼び出しの期間だけ存在し、Proでは24時間上限です。Ellulワークステーションは設計上永続的です。サブスクリプションをキャンセルするまで存在します。信頼できないコードを実行するLLMアプリを作るならE2B。常時稼働エージェントが欲しいエンジニアならEllul。",
+      "features": {
+        "sandbox-lifetime": {
+          "capability": "サンドボックスのライフタイム",
+          "ellul": "無期限（アカウント期間）",
+          "competitor": "数分〜24時間（Pro上限）"
+        },
+        "state-persistence": {
+          "capability": "セッション間で状態が保持される"
+        },
+        "designed-for-agents": {
+          "capability": "エージェント向け設計",
+          "ellul": "エージェントネイティブ",
+          "competitor": "コード実行。エージェントは後付け"
+        },
+        "builtin-chat": {
+          "capability": "ビルトインのエージェントチャット"
+        },
+        "passkey-gating": {
+          "capability": "パスキーゲーティング"
+        },
+        "code-interpreter": {
+          "capability": "コードインタープリタのユースケース",
+          "ellul": "可能だがオーバーキル",
+          "competitor": "優秀"
+        },
+        "time-to-first-sandbox": {
+          "capability": "最初のサンドボックスまでの時間",
+          "ellul": "サンドボックスは既に稼働中",
+          "competitor": "サブ秒のコールドスタート"
+        }
+      },
+      "pricing": {
+        "hobby": {
+          "tier": "個人",
+          "ellul": "$20/月固定",
+          "competitor": "秒単位の使用量"
+        },
+        "pro": {
+          "tier": "プロ",
+          "ellul": "$50/月固定",
+          "competitor": "秒単位の使用量"
+        },
+        "heavy-unattended": {
+          "tier": "重い無人利用",
+          "ellul": "$50/月固定がデイリードライバーには安い",
+          "competitor": "バースティ／短命なワークロードでは秒単位が勝つ"
+        }
+      },
+      "verdict": {
+        "headline": "コードインタープリタにはE2B。エンジニアのデイリードライバーエージェントワークステーションにはEllul。",
+        "body": "両方を使うプロダクトもあります：コードインタープリタにE2B、それを構築するエンジニアリングワークステーションにEllul。代替ではなく、スタックの異なるレイヤーのツールです。"
+      },
+      "whenToUseCompetitor": {
+        "untrusted-user-code": "信頼できないユーザコードを実行する必要があるLLMアプリを構築している。",
+        "seconds-to-minutes": "サンドボックスが数時間ではなく数秒〜数分生きる。",
+        "per-second-billing": "実際の使用量に紐付く秒単位の課金が欲しい。",
+        "no-state-persistence": "サンドボックスのライフタイム間で状態が生き残る必要がない。"
+      },
+      "whenToUseEllul": {
+        "agent-not-sdk": "SDKではなくエージェントが欲しいエンジニアである。",
+        "hours-or-days-context": "エージェントが数秒ではなく数時間〜数日のコンテキストを必要とする。",
+        "persistent-home-deps": "インストールしたパッケージ、ブランチ、進行中の作業のための永続的な住まいが欲しい。",
+        "passkey-gated-git-push": "パスキーゲート付きのgit pushとデプロイが欲しい。"
+      },
+      "faq": {
+        "e2b-vs-ellul": {
+          "q": "E2BはEllulの競合ですか？",
+          "a": "違う問題を解いています。E2Bは一過性のコード実行に正しい答え。Ellulは永続的なエージェント作業に正しい答えです。両方を使うプロダクトもあります：コードインタープリタにE2B、それを構築するエンジニアリングワークステーションにEllul。"
+        },
+        "e2b-as-workstation": {
+          "q": "E2Bをエージェントのワークステーションとして使えますか？",
+          "a": "短いタスクには動きます。サンドボックス上限（Proで24時間）を超えるものについては、サンドボックスが死に、エージェントの作業もそれと共に消えます。Ellulが存在するのは、その天井が真剣な無人作業には低すぎるからです。"
+        },
+        "e2b-persistence": {
+          "q": "E2Bの永続性はどうですか？",
+          "a": "E2BのProプランは最大24時間のセッションをサポートします。それ以降サンドボックスは取り壊されます。状態は持ち出して再ロードしなければならず、コードインタープリタにはこれで良いですが、エージェントには苦痛です。"
+        },
+        "pricing-comparison": {
+          "q": "料金比較は？",
+          "a": "サンドボックス利用がバースティ（多数の短いセッション）なら、E2Bの秒単位料金が安いです。エージェントを毎日数時間生かしておくなら、Ellulの月額固定が勝ちます。"
+        },
+        "e2b-passkey-gating": {
+          "q": "E2Bにパスキーゲートはありますか？",
+          "a": "ありません。E2Bはサンドボックスインフラ。ゲートはアプリケーション層で構築するものです。EllulはFIDO2強制ゲートをプロダクトの第一級の一部として出荷します。"
+        }
+      }
+    },
+    "sprites": {
+      "competitor": {
+        "tagline": "AIコーディングエージェント向けステートフルサンドボックス"
+      },
+      "meta": {
+        "title": "Sprites vs Ellul：サンドボックスインフラかプロダクトか",
+        "description": "Sprites.devはFirecracker microVM上でAIコーディングエージェント向けステートフルサンドボックスを提供します。Ellulはステートフルサンドボックスの上に組み立てられたプロダクト（チャット、ファイルブラウザ、ゲート、統合）です。"
+      },
+      "hero": {
+        "eyebrow": "Sprites.dev vs Ellul",
+        "headline": "サンドボックスインフラか、その上のプロダクトか。",
+        "sub": "Sprites.devは他社が上に構築するステートフルサンドボックスを提供します。Ellulはエンジニアがサインアップするプロダクトです。両方に居場所があり、違うレイヤーに住んでいます。"
+      },
+      "ellulPitch": "私たちは組み立て済みの体験です。チャット表面。ファイルブラウザ。ライブプレビュー。パスキーゲート。コンポジションプリミティブ。GitHub/Vercel/Neon/Supabase統合。シニアエンジニアはEllulにサインアップして5分でエージェントを動かせます。自分で組み立てる必要はありません。",
+      "competitorPitch": "高速NVMe上でチェックポイントとロールバックを備えたFirecracker microVM。本物の「無制限の永続性」。サンドボックス・アズ・ア・サービスを必要とするビルダー向けの強力なプリミティブ。ドキュメントはクリーンで、料金は誠実です。",
+      "fundamentalDifference": "Spritesはインフラ。Ellulはプロダクトです。AIコーディングツールを構築していてプリミティブとしてステートフルサンドボックスが必要なら、Spritesが正しい選択です。エージェントのための常時稼働ワークステーションが欲しいシニアエンジニアなら、Ellulがサインアップするものです。両者は補完的です。",
+      "features": {
+        "stack-layer": {
+          "capability": "スタックのレイヤー",
+          "ellul": "エンドユーザプロダクト",
+          "competitor": "サンドボックスインフラ（B2B SDK）"
+        },
+        "stateful-persistence": {
+          "capability": "ステートフル永続性",
+          "ellul": "はい（無制限）",
+          "competitor": "はい（無制限）"
+        },
+        "checkpoint-rollback": {
+          "capability": "チェックポイント／ロールバック",
+          "ellul": "ボリュームスナップショット",
+          "competitor": "はい（NVMe裏付け）"
+        },
+        "builtin-ux": {
+          "capability": "ビルトインのエージェントUX（チャット、ファイル、プレビュー）",
+          "note": "Sprites：自分で構築。Ellul：標準装備で出荷。"
+        },
+        "passkey-gating": {
+          "capability": "パスキーゲーティング（FIDO2、サーバ強制）"
+        },
+        "multi-agent-peering": {
+          "capability": "マルチエージェントピアリング",
+          "ellul": "読み取り専用スナップショットピアリング"
+        },
+        "integrations": {
+          "capability": "GitHub / Vercel / Neon統合"
+        },
+        "time-to-first-run": {
+          "capability": "最初のエージェント実行までの時間",
+          "ellul": "5分（サインアップ）",
+          "competitor": "数時間〜数日（プロダクトを構築）"
+        }
+      },
+      "pricing": {
+        "hobby": {
+          "tier": "個人",
+          "ellul": "$20/月固定",
+          "competitor": "サンドボックスごとの使用量"
+        },
+        "pro": {
+          "tier": "プロ",
+          "ellul": "$50/月固定",
+          "competitor": "サンドボックスごとの使用量"
+        },
+        "high-volume": {
+          "tier": "大量",
+          "ellul": "カスタム",
+          "competitor": "短命なサンドボックス数千件には秒単位料金が勝つ"
+        }
+      },
+      "verdict": {
+        "headline": "スタックの違うレイヤー：Spritesはインフラ、Ellulはプロダクト。",
+        "body": "コーディングエージェントプロダクトを構築していてサンドボックスプリミティブが必要ならSprites。今日エージェントを使いたい、6ヶ月かけて組み立てたくないシニアエンジニアならEllul。"
+      },
+      "whenToUseCompetitor": {
+        "building-coding-agent": "コーディングエージェントプロダクトを構築していて、インフラとしてステートフルサンドボックスが必要。",
+        "own-ux-from-scratch": "ユーザ体験全体をゼロから所有したい。",
+        "granular-per-second": "大量のサンドボックスワークロードに細かい秒単位料金が必要。"
+      },
+      "whenToUseEllul": {
+        "use-agent-not-build": "エージェントを使いたい、構築したくないシニアエンジニアである。",
+        "chat-files-preview-oob": "チャット、ファイル、プレビュー、統合が箱から出して欲しい。",
+        "passkey-without-writing-gate": "ゲートを自分で書かずに、パスキーゲート付き特権アクションが欲しい。",
+        "flat-monthly": "月額固定料金が欲しい。"
+      },
+      "faq": {
+        "sprites-build-ellul-like": {
+          "q": "Sprites.devでEllulのようなものを構築できますか？",
+          "a": "原理上は可能です。Spritesはインフラです。完全プロダクト（チャット、ファイル、ゲート、ピアリング、統合）はその上に約18ヶ月分のエンジニアリングが必要です。私たちはすでに作りました。"
+        },
+        "ellul-uses-sprites": {
+          "q": "Ellulは内部でSpritesを使っていますか？",
+          "a": "いいえ。私たちのサンドボックスはカスタムセキュリティモデルを持つ別のスタックで構築されています。パスキーゲートはエージェントが読めずアタッチもできない別プロセスで強制されます。これは既製のサンドボックスが提供するもの以上を必要とします。"
+        },
+        "sprites-cheaper-high-volume": {
+          "q": "大量のエージェントランではSpritesが安いですか？",
+          "a": "1日に数千の短命なサンドボックスを起動するなら、Spritesの秒単位料金が勝ちます。少数の永続的なワークステーションを動かすシニアエンジニアなら、私たちの月額固定が通常安いです。"
+        },
+        "sprites-passkey-gating": {
+          "q": "Spritesにパスキーゲートはありますか？",
+          "a": "ありません。Spritesはサンドボックスプリミティブを提供します。ゲートは上に構築するものです。意味のあるゲートにするには、エージェントプロセスの外側で強制する必要があり、これを正しく行うのは難しいです。"
+        },
+        "composition-primitive": {
+          "q": "コンポジションプリミティブはどうですか？",
+          "a": "エージェント間の読み取り専用ピアリング（あるエージェントが書き込みなしに別のソースを見られる）は、サンドボックスレイヤーではなくオーケストレーションレイヤーの性質です。Spritesはこれを出荷していません。Ellulは出荷します。"
+        }
+      }
+    },
+    "base44": {
+      "competitor": {
+        "tagline": "非コーダー向けプロンプト・トゥ・アプリビルダー、Wix所有"
+      },
+      "meta": {
+        "title": "Base44 vs Ellul：アプリジェネレータかエンジニアのツールか",
+        "description": "Base44は非コーダー向けにプロンプトから完全なアプリを生成します。EllulはあなたのAIコーディングエージェントが住む永続的なワークステーションです。違う対象者。選ぶ稀なケースのための一騎打ち。"
+      },
+      "hero": {
+        "eyebrow": "Base44 vs Ellul",
+        "headline": "生成されたアプリか、設計されたソフトウェアか。",
+        "sub": "Base44は非エンジニア向けにマネージドランタイムでプロンプトからアプリ全体を構築し、Wixに買収されました。Ellulは、AIエージェントを永続的なワークステーション上で本物のコードベース内で動かしたいエンジニア向けです。違うプロダクト、違うユーザ。"
+      },
+      "ellulPitch": "本物のコードベースでのエンジニアリング作業：コードレビュー、リファクタリング、数日にわたるマイグレーション、本番クレデンシャル操作、並列エージェント、既存スタックとの統合。ユーザの形は「v0アプリを作る非コーダー」ではなく「エージェントを持つプロのエンジニア」です。",
+      "competitorPitch": "Base44のカテゴリは、コードを書かない人向けの「アイデアからv1アプリへ」です。ランタイムは統合されており、デプロイも統合されており、背後のモデルは隠されています。明確なアイデアと中程度のニーズを持つ非エンジニアにとって、MVPまでの時間は越えがたいです。",
+      "fundamentalDifference": "Base44はコードベースを抽象化します。Ellulはエンジニアのエージェントを本物のコードベース内に置きます。両プロダクトは実際には競合しません。重ならないニーズを持つ隣接ユーザにサービスを提供します。質問が出てくるのでこの比較を載せています。",
+      "features": {
+        "target-user": {
+          "capability": "対象ユーザ",
+          "ellul": "AIエージェントを持つプロのエンジニア",
+          "competitor": "プロンプトからアプリを構築する非コーダー"
+        },
+        "output": {
+          "capability": "アウトプット",
+          "ellul": "差分、PR、あなたのリポジトリにデプロイされたコード",
+          "competitor": "Base44/Wixインフラ上のホスト型アプリ"
+        },
+        "codebase-ownership": {
+          "capability": "コードベースの所有",
+          "ellul": "あなたのもの：gitベース、あなたのリポジトリ、あなたのCI",
+          "competitor": "Base44のランタイムにホスト。エクスポートは限定的"
+        },
+        "byoa": {
+          "capability": "BYOA（自前のエージェント持ち込み）",
+          "ellul": "Claude Code、Cursor、Codex、OpenCode",
+          "competitor": "Base44独自のモデル＋ツール"
+        },
+        "real-credential-ops": {
+          "capability": "本番クレデンシャル操作",
+          "ellul": "パスキーゲート、サーバ側強制",
+          "competitor": "Base44管理。ブラックボックス"
+        },
+        "persistent-workstation": {
+          "capability": "永続的なワークステーション",
+          "ellul": "はい（ブランチ、依存関係、MCPサーバが永続）",
+          "competitor": "ホストランタイム。アプリごと"
+        },
+        "parallel-agents": {
+          "capability": "並列エージェント",
+          "ellul": "複数、読み取り専用ピアリングあり",
+          "competitor": "適用外"
+        },
+        "hosting-deployment": {
+          "capability": "ホスティング／デプロイ",
+          "ellul": "どこでもデプロイ（Vercel、Fly、Railway、自前のインフラ）",
+          "competitor": "Wix/Base44にホスト（ロックイン）"
+        },
+        "time-to-first-v0": {
+          "capability": "最初の使えるv0までの時間（非コーダー）",
+          "ellul": "数時間（エンジニア向け）",
+          "competitor": "数分（看板の売り文句）"
+        },
+        "integration-existing-stack": {
+          "capability": "既存スタックとの統合",
+          "ellul": "ネイティブ（あなたのリポジトリ、あなたのCI、あなたのモニタリング）",
+          "competitor": "限定的。グリーンフィールドアプリ向け設計"
+        },
+        "open-ecosystem": {
+          "capability": "オープンエコシステム",
+          "ellul": "オープンエージェントCLI、BYOK、MCP",
+          "competitor": "クローズドプロダクト"
+        },
+        "best-fit": {
+          "capability": "最適",
+          "ellul": "エージェントによる本番エンジニアリング",
+          "competitor": "非コーダーのMVP"
+        }
+      },
+      "pricing": {
+        "entry": {
+          "tier": "エントリー",
+          "ellul": "$20/月 個人",
+          "competitor": "無料 → Pro 約$20/月"
+        },
+        "pro-teams": {
+          "tier": "プロ／チーム",
+          "ellul": "$50/月 プロ",
+          "competitor": "Wixバンドルでより上位の階層"
+        },
+        "self-hosting": {
+          "tier": "セルフホスティング",
+          "ellul": "コードはあなたのリポジトリに（どこでもデプロイ）",
+          "competitor": "Base44/Wixにホスト"
+        }
+      },
+      "verdict": {
+        "headline": "違うユーザ向けの違うプロダクト。ワークフローの形で選んでください。",
+        "body": "コードが書けず、アプリが欲しいなら、Base44のカテゴリです。コードを書き、AIエージェントを本物のコードベース内に置きたく、本番グレードのコントロールが欲しいなら、Ellulのカテゴリです。両プロダクトが同じ評価で並ぶことは稀です。一部のユーザが検索したのでこの比較を書きました。"
+      },
+      "whenToUseCompetitor": {
+        "dont-write-code": "コードを書かず、プロンプトからアプリが欲しい。",
+        "happy-base44-wix-hosting": "Base44/Wixインフラへのホスティングで満足。",
+        "v0-single-purpose": "ニーズが統合コードベースよりv0の単一目的アプリに合う。",
+        "time-to-mvp-binding": "最初のMVPまでの時間が拘束条件。"
+      },
+      "whenToUseEllul": {
+        "engineer-with-agent": "AIエージェントと本物のコードベースを持つエンジニアである。",
+        "code-in-git-repo": "コードがgitリポジトリにあり、選んだ場所にデプロイしたい。",
+        "credential-touching-safely": "エージェントがクレデンシャルに触れる作業を安全に行う必要がある。",
+        "keep-tools-model-editor": "既存のツール、モデル、エディタを維持したい。",
+        "parallel-or-unattended": "並列または無人でエージェントを動かす予定。"
+      },
+      "faq": {
+        "is-base44-coding-agent": {
+          "q": "Base44はコーディングエージェントですか？",
+          "a": "Claude CodeやCursorと同じ意味ではありません。Base44はプロンプトからエンドツーエンドでアプリを生成し、ホストします。使い続けるエージェントCLIの概念はなく、モデルはプロダクト内に隠されています。"
+        },
+        "export-base44-to-ellul": {
+          "q": "Base44アプリをエクスポートしてEllul上で動かせますか？",
+          "a": "エクスポートは限定的で、Wix/Base44プランによります。チェックする価値のある形は、生成されたコードベースが開発を続けられるものとして出てくるか、そして続けたいかどうかです。両プロダクトは「Base44からEllulへの移行」が通常「移行ではなく書き直し」を意味するほど違います。"
+        },
+        "why-comparison-on-site": {
+          "q": "なぜこの比較がこのサイトに？",
+          "a": "「AIアプリビルダー vs AIコーディングエージェント」を検索した一部のユーザが、ショートリストにBase44とEllulを両方載せます。プロダクトページから三角測量しなくていいよう、誠実な比較をまとめました。意味のある違う形です。"
+        },
+        "base44-after-wix": {
+          "q": "Wix買収後もBase44はプロダクトとして存続しますか？",
+          "a": "Base44はWixのプロパティとして出荷を続けています。命名とバンドルは続くWixのリリースでシフトしてきました。現在の詳細はBase44プロダクトページが情報源です。"
+        },
+        "lovable-bolt-v0": {
+          "q": "Lovable、Bolt、V0はどうですか？",
+          "a": "すべて同じプロンプト・トゥ・アプリビルダーカテゴリで、磨きとモデルスタックが違います。Base44と同じくEllulに対する直交性です。プロンプトからアプリを作る側、Ellulはエンジニアにエージェントの置き場所を与える側。それらの一騎打ちが欲しければ、別のLovable比較とBolt比較があります。"
+        }
+      }
+    },
+    "bolt": {
+      "competitor": {
+        "tagline": "StackBlitzのプロンプト・トゥ・アプリビルダー、ブラウザ内プレビュー付き"
+      },
+      "meta": {
+        "title": "Bolt.new vs Ellul：ブラウザ内ビルダーかエージェントワークステーションか",
+        "description": "StackBlitzのBolt.newはブラウザベースの開発環境でプロンプトを動くWebアプリに変えます。Ellulはエンジニアのエージェントが住む永続的なワークステーションです。違うカテゴリ。"
+      },
+      "hero": {
+        "eyebrow": "Bolt vs Ellul",
+        "headline": "プロンプト・トゥ・アプリか、エージェントのランタイムか。",
+        "sub": "BoltはStackBlitzのWebContainer技術上の強力なプロンプト・トゥ・実行アプリプロダクトです。Ellulはエンジニアのエージェントが住む永続的なコンピュータです。違うユーザにサービスを提供します。それぞれが勝つ場所はここです。"
+      },
+      "ellulPitch": "本物のコードベース上でのエンジニアリング：あなたのエージェント、モデル、ツール、リポジトリ。長時間タスク、並列エージェント、パスキーゲート付き本番クレデンシャル、セッション間の永続的なワークステーション。Ellulはランタイム。仕事に合うエージェントCLIを持ち込んでください。",
+      "competitorPitch": "BoltのWebContainerベースランタイムは独特の「ブラウザプレビュー＝本物のNode.js」体験を与えます。プロトタイプ、MVP、ローカル環境を組みたくない人によるデモには、Boltのプロンプト・トゥ・実行アプリの速度は越えがたく、StackBlitzの系譜は開発環境がよく設計されていることを意味します。",
+      "fundamentalDifference": "Boltはランタイム（WebContainer経由のブラウザベース）とワークフロー（プロンプト→アプリ→プレビュー）について意見を持っています。Ellulはあなたのエージェントの下のランタイムです。エディタ、エージェント、モデル、デプロイターゲットを持ち込んでください。両プロダクトは隣接ユーザにサービスします。この比較を載せるのは、両方とも「AIが私のアプリをコーディングする」検索に出てくるからです。",
+      "features": {
+        "target-user": {
+          "capability": "対象ユーザ",
+          "ellul": "エージェントを持つプロのエンジニア",
+          "competitor": "プロトタイパー、デザイナーエンジニア、インディビルダー"
+        },
+        "output": {
+          "capability": "アウトプット",
+          "ellul": "差分、PR、あなたのリポジトリにデプロイされたコード",
+          "competitor": "Boltワークスペース内のライブアプリ。GitHubにエクスポート可能"
+        },
+        "codebase-ownership": {
+          "capability": "コードベースの所有",
+          "ellul": "あなたのもの：git、あなたのリポジトリ、あなたのCI",
+          "competitor": "Boltホスト。GitHubエクスポート利用可能"
+        },
+        "byoa": {
+          "capability": "BYOA",
+          "ellul": "Claude Code、Cursor、Codex、OpenCode",
+          "competitor": "Bolt独自のモデル＋ツール"
+        },
+        "byom": {
+          "capability": "BYOM（モデル持ち込み）",
+          "ellul": "はい（BYOK）",
+          "competitor": "非公開"
+        },
+        "persistent-workstation": {
+          "capability": "永続的なワークステーション",
+          "ellul": "はい（ブランチ、依存関係、MCPサーバが永続）",
+          "competitor": "プロジェクトごとのBoltワークスペース"
+        },
+        "real-credential-ops": {
+          "capability": "本番クレデンシャル操作",
+          "ellul": "パスキーゲート、サーバサイドvault",
+          "competitor": "限定的。ホスト型デモ向け設計"
+        },
+        "parallel-agents": {
+          "capability": "並列エージェント",
+          "ellul": "複数のワークステーション、読み取り専用ピアリング",
+          "competitor": "複数のBoltセッション、ピアリングなし"
+        },
+        "in-browser-execution": {
+          "capability": "ブラウザ内実行",
+          "ellul": "ブラウザ内のサーバサイドターミナル",
+          "competitor": "WebContainer（ブラウザ内の本物のNode）。独特の強み"
+        },
+        "time-to-first-app": {
+          "capability": "最初の実行アプリまでの時間（プロトタイパー）",
+          "ellul": "数時間（エンジニア向け）",
+          "competitor": "数分（看板の売り文句）"
+        },
+        "editor-experience": {
+          "capability": "エディタ体験",
+          "ellul": "ローカルでIDEとペア、またはブラウザのファイルブラウザ",
+          "competitor": "ビルトインエディタ＋プレビューペイン"
+        },
+        "best-fit": {
+          "capability": "最適",
+          "ellul": "エージェントによる本番エンジニアリング",
+          "competitor": "プロトタイプ、MVP、デモ、インディローンチ"
+        }
+      },
+      "pricing": {
+        "entry": {
+          "tier": "エントリー",
+          "ellul": "$20/月 個人",
+          "competitor": "無料またはPro $25/月"
+        },
+        "pro-teams": {
+          "tier": "プロ／チーム",
+          "ellul": "$50/月 プロ",
+          "competitor": "チーム $30/メンバー/月"
+        },
+        "self-hosting": {
+          "tier": "セルフホスティング",
+          "ellul": "あなたのリポジトリ、どこでもデプロイ",
+          "competitor": "Boltにホスト。GitHubエクスポート"
+        }
+      },
+      "verdict": {
+        "headline": "プロトタイプにはBolt。本物のコードベース内のエージェントにはEllul。",
+        "body": "Boltは、プロンプトから実行アプリが欲しくBoltのランタイムで満足な人に正しいツールです。Ellulは、AIエージェントと本物のコードベースを持ち、本番クレデンシャルゲート付きの永続的なワークステーションでエージェントを動かしたいエンジニアに正しいツールです。私たちが話す両方を試したエンジニアの多くは、v0デモにBolt、実際のプロダクト出荷にEllulを使います。"
+      },
+      "whenToUseCompetitor": {
+        "web-app-from-prompt": "プロンプトからブラウザ内で数分でWebアプリが欲しい。",
+        "prototype-not-production": "プロジェクトがプロトタイプ、デモ、インディMVPで、本番コードベースではない。",
+        "happy-bolt-hosting": "Boltにホスト、または後でGitHubにエクスポートで満足。",
+        "webcontainer-matters": "WebContainerのブラウザ内ランタイムがデモの配布に重要。"
+      },
+      "whenToUseEllul": {
+        "engineer-on-real-codebases": "本物のコードベース上でAIエージェントを動かすエンジニアである。",
+        "code-in-git-deployed-where-you-choose": "コードがgitリポジトリにあり、選んだ場所にデプロイしたい。",
+        "real-credential-passkey": "エージェントがパスキーでゲートされた本番クレデンシャル操作を必要とする。",
+        "parallel-or-unattended": "並列または無人でエージェントを動かす予定。",
+        "flat-rate-pricing": "使用クレジットではなく定額料金が欲しい。"
+      },
+      "faq": {
+        "bolt-coding-agent-like-claude": {
+          "q": "BoltはClaude Codeのようなコーディングエージェントですか？",
+          "a": "違う形です。Boltはプロンプト・トゥ・アプリプロダクト。エージェントは暗黙的です。Claude Code、Cursor、Codexは独自のCLIとモデル契約を持ち、プロジェクトをまたいで使い続けるコーディングエージェントです。Ellulはそれらコーディングエージェントの下のランタイムです。"
+        },
+        "export-bolt-to-ellul": {
+          "q": "BoltからEllulへエクスポートできますか？",
+          "a": "はい。BoltはGitHubエクスポートをサポートしています。リポジトリを持ったら、Ellulワークステーションにクローンして、Cursor、Claude Code、または好きなエージェントで続けられます。「プロンプトビルダーからエージェントを持つエンジニアへ」のパスはよくあるものです。"
+        },
+        "what-is-webcontainer": {
+          "q": "WebContainerとは何で、なぜ重要ですか？",
+          "a": "StackBlitzはWebContainerを構築しました。WebAssembly経由でブラウザ内で動くNode.jsランタイムです。Boltにとって本物の強みです。「プレビュー」はサーバラウンドトリップではなく、ブラウザ内の実際のコード実行です。すべての環境に一般化しません（Dockerなし、ネイティブモジュールが限定的）が、Boltが対象とするアプリには独特の速いループです。"
+        },
+        "bolt-vs-other-builders": {
+          "q": "Bolt vs Lovable vs v0 vs Base44：すべて同じですか？",
+          "a": "すべて同じプロンプト・トゥ・アプリビルダーカテゴリで、磨きとモデルスタックが違います。BoltのWebContainerランタイムが差別化要素。LovableのReact品質が差別化要素。v0のデザイン忠実度が差別化要素。Base44のフルスタック範囲が差別化要素。Ellulは4つすべてに対して構造的に直交です。"
+        },
+        "bolt-graduates-to-real-product": {
+          "q": "Boltプロトタイプが本物のプロダクトに進化したら？",
+          "a": "GitHubにエクスポートし、Ellulワークステーションにクローンし、好みのエージェントCLIをそのリポジトリに向けます。エージェントは今や永続的なサーバに住み、無人で動け、パスキーゲート付き本番アクセスを持ち、起動する他のエージェントと並んで動きます。"
+        }
+      }
+    },
+    "devin": {
+      "competitor": {
+        "tagline": "マネージドサンドボックス内のCognitionの自律AIエンジニア"
+      },
+      "meta": {
+        "title": "Devin vs Ellul：マネージド自律エンジニアかワークステーションか",
+        "description": "DevinはマネージドサンドボックスにいるCognitionの自律AIエンジニアです。Ellulはあなたのエージェント（Claude Code、Cursor、Codex）のための、あなたのクレデンシャルとモデルを持つ永続的なワークステーションです。"
+      },
+      "hero": {
+        "eyebrow": "Devin vs Ellul",
+        "headline": "マネージドエンジニアか、あなたのエージェントのワークステーションか。",
+        "sub": "DevinはCognitionのプロダクトです：タスクを渡すと、彼らのサンドボックスで作業し、PRが返ってきます。Ellulはあなた自身のエージェント（あなたのClaude Code、あなたのCursor、あなたのCodex）の下のランタイムで、あなたのものである永続的なワークステーション上で動きます。違うコミットメント、違う形。"
+      },
+      "ellulPitch": "既存のエージェントCLI、モデル契約、コードベース所有、デプロイターゲットを維持するエンジニアリング作業。Ellulはランタイム。エージェントとモデルはあなたが選びます。定額料金、永続的なワークステーション、並列対応、パスキーゲート付き。",
+      "competitorPitch": "Cognitionのエージェントがエンジニアリングを行い、モデルを選び、サンドボックスを動かし、最小限の手助けでPRを生成する完全マネージドプロダクトが欲しいなら、Devinはそのカテゴリで最も注目を集めるエントリーです。プロダクトはエンドツーエンドで意見が強く、十分な資金があります。",
+      "fundamentalDifference": "Devinはエージェントとランタイムをマネージドプロダクトとしてバンドルで売っています。Ellulはあなたのエージェントの下のランタイムです。あなたの既存のClaude CodeまたはCursor CLIを永続的なワークステーション上で、あなたのクレデンシャルとあなたのツールと共に動かします。Devinはハイエンドのです。Ellulはインフラです。同じ種類の購入ではありません。",
+      "features": {
+        "byoa": {
+          "capability": "BYOA",
+          "ellul": "Claude Code、Cursor、Codex、OpenCode",
+          "competitor": "Devinのみ"
+        },
+        "byom": {
+          "capability": "BYOM",
+          "ellul": "はい（サポートする全エージェントでBYOK）",
+          "competitor": "Cognition管理のモデルスタック"
+        },
+        "codebase-ownership": {
+          "capability": "コードベースの所有",
+          "ellul": "あなたのもの：git、あなたのリポジトリ、あなたのCI",
+          "competitor": "あなたのもの。ただしDevinはデフォルトで自分のサンドボックス内で動作"
+        },
+        "persistent-workstation": {
+          "capability": "タスク間の永続的なワークステーション",
+          "ellul": "はい（インストール済み依存関係、ブランチ、MCPサーバが永続）",
+          "competitor": "タスクごとのサンドボックス。一部のセッション継続性"
+        },
+        "real-credential-ops": {
+          "capability": "本番クレデンシャル操作",
+          "ellul": "パスキーゲート、サーバサイドvault",
+          "competitor": "Devinサンドボックス内のDevin管理クレデンシャル"
+        },
+        "parallel-agents": {
+          "capability": "並列エージェント",
+          "ellul": "複数のワークステーション、読み取り専用ピアリング",
+          "competitor": "複数のDevinセッション。ピアリングプリミティブなし"
+        },
+        "editor-experience": {
+          "capability": "エディタ体験",
+          "ellul": "ローカルでIDEとペア。バックアップとしてブラウザのファイルブラウザ",
+          "competitor": "Devinのチャット＋ワークスペースUI"
+        },
+        "always-on-agent": {
+          "capability": "常時稼働エージェント",
+          "ellul": "はい（ワークステーションが永続、エージェントが継続的に動作）",
+          "competitor": "タスクがセッションごとに自律的に動作"
+        },
+        "phone-approvals": {
+          "capability": "電話をキーボード代わり",
+          "ellul": "はい（任意のデバイスからのパスキー承認）",
+          "competitor": "任意のデバイスのDevin Webアプリ"
+        },
+        "pricing-model": {
+          "capability": "料金モデル",
+          "ellul": "$20 / $50 月額固定",
+          "competitor": "Core $20/月 PAYG、ACUあたり$2.25。それ以上の階層は上"
+        },
+        "scope-of-work": {
+          "capability": "プロダクトが対象とする作業の範囲",
+          "ellul": "エージェントが適するすべてのエンジニアリング作業",
+          "competitor": "境界づけられたエンジニアリングチケットでのエンドツーエンドのタスク自律"
+        },
+        "open-ecosystem": {
+          "capability": "オープンエコシステム",
+          "ellul": "オープンエージェントCLI、オープンMCP、BYOK",
+          "competitor": "クローズドプロダクト"
+        }
+      },
+      "pricing": {
+        "individual": {
+          "tier": "個人",
+          "ellul": "$20/月 個人",
+          "competitor": "Core $20/月 PAYG（〜$2.25/ACU）"
+        },
+        "pro": {
+          "tier": "プロ",
+          "ellul": "$50/月 プロ",
+          "competitor": "上位階層（Pro/Max）と営業経由のエンタープライズ"
+        },
+        "byom": {
+          "tier": "BYOM",
+          "ellul": "はい",
+          "competitor": "いいえ"
+        }
+      },
+      "verdict": {
+        "headline": "マネージドエンジニアSaaSの売り文句にはDevin。あなた自身のエージェントの下のランタイムにはEllul。",
+        "body": "Cognitionのエージェントが作業を行い、インフラを運用したくないという完全マネージドプロダクトを特に望むなら、Devinのカテゴリです。既存のCursor / Claude Code / Codexエージェントを永続的なワークステーション上で、あなたのクレデンシャル、モデル、リポジトリと共に動かしたいなら、Ellulのカテゴリです。私たちが話す両方を評価したエンジニアの多くは、実際にはどちらかを選ぶのではなく、Ellul上の自分のエージェントに落ち着きます。それが既存のワークフローの形だからです。"
+      },
+      "whenToUseCompetitor": {
+        "managed-bundled": "エージェントとランタイムがバンドルされた完全マネージドプロダクトが欲しい。",
+        "no-existing-cli": "使い続けたい既存のエージェントCLIを持っていない。",
+        "ok-with-pricing": "タスク単位／高階層の料金モデルで満足。",
+        "cognition-owns-model-tools": "Cognitionにモデル選択とツール統合を所有してほしい。"
+      },
+      "whenToUseEllul": {
+        "existing-cli": "Claude Code、Cursor、Codex、OpenCode、または他のエージェントCLIを既に使っている。",
+        "own-model-byok": "マネージドモデルスタックではなく自分のモデル契約（BYOK）が欲しい。",
+        "flat-rate-pricing": "タスク単位や高階層サブスクリプションではなく定額料金が欲しい。",
+        "real-credential-passkey": "エージェントがあなたのパスキーでゲートされた本番クレデンシャル操作を必要とする。",
+        "parallel-structural-isolation": "構造的隔離を持つ並列エージェントが欲しい。"
+      },
+      "faq": {
+        "devin-on-ellul": {
+          "q": "DevinをEllul上で動かせますか？",
+          "a": "Devinはマネージドプロダクトです。自前のインフラにインストールするCLIとして出荷されません。なので、いいえ：DevinをCognitionのクラウドで動かし、他のエージェント（Claude Code、CursorのCLIなど）をEllul上で動かすことになります。"
+        },
+        "devin-autonomy-vs-claude": {
+          "q": "DevinはEllul上のClaude Codeより自律性が進んでいますか？",
+          "a": "断定は難しいです。Devinはループとモデルについて意見が強く、Ellul上のClaude Codeは構成可能なので、エージェントの自律性はあなたのモデルとプロンプト次第です。決定は通常、パッケージプロダクト（Devin）か形作れるランタイム（Ellul）かに帰着します。"
+        },
+        "devin-pricing": {
+          "q": "Devinの料金は？",
+          "a": "Devin 2.0は2025年4月にCoreプラン$20/月から開始でローンチし、Agent Compute Unit（約15分のエージェント作業）あたり約$2.25の従量課金です。重い個人利用向けに上位のProとMax階層が存在し、チームとエンタープライズプランはその上です。Ellulは$20/月個人と$50/月プロの定額に、直接支払うモデルAPIを足します。両プロダクトは非常に違う商業形態の料金です。"
+        },
+        "cognition-windsurf": {
+          "q": "CognitionのWindsurf買収は何か変えますか？",
+          "a": "Cognitionは2025年にWindsurfを買収しました。両プロダクトは違うデプロイモデルで共存しています：Devinはマネージドクラウド、Windsurfはローカル IDE。Ellulの観点では変化はほぼ無関係です。私たちはAnthropic、OpenAI、Google、Cursor、Cognition、その他誰のエージェントCLIも動かし、ランタイムは同じです。"
+        },
+        "devin-safer-than-claude-on-ellul": {
+          "q": "Ellul上のClaude CodeよりDevinの方が安全ですか？",
+          "a": "違う軸で安全です。Devinの安全性は「私たちのサンドボックスでエージェントを動かし、できることをキュレーションする」です。Ellulの安全性は「エージェントごとのカーネルレベル隔離、パスキーゲート付き特権アクション、エージェントプロセス内に決して入らないクレデンシャル」です。本物のクレデンシャルエンジニアリングには、Ellulの構造モデルが意味のある攻撃しにくさを持ちます。境界づけられたチケットでのエンドツーエンドのタスク自律には、Devinのキュレーションされたサンドボックスが別の妥当な選択です。"
+        }
+      }
+    },
+    "lovable": {
+      "competitor": {
+        "tagline": "プロンプトからReactアプリを生成、Lovableクラウドにデプロイ"
+      },
+      "meta": {
+        "title": "Lovable vs Ellul：アプリジェネレータか永続エージェントか",
+        "description": "LovableはプロンプトからReactアプリを構築してホストします。EllulはエンジニアにAIコーディングエージェントが住む永続的なワークステーションを提供します。違うカテゴリ。一騎打ちはこうです。"
+      },
+      "hero": {
+        "eyebrow": "Lovable vs Ellul",
+        "headline": "生成されたReactアプリか、設計されたソフトウェアか。",
+        "sub": "Lovableは非エンジニアとプロトタイパー向けのプロンプト・トゥ・アプリビルダーです。Ellulはエンジニアのエージェントが本物のコードベース内で動く永続的なワークステーションです。違うユーザにサービスを提供するため、正しい答えは通常「あなたのワークフローで選ぶ」です。"
+      },
+      "ellulPitch": "あなたのエージェント（Cursor、Claude Code、Codex、OpenCode）が、あなたのリポジトリ、インストール済み依存関係、MCPサーバ、本物のクレデンシャルと共に永続的なサーバに住むエンジニアリング作業。エージェントは、あなたが選ぶバージョン管理とデプロイターゲットでエンジニアの仕方で動きます。",
+      "competitorPitch": "Lovableの売り文句は「アイデアから数分でライブReactアプリへ」です。非エンジニアやプロトタイピング中の人にとって、Lovableの磨かれたプロンプト・トゥ・デプロイドフローは越えがたいです。IDEもターミナルも依存関係の調整もなく、ただプロンプトとURLです。",
+      "fundamentalDifference": "Lovableはコードベースを抽象化します。Ellulはエンジニアのエージェントを本物のコードベース内に置きます。両プロダクトは隣接するが重ならないユーザにサービスを提供します。一部の検索クエリがショートリストに両プロダクトを載せるので、この比較を載せています。",
+      "features": {
+        "target-user": {
+          "capability": "対象ユーザ",
+          "ellul": "AIエージェントを持つプロのエンジニア",
+          "competitor": "非エンジニア／プロトタイパー／デザイナー"
+        },
+        "output": {
+          "capability": "アウトプット",
+          "ellul": "差分、PR、あなたのリポジトリにデプロイされたコード",
+          "competitor": "Lovableのランタイム上のライブReactアプリ"
+        },
+        "codebase-ownership": {
+          "capability": "コードベースの所有",
+          "ellul": "あなたのもの：gitベース、あなたのリポジトリ、あなたのCI",
+          "competitor": "Lovableホスト。注意点付きでエクスポート利用可能"
+        },
+        "byoa": {
+          "capability": "BYOA",
+          "ellul": "Claude Code、Cursor、Codex、OpenCode",
+          "competitor": "Lovable独自のモデル＋ツール"
+        },
+        "byom": {
+          "capability": "BYOM",
+          "ellul": "はい（サポートする全エージェントでBYOK）",
+          "competitor": "プロダクトの背後に隠されている"
+        },
+        "persistent-workstation": {
+          "capability": "永続的なワークステーション",
+          "ellul": "はい（ブランチ、依存関係、MCPサーバが永続）",
+          "competitor": "プロジェクトごとのLovableワークスペース"
+        },
+        "real-credential-ops": {
+          "capability": "本番クレデンシャル操作",
+          "ellul": "パスキーゲート、サーバサイドvault",
+          "competitor": "限定的：Lovableが大半のクレデンシャルを管理"
+        },
+        "parallel-agents": {
+          "capability": "並列エージェント",
+          "ellul": "複数のワークステーション、読み取り専用ピアリング",
+          "competitor": "適用外"
+        },
+        "hosting-deployment": {
+          "capability": "ホスティング／デプロイ",
+          "ellul": "どこでも（Vercel、Fly、Railway、自前のインフラ）",
+          "competitor": "Lovableクラウド。GitHubへのエクスポート可能"
+        },
+        "time-to-first-v0": {
+          "capability": "最初の使えるv0までの時間（非コーダー）",
+          "ellul": "数時間（エンジニア向け）",
+          "competitor": "数分（看板の売り文句）"
+        },
+        "editor-experience": {
+          "capability": "エディタ体験",
+          "ellul": "ブラウザのファイルブラウザ＋ローカルのIDEをクライアントとして",
+          "competitor": "ビルトインチャット＋プレビューペイン（本物のIDEなし）"
+        },
+        "best-fit": {
+          "capability": "最適",
+          "ellul": "エージェントによる本番エンジニアリング",
+          "competitor": "非エンジニアのプロトタイピング、MVPデモ"
+        }
+      },
+      "pricing": {
+        "entry": {
+          "tier": "エントリー",
+          "ellul": "$20/月 個人",
+          "competitor": "無料 → Starter 約$20/月"
+        },
+        "pro": {
+          "tier": "プロ",
+          "ellul": "$50/月 プロ",
+          "competitor": "Pro階層（〜$25〜$50/月、利用量で変動）"
+        },
+        "self-hosting": {
+          "tier": "セルフホスティング",
+          "ellul": "あなたのリポジトリ、どこでもデプロイ",
+          "competitor": "Lovableにホスト"
+        }
+      },
+      "verdict": {
+        "headline": "違うユーザ向けの違う形。実際の重なりはほぼありません。",
+        "body": "Lovableは、プロンプトから動くReactアプリが欲しい非エンジニアに正しいツールです。Ellulは、AIエージェントを持つエンジニアがエージェントを本物のコードベース内に、本物のツールと共に、永続的なワークステーション上で置きたい場合に正しいツールです。両方とも「AIが私のソフトウェアを構築」検索に出てくるためこの質問が来ますが、答えはほぼ常に「同じカテゴリにない」です。"
+      },
+      "whenToUseCompetitor": {
+        "dont-write-code": "コードを書かない、または書きたくない。",
+        "react-app-fast": "ホスト型URL上の動作するReactアプリが速く欲しい。",
+        "prototyping-not-shipping": "プロトタイピング、デモ、学習中で、本番エンジニアリングを出荷していない。",
+        "lovable-runtime-acceptable": "Lovableのランタイムへのホスティングで満足、自分のデプロイターゲットを必要としない。"
+      },
+      "whenToUseEllul": {
+        "engineer-on-real-codebases": "本物のコードベース上でAIコーディングエージェントを動かすエンジニアである。",
+        "code-in-git-deployed-where-you-choose": "コードがgitリポジトリにあり、選んだ場所にデプロイしたい。",
+        "real-credential-passkey": "エージェントがパスキーでゲートされた本番クレデンシャル操作を必要とする。",
+        "keep-ide-model-tools": "既存のIDE、モデル、ツールを維持したい。",
+        "parallel-or-unattended": "並列または無人でエージェントを動かす予定。"
+      },
+      "faq": {
+        "is-lovable-coding-agent": {
+          "q": "Lovableはコーディングエージェントですか？",
+          "a": "Claude CodeやCursorと同じ意味ではありません。Lovableはアプリを生成・ホストします。使い続けるエージェントCLIはなく、背後のモデルはプロダクトが制御します。エージェントは暗黙的でアドレス可能ではありません。"
+        },
+        "export-lovable-to-ellul": {
+          "q": "LovableアプリをGitHubにエクスポートしてEllul上のエージェントで続けられますか？",
+          "a": "はい。LovableはGitHubエクスポートをサポートしています。エクスポートされたコードはあなたのものです。Ellulワークステーションにクローンして、CursorやClaude Codeまたは好きなエージェントで続けられます。私たちが話すエンジニアの多くは、Lovableプロトタイプが本物のプロダクトに進化したらまさにこれを行います。"
+        },
+        "lovable-vs-bolt-base44": {
+          "q": "Lovable vs Bolt vs Base44：Ellulに最も近いのは？",
+          "a": "どれも違います。すべて非エンジニア向けプロンプト・トゥ・アプリビルダーです。Ellulはエンジニアのエージェントのための永続的なワークステーションです。それらの間の比較が欲しければ各ビルダーの一騎打ちページがありますが、Ellulとの比較は3つすべてで構造的に類似です。"
+        },
+        "lovable-cheaper-ellul": {
+          "q": "LovableはEllulより安いですか？",
+          "a": "看板階層は同じ範囲ですが、Lovableの重い使用量階層は積み上がります。Ellulの料金は月20ドルまたは50ドル固定で、エージェント利用量で請求は変わりません。"
+        },
+        "lovable-roadmap": {
+          "q": "Lovableのロードマップはどうですか？",
+          "a": "Lovableは2025年を通してコード品質とエクスポート品質に投資しています。エンジニアが既存のエージェントCLIを本物のクレデンシャルゲート付きでLovableワークスペースに向けられるプロダクトを出荷したら、比較は狭まります。今日もまだプロンプト・トゥ・ホスト型アプリプロダクトです。"
+        }
+      }
+    },
+    "manus": {
+      "competitor": {
+        "tagline": "マネージドクラウドサンドボックス内のジェネラリスト自律エージェント"
+      },
+      "meta": {
+        "title": "Manus vs Ellul：マネージドエージェントかあなたのエージェントのPCか",
+        "description": "Manusは自前のマネージドサンドボックスでジェネラリストエージェントを動かします。EllulはあなたのAIコーディングエージェントが住む、あなたのクレデンシャルとツールを持つ永続的なコンピュータです。違う作業のための違う形。"
+      },
+      "hero": {
+        "eyebrow": "Manus vs Ellul",
+        "headline": "マネージドエージェントプロダクトか、あなたのエージェントの居場所か。",
+        "sub": "Manusは意見の強いエージェントプロダクトです：タスクを与え、Manusのサンドボックスで作業し、結果を受け取ります。Ellulはその上流にいます。あなた自身のエージェント（Claude Code、Cursor、Codex）が住む永続的なワークステーションです。違う仕事です。"
+      },
+      "ellulPitch": "あなたのエージェント、ツール、モデル、クレデンシャルを、ラップトップのライフサイクルを共有しない永続的なコンピュータ上で欲しいソフトウェアエンジニアリング作業。Ellulはランタイム。仕事に合うエージェントを選んでください。",
+      "competitorPitch": "ManusのCascadeスタイルの「タスクを渡してその場を離れる」は、ワンショットリサーチ、ドキュメント合成、小さな単独スクリプトに本当に役立ちます。使い続けたい既存のエージェントCLIがなく、エージェントを自分のツールチェーンに統合する必要がないなら、マネージドプロダクトの方が早く始められます。",
+      "fundamentalDifference": "Manusはエージェントとランタイムをバンドルし、彼らのモデルとツールと共に売っています。Ellulはあなたのエージェントの下のランタイムです。あなたのClaude CodeまたはCursorまたはCodexセッションが住むコンピュータで、あなたのクレデンシャルとツールと共に動きます。選択は、自分のエージェントを持ち込むか、彼らのを雇うかです。",
+      "features": {
+        "byoa": {
+          "capability": "BYOA",
+          "ellul": "任意のCLI：Claude Code、Codex、Cursor、OpenCode",
+          "competitor": "Manus独自のエージェントのみ"
+        },
+        "byom": {
+          "capability": "BYOM",
+          "ellul": "はい（サポートする全エージェントでBYOK）",
+          "competitor": "Manusのホスト型モデルスタック"
+        },
+        "persistent-workstation": {
+          "capability": "タスク間の永続的なワークステーション",
+          "ellul": "はい（インストール済み依存関係、ブランチ、MCPサーバが永続）",
+          "competitor": "タスクごとのサンドボックス、一過性"
+        },
+        "real-credential-ops": {
+          "capability": "本番クレデンシャル操作",
+          "ellul": "サーバvault経由のパスキーゲート",
+          "competitor": "Manusサンドボックス内のManus管理クレデンシャル"
+        },
+        "one-shot-task": {
+          "capability": "ワンショット自律タスク",
+          "ellul": "はい（常時稼働エージェントを設定して作業をキューに入れる）",
+          "competitor": "この形式に最強のUX"
+        },
+        "tool-integrations": {
+          "capability": "ツール統合",
+          "ellul": "MCPサーバ、あなたのIDE、CLI、シェル",
+          "competitor": "Manusのツールカタログ（キュレーション）"
+        },
+        "parallel-agents": {
+          "capability": "並列エージェント",
+          "ellul": "複数、読み取り専用ピアリングあり",
+          "competitor": "複数のManusセッション、セッション間ピアリングなし"
+        },
+        "editor-experience": {
+          "capability": "エディタ体験",
+          "ellul": "ブラウザのファイルブラウザ＋ターミナル。ローカルでCursor / Windsurfとペア",
+          "competitor": "ManusチャットUI＋結果ビューア"
+        },
+        "cross-device-approval": {
+          "capability": "クロスデバイス承認",
+          "ellul": "はい（パスキー承認のための電話をキーボード代わり）",
+          "competitor": "任意のデバイスのManus Webアプリ"
+        },
+        "open-ecosystem": {
+          "capability": "オープンエコシステム",
+          "ellul": "はい（オープンまたはプロプライエタリな任意のエージェントを動かす）",
+          "competitor": "クローズドプロダクト、ツールチェーンへの拡張性なし"
+        },
+        "pricing-transparency": {
+          "capability": "料金の透明性",
+          "ellul": "$20/$50月額固定",
+          "competitor": "Plus / Pro階層（〜$39 / $199月額に加えクレジットベースの利用）"
+        },
+        "best-for": {
+          "capability": "最適",
+          "ellul": "本物のコードベースにエージェントを統合するエンジニア",
+          "competitor": "ジェネラリストリサーチ、レポート、ワンショットタスク"
+        }
+      },
+      "pricing": {
+        "entry": {
+          "tier": "エントリー",
+          "ellul": "$20/月 個人（1ワークステーション）",
+          "competitor": "無料試用 → Plus 〜$39/月"
+        },
+        "pro": {
+          "tier": "プロ",
+          "ellul": "$50/月 プロ（並列ワークステーション）",
+          "competitor": "〜$199/月 Pro階層"
+        },
+        "byom": {
+          "tier": "BYOM",
+          "ellul": "はい",
+          "competitor": "いいえ"
+        }
+      },
+      "verdict": {
+        "headline": "小さなタスクのワンショット自律にはManus。本物のコードベース上のあなたのエージェントにはEllul。",
+        "body": "Manusはマネージド結果サービスのように形作られています：欲しいものを伝え、何かが返ってくる。Ellulはインフラのように形作られています：自分のエージェントとツールを持ち込み、永続的なワークステーション上で動かし、本物のコードベースに統合する。私たちが話す両方を試したエンジニアの多くは、たまにのリサーチにManus、実際のリポジトリに触れるすべてにEllulを使うことに落ち着きます。"
+      },
+      "whenToUseCompetitor": {
+        "one-shot-no-setup": "何もセットアップせずにワンショット自律タスク（リサーチ、ドキュメントドラフト、小さなスクリプト）が欲しい。",
+        "no-real-codebase": "作業が本物のコードベース、本物のクレデンシャル、本番インフラに触れない。",
+        "no-existing-cli": "使い続けたい既存のエージェントCLIを持っていない。",
+        "credit-usage-ok": "サブスクリプション階層に加えて、不透明なタスクレベル作業へのクレジットベース利用支払いで満足。"
+      },
+      "whenToUseEllul": {
+        "agent-in-codebase": "エージェントがあなたのコードベース、本物のブランチ、本物の依存関係、本物のCIで生きる必要がある。",
+        "byoa-byom": "BYOA（Claude Code、Cursor、Codex、OpenCode）とBYOMが欲しい。",
+        "flat-rate-pricing": "使用クレジットではなく定額料金が欲しい。",
+        "passkey-not-third-party-trust": "特権アクションを、サードパーティのサンドボックスへの信頼ではなく、あなたのパスキーでゲートする必要がある。",
+        "structural-parallel-not-sessions": "無関係な複数のセッションではなく、構造的隔離を持つ並列エージェントが欲しい。"
+      },
+      "faq": {
+        "is-manus-coding-agent": {
+          "q": "Manusはコーディングエージェントですか？",
+          "a": "コードを書けますが、ジェネラリストエージェントです：リサーチ、レポート、ドキュメント合成、ワンショットタスク。コーディングエンジニアのワークフローは、自前のエージェント（Claude Code、Cursor、Codex）を自分のコードベース内で動かすことを望みます。それがEllulが埋めるギャップです。"
+        },
+        "manus-and-ellul-together": {
+          "q": "ManusとEllulを一緒に使えますか？",
+          "a": "はい。ただしフロントエンドとバックエンドのように構成されません。Manusは自分のスタック。Ellulはあなたのスタック。一部のチームはワンショットリサーチタスクにManus、エンジニアリング作業にEllulを使います。両者は重ねるのではなく並んで動きます。"
+        },
+        "manus-codebase-integration": {
+          "q": "Manusは私のコードベースと統合しますか？",
+          "a": "Manusはタスクごとにリポジトリをサンドボックスにクローンできます。サンドボックスは一過性です：ブランチ、MCPサーバ、インストール済み依存関係はタスク間で永続しません。これはマネージドUXのための意図的なトレードオフであり、バグではありません。永続的なワークステーションとは違う形というだけです。"
+        },
+        "manus-cheaper-ellul": {
+          "q": "ManusはEllulより安いですか？",
+          "a": "利用量によります。Manusの看板階層はEllulのProプランと同じ範囲ですが、Manus階層にはタスククレジットが含まれるため、重い利用は積み上がります。Ellulの料金は固定です。エージェントがどれだけ働いても請求は変わりません。"
+        },
+        "data-sovereignty": {
+          "q": "データ主権はどうですか？",
+          "a": "Manusはタスクを彼らのクラウド、彼らのリージョン、彼らのインフラで動かします。Ellulはあなたが選ぶリージョンに、LUKS暗号化された永続ストレージと、決してVPSを離れないクレデンシャルでワークステーションをプロビジョニングします。マネージドサードパーティサンドボックスを許さないデータハンドリングルールに作業が縛られているなら、Ellulは構造的に擁護しやすいです。"
+        }
+      }
+    },
+    "replit": {
+      "competitor": {
+        "tagline": "Replit Agentとマネージドアプリホスティング付きクラウドIDE"
+      },
+      "meta": {
+        "title": "Replit vs Ellul：クラウドIDEバンドルかエージェントの住まいか",
+        "description": "Replitは幅広い対象向けにクラウドIDE、エージェント、ホスティングをバンドルしています。Ellulは本物のコードベース上でClaude Code、Cursor、Codexを動かすエンジニア向けの、フォーカスされた隔離エージェントワークステーションです。"
+      },
+      "hero": {
+        "eyebrow": "Replit vs Ellul",
+        "headline": "ジェネラリストクラウドIDEか、フォーカスされたエージェントワークステーションか。",
+        "sub": "Replitは2016年からクラウドIDEで、今やReplit Agentとデプロイをバンドルしています。Ellulはエンジニアのために特化して作られています：隔離、パスキーゲート、モデルに依存しない。違う形、違うユーザ。それぞれが勝つ場所はここです。"
+      },
+      "ellulPitch": "自前のエージェント（Claude Code、Cursor、Codex、OpenCode）を持ち込み、モデル契約をモデル提供者と直接維持し、あなたのパスキーでゲートされた本番クレデンシャル操作が必要なエンジニアリング作業。Ellulはランタイム。エージェント、モデル、デプロイターゲットはあなたが選びます。",
+      "competitorPitch": "Replitの広いリーチ、統合ホスティング、教育階層、ビルトインのReplit Agentは、幅広いユーザに対して異常に低い実行アプリまでの時間を与えます。1つのプロダクトでIDE、エージェント、ホスティングを1サブスクリプションに収めたく、Replitのモデルとランタイム選択で満足なら、そのバンドルでReplitは越えがたいです。",
+      "fundamentalDifference": "ReplitはIDE、エージェント、ホスティングを1プロダクトにバンドルし、幅（学習者からプロシューマー）に最適化しています。Ellulはそれらをアンバンドルします：エージェントのランタイムとそれだけ。自分のエージェントCLIを自分のリポジトリ内で動かすプロのエンジニアに最適化しています。両プロダクトは「クラウド開発環境」というキーワードで重なり、そこから分岐します。",
+      "features": {
+        "target-user": {
+          "capability": "対象ユーザ",
+          "ellul": "エージェントを持つプロのエンジニア",
+          "competitor": "幅広い：学習者、プロシューマー、プロのチーム"
+        },
+        "byoa": {
+          "capability": "BYOA",
+          "ellul": "任意のCLI：Claude Code、Cursor、Codex、OpenCode",
+          "competitor": "Replit Agent（プロプライエタリ）"
+        },
+        "byom": {
+          "capability": "BYOM",
+          "ellul": "はい（サポートする全エージェントでBYOK）",
+          "competitor": "Replit管理のモデルスタック"
+        },
+        "always-on-agent": {
+          "capability": "常時稼働エージェント",
+          "ellul": "はい（ワークステーションが永続、エージェントが継続的に動作）",
+          "competitor": "Replit Agentはセッションとして動作。デフォルトで常時稼働ではない"
+        },
+        "privileged-action-gating": {
+          "capability": "特権アクションのゲーティング",
+          "ellul": "FIDO2パスキー、サーバ側強制",
+          "competitor": "標準認証。アクション単位のパスキーゲートなし"
+        },
+        "credentials-location": {
+          "capability": "クレデンシャルの保存場所",
+          "ellul": "サーバvault、エージェントプロセス内には決してなし",
+          "competitor": "Replit Secretsマネージャー（環境変数注入）"
+        },
+        "parallel-agents": {
+          "capability": "並列エージェント",
+          "ellul": "複数のワークステーション、読み取り専用ピアリング",
+          "competitor": "複数のReplitプロジェクト、プロジェクト間ピアリングプリミティブなし"
+        },
+        "hosting-deployment": {
+          "capability": "ホスティング／デプロイ",
+          "ellul": "どこでもデプロイ（Vercel、Fly、Railway、自前のインフラ）",
+          "competitor": "Replit Deploymentsビルトイン（ロックイン）"
+        },
+        "editor-experience": {
+          "capability": "エディタ体験",
+          "ellul": "ブラウザのファイルブラウザ＋ターミナル。ローカルでIDEとペア",
+          "competitor": "ブラウザ内のReplit IDE"
+        },
+        "education-fit": {
+          "capability": "教育／学習適合",
+          "ellul": "目標ではない",
+          "competitor": "比類なし（教室、マルチプレイヤー、リンク共有）"
+        },
+        "phone-approvals": {
+          "capability": "電話をキーボード代わり",
+          "ellul": "はい（任意のデバイスからのチャット、ファイル、承認）",
+          "competitor": "Replitモバイルアプリ（限定的）"
+        },
+        "sandbox-isolation": {
+          "capability": "エージェントごとのサンドボックス隔離",
+          "ellul": "エージェントごとのVPS、カーネルレベル隔離",
+          "competitor": "Replitの共有ランタイム。プロジェクトごとのコンテナ"
+        }
+      },
+      "pricing": {
+        "entry": {
+          "tier": "エントリー",
+          "ellul": "$20/月 個人",
+          "competitor": "Core $20/月"
+        },
+        "pro-teams": {
+          "tier": "プロ／チーム",
+          "ellul": "$50/月 プロ",
+          "competitor": "Pro $100/月（2026年2月にTeamsを置き換え）"
+        },
+        "byom": {
+          "tier": "BYOM",
+          "ellul": "はい",
+          "competitor": "限定的"
+        }
+      },
+      "verdict": {
+        "headline": "バンドルにはReplit。ランタイムのコントロールが欲しいエンジニアにはEllul。",
+        "body": "1つのサブスクリプションにIDE＋エージェント＋ホスティングが欲しく、彼らのスタックで満足なら、Replitが正しい答えです。既存のエージェントCLIとモデルを維持し、選んだ場所にホストし、特権アクションをパスキーでゲートしたいプロのエンジニアなら、Ellulが正しい答えです。両者は「クラウド開発環境」というキーワードで重なり、ユーザの形とランタイムモデルで鋭く分岐します。"
+      },
+      "whenToUseCompetitor": {
+        "bundle-ide-agent-hosting": "IDE、エージェント、ホスティングが1プロダクトで欲しい。",
+        "education-multiplayer": "Replitの教育階層で教えたり学んだりし、マルチプレイヤー／リンク共有機能が重要。",
+        "replit-stack-ok": "Replitのモデルとランタイム選択で満足。",
+        "no-passkey-byok-needed": "作業がアクション単位のパスキーゲーティングや特定のエージェントCLIへのBYOKを必要としない。"
+      },
+      "whenToUseEllul": {
+        "keep-existing-cli": "エージェントとしてClaude Code、Cursor、Codex、OpenCodeを使い続けたい。",
+        "real-prod-credentials-passkey": "エージェントが本番クレデンシャルに触れる必要があり、パスキーでゲートしたい。",
+        "flat-rate-pricing": "定額料金と予測可能な請求が欲しい。",
+        "parallel-structural-isolation": "構造的隔離を持つ並列エージェントが欲しい。",
+        "deploy-elsewhere": "アプリを別の場所（Vercel、Fly、Railway、自前のインフラ）にデプロイする。"
+      },
+      "faq": {
+        "replit-agent-with-ellul": {
+          "q": "Replit AgentをEllulで使えますか？",
+          "a": "Replit AgentはReplitのランタイムと密にバンドルされています。別のホストで動かせるスタンドアロンCLIとして出荷されません。Ellul上のエージェントが欲しいなら、実用的なエージェントはClaude Code、CursorのAgent CLI、Codex、OpenCodeで、すべてEllul上で動きます。"
+        },
+        "replit-pricing-comparable": {
+          "q": "Replitの料金は同等ですか？",
+          "a": "おおむね。Replit Coreは2026年2月に$25から$20/月に下がり、Replit Pro $100/月が同じ再編で旧Teamsプランを置き換えました。Ellulは$20/月個人と$50/月プロです。違ってバンドルされるのはホスティングです：Replit Deploymentsは同じサブスクリプション内、Ellulではデプロイは選んだ場所に行き、無料の場合も別の請求の場合もあります。"
+        },
+        "ellul-isolation-vs-replit": {
+          "q": "Ellulの隔離はReplitとどう違いますか？",
+          "a": "Replitは各プロジェクトを共有インフラ上のマネージドコンテナで動かします。Ellulはユーザ専用VPSをカーネルレベル隔離でプロビジョニングします：別のユーザ、マウントとPID名前空間、LUKS暗号化ストレージ、エージェントがptraceできないshieldプロセス。脅威モデルが意味のあるレベルで違います。"
+        },
+        "ellul-replaces-replit": {
+          "q": "EllulはReplitを置き換えますか？",
+          "a": "プロのエンジニアで特にエージェントのランタイムが欲しいなら、はい。学習者、ホビイスト、IDE＋ホスティングのバンドルが欲しい人なら、Replitがそれに形作られていてEllulはそうではありません。"
+        },
+        "replit-agent-v2": {
+          "q": "Replit Agent v2 / Ghostwriterはどうですか？",
+          "a": "Replitはエージェントへの継続的な改善を出荷しています。Replitがアクション単位のゲーティング、モデルに依存しないエージェントCLIサポート、テナントごとのカーネル隔離を出荷したら、2年後の比較は狭まる可能性があります。2026年4月時点で、ランタイムモデルはまだ「マネージドReplitコンテナ」で、Ellulの「shield付きテナントごとのVPS」とは構造的に違います。"
+        }
+      }
+    },
+    "windsurf": {
+      "competitor": {
+        "tagline": "ラップトップ上のVS Codeフォーク内のCascadeエージェント"
+      },
+      "meta": {
+        "title": "Windsurf vs Ellul：エージェンティックエディタか永続エージェントか",
+        "description": "WindsurfはCascadeエージェントが組み込まれたVS Codeフォークです。Ellulはそのエージェントが住める永続的なワークステーションです：ふた問題なし、並列エージェント、パスキーゲート付き本番アクセス。"
+      },
+      "hero": {
+        "eyebrow": "Windsurf vs Ellul",
+        "headline": "エージェント付きエディタか、エージェント用のコンピュータか。",
+        "sub": "WindsurfはCascadeエージェントを磨かれたVS Codeフォークにバンドルします。Ellulはその上流にいます：エージェントが住む永続的なワークステーションで、どのエディタを使ってもエージェントと対話できます。同じプロダクトではありません。"
+      },
+      "ellulPitch": "エージェントのランタイムが重要なすべて：一晩のラン、同じ問題に対する並列エージェント、本番クレデンシャル操作、数日にわたるリファクタリング、離れている間の承認のための電話をキーボード代わりに。Windsurfが対処しないのはランタイムです。エージェントは依然としてラップトップに住み、ラップトップのライフサイクルとクレデンシャルを継承します。",
+      "competitorPitch": "WindsurfのCascadeエージェントとCascade Memoriesは、意見の強いエディタで強力なインライン体験を与えます。作業がキーボード固定で短サイクルなら、エディタ内フローは越えがたい。特に、違うオーナーシップと料金の下でCursorスタイルの体験が欲しいエンジニアにとって。",
+      "fundamentalDifference": "Windsurfはエージェントを焼き込んだエディタです。Ellulはそのエージェントが動くコンピュータです。組み合わせ可能です：エディタとしてWindsurfを維持し、Cascade-CLIワークフローをEllulワークステーションに向け、エージェントがラップトップのふた、クレデンシャル、シングルプロセスのボトルネックを共有しないようにします。",
+      "features": {
+        "where-agent-runs": {
+          "capability": "エージェントが動く場所",
+          "ellul": "永続的なクラウドワークステーション",
+          "competitor": "あなたのラップトップ"
+        },
+        "survives-lid-close": {
+          "capability": "ふたを閉じても生き残る"
+        },
+        "editor-experience": {
+          "capability": "エディタ体験",
+          "ellul": "ブラウザのファイルブラウザ＋ターミナル",
+          "competitor": "VS Codeフォーク（Cascadeパネル＋メモリー）"
+        },
+        "inline-completions": {
+          "capability": "インライン補完",
+          "ellul": "エージェントチャット経由",
+          "competitor": "はい、ネイティブ（Codeiumのルーツ）"
+        },
+        "parallel-agents": {
+          "capability": "並列エージェント",
+          "ellul": "複数、読み取り専用ピアリングあり",
+          "competitor": "一度に1つのCascadeセッション"
+        },
+        "privileged-action-gating": {
+          "capability": "特権アクションのゲーティング",
+          "ellul": "FIDO2パスキー、サーバ側強制",
+          "competitor": "OSレベルプロンプト（スキップ可能）"
+        },
+        "credentials-location": {
+          "capability": "クレデンシャルの保存場所",
+          "ellul": "サーバvault、エージェントプロセス内には決してなし",
+          "competitor": "あなたのマシン（~/.aws、~/.ssh、1Password CLI）"
+        },
+        "long-running-tasks": {
+          "capability": "長時間タスク（8時間以上）",
+          "ellul": "ラップトップを閉じる、エージェントが動き続ける",
+          "competitor": "ラップトップを開けっぱなしにしなければならない"
+        },
+        "phone-approvals": {
+          "capability": "電話アクセス",
+          "ellul": "はい（チャット、ファイル、承認）"
+        },
+        "byom": {
+          "capability": "BYOM",
+          "ellul": "任意のエージェントCLI。BYOK対応",
+          "competitor": "プロプライエタリスタック、一部BYOK"
+        },
+        "editor-base-source": {
+          "capability": "オープンソースエディタベース",
+          "ellul": "エディタに依存しない（Cursor、Claude Code、OpenCode、Codexすべて動作）",
+          "competitor": "VS Codeからフォーク（オープンコア）"
+        },
+        "vendor-independence": {
+          "capability": "ベンダー独立",
+          "ellul": "モデルに依存しない、エージェントに依存しない",
+          "competitor": "Cascade＋Codeiumモデルに紐付き"
+        }
+      },
+      "pricing": {
+        "hobby-pro": {
+          "tier": "個人／プロ",
+          "ellul": "$20/月（個人）、$50/月（プロ）",
+          "competitor": "無料 / Pro $15/月"
+        },
+        "teams": {
+          "tier": "チーム",
+          "ellul": "シート単位（要問い合わせ）",
+          "competitor": "Windsurf営業経由のチーム料金"
+        },
+        "byom": {
+          "tier": "BYOM",
+          "ellul": "はい",
+          "competitor": "限定的"
+        }
+      },
+      "verdict": {
+        "headline": "エディタにはWindsurf。エージェントのランタイムにはEllul。組み合わせる。",
+        "body": "Windsurfのエディタ内フローが好きなら、使い続けてください。重いエージェント作業（一晩のラン、並列エージェント、本番に触れる何でも）はEllulワークステーションに移してください。違う問題を解き、きれいに重ね合わさります。"
+      },
+      "whenToUseCompetitor": {
+        "cursor-style-codeium-stack": "違うオーナーシップのCursorスタイルエディタが欲しく、Codeiumのモデルスタックを好む。",
+        "short-cycle-keyboard-bound": "作業が短サイクル、エディタ内、キーボード固定。",
+        "no-unattended-runs": "エージェントを無人で動かさず、クレデンシャルがラップトップに居続けて快適。",
+        "opinionated-editor-builtin-agent": "自分のスタックを構成するのではなく、ビルトインエージェント付きの意見の強いエディタが欲しい。"
+      },
+      "whenToUseEllul": {
+        "kick-off-and-walk-away": "長いタスクを開始してキーボードから離れたい。",
+        "parallel-coding-reviewing-documenting": "複数のエージェントを並列で動かしたい：コーディング、レビュー、ドキュメント。",
+        "real-creds-not-on-laptop": "エージェントが本物のクレデンシャル（GitHub、Vercel、本番DB）を必要とし、ラップトップに置きたくない。",
+        "approve-from-phone": "電話からアクションを承認したい。",
+        "tired-of-laptop-stopping": "ふたを閉じると長いジョブが止まることに疲れた。"
+      },
+      "faq": {
+        "windsurf-with-ellul": {
+          "q": "WindsurfをEllulと一緒に使えますか？",
+          "a": "はい。Windsurfはあなたのラップトップ上、インラインエディタフローのためにそのままです。好みのエージェントCLI（Claude Code、CursorのAgent CLI、Codex、OpenCode）はEllulワークステーションに向き、エージェント自体は永続的なサーバ上で動きます。エディタは維持。エージェントは移動。"
+        },
+        "windsurf-teams-instead": {
+          "q": "Windsurf Teamsを買うのではダメですか？",
+          "a": "Windsurf TeamsはCascadeでのより良い利用量とエディタ内のチーム機能を与えます。ラップトップを閉じたときにエージェントが動く場所、並列エージェントピアリング、パスキーゲート付き本番アクセスは与えません。それらはランタイムの問題です。Windsurfはエディタです。"
+        },
+        "cascade-vs-composer": {
+          "q": "WindsurfのCascadeエージェントはCursorのComposerと同じくらい機能しますか？",
+          "a": "両方とも2025年と2026年を通して鋭く改善しました。日々のエディタエージェント品質はほぼ互角と多くのレビューが評価し、各々が違う細かいケースで先行します。両者の決定はエージェント品質ではなく、通常エコシステムの好み（モデルスタック、料金、オーナーシップ）に基づきます。"
+        },
+        "windsurf-cloud-product": {
+          "q": "Windsurfはクラウドプロダクトをローンチしますか？",
+          "a": "可能性はあります。Codeiumの系譜はセルフホストのエンタープライズ推論にあり、クラウドワークスペースを実験してきました。Windsurfが競合する常時稼働、並列エージェント、パスキーゲート付きワークステーションを出荷したら、比較は狭まります。それまではWindsurfはローカルファースト、Ellulはランタイムレイヤーです。"
+        },
+        "cognition-acquisition-relevant": {
+          "q": "Cognition買収はここに関係ありますか？",
+          "a": "Cognition（Devinの背後の会社）は2025年にWindsurfを買収しました。Windsurfのオーナーシップとロードマップを変えましたが、アーキテクチャは変えていません：Windsurfは依然としてローカルファーストのVS Codeフォークです。DevinとWindsurfは依然として違うデプロイモデルの異なるプロダクトです。"
+        }
+      }
+    },
+    "heading": "Ellulの比較",
+    "columnDaytona": "Daytona",
+    "columnE2b": "E2B",
+    "columnEllulStandard": "Ellul Standard",
+    "columnEllulSovereign": "Ellul Sovereign",
+    "metricIsolation": "分離レベル",
+    "metricSideChannel": "サイドチャネル露出",
+    "metricMonthlyCost": "月額費用（2 vCPU, 4GB）",
+    "metricSpinUp": "起動時間",
+    "isolationDaytona": "共有ノード、コンテナ",
+    "isolationE2b": "共有ノード、MicroVM",
+    "isolationStandard": "専用ネームスペース",
+    "isolationSovereign": "専用ベアメタル",
+    "sideChannelDaytona": "あり",
+    "sideChannelE2b": "低減",
+    "sideChannelStandard": "低減",
+    "sideChannelSovereign": "なし（共用テナントなし）",
+    "costDaytona": "〜$25",
+    "costE2b": "〜$30",
+    "costStandard": "〜$12",
+    "costSovereign": "〜$20",
+    "spinUpDaytona": "〜3秒",
+    "spinUpE2b": "〜5秒",
+    "spinUpStandard": "2秒未満",
+    "spinUpSovereign": "60秒未満（ウォームプール）",
+    "migrationNote": "移行はDockerfileだけ。エージェントのコードは変わりません。"
+  }
+}

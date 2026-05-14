@@ -1,0 +1,453 @@
+{
+  "blog": {
+    "index": {
+      "title": "Blog: agents, workstations, and the laptop problem",
+      "description": "Field notes on agent workstations, parallel agents, gated infrastructure, and why we built Ellul. From the founder's keyboard.",
+      "eyebrow": "Field notes",
+      "headline": "The blog.",
+      "subhead": "Agents, workstations, and the laptop problem. Founder voice. No corporate.",
+      "olderPosts": "Older posts →"
+    },
+    "pagination": {
+      "title": "Blog · page {page} · ellul",
+      "description": "Older posts from the ellul blog (page {page}).",
+      "pageLabel": "Blog · page {page}",
+      "headline": "Older posts.",
+      "latestPosts": "← Latest posts",
+      "newer": "← Newer",
+      "pageOf": "Page {current} of {total}",
+      "older": "Older →"
+    },
+    "tag": {
+      "description": "All ellul blog posts tagged \"{tag}\". Field notes from the team building the agent's computer.",
+      "postsTagged": "{count, plural, one {1 post} other {# posts}} tagged “{tag}”.",
+      "backToAll": "← Back to all posts"
+    },
+    "rss": {
+      "title": "ellul blog ({locale})",
+      "description": "Field notes on agent workstations, parallel agents, and gated infrastructure."
+    },
+    "agentic-coding": {
+      "title": "Agentic coding: a working definition for 2026",
+      "summary": "Half the industry has adopted the term and almost nobody agrees on what it means. A definition that lasts, the spectrum from chat assistance to autonomous agent, the four runtime properties that separate real agentic coding from the marketing version, and where the current tools sit on the line.",
+      "faq": {
+        "what-is-agentic-coding": {
+          "q": "What is agentic coding?",
+          "a": "Agentic coding is the practice of letting an AI agent drive a multi-step engineering task end to end: planning, file edits, terminal commands, test runs, revisions. The human approves privileged actions and steers high-level direction. It's distinct from inline completion (single tokens) and chat-assisted coding (single replies). An agentic loop produces diffs, PRs, or deployed changes rather than chat output."
+        },
+        "is-agentic-coding-the-same-as-vibe-coding": {
+          "q": "Is agentic coding the same as vibe coding?",
+          "a": "They overlap but they're not the same. Vibe coding is a style: describing intent in natural language and accepting the agent's implementation without writing code line by line. Agentic coding is a runtime property: the agent runs a multi-step loop. Most vibe coding is agentic. Not all agentic coding is vibe-style. A senior engineer driving a careful refactor through Claude Code is doing agentic coding without vibing."
+        },
+        "what-separates-real-agentic-coding-from-marketing": {
+          "q": "What separates 'real' agentic coding from marketing?",
+          "a": "Four runtime properties. Persistence, where the agent survives lid close, network blips, and restarts. Parallelism, where multiple agents run on different tasks without colliding. Real-credential operations, where the agent can push, deploy, and write to production behind a passkey gate. And a reversible boundary, where actions are scoped tightly enough to review, approve, or revert. A tool that ships any of these is doing some agentic work. A tool that ships all four is doing the real thing."
+        },
+        "is-agentic-coding-hype": {
+          "q": "Is agentic coding hype?",
+          "a": "The end-state matters more than the term. Engineers will spend less time writing characters and more time directing, reviewing, and approving the work of agents. Whether you call that 'agentic coding,' 'AI-assisted engineering,' or something the industry hasn't named yet, the labor change is real. The hype is in vendors claiming maturity at properties they haven't built. The substrate is real."
+        },
+        "why-does-it-matter-where-the-agentic-loop-runs": {
+          "q": "Why does it matter where the agentic loop runs?",
+          "a": "Because the four runtime properties are functions of the runtime, not the model. Claude Code on a laptop and Claude Code on a workstation are the same prompt and the same agent, but only the workstation version offers persistence, parallelism, real credentials, and a reversible boundary. The runtime is what makes the loop agentic in any non-trivial sense."
+        }
+      }
+    },
+    "agentic-workflow": {
+      "title": "Designing agentic workflows that work for days",
+      "summary": "A workflow is not a prompt. It's a loop with a trigger, a context, an action, and a verification step. The anatomy of a workflow that works, three concrete worked examples, an opinionated take on orchestration, and the failure modes that show up the moment workflows leave a happy path.",
+      "faq": {
+        "what-s-the-difference-between-a-prompt-and-an-agentic-workfl": {
+          "q": "What's the difference between a prompt and an agentic workflow?",
+          "a": "A prompt is a single round-trip. Input goes in, response comes out. An agentic workflow is a loop with at least four parts: a trigger that starts it, a context the agent reads to orient itself, one or more actions the agent takes, and a verification step that decides whether the loop is done. Workflows survive multiple iterations and produce diffs, PRs, or deployed changes rather than chat replies."
+        },
+        "can-an-agentic-workflow-run-unattended": {
+          "q": "Can an agentic workflow run unattended?",
+          "a": "Only if the runtime supports it. A workflow that depends on a developer's laptop being open is an attended workflow with a different name. A real unattended workflow needs a persistent runtime so the agent survives lid closes, real-credential operations so the agent can push and deploy through a gate, and an approval channel that reaches you on whatever device you have nearby. Most workflow failures we've seen are runtime failures, not prompt failures."
+        },
+        "should-workflows-use-a-framework-like-langchain-or-autogen": {
+          "q": "Should workflows use a framework like LangChain or AutoGen?",
+          "a": "Sometimes yes, sometimes no. Frameworks shine when the workflow has well-defined branches, multi-step reasoning chains, or large numbers of similar nodes. They become overhead when the work is mostly 'agent edits files, runs tests, opens PR,' which is most of agentic coding. Start with the agent's own native loop (Claude Code, Codex, OpenCode), and reach for a framework only when the agent's native primitives stop being expressive enough."
+        },
+        "what-s-the-most-common-workflow-failure-mode": {
+          "q": "What's the most common workflow failure mode?",
+          "a": "Ambient credentials and dropped context. Ambient credentials means the agent inherits permissions it shouldn't have because nothing scopes them down. The workflow accidentally runs `aws s3 rm` against prod with full access. Dropped context means the loop loses state between iterations because the runtime restarted, the laptop slept, or the context window saturated. Both are runtime failures dressed up as prompt failures."
+        },
+        "how-long-can-an-agentic-workflow-run": {
+          "q": "How long can an agentic workflow run?",
+          "a": "On a laptop, as long as the laptop stays open and awake. On a persistent runtime, days. We've watched workflows run for thirty-six hours straight on Ellul, with eight passkey approvals across that span. The bound is not the agent. It's the runtime around the agent."
+        }
+      }
+    },
+    "ai-agent-security": {
+      "title": "AI agent security in 2026: the real threats",
+      "summary": "Threat-modeling AI coding agents is not the same as web-app security. The agent has a shell, holds your credentials, and reasons about prompts that may be hostile. A working threat model covering prompt injection, ambient credentials, tool misuse, and exfiltration, plus a runtime checklist that maps the threats to mitigations engineers can actually implement.",
+      "faq": {
+        "what-s-the-most-underrated-ai-agent-security-risk": {
+          "q": "What's the most underrated AI agent security risk?",
+          "a": "Ambient credentials. The agent runs as the developer and inherits whatever the developer can read: SSH keys, AWS profiles, kubectl contexts, browser cookies, .netrc files. None of the cool prompt-injection demos matter as much as the fact that on a laptop, an agent's reach is identical to the developer's reach. The fix is moving credentials out of the agent's process, not adding more permission prompts."
+        },
+        "is-prompt-injection-the-biggest-threat": {
+          "q": "Is prompt injection the biggest threat?",
+          "a": "It's the most-discussed and the second-biggest. Prompt injection is real and underrated by people not paying attention. It's also overrated by people who treat it as the only threat. Prompt injection is the input vector. The damage potential of a successful injection is determined by the agent's runtime: what credentials it holds, what tools it can call, what process boundary contains it. Fix the runtime and prompt injection becomes containable. Leave the runtime open and prompt injection becomes catastrophic."
+        },
+        "do-permission-prompts-inside-the-agent-actually-help": {
+          "q": "Do permission prompts inside the agent actually help?",
+          "a": "Partially. Permission prompts inside the agent process protect against the easy case: the agent attempted something obviously dangerous, the user noticed, declined. They don't protect against the hard cases: a confused agent that doesn't realize the action is dangerous, or a prompt-injected agent that frames the dangerous action as safe to win the prompt. Real boundary security requires the gate to be outside the agent's process, in a separate user, with kernel-level isolation."
+        },
+        "how-do-i-evaluate-an-ai-coding-tool-s-security-posture": {
+          "q": "How do I evaluate an AI coding tool's security posture?",
+          "a": "Six questions. Where does the agent run (your machine, the vendor's, a workstation)? Where do credentials live (in the agent's memory, in a separate broker)? What gates privileged actions (prompt-only, passkey, hardware key)? Is the action audit log inspectable and yours to keep? Who sees prompts in flight (just the model, or also the platform)? What is the boundary if the agent is compromised (process, user, namespace, machine)? If a vendor can't answer those clearly, you don't have a security posture."
+        },
+        "can-i-trust-an-agent-with-production-credentials": {
+          "q": "Can I trust an agent with production credentials?",
+          "a": "With the right runtime, yes. The pattern that makes it work: credentials live in a process the agent can't read, every privileged action is paused at a gate, the gate requires a passkey approval bound to a specific action, and the audit log is yours. With that runtime, the agent can hold real GitHub tokens, real production database access, real deploy keys, because the credential never enters the agent's process and every use is approved out of band."
+        },
+        "what-about-prompt-injection-from-documents-the-agent-reads": {
+          "q": "What about prompt injection from documents the agent reads?",
+          "a": "Indirect prompt injection (malicious instructions embedded in a doc, README, error message, or third-party API response) is one of the most active threat areas. The mitigation that scales is treating all agent-readable content as untrusted input and gating actions, not inputs. You cannot reliably sanitize all input the agent will encounter. You can reliably gate every privileged action behind a confirmation the agent cannot bypass. The runtime, again, is the answer."
+        }
+      }
+    },
+    "ai-pair-programmer": {
+      "title": "AI pair programmer: how the term aged from 2022 to 2026",
+      "summary": "'AI pair programmer' was always a strained metaphor, since pair programming is a humans-only practice. The term carried real meaning in the Copilot era, less in the Cursor era, and almost none now that agents run for hours alone. A short essay on what 'pair' should mean today.",
+      "faq": {
+        "is-github-copilot-still-an-ai-pair-programmer-in-2026": {
+          "q": "Is GitHub Copilot still an 'AI pair programmer' in 2026?",
+          "a": "Copilot's branding still uses the phrase, but the product has moved well past pair programming. Copilot Workspace, Copilot Agent, and Copilot Edits are agent-shaped. They take a task, run for minutes or hours, and produce a PR. That isn't pair programming. It's autonomous engineering with review gates. The branding is lagging the shape."
+        },
+        "what-s-the-difference-between-an-ai-pair-programmer-and-an-a": {
+          "q": "What's the difference between an AI pair programmer and an AI coding agent?",
+          "a": "Pair programmer is turn-taking, with the human at the keyboard reviewing each suggestion. Agent is task-shaped, running for minutes or hours unattended, producing a diff at the end. The pair-programmer mode still exists in Cursor's command-K and Copilot's inline completions, but it's a feature inside a larger product whose primary mode is now agent."
+        },
+        "is-pair-programming-with-ai-even-useful": {
+          "q": "Is pair programming with AI even useful?",
+          "a": "Pair programming with another human works because two minds catch different bugs and the conversation forces explicit reasoning. Pair programming with an AI gets some of that. The AI catches typos, surfaces docs, suggests boilerplate. It lacks the second human's reasoning and the explicit conversation. It's a productivity boost more than a replacement for the human pair."
+        }
+      }
+    },
+    "claude-code-vs-cursor": {
+      "title": "Claude Code vs Cursor in 2026: it's the wrong question",
+      "summary": "Most Claude Code vs Cursor comparisons miss the real problem: both run on your laptop. A senior engineer's take on the agent quality, the editor experience, and why the right answer is to put either of them on a workstation that doesn't sleep.",
+      "faq": {
+        "is-claude-code-better-than-cursor": {
+          "q": "Is Claude Code better than Cursor?",
+          "a": "Claude Code's agent quality is currently ahead: Claude Opus 4.7 leads Terminal-Bench 2.0 (~69%) and posts SWE-bench Verified in the high 80s, with deeper code review and more reliable multi-step planning. Cursor's editor experience is the best in the industry: inline completions, command-K, codebase indexing. They are different products solving overlapping problems. Most senior engineers we talk to use both."
+        },
+        "can-claude-code-and-cursor-be-used-together": {
+          "q": "Can Claude Code and Cursor be used together?",
+          "a": "Yes. Cursor is the editor on your machine. Claude Code is an agent CLI. They coexist: you can run Cursor as your editor and trigger Claude Code from the terminal for unattended tasks. The friction is that both want to live on your laptop, and your laptop closes when you do."
+        },
+        "why-does-it-matter-where-the-agent-runs": {
+          "q": "Why does it matter where the agent runs?",
+          "a": "Three reasons. First, the agent stops when you close your laptop, which makes anything taking more than a few hours impractical. Second, the agent has ambient access to your filesystem: SSH keys, AWS credentials, browser cookies. Third, you can only run one agent at a time without state collisions. Moving the agent off your laptop fixes all three."
+        },
+        "does-cursor-have-an-always-on-cloud-version": {
+          "q": "Does Cursor have an always-on cloud version?",
+          "a": "Cursor shipped Cloud Agents and the cursor-agent CLI in 2026, plus a Cursor SDK for embedding the runtime. Cloud Agents push conversations to Cursor's hosted runtime so they keep running while your laptop is closed. Ellul is the same shape of capability on a per-user VPS you own, with passkey gating and multi-vendor agents in parallel. The choice is whose runtime owns the work, not whether the agent can run somewhere other than your laptop."
+        },
+        "does-anthropic-have-a-cloud-claude-code": {
+          "q": "Does Anthropic have a cloud Claude Code?",
+          "a": "Anthropic ships Claude Managed Agents on platform.claude.com and a 'Remote Control' feature in Claude Code that lets another device send messages into a session. Both still tie you to Anthropic's cloud and Anthropic's model. Ellul is model-agnostic: the same workstation runs Claude Code, Codex, OpenCode, and Cursor's CLI."
+        },
+        "what-s-the-price-comparison": {
+          "q": "What's the price comparison?",
+          "a": "Cursor Pro is $20/month. Claude Pro is $20/month and Claude Max is $100 or $200/month. An always-on Ellul workstation is $20/month (Hobby) or $50/month (Pro). All three pricing structures coexist; they pay for different things."
+        }
+      }
+    },
+    "cursor-alternative": {
+      "title": "Cursor alternatives in 2026: when to pick what",
+      "summary": "The 'Cursor alternative' search has become three different questions hiding under one phrase: editor alternatives, agent alternatives, and runtime alternatives. A category-first map of the space, an honest decision tree, and the cases where Cursor is still the right answer.",
+      "faq": {
+        "what-s-the-best-cursor-alternative": {
+          "q": "What's the best Cursor alternative?",
+          "a": "It depends on which axis you're trying to alternative on. If you want a different editor with AI: Windsurf or Zed. If you want a stronger autonomous agent: Claude Code, Codex, or OpenCode in an agent workstation. If you want a cloud vibe-coding experience: Lovable, Bolt, Base44, or Replit Agent. The 'best alternative' question only has an answer once you say which of those three you actually mean."
+        },
+        "is-windsurf-better-than-cursor": {
+          "q": "Is Windsurf better than Cursor?",
+          "a": "Different rather than better. Windsurf is the closest direct competitor to Cursor on the editor-experience axis. Different chat-vs-completion balance, different opinionation, similar runtime ceilings. Engineers have strong preferences in both directions. Neither is structurally ahead in 2026. Both share the same property: the agent runs on your laptop, which means the same set of laptop-runtime trade-offs."
+        },
+        "can-i-use-cursor-with-a-remote-agent": {
+          "q": "Can I use Cursor with a remote agent?",
+          "a": "Yes, in two shapes. Cursor itself shipped Cloud Agents and a CLI in 2026, so you can push conversations to Cursor's own hosted runtime and keep them running away from your laptop. Or you can run the cursor-agent CLI (alongside Claude Code, Codex, OpenCode) on infrastructure you own, like an Ellul workstation, where the agent process is gated by your passkey instead of Cursor's auth. The editor stays where it is; the runtime is the variable."
+        },
+        "what-about-open-source-alternatives": {
+          "q": "What about open-source alternatives?",
+          "a": "OpenCode is the strongest open-source coding-agent CLI in 2026. Aider has a long-running community but a thinner agent loop. The open-source editor-with-AI space is sparser; the Cursor experience is genuinely hard to clone open-source because it's the integration of editor, AI, and indexing that's hard to replicate. The honest take: use closed-source where the integration matters (the editor) and open-source where portability matters (the agent CLI you run on a workstation)."
+        },
+        "when-is-cursor-still-the-right-answer": {
+          "q": "When is Cursor still the right answer?",
+          "a": "When your work is editor-heavy, single-agent, single-machine, and short-cycle. Cursor is unmatched for inline completion, command-K, codebase indexing, and the editor-native experience. If your day is mostly typing in a file with the agent panel as a complement, Cursor is the strongest product. The Cursor question becomes 'is there an alternative' the moment your work needs the agent to run autonomously, in parallel, or with real credentials. At that point you're not really looking for a Cursor alternative; you're looking for a runtime to put an agent on."
+        }
+      }
+    },
+    "cursor-vs-windsurf": {
+      "title": "Cursor vs Windsurf in 2026: editor wars year two",
+      "summary": "Cursor and Windsurf are both VS Code forks with an agent baked in. After a year of feature parity, the meaningful differences in 2026 come down to indexing, MCP defaults, pricing, release cadence, and one question neither product answers.",
+      "faq": {
+        "is-cursor-better-than-windsurf": {
+          "q": "Is Cursor better than Windsurf?",
+          "a": "Cursor's edge in 2026 is release cadence and codebase indexing on very large repos. Windsurf's edge is pricing and Cascade's narrate-the-plan style. For most engineers the right call is simple: try the free tier of each on a real project for an afternoon. The difference shows up in five minutes."
+        },
+        "which-one-has-better-mcp-support": {
+          "q": "Which one has better MCP support?",
+          "a": "Both ship native MCP clients in 2026. Cursor reads `~/.cursor/mcp.json`. Windsurf reads its own config under `~/.codeium/windsurf/`. The wire format is identical because MCP is a wire format, not a per-editor extension. If your MCP server runs against Cursor, it runs against Windsurf. You just point the right config at it."
+        },
+        "is-windsurf-s-cascade-actually-different-from-cursor-s-compo": {
+          "q": "Is Windsurf's Cascade actually different from Cursor's Composer?",
+          "a": "Mechanically they overlap. Both are multi-file edit UIs that propose a diff across the codebase you accept or reject. Cascade leans toward narrating the plan and showing intermediate steps. Composer leans toward producing the diff and letting you read it. The gap is taste, not capability."
+        },
+        "should-i-switch-from-cursor-to-windsurf": {
+          "q": "Should I switch from Cursor to Windsurf?",
+          "a": "Probably not for the features. Both will ship any specific feature within a release. Switch if pricing matters at scale, if you prefer Codeium's heritage, or if Cascade's flow fits your head better than Composer does."
+        }
+      }
+    },
+    "mac-mini-vs-cloud": {
+      "title": "AI agents on a Mac mini vs cloud: the numbers",
+      "summary": "An M4 Mac mini at $599 looks like a free agent runtime. Add power, downtime, no remote access, no passkey gate, and two years of opportunity cost, and the math gets less clean. A worked TCO comparison and a take on when each one wins.",
+      "faq": {
+        "can-i-really-run-claude-code-24-7-on-an-m4-mac-mini": {
+          "q": "Can I really run Claude Code 24/7 on an M4 Mac mini?",
+          "a": "Mechanically yes. The M4 has plenty of headroom for the local processes Claude Code runs. The model itself is API-side, so the Mac mini is mostly proxy and filesystem. The harder questions are operational: network reachability when you're on a different network, power failures, OS updates that reboot, no remote tap-to-approve, no isolation if the agent does something risky."
+        },
+        "what-does-a-mac-mini-cost-over-two-years-all-in": {
+          "q": "What does a Mac mini cost over two years, all-in?",
+          "a": "TCO depends on assumptions. Hardware $599. Electricity around $30 over two years at 24/7. Remote-access tooling free to $360 (Tailscale free, ngrok Pro $15 a month). Maintenance time around 30 minutes per month, which lands at roughly $900 over two years if you value your time at $75 an hour. Total: roughly $1,500 to $1,900. Cloud at $20 to $50 a month over two years is $480 to $1,200."
+        },
+        "when-does-the-mac-mini-actually-win": {
+          "q": "When does the Mac mini actually win?",
+          "a": "When the work doesn't need remote access, doesn't need parallel agents, doesn't touch real production credentials, and you genuinely enjoy the maintenance as a hobby. For an engineer using the agent for short stints at home, the Mac mini is real. For an engineer who needs the agent to be always-on and reachable from a phone on the subway, the cloud wins on capability before it wins on price."
+        },
+        "is-the-philosophical-case-for-self-hosting-real": {
+          "q": "Is the philosophical case for self-hosting real?",
+          "a": "Yes, and worth taking seriously. Owning the hardware your agent runs on is a different relationship to your tools than renting a workstation in someone else's cloud. The data sovereignty argument is real. The counterpoint is that 'a Mac mini in your apartment' isn't intrinsically more sovereign than 'a cloud workstation gated by your passkey.' Both are configurations of trust, with different tradeoffs. See our [sovereign AI](/blog/sovereign-ai) piece for the longer argument."
+        }
+      }
+    },
+    "managed-agents": {
+      "title": "Managed AI agents vs your-own-agent on a workstation",
+      "summary": "Two product shapes have emerged. Vendor-managed agents (Devin, Manus) where the platform owns the agent and the runtime, and bring-your-own-agent runtimes where the platform owns the runtime and you bring your CLI. A breakdown of cost, lock-in, and when each is right.",
+      "faq": {
+        "what-s-the-actual-difference-between-a-managed-agent-and-bri": {
+          "q": "What's the actual difference between a managed agent and bring-your-own-agent?",
+          "a": "Managed agent means the vendor sells you the agent, the model, the runtime, and the workflow as one product. Devin, Manus, and Bolt are the canonical examples. Bring-your-own-agent means you keep your existing agent CLI (Claude Code, Cursor, Codex, OpenCode) and the platform provides only the runtime: the workstation, the gating, the parallelism. The split is whether you want a turnkey product or infrastructure under the agent you already use."
+        },
+        "are-managed-agents-more-expensive": {
+          "q": "Are managed agents more expensive?",
+          "a": "Headline pricing usually says yes. Devin's individual tier has been around $500 a month. Manus Plus is around $39 a month. Bring-your-own-agent runtimes range $20 to $50 a month plus your model API spend. The fair comparison adds the model cost on the BYOA side; for heavy users the totals get closer. The bigger structural difference is the opinionation tax. Managed agents bake in their model and workflow choices."
+        },
+        "when-should-i-pick-a-managed-agent-like-devin-or-manus": {
+          "q": "When should I pick a managed agent like Devin or Manus?",
+          "a": "When you don't have an existing agent CLI you want to keep using. When the work is one-off (a research project, a marketing site, a script) rather than continuous engineering. When you don't have engineers to run the agents themselves. And when you're willing to commit to that vendor's model and workflow. Managed is right for many real users. The wrong fit is forcing it on a team that already has Claude Code muscle memory."
+        },
+        "what-does-bring-your-own-agent-actually-mean-in-practice": {
+          "q": "What does 'bring your own agent' actually mean in practice?",
+          "a": "You install Claude Code, Cursor's CLI, Codex, or OpenCode on a persistent remote workstation, point it at your repo, and use it the way you'd use it locally. The workstation never sleeps, can run in parallel, and gates privileged actions behind a passkey. You keep your model contract (BYOK), your CLI workflow, and your codebase ownership. The runtime is the only thing the platform sells you."
+        }
+      }
+    },
+    "multi-agent-system": {
+      "title": "Building multi-agent systems: what works in 2026",
+      "summary": "Three architectural patterns for multi-agent systems (pipeline, supervisor, peer) and where each one falls apart in production. A practical builder's view of orchestration, handoff, and the runtime properties you need under any of them.",
+      "faq": {
+        "what-s-the-difference-between-multi-agent-and-parallel-agent": {
+          "q": "What's the difference between multi-agent and parallel-agent?",
+          "a": "Multi-agent is an architectural pattern. Two or more agents collaborate on a task, possibly sharing state, possibly handing off, possibly running concurrently. Parallel-agent is a runtime property. Two or more agents execute at the same time on isolated resources without colliding. Most multi-agent systems run their agents serially. The ones that run them in parallel need parallel-agent runtime."
+        },
+        "should-i-use-langgraph-crewai-or-autogen": {
+          "q": "Should I use LangGraph, CrewAI, or AutoGen?",
+          "a": "All three solve roughly the same orchestration problem at different abstraction levels. LangGraph is graph-explicit, good when your control flow is the design. CrewAI is role-explicit, good when 'researcher, writer, reviewer' is a clean fit. AutoGen is conversation-explicit, good when agents negotiate iteratively. Pick whichever framework's primary metaphor matches your task. Rewrite is cheap."
+        },
+        "how-many-agents-is-too-many": {
+          "q": "How many agents is too many?",
+          "a": "More than three concurrent agents is usually a sign you're trying to parallelize something that should be one agent with better tools. The bottleneck is rarely agent capacity. It's the human reviewing the output. If a fleet of eight agents produces work no human reads, the fleet is decorative."
+        },
+        "what-runtime-properties-matter-for-multi-agent-in-production": {
+          "q": "What runtime properties matter for multi-agent in production?",
+          "a": "Three: state isolation (agents can't corrupt each other's working directory or credentials), explicit handoff (no shared mutable state without an explicit pass), and gated privileged actions (the human approves git push, deploy, and database writes regardless of which agent in the fleet initiated them). Most framework demos skip all three because the demo runs once on a local laptop."
+        }
+      }
+    },
+    "persistent-vs-ephemeral-sandboxes": {
+      "title": "Persistent vs ephemeral sandboxes for AI agents",
+      "summary": "Two architectures dominate the agent-runtime space: ephemeral sandboxes that spin up per session and die at the end, and persistent workstations that exist for the agent's lifetime. They solve different problems, fail in different ways, and are increasingly converging on a hybrid pattern. The honest decision tree.",
+      "faq": {
+        "what-s-the-difference-between-an-ephemeral-sandbox-and-a-per": {
+          "q": "What's the difference between an ephemeral sandbox and a persistent workstation?",
+          "a": "An ephemeral sandbox is a container or VM that's created when an agent session starts and destroyed when it ends. A persistent workstation is a long-lived environment that exists across sessions, with installed dependencies, agent state, and warm context surviving between uses. Ephemeral is cheap and clean. Persistent is expensive and warm."
+        },
+        "when-are-ephemeral-sandboxes-the-right-choice": {
+          "q": "When are ephemeral sandboxes the right choice?",
+          "a": "When the work is short-lived, the agent is making one-off code-execution calls, and you don't need state to persist. e2b, Modal, and Sprites are excellent for this. The pattern: a foundation-model API gets a request that needs code to run; a sandbox spins up in 50 to 500 ms; the code runs; the result returns; the sandbox dies. No setup cost amortized across sessions because there are no sessions in the human sense."
+        },
+        "when-are-persistent-workstations-the-right-choice": {
+          "q": "When are persistent workstations the right choice?",
+          "a": "When the agent is doing engineering work over hours or days, has installed dependencies, holds state across sessions, and needs to be reachable for follow-up. The shape that demands persistence: a refactor that takes a day, multi-session debugging, an agent maintaining a codebase over weeks. Cold-starting a workspace per session destroys the warm context that makes long-running agentic work productive."
+        },
+        "is-the-hybrid-pattern-warm-pool-hibernate-and-resume-the-fut": {
+          "q": "Is the hybrid pattern (warm pool, hibernate-and-resume) the future?",
+          "a": "It's already the present for several products. Daytona, GitHub Codespaces, and Ellul all support hibernation in some form. The workspace persists on disk but pauses CPU when idle, then wakes when needed. The trade-off is a multi-second resume cost and reduced cost-per-hour. We expect this to become the default architecture for agent runtimes within 12 to 18 months. The pure-ephemeral and pure-persistent extremes will both lose share to the middle."
+        },
+        "are-ephemeral-sandboxes-inherently-more-secure-than-persiste": {
+          "q": "Are ephemeral sandboxes inherently more secure than persistent workstations?",
+          "a": "Not inherently. Ephemerality is a security property only because it limits the time-window for an attacker to act. A well-isolated persistent workstation (separate user, namespace, kernel-level controls, passkey-gated privileged actions) can have a smaller attack surface than a poorly-configured ephemeral sandbox. Persistence and isolation are orthogonal axes, not the same one. Ephemeral is one valid security strategy; isolated-and-persistent is another."
+        }
+      }
+    },
+    "preview-deployments": {
+      "title": "Preview deployments for AI agents: live per-branch URLs",
+      "summary": "When an agent is the one shipping, humans review at the URL, not the diff. Three approaches to preview deployments (Vercel-style ephemeral, Cloudflare Workers, persistent-runtime) and where each one fits.",
+      "faq": {
+        "why-do-preview-deployments-matter-more-when-an-ai-agent-is-s": {
+          "q": "Why do preview deployments matter more when an AI agent is shipping?",
+          "a": "Humans reviewing an agent's PR rarely read every diff line. They read the URL. A live preview is the bandwidth-efficient way to verify the agent's claim that it added the feature. The diff confirms what changed. The URL confirms it works. When the human's role shifts from writing to approving, the preview is doing more of the review than the diff."
+        },
+        "what-s-the-difference-between-vercel-previews-cloudflare-pre": {
+          "q": "What's the difference between Vercel previews, Cloudflare previews, and persistent-runtime previews?",
+          "a": "Vercel-style: each PR gets its own ephemeral build deployed to a unique URL, lives until the PR closes. Cloudflare Workers: similar but with edge runtime and fast global propagation. Persistent-runtime: the agent's workstation itself serves the preview from a long-lived process, so the preview reflects exactly what the agent is currently running. Different latencies, different costs, different review-loop speeds."
+        },
+        "what-s-the-right-approach-if-my-agent-runs-continuously": {
+          "q": "What's the right approach if my agent runs continuously?",
+          "a": "Persistent-runtime previews fit better than per-PR ephemeral ones. The agent is iterating, so the preview should iterate with it. Spin-up time on every request is friction the agent doesn't have when it's running locally. The tradeoff is that persistent-runtime previews cost more per workstation than ephemeral previews per PR. You're paying for always-on, not pay-per-build."
+        }
+      }
+    },
+    "run-claude-code-overnight": {
+      "title": "Running Claude Code overnight: a practical guide",
+      "summary": "How to set up Claude Code so a long task (a 6-hour refactor, a dependency upgrade pass, a test-suite migration) runs unattended through the night with passkey-gated git push at the end. The walkthrough, the cost model, and the failure modes that actually show up at 3am.",
+      "faq": {
+        "can-claude-code-actually-run-overnight": {
+          "q": "Can Claude Code actually run overnight?",
+          "a": "Yes, but only if the runtime supports it. Claude Code is a long-lived process. On a laptop it stops when the laptop sleeps. On a persistent workstation, the same Claude Code binary keeps running. The agent's loop doesn't need to change. The runtime around it does."
+        },
+        "won-t-the-agent-push-something-dangerous-while-i-m-asleep": {
+          "q": "Won't the agent push something dangerous while I'm asleep?",
+          "a": "Only if the runtime lets it. The pattern that works: configure Claude Code to run unattended, but route privileged actions (git push, deploy, secret reads) through a passkey gate that the agent cannot bypass. The agent does six hours of work, queues a PR, and pauses. You wake up to a draft PR, tap your passkey, and it merges. Nothing irreversible happens unattended."
+        },
+        "what-does-an-overnight-claude-code-run-actually-cost": {
+          "q": "What does an overnight Claude Code run actually cost?",
+          "a": "Two budget lines. The model: at Anthropic API pricing, a six-hour Claude Code run typically costs $5 to $30 depending on token throughput and how aggressively the agent reads context. The workstation: an Ellul Hobby workstation is $20/month, Pro is $50/month, both running 24/7. So an overnight run that produces a deploy-ready PR costs roughly the same as a meal, plus the workstation rent that lets you do it every night for the rest of the month."
+        },
+        "what-if-the-agent-gets-stuck-in-a-loop": {
+          "q": "What if the agent gets stuck in a loop?",
+          "a": "Three guardrails. Set a token budget on the agent's run. Run the agent with a shell timeout (8 hours, say). The privileged-action gate is an automatic stop: the agent can think for a long time, but it cannot ship code without your fingerprint, so the worst case is a wasted overnight, not a wasted week."
+        },
+        "can-i-run-multiple-claude-code-overnight-tasks-in-parallel": {
+          "q": "Can I run multiple Claude Code overnight tasks in parallel?",
+          "a": "Yes, on a runtime built for it. On a laptop, two Claude Code sessions fight over file locks, ports, and credentials. On separate workstations (or namespace-isolated agents on the same workstation), each runs in its own filesystem, process tree, and network. Read-only peering between agents lets a reviewing agent read a coding agent's branch without sharing the credential surface, useful for the 'one agent codes, one reviews' pattern overnight."
+        }
+      }
+    },
+    "sovereign-ai": {
+      "title": "Sovereign AI: what it actually means for engineers in 2026",
+      "summary": "The phrase has been hijacked by trade-policy threads about which country trains the next foundation model. For engineers, sovereign AI is the runtime question: who owns the credentials, the context, and the compute the agent runs inside. A working definition, the failure modes that show up when sovereignty is missing, and what the runtime answer looks like.",
+      "faq": {
+        "what-is-sovereign-ai": {
+          "q": "What is sovereign AI?",
+          "a": "For engineers, sovereign AI is the practice of running AI agents in an environment where you own the credentials, the context, and the compute boundary the agent operates inside. The model can still be a third-party API. Sovereignty is about who controls the runtime around it, not about which lab trained the model."
+        },
+        "is-sovereign-ai-the-same-as-on-premise-ai": {
+          "q": "Is sovereign AI the same as on-premise AI?",
+          "a": "No. On-premise usually means running an open-weights model on your own hardware. Sovereign AI is broader and weaker: it includes BYOK setups where the model is hosted, but the runtime, credentials, and audit trail belong to you. Most engineering teams want sovereignty more than they want on-prem."
+        },
+        "does-using-byok-make-my-ai-usage-sovereign": {
+          "q": "Does using BYOK make my AI usage sovereign?",
+          "a": "BYOK gets you partway. You control which provider gets your prompts and you control the billing. You do not control whether the platform you ran the agent through saw the API key, the file contents, or the agent's tool calls. Real sovereignty also requires that the platform never sees the credential and that the runtime stays in your audit boundary."
+        },
+        "what-are-the-failure-modes-of-non-sovereign-ai": {
+          "q": "What are the failure modes of non-sovereign AI?",
+          "a": "Three of them keep showing up in incident reports. Ambient credentials, where the agent inherits whatever lives on the laptop or VM it runs in. Hidden context, where vendors capture prompts, file contents, and tool calls without telling you they retained them. Vendor lock-in via tool definitions, where your workflow becomes a function of one platform's wiring and stops being portable. Each one is a sovereignty violation, even if the underlying model is fine."
+        },
+        "where-does-the-sovereign-ai-tradeoff-hurt": {
+          "q": "Where does the sovereign-AI tradeoff hurt?",
+          "a": "Latency, setup time, and convenience. Sovereign runtimes add hops (credential brokers, passkey approvals, isolated workstations) that a flat 'agent has full root on your laptop' setup does not. For short edits and one-shot prompts, that overhead is real. For anything taking longer than a coffee break, it pays for itself almost immediately."
+        },
+        "is-ellul-a-sovereign-ai-runtime": {
+          "q": "Is Ellul a sovereign-AI runtime?",
+          "a": "Yes. Ellul is a workstation runtime where you bring the agent (Claude Code, Codex, OpenCode, Cursor's CLI) and the API key. The platform never sees the key, the agent runs inside an isolated VPS with kernel-level egress controls, and every privileged action passes through the Sovereign Shield with passkey approval. The model is whoever you point it at; the runtime is yours."
+        }
+      }
+    },
+    "the-peering-primitive": {
+      "title": "Peering: cross-sandbox access without cross-trust",
+      "summary": "Multi-agent setups want one agent to read another's source code without inheriting that agent's credentials. Most platforms get this wrong by mounting the whole project, .env files included. The peering primitive lets parallel agents collaborate without becoming each other's attack surface.",
+      "faq": {
+        "what-is-the-peering-primitive": {
+          "q": "What is the peering primitive?",
+          "a": "The peering primitive is a kernel-enforced, source-code-only snapshot that grants one sandbox read access to another's code without sharing the other sandbox's credentials, environment, or write permissions. It uses rsync to copy a curated subset of files (excluding .env, credentials, .config directories), mounts the result read-only at .shared/<sandbox-id>/, and combines it with scope checks that ensure the reading agent cannot request writes against the read sandbox."
+        },
+        "why-not-just-bind-mount-the-whole-project": {
+          "q": "Why not just bind-mount the whole project?",
+          "a": "Because a bind mount copies everything: .env files, credential JSON, OAuth tokens, .ssh directories, .npmrc with NPM auth tokens. Most peering-via-bind-mount setups in the wild leak secrets in exactly this way. The fix is to copy a filtered subset, not to mount the whole tree. Files that aren't physically copied don't exist for the reader, which is provably more secure than depending on permission rules."
+        },
+        "how-does-the-peering-primitive-prevent-the-writing-agent-fro": {
+          "q": "How does the peering primitive prevent the writing agent from being tricked?",
+          "a": "Four layers. The chat layer auto-denies sandbox-scoped tool calls (database, secrets, deployment) that reference the read-only sandbox. Permission requests are enriched with hints when the read sandbox is mentioned. Sovereign Shield independently verifies any permission request that names a sandbox the requester has read access to. The agent's system prompt instructs it that shared snapshots are inspect-only. Any of these alone can be tricked; in combination, they catch attacks the others miss."
+        },
+        "is-the-snapshot-live-or-point-in-time": {
+          "q": "Is the snapshot live or point-in-time?",
+          "a": "Point-in-time. When you grant access, the platform takes a snapshot of B's source code and rsyncs it into A. If B's code changes after the grant, A still sees the older version until you click 'Refresh shared snapshot' in A's panel. This is a deliberate choice. Live mounts make scope-check timing harder to reason about, and most read-access use cases (one agent reviewing another's PR, a docs agent reading from multiple sandboxes) don't need real-time updates."
+        },
+        "what-s-a-real-use-case-for-peering": {
+          "q": "What's a real use case for peering?",
+          "a": "Three common ones. A code reviewer agent reads a coding agent's branch; the reviewer can see and comment, can't push or merge. A docs agent reads multiple sandboxes to generate cross-project documentation; it sees source from each, never holds any project's deploy keys. A frontend sandbox references shared component types from a library sandbox; the frontend agent reads the library's types without inheriting the library's npm publish credentials. The shape is always 'A needs context from B, but A must not gain B's permissions.'"
+        }
+      }
+    },
+    "vibe-coding-tools": {
+      "title": "Vibe coding tools: a 2026 field guide",
+      "summary": "Vibe coding has split into two distinct flavors with very different tools: laptop-IDE-with-AI on one side, persistent-agent-on-runtime on the other. The field guide covers what each flavor is good for, the hidden costs nobody talks about, and the moment to graduate from vibe coding to engineering work.",
+      "faq": {
+        "what-is-vibe-coding": {
+          "q": "What is vibe coding?",
+          "a": "Vibe coding is the development style coined by Andrej Karpathy in early 2025. You describe intent in natural language, accept the agent's implementation without writing code line by line, review diffs, and run the result. It's closer to direction than authorship. Useful for prototypes, side projects, and exploratory work; risky for production without strong gating."
+        },
+        "are-lovable-bolt-and-replit-agent-the-same-product": {
+          "q": "Are Lovable, Bolt, and Replit Agent the same product?",
+          "a": "Same flavor, different focus. All three are cloud-side vibe-coding products that let you describe what you want and watch an agent build it. Lovable and Base44 lean toward apps with auth and a database. Bolt leans toward marketing sites and quick prototypes. Replit Agent leans toward 'finish the project I started.' They overlap heavily on the laptop-free end of the spectrum."
+        },
+        "is-cursor-a-vibe-coding-tool": {
+          "q": "Is Cursor a vibe-coding tool?",
+          "a": "Partially. Cursor's Composer is the strongest vibe-coding-in-an-editor experience available. You describe what you want, the agent edits files, you review the diff. The 'editor' framing keeps you closer to the code than the cloud-side products do, which is a feature for serious work and overhead for throwaway prototypes. Cursor is the laptop-IDE flavor; Lovable, Bolt, and Base44 are the cloud flavor."
+        },
+        "when-should-i-graduate-from-vibe-coding-to-engineering-work": {
+          "q": "When should I graduate from vibe coding to engineering work?",
+          "a": "When the project starts touching real credentials, real customers, or real money. Vibe coding has no built-in protection against an agent doing something destructive. The entire premise is letting the agent move fast. Once the cost of a wrong move exceeds the cost of a careful approval gate, you've outgrown the vibe loop and need a runtime that gates privileged actions. That doesn't mean stop using AI agents. It means run them somewhere with a boundary."
+        },
+        "what-s-the-hidden-cost-of-cloud-vibe-coding-tools": {
+          "q": "What's the hidden cost of cloud vibe-coding tools?",
+          "a": "Lock-in via tool definitions and runtime opacity. Lovable, Bolt, Base44, and Replit Agent ship with their own runtime: their own deploy story, their own database, their own auth integration, their own tool wiring. The product is good while you're inside it; leaving means rebuilding the workflow on a different platform with different primitives. The fix isn't avoiding these tools. It's using them while you're vibing and moving to a portable runtime when the project matters."
+        }
+      }
+    },
+    "zero-knowledge-byok": {
+      "title": "Zero-knowledge BYOK: keys the platform can't see",
+      "summary": "Most BYOK products store your API key encrypted at rest, decrypt it on use, and trust their own infrastructure. Zero-knowledge BYOK removes the trust step entirely. The platform stores ciphertext only, the key is encrypted client-side with a passkey-derived secret, and the server never has plaintext access to the key. The pattern, the cryptographic primitives, the limits.",
+      "faq": {
+        "what-is-zero-knowledge-byok": {
+          "q": "What is zero-knowledge BYOK?",
+          "a": "Zero-knowledge BYOK is the BYOK pattern where the platform that runs your AI agent never has plaintext access to your API key. The key is encrypted client-side using a secret derived from your passkey; the platform stores ciphertext; only the agent's request path can decrypt the key in memory at the moment of use. Even a fully-compromised platform operator with database access cannot recover your key."
+        },
+        "how-does-it-differ-from-regular-byok": {
+          "q": "How does it differ from regular BYOK?",
+          "a": "Regular BYOK encrypts your key 'at rest.' The platform encrypts the key with its own KMS, stores the ciphertext, and decrypts on use. The trust assumption is that the platform's KMS is honest and uncompromised. Zero-knowledge BYOK changes that assumption. The encryption key is derived from your passkey, not from the platform's KMS. The platform doesn't have the encryption key, so even with full database access it cannot decrypt the ciphertext."
+        },
+        "doesn-t-the-agent-need-the-key-in-plaintext-to-make-api-call": {
+          "q": "Doesn't the agent need the key in plaintext to make API calls?",
+          "a": "Yes, at the moment of the call. The pattern is to decrypt the key in memory, in the agent's process, only when needed for an outbound API call, and to never persist the plaintext. The narrow window between decryption and the API request is the vulnerability surface; everything else is closed. With process-level isolation, even other processes on the same machine cannot read the plaintext from the agent's memory."
+        },
+        "what-if-i-lose-my-passkey": {
+          "q": "What if I lose my passkey?",
+          "a": "You lose access to the key. That's the price of zero-knowledge: the platform cannot help you recover, because the platform never had the decryption material. The mitigation is the same as any zero-knowledge system. Register multiple passkeys (laptop plus phone plus hardware key) so a single device loss doesn't lock you out. Treat key recovery as 'rotate the API key,' not 'recover the encryption.'"
+        },
+        "what-does-zero-knowledge-byok-not-protect-against": {
+          "q": "What does zero-knowledge BYOK NOT protect against?",
+          "a": "Three things. A compromised endpoint device: if your laptop is malware-infected, the malware can read the plaintext key during a session. Zero-knowledge protects the platform, not the device. Post-decryption memory inspection: anything that can read the agent's process memory at the moment of use can grab the plaintext. The model API itself: Anthropic, OpenAI, and others see your key when you authenticate to them, by definition. Zero-knowledge BYOK is about the platform, not about the model vendor."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,251 @@
+{
+  "faq": {
+    "meta": {
+      "title": "FAQ: Agent workstations, gating, parallel agents",
+      "description": "Common questions about Ellul: what an agent workstation is, how passkey gating works, how to run multiple AI agents in parallel, and how Ellul differs from Cursor, Claude Code, GitHub Codespaces, Sprites.dev, E2B, and Daytona."
+    },
+    "page": {
+      "eyebrow": "Reference",
+      "headline": "Questions, answered.",
+      "subhead": "What an agent workstation is, how passkey gating works, how parallel agents avoid stepping on each other, and how Ellul compares to Cursor, Claude Code, Codespaces, Sprites, E2B, and Daytona."
+    },
+    "groups": {
+      "basics": {
+        "heading": "The basics",
+        "items": {
+          "agentWorkstation": {
+            "q": "What is an agent workstation?",
+            "a": "An agent workstation is a persistent, isolated computer that exists for an AI agent to work on. It is always on. It has its own filesystem, processes, and network. Privileged actions are gated at the boundary so they require a human passkey approval. The agent lives there, not on your laptop."
+          },
+          "whyNotLaptop": {
+            "q": "Why not just run the agent on my laptop?",
+            "a": "Three reasons. First, the agent stops when you close the lid, so anything taking more than a few hours is impractical. Second, the agent has ambient access to your machine: SSH keys, AWS credentials, browser cookies, kubectl context. Third, you can only run one agent at a time without state collisions. An agent workstation fixes all three by moving the agent off the laptop into a place built for it."
+          },
+          "replaceCursor": {
+            "q": "Does Ellul replace Cursor or Claude Code?",
+            "a": "No. Ellul runs Cursor or Claude Code (or Codex or OpenCode). The agent stays the same. The computer it lives on changes. Your existing client and prompts work as-is."
+          },
+          "whatItDoes": {
+            "q": "What can an agent on Ellul actually do that mine on a laptop can't?",
+            "a": "Run continuously without you. Survive your laptop closing. Touch real production credentials safely. Coordinate with other agents on adjacent workstations. Ship a PR overnight while you sleep. None of these are possible on a laptop without security tradeoffs you should not be making."
+          }
+        }
+      },
+      "alwaysOn": {
+        "heading": "Always on",
+        "items": {
+          "howLong": {
+            "q": "How long can an agent run unattended?",
+            "a": "Indefinitely. The workstation stays online whether you are at your laptop or not. Customer agents have run uninterrupted for multiple days through long refactors and migration scripts."
+          },
+          "crashOvernight": {
+            "q": "What happens if the agent crashes overnight?",
+            "a": "Ellul restarts it and resumes from the last checkpoint. You wake up to a continuing run, not a stopped one."
+          },
+          "checkProgress": {
+            "q": "How do I check progress without sitting at my laptop?",
+            "a": "Open ellul.ai/console on your phone. The agent's chat, files, and logs are accessible from any device. When something needs your approval, you receive a push notification and tap your passkey from the same phone."
+          }
+        }
+      },
+      "parallel": {
+        "heading": "Parallel agents and peering",
+        "items": {
+          "howWork": {
+            "q": "How do parallel agents work?",
+            "a": "Each agent gets its own workstation. They run independently. When you want one agent to read another's output, you grant a read-only snapshot of the source code (secrets and credentials are excluded). The reading agent can analyze, summarize, or generate documentation, but it cannot edit, push, or escalate."
+          },
+          "sameCodebase": {
+            "q": "Can two agents work on the same codebase at once?",
+            "a": "They can both read it. Only one can write. The peering primitive is intentionally read-only. Write coordination between two agents is a recipe for state corruption that humans tend to underestimate. The right pattern is one writing agent plus one or more reviewing/documenting agents in adjacent workstations."
+          },
+          "enforcement": {
+            "q": "How is read-only peering enforced?",
+            "a": "The peering view is a rsync filtered snapshot delivered into the consuming agent's filesystem at a known path. There is no write path back to the source. There are no symlinks. Files that exist only on the source side physically don't exist on the consuming side, so the consuming agent cannot smuggle them out."
+          }
+        }
+      },
+      "passkey": {
+        "heading": "Passkey gating and credentials",
+        "items": {
+          "meaning": {
+            "q": "What does passkey-gated mean in practice?",
+            "a": "Privileged actions (git push, deploy, database writes, secret access) pause mid-execution. The agent's terminal shows a 'waiting for passkey' state. You receive a notification. You tap your passkey (Touch ID, Face ID, security key) to approve or decline. The agent only proceeds if you approve."
+          },
+          "credLeak": {
+            "q": "Can the agent leak my credentials?",
+            "a": "No. Credentials live in a server-side vault. They are never written to the agent's process environment, never sent to the agent's chat history, never logged. When a privileged action needs them, the action is paused, you approve via passkey, and the action is brokered through a separate process the agent cannot read or attach to."
+          },
+          "losePasskey": {
+            "q": "What if I lose my passkey?",
+            "a": "You configure backup passkeys (multiple devices). If you lose all of them, account recovery requires a verified secondary email and a 7-day delay. Not instant, because instant recovery would defeat the gate model."
+          },
+          "disable": {
+            "q": "Can I disable gating for trusted actions?",
+            "a": "You can configure auto-approval rules per project (for example: 'auto-approve git push to feature/* branches' or 'auto-approve deploys to staging'). Production-class actions cannot be auto-approved."
+          }
+        }
+      },
+      "comparisons": {
+        "heading": "Comparisons",
+        "items": {
+          "codespaces": {
+            "q": "How is Ellul different from GitHub Codespaces?",
+            "a": "Codespaces was built for humans writing code in a browser. It has no agent gating, no parallel-agent primitive, no passkey integration. Ellul was built for the agent first, the human second."
+          },
+          "sprites": {
+            "q": "How is Ellul different from Sprites.dev?",
+            "a": "Sprites provides stateful sandboxes as infrastructure that other companies build on. Ellul is the assembled product an engineer signs up for: chat, file browser, gates, integrations. Different layer of the stack."
+          },
+          "e2b": {
+            "q": "How is Ellul different from E2B?",
+            "a": "E2B is for ephemeral code execution. Sandboxes typically last minutes to hours, capped at 24 hours on Pro. Ellul is for persistent agent work. A workstation lasts as long as you have an account."
+          },
+          "daytona": {
+            "q": "How is Ellul different from Daytona?",
+            "a": "Daytona is a workspace primitive. Its docs target platform engineers building developer environments. Ellul is the assembled, opinionated agent workstation that uses workspace primitives internally."
+          },
+          "replit": {
+            "q": "How is Ellul different from Replit?",
+            "a": "Replit is a shared cloud runtime that bundles IDE, agent, and hosting. Ellul is a per-user VPS with strict isolation; the app deploys to wherever the user wants: Vercel, Fly, Railway. Different shape, different audience."
+          },
+          "devin": {
+            "q": "How is Ellul different from Devin?",
+            "a": "Devin is a managed product where Cognition's agent runs in their sandbox. Ellul is the runtime under your own agent (your Claude Code, your Cursor, your Codex) on a persistent workstation that's yours. Different commitments, different prices."
+          },
+          "bolt": {
+            "q": "How is Ellul different from Bolt, Lovable, Base44, v0?",
+            "a": "All four are prompt-to-app builders for non-engineers or prototypers. Ellul is a persistent workstation for an engineer's AI agent on a real codebase. They are not in the same product category. They show up in the same searches because both touch the prompt-to-software flow."
+          },
+          "manus": {
+            "q": "How is Ellul different from Manus?",
+            "a": "Manus is a generalist managed agent. Give it a task, it works in their sandbox. Ellul is bring-your-own-agent on bring-your-own-model on a persistent workstation. Different shapes for different jobs; some users use both for different kinds of work."
+          },
+          "windsurf": {
+            "q": "How is Ellul different from Windsurf?",
+            "a": "Windsurf is a VS Code fork with a Cascade agent on your laptop. Ellul is the runtime an agent lives on regardless of which editor you use. They compose: keep Windsurf as your editor; move the agent's runtime to Ellul."
+          }
+        }
+      },
+      "agents": {
+        "heading": "Supported agents and BYOK",
+        "items": {
+          "which": {
+            "q": "Which agents run on Ellul?",
+            "a": "Claude Code, Codex, Cursor's CLI, OpenCode, and Cascade CLI are all supported out of the box. Any agent that runs on Linux from a terminal can run on a workstation; the five listed are the ones we test continuously and ship with pre-installed images."
+          },
+          "byok": {
+            "q": "Do I bring my own model API key?",
+            "a": "Yes. BYOK is the default for every supported agent. Your model contract is between you and the model provider (Anthropic, OpenAI, Google, OpenRouter, etc.); your runtime contract is between you and Ellul. We never proxy or store your model keys outside the workstation's encrypted vault."
+          },
+          "claudePro": {
+            "q": "Can I use a Claude Pro / Claude Max subscription instead of an API key?",
+            "a": "Yes for Claude Code. Claude Code on Ellul supports both Claude Pro / Max sign-in and Anthropic API key BYOK. The choice depends on your usage shape and pricing preference."
+          },
+          "otherAgent": {
+            "q": "What if my preferred agent isn't on the supported list?",
+            "a": "If it runs on Linux and isn't on the list, you can still install and run it yourself on the workstation. The supported list reflects which agents we ship pre-installed and offer turnkey gating for. Anything else works as a self-served install."
+          },
+          "localModels": {
+            "q": "Are local-only or open-weight models supported?",
+            "a": "Yes. The agent runs on the workstation; you can point it at OpenRouter, Together, your own inference server, or a locally hosted model on the same workstation if you have the resources. Bigger workstation tiers are appropriate when you're running inference locally."
+          }
+        }
+      },
+      "mcp": {
+        "heading": "MCP and integrations",
+        "items": {
+          "support": {
+            "q": "Does Ellul support MCP?",
+            "a": "Yes. MCP servers run as long-lived processes alongside the agent on the workstation. Credentials for MCP servers (PATs, DB connections, API keys) flow through the Sovereign Shield rather than living in plaintext in the MCP server's environment."
+          },
+          "preBuilt": {
+            "q": "Which MCP servers are pre-built?",
+            "a": "GitHub, Database (Postgres / MySQL / SQLite), Playwright, and a filesystem MCP are pre-built and configurable from the console. Other MCP servers (custom or open-source) install the same way they would on any Linux host."
+          },
+          "need": {
+            "q": "Do I need MCP to use Ellul?",
+            "a": "No. MCP is one of several ways to extend an agent. If your agent doesn't need external tools beyond the workstation's filesystem and shell, you can skip MCP entirely. Most engineers add MCP servers as their agent's needs grow."
+          },
+          "credLeak": {
+            "q": "Can MCP servers leak credentials if compromised?",
+            "a": "Long-lived secrets stay in the shield's vault, not in the MCP server's environment. The MCP server requests short-lived scoped credentials per call. Even a fully compromised MCP server cannot leak the underlying PAT or connection string. It can only abuse what's in flight."
+          }
+        }
+      },
+      "account": {
+        "heading": "Account, migration, refunds",
+        "items": {
+          "migrate": {
+            "q": "Can I migrate from another service?",
+            "a": "Yes. Most migrations are 'point your existing agent CLI at a new workstation'. The agent doesn't change, the runtime does. For users coming from prompt-to-app builders (Bolt, Lovable, Base44), export to GitHub first, then continue on Ellul with your preferred agent CLI."
+          },
+          "refund": {
+            "q": "What's the refund policy?",
+            "a": "Hobby and Pro plans are billed monthly. If you cancel within seven days of your first paid month, we refund the charge. After that, your subscription stops at the end of the current billing period and your data persists for thirty days while you decide."
+          },
+          "cancelData": {
+            "q": "What happens to my data if I cancel?",
+            "a": "Your workstation's encrypted volume persists for thirty days after cancellation. You can sign back in to download your data or reactivate. After thirty days, the volume is wiped from disk; we keep no backups beyond your own."
+          },
+          "recovery": {
+            "q": "How does account recovery work?",
+            "a": "Multiple registered passkeys are the primary recovery mechanism. If you lose all of them, recovery requires a verified secondary email and a seven-day delay. The delay is intentional. Without it, the gate model collapses."
+          },
+          "export": {
+            "q": "Can I export my data?",
+            "a": "Yes. Your code is in your repos (your own git host or GitHub). Your secrets and config are exportable as an encrypted bundle. The workstation itself isn't exportable as a VM image, but everything that lives on it can be snapshotted and rebuilt."
+          }
+        }
+      },
+      "region": {
+        "heading": "Language and region",
+        "items": {
+          "otherLanguages": {
+            "q": "Is the console available in languages other than English?",
+            "a": "The marketing site and console are translated into Japanese, Korean, German, Brazilian Portuguese, and French. The agent's behavior depends on the model. Most modern coding agents work fluently in those languages and many more."
+          },
+          "whatRegion": {
+            "q": "What region does my workstation run in?",
+            "a": "EU by default. Other regions are available on request. Regions are bound to your account at provisioning time."
+          },
+          "sovereignty": {
+            "q": "Is data sovereignty supported?",
+            "a": "Yes. Workstations in EU regions stay in EU regions; their LUKS-encrypted volumes never replicate outside the chosen region. Backups (when configured) honor the same boundary. If your work is governed by data-handling rules, this is structurally easier to defend than a managed third-party sandbox."
+          }
+        }
+      },
+      "pricing": {
+        "heading": "Pricing and access",
+        "items": {
+          "cost": {
+            "q": "What does Ellul cost?",
+            "a": "Hobby is $20/month for up to two parallel workstations. Pro is $50/month for up to five workstations, persistent state, and integrations. A Free tier exists for evaluation (one workstation, 60-minute sessions, hibernation after 30 minutes idle, fresh reset every 24 hours); it isn't a substitute for the paid tiers if you actually want the agent to keep working while you sleep."
+          },
+          "enterprise": {
+            "q": "Is there an enterprise tier?",
+            "a": "Not yet. We will add SSO, SOC 2, and audit exports once we have 200+ paying customers. Until then, mid-market and indie engineers are the priority ICP."
+          },
+          "deployWhere": {
+            "q": "Where does my app deploy?",
+            "a": "Anywhere you want: Vercel, Fly.io, Railway, Cloudflare Pages, your own infra. Ellul is upstream of hosting; it is where the agent works, not where the app runs."
+          },
+          "usageLimits": {
+            "q": "Are there usage credits or rate limits I should know about?",
+            "a": "No usage credits. Your subscription is flat. The only rate-limit-shaped concern is your model API quota, which is yours to manage with your model provider, not metered by Ellul."
+          }
+        }
+      }
+    },
+    "outro": {
+      "heading": "Still have a question?",
+      "subhead": "The full architecture is in the docs. The pricing is on the pricing page. Everything else is a DM away.",
+      "ctaPricing": "See pricing",
+      "ctaDocs": "Read the docs"
+    },
+    "breadcrumb": {
+      "home": "Home",
+      "faq": "FAQ"
+    }
+  }
+}

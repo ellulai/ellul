@@ -1,0 +1,64 @@
+{
+  "pillars": {
+    "agent-workstation": {
+      "title": "Agent workstation: where your AI agent lives",
+      "description": "What an agent workstation is, why the category exists, and how it changes the work. The persistent, isolated computer that an AI coding agent lives on: always on, parallel-capable, gated.",
+      "hero": {
+        "eyebrow": "Concept · Cornerstone",
+        "headline": "What is an agent workstation?",
+        "sub": "The persistent computer your AI agent lives on. Always on, isolated from your laptop, gated at the boundary. Here's the category we are defining, and what it changes about the work."
+      },
+      "cta": {
+        "label": "Start a workstation"
+      },
+      "keyword": "agent workstation",
+      "faq": {
+        "what-is-agent-workstation": { "q": "What is an agent workstation?", "a": "An agent workstation is a persistent, isolated computer that exists for an AI coding agent to live on. It is always on. It has its own filesystem, processes, and network. Privileged actions are gated at the boundary so they require human passkey approval. The agent runs there instead of on a developer's laptop." },
+        "vs-cloud-dev-environment": { "q": "How is it different from a cloud dev environment?", "a": "Cloud dev environments (Codespaces, Daytona, Coder) were designed for humans writing code in a browser. They have no agent gating, no parallel-agent peering primitive, and no passkey integration. An agent workstation is built for the agent first; the human is a participant, not the primary user." },
+        "why-own-computer": { "q": "Why does the agent need its own computer?", "a": "Three reasons. The agent's session ends when your laptop sleeps, so long jobs are impractical. The agent inherits your laptop's credentials: every SSH key, every browser cookie, every kubectl context. And only one agent can sit at the keyboard at a time without state collisions. An agent workstation fixes all three." },
+        "keep-using-ide": { "q": "Can I keep using my existing IDE?", "a": "Yes. Cursor, VS Code, Claude Code, Codex, OpenCode all work as clients pointed at the workstation. Your editor stays where you like it. The agent moves to its own computer." },
+        "vs-remote-agent": { "q": "Is this the same as a remote agent?", "a": "Related but not identical. A remote agent is an agent that doesn't run on your laptop. An agent workstation is the persistent place a remote agent lives. The workstation persists between sessions, holds installed dependencies, runs MCP servers, and gates privileged actions. A remote-agent host on its own typically does none of those things." }
+      }
+    },
+    "always-on-ai-agent": {
+      "title": "Always-on AI agent: lifecycle without the lid problem",
+      "description": "What an always-on AI agent is, why the lifecycle matters, and how it changes long-running work. The agent that keeps making progress when you're asleep, on a phone, or away from the keyboard.",
+      "hero": {
+        "eyebrow": "Concept · Always on",
+        "headline": "What does always-on actually mean for an AI agent?",
+        "sub": "Lifecycle without the lid problem. Why an agent that doesn't stop when you do changes which jobs are practical, and which ones require ground-up architecture instead of a longer laptop battery."
+      },
+      "cta": {
+        "label": "Try an always-on agent"
+      },
+      "keyword": "always on AI agent",
+      "faq": {
+        "what-is-always-on": { "q": "What is an always-on AI agent?", "a": "An always-on AI agent is one that runs continuously rather than starting and stopping with a developer's session. It handles background work (overnight refactors, long test runs, multi-step migrations, dependency upgrades) and notifies the human only when an action requires approval. It lives on a server, not a laptop." },
+        "how-long-can-it-run": { "q": "How long can an always-on agent actually run?", "a": "Indefinitely. Customer agents have run uninterrupted for multiple days through long refactors and migration scripts. The bound is the agent's own task, not infrastructure lifecycle. The workstation stays online whether the user is at their keyboard or not." },
+        "crash-recovery": { "q": "What happens when the agent crashes overnight?", "a": "Supervisor processes restart the agent and resume from the last checkpoint. You wake up to a continuing run, not a stopped one. State that the agent had explicitly written to disk persists across the restart; in-memory state from the crashed process is lost, which is why long-running agents periodically commit progress." },
+        "check-progress-mobile": { "q": "How do I check progress without sitting at my laptop?", "a": "Open the console on a phone or another device. The agent's chat, files, and logs are accessible from any registered device. When the agent needs your approval, you receive a notification and tap your passkey from the same device." },
+        "vs-claude-managed-agents": { "q": "Is this the same thing as Claude Managed Agents?", "a": "Related but different. Claude Managed Agents and similar offerings tie you to a specific model and a specific cloud. An Ellul workstation is model-agnostic. The same workstation runs Claude Code, Codex, Cursor's CLI, OpenCode, or any other agent CLI. Your model contract is between you and the model provider; your runtime contract is between you and Ellul." }
+      }
+    },
+    "parallel-agents": {
+      "title": "Parallel AI agents: multi-agent without state collisions",
+      "description": "Running multiple AI agents in parallel: coordinating two or three agents that don't step on each other. Read-only peering, separate sandboxes, bounded write authority.",
+      "hero": {
+        "eyebrow": "Concept · Parallel agents",
+        "headline": "Running multiple AI agents in parallel.",
+        "sub": "How to coordinate two or three agents that don't step on each other, with isolated sandboxes, read-only peering between them, and bounded write authority. The structural primitives that make multi-agent work safe."
+      },
+      "cta": {
+        "label": "Run agents in parallel"
+      },
+      "keyword": "parallel ai agents",
+      "faq": {
+        "coordination-no-collision": { "q": "How do parallel agents coordinate without colliding?", "a": "Each agent runs in its own isolated workstation with its own filesystem, processes, and network namespace. Coordination is read-only by default: one agent can read another's source code via a filtered snapshot, but cannot edit, push, or escalate against it. Write authority stays scoped to a single agent per resource." },
+        "two-agents-same-codebase": { "q": "Can two agents work on the same codebase at once?", "a": "They can both read it. Only one can write. The peering primitive is intentionally read-only. Write coordination between two agents is a recipe for state corruption that humans tend to underestimate. The right pattern is one writing agent plus one or more reviewing or documenting agents on adjacent workstations." },
+        "read-only-enforcement": { "q": "How is the read-only view enforced?", "a": "The peering view is delivered as an rsync-filtered snapshot into the consuming agent's filesystem. There is no write path back to the source. There are no symlinks. Files that exist only on the source side physically don't exist on the consuming side, so the reading agent cannot smuggle them out, exfiltrate secrets, or leak credentials via path traversal." },
+        "filter-list": { "q": "What gets filtered out of the peering view?", "a": "Everything that could expose secrets or break the source agent's environment: .env files, .envrc, credentials.json, service-account.json, .npmrc, .pypirc, .netrc, .htpasswd, .pgpass, node_modules, .git/objects, and per-tool config directories (.claude, .codex, .cursor, .vscode, .docker, and similar). The list is conservative and explicit." },
+        "more-than-three": { "q": "Can I have more than three parallel agents?", "a": "Technically yes, but the human bottleneck shifts. With two or three agents, a single human can still review and approve their work fast enough to keep them productive. Beyond that, your throughput is bounded by your own ability to context-switch between independent reviews. The right answer for large fleets is structured queues, not unbounded parallelism." }
+      }
+    }
+  }
+}

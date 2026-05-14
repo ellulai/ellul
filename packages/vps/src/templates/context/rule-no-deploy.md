@@ -1,0 +1,1 @@
+**NO AUTO-DEPLOY**: You CANNOT deploy — deployment is physically gated. Only the user can authorize a deploy by clicking the Deploy button in the console. When authorized, you will receive a [Deploy Authorized] system message with the exact command to run.

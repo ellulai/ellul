@@ -1,0 +1,53 @@
+{
+  "name": "@ellul.ai/i18n-messages",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./messages/en": {
+      "import": "./messages/en/index.ts",
+      "types": "./messages/en/index.ts"
+    },
+    "./messages/ja": {
+      "import": "./messages/ja/index.ts",
+      "types": "./messages/ja/index.ts"
+    },
+    "./loaders": {
+      "import": "./src/loaders.ts",
+      "types": "./src/loaders.ts"
+    },
+    "./shell-strings": {
+      "import": "./src/shell-strings.ts",
+      "types": "./src/shell-strings.ts"
+    },
+    "./agent-context": {
+      "import": "./agent-context/index.ts",
+      "types": "./agent-context/index.ts"
+    },
+    "./overlay": {
+      "import": "./src/overlay.ts",
+      "types": "./src/overlay.ts"
+    },
+    "./types": {
+      "import": "./src/types.ts",
+      "types": "./src/types.ts"
+    },
+    "./glossary": "./scripts/glossary.json",
+    "./prompt": "./scripts/translate-prompt.md"
+  },
+  "scripts": {
+    "validate": "node scripts/validate-key-trees.mjs",
+    "build:cdn": "node scripts/build-cdn-payload.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@ellul.ai/i18n-consts": "workspace:*"
+  },
+  "devDependencies": {
+    "@ellul.ai/ts-config": "workspace:*",
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.17"
+  }
+}

@@ -1,0 +1,7 @@
+package main
+
+import "database/sql"
+
+func migrate(db *sql.DB) {
+	db.Exec("DROP TABLE users")
+}

@@ -1,0 +1,22 @@
+{
+  "promptEngineering": {
+    "page": {
+      "title": "Prompt engineering for agents on Ellul",
+      "description": "Best-practice prompt patterns for AI coding agents on a persistent workstation: direction-style prompts, unattended runs, parallel-agent setups, passkey-gated work, MCP-aware prompting.",
+      "eyebrow": "Reference · Prompting",
+      "headline": "Prompt engineering for agents on Ellul.",
+      "subhead": "Patterns that work specifically for AI coding agents running on a persistent workstation: always-on, parallel-capable, passkey-gated.",
+      "cta": "Try the patterns",
+      "back": "← Concepts",
+      "breadcrumbHome": "Home",
+      "breadcrumbSelf": "Prompt engineering"
+    },
+    "faq": {
+      "always-on-vs-laptop-prompts": { "q": "How are prompts for an always-on agent different from prompts for a laptop?", "a": "Prompts for a laptop assume the human is at the keyboard, so they can be incremental and reactive. Prompts for an always-on agent need to be direction-style: goal, constraints, optional approach, stopping criteria. The agent runs without supervision, so the prompt has to encode when to stop." },
+      "no-stop-condition-anti-pattern": { "q": "What's the worst prompt anti-pattern for unattended runs?", "a": "Not specifying a stop condition. An agent without a stop condition will run until it hits its context window or until something external interrupts it. Always include something the agent can verify (tests pass, PR opened, migration succeeded) as the explicit stop point." },
+      "parallel-agent-prompting": { "q": "How should parallel agents be prompted differently?", "a": "Define the seam clearly: which agent owns which resource. Default everyone to read-only. Grant write authority narrowly. The reviewer agent doesn't need write access to the coder's branch; the documenter doesn't need write access to the codebase. Most parallel-agent failures come from giving the wrong agent write authority." },
+      "skipping-passkey-approval": { "q": "Should I try to skip passkey approval prompts?", "a": "No. The passkey gate exists to keep the agent honest about what it's doing. If your prompt is structured to need approval-skipping, the prompt is wrong. Restructure so privileged actions are batched and the approval point is meaningful: once per task, not once per command." },
+      "patterns-cross-agent": { "q": "Are these patterns specific to Claude Code, or do they apply to all agents?", "a": "All agents. The structural shape (direction over dictation, explicit stop conditions, defined seams between parallel agents, batched approvals) applies whether you're running Claude Code, Cursor's CLI, Codex, or OpenCode. The exact phrasing differs across agents; the underlying patterns don't." }
+    }
+  }
+}

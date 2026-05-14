@@ -1,0 +1,130 @@
+The "Cursor alternative" search has become three different questions hiding under one phrase. Half the people typing it want a different editor; a quarter want a different agent; a quarter want a different runtime. The right answer depends entirely on which question you actually have, and most listicles muddle the three so badly that the recommendation is wrong half the time.
+
+This is a category-first map. We'll separate the three axes, name the strong tools on each axis, give a decision tree that gets you to the right one, and finish with an honest take on when Cursor is still the right answer despite the search query that brought you here.
+
+For the head-to-head comparison of Cursor against Ellul specifically, our [/vs/cursor](/vs/cursor) page goes deeper. This post is the landscape view.
+
+## The three "Cursor alternative" questions
+
+Question A: I want a different editor with AI. What you actually want is a Cursor-shaped editing experience, just from a different vendor. Windsurf, Zed, JetBrains AI, VS Code with extensions all sit here. The alternative is on the editor axis. The agent and runtime are essentially the same as Cursor.
+
+Question B: I want a stronger autonomous agent. What you actually want is an agent that drives multi-step work better than Cursor's chat panel can. Claude Code, Codex, OpenCode, Devin all sit here. The alternative is on the agent axis. The editor (or absence of editor) is secondary.
+
+Question C: I want a different runtime. What you actually want is for the agent to live somewhere other than your laptop. Persistent, parallel, gated. This is where the cloud vibe-coding tools (Lovable, Bolt, Base44, Replit Agent) and the agent-workstation runtimes (Ellul, Daytona, Codespaces, e2b) live. The alternative is on the runtime axis. The agent and editor are choices you make on top of the runtime.
+
+A given product often answers more than one question. Cursor is an editor (Q1) with an agent (Q2) on a runtime (Q3, which is your laptop). When you switch any of those three, you're answering a different question. The mistake is searching for "Cursor alternative" when what you really need is a runtime alternative. You'll end up with another laptop-based editor and not solve your actual problem.
+
+## Category 1: Editor-as-AI alternatives
+
+If your answer is Q1, the strong candidates:
+
+<BulletList>
+  <BulletItem heading="Windsurf">
+    Codeium's editor. The closest direct competitor to Cursor on overall feel. Different chat-vs-completion balance, slightly different opinionation about the agent panel. Engineers split on personal preference; neither is structurally ahead. Same laptop-runtime ceilings as Cursor. See [/vs/windsurf](/vs/windsurf).
+  </BulletItem>
+  <BulletItem heading="Zed">
+    Native, fast, minimalist editor with built-in AI. Smaller AI surface than Cursor or Windsurf, but the editor itself is faster. Good for engineers who value editor responsiveness above AI integration depth. Less full-featured for agent-heavy work; more pleasant for everything else.
+  </BulletItem>
+  <BulletItem heading="JetBrains AI Assistant">
+    For engineers already living in IntelliJ, PyCharm, or WebStorm. The AI integration is deeper than VS Code's plugin model but thinner than Cursor or Windsurf's purpose-built designs. The pitch is "you don't have to leave your IDE."
+  </BulletItem>
+  <BulletItem heading="VS Code with extensions">
+    The configurable approach. Pick your AI extension: GitHub Copilot, Continue, Claude Code's VS Code integration, Cody. Maximum flexibility, less integration polish. Right for engineers who want to swap pieces independently.
+  </BulletItem>
+</BulletList>
+
+When this category is the right answer: you spend the day typing in your editor, the agent panel is supplementary rather than central, and you want a different vibe in the editor itself.
+
+When this category is the wrong answer: you keep wishing the agent could "just do the work overnight." That's a runtime question, not an editor question.
+
+## Category 2: Stronger autonomous agents
+
+If your answer is Q2, the strong candidates:
+
+<BulletList>
+  <BulletItem heading="Claude Code">
+    Anthropic's terminal-first coding agent. As of mid-2026, the strongest single agent for multi-step planning, code review, and long-running tasks. CLI-first by design, which means it composes with whatever editor and runtime you choose. We've covered the head-to-head with Cursor in [claude-code-vs-cursor](/blog/claude-code-vs-cursor) and the agent's properties in [/agents/claude-code](/agents/claude-code).
+  </BulletItem>
+  <BulletItem heading="Codex">
+    OpenAI's coding agent CLI. Strong on quick iteration and tool use; different model strengths than Claude Code (different blind spots, different sweet spots). Same composability story; runs on whatever runtime you give it.
+  </BulletItem>
+  <BulletItem heading="OpenCode">
+    The strongest open-source agent CLI in 2026. Active community, model-agnostic, designed to run on whatever runtime you give it. The pitch when you want to avoid lock-in to any one lab.
+  </BulletItem>
+  <BulletItem heading="Devin">
+    A more autonomous agent product, built around the assumption that the human reviews work products rather than supervising line by line. Different shape from the CLI agents; tighter integration, less composability. See [/vs/devin](/vs/devin).
+  </BulletItem>
+  <BulletItem heading="Cursor's CLI">
+    Mentioned for completeness. Cursor ships a CLI as well as the editor, and the CLI runs on any runtime. If your "alternative to Cursor" question is "I like Cursor but want it off my laptop," the CLI on a workstation is the most direct path.
+  </BulletItem>
+</BulletList>
+
+When this category is the right answer: you keep wishing your agent would handle longer tasks autonomously, with less supervision.
+
+When this category is the wrong answer: you actually want a better editor, and switching agents won't fix that.
+
+## Category 3: Different runtime alternatives
+
+If your answer is Q3, the strong candidates split into two sub-categories.
+
+### Cloud vibe-coding tools
+
+These are full-stack runtimes that bundle an agent, an IDE, and a deploy story. Strong for prototypes; locked-in for serious work.
+
+Lovable: full-stack apps with auth and database. [/vs/lovable](/vs/lovable). Bolt: marketing pages, landing pages, prototypes. [/vs/bolt](/vs/bolt). Base44: full-stack with integrations. [/vs/base44](/vs/base44). Replit Agent: Replit-native agent integrated into Replit's IDE and deploy. [/vs/replit](/vs/replit). Manus: more general-purpose autonomous agent. [/vs/manus](/vs/manus).
+
+### Agent workstation and dev environment runtimes
+
+These are runtimes you control, where you bring the agent of your choice.
+
+Ellul: what we build. Persistent workstation per agent, parallel-capable, passkey-gated, BYOK. See [the agent-workstation concept](/concepts/agent-workstation). Daytona: open-source dev environment platform. Strong for "I want to spin up a workspace per repo." Less agent-specific than Ellul. See [/vs/daytona](/vs/daytona). GitHub Codespaces: Microsoft's cloud dev environment. Built for humans writing code in a browser, not built for agents specifically. See [/vs/codespaces](/vs/codespaces). e2b: sandbox primitives for builders. Ephemeral by design; good for "give the LLM a place to run code." Different shape from a persistent workstation. See [/vs/e2b](/vs/e2b). Sprites: newer entrant in the agent-runtime space. See [/vs/sprites](/vs/sprites).
+
+When this category is the right answer: you keep hitting laptop-runtime ceilings. Overnight runs that stop, parallel agents that collide, real-credential operations that you don't trust on your machine. The fix is the runtime, not the editor or the agent.
+
+## A decision tree
+
+Walking through the three axes in order.
+
+Step 1: What hurts most about Cursor right now? If the editor experience itself, that's Question A. Try Windsurf or Zed. If the agent's quality on long tasks, that's Question B. Try Claude Code or Codex on whatever runtime you have. If the fact that everything stops when your laptop closes, that's Question C. Move to a different runtime.
+
+Step 2: If you picked C, what kind of work? Throwaway prototypes, demos, learning go to cloud vibe-coding (Lovable, Bolt, Base44, Replit Agent). Serious engineering work that needs to scale goes to an agent workstation or dev environment runtime (Ellul, Daytona, e2b, Codespaces).
+
+Step 3: If you picked workstation, what's the deal-breaker? "I want the agent to be the primary user, with passkey gating and parallel agents" lands on Ellul (we obviously have a horse in the race; the design assumption is the agent rather than the human). "I want a generic dev environment, agent-agnostic, more like a remote IDE" lands on Daytona or Codespaces. "I want ephemeral sandboxes for short-lived code execution" lands on e2b.
+
+The decision tree is a tree because the alternatives compose. Cursor users often end up on a workstation runtime running Cursor's CLI: the editor stays, the runtime changes. People who picked Q2 often end up on a workstation runtime too, because the strong agents need a strong place to run. The runtime question swallows the others if you let it.
+
+## When Cursor is still the right answer
+
+Honest take: Cursor is unmatched for a specific shape of work. Editor-heavy, single-agent, single-machine, short-cycle. If most of your day is in a file in front of you and the agent panel is a complement to your typing, Cursor's surface is hard to beat.
+
+The "Cursor alternative" question shows up when your work has outgrown that shape. You want longer runs. You want parallel agents. You want real-credential operations gated outside your laptop. You want the agent doing things while you're not watching.
+
+At that point, you're not actually looking for a Cursor alternative. You're looking for a runtime to put a strong agent on. Cursor can be the editor; the agent can be Claude Code, Codex, or Cursor's own CLI; the runtime can be Ellul or anywhere else durable. None of those are "Cursor alternatives." They're "Cursor companions."
+
+If you only take one thing away: search results that promise a single product that replaces Cursor are usually wrong. The real answer is to figure out which axis you want to alternative on, then pick the strongest product on that axis. Often that means keeping Cursor and changing something else.
+
+---
+
+## FAQ
+
+<Faq />
+
+---
+
+## References
+
+- Cursor changelog and design philosophy, [cursor.com](https://cursor.com)
+- Codeium and Windsurf product notes, [codeium.com](https://codeium.com)
+- Anthropic, *Claude Code*, [anthropic.com/claude-code](https://www.anthropic.com/claude-code)
+- Cognition, *Devin engineering benchmarks*, [cognition.ai](https://www.cognition.ai)
+- StackBlitz, *Bolt*, [stackblitz.com/bolt](https://stackblitz.com/)
+
+<Cta
+  eyebrow="Cursor stays. The runtime moves."
+  body="Ellul is a workstation runtime where you bring the agent (Claude Code, Codex, OpenCode, Cursor's CLI), the model key, and your existing editor. Same Cursor; different place for the agent to live. $20/mo Hobby, $50/mo Pro."
+  primary={{ href: "https://console.ellul.ai/sign-up", label: "Get a workstation" }}
+  links={[
+    { href: "/vs/cursor", label: "Cursor vs Ellul →" },
+    { href: "/concepts/agent-workstation", label: "Agent workstation concept →" },
+  ]}
+/>

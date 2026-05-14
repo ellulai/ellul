@@ -1,0 +1,123 @@
+Two distinct product shapes have emerged in agentic coding by April 2026, and the category-naming hasn't caught up. On one side are vendor-managed agents like Devin, Manus, Bolt, Lovable, and base44. The vendor sells you the agent, picks the model, owns the runtime, and ships an end-to-end product. On the other side are bring-your-own-agent runtimes (Ellul, plus a handful of self-hosted setups) where you keep your existing agent CLI and the platform sells only the runtime under it.
+
+If you're choosing between them, it pays to understand which question each one answers.
+
+## The two shapes, in one paragraph each
+
+**Managed agents** sell a turnkey product. You describe the work in a chat box. The vendor's agent, running on the vendor's model, in the vendor's sandbox, produces a result: a PR, a deployed app, a research document. Devin is the original example, opinionated and pay-as-you-go since Devin 2.0 (April 2025) at $20/month Core plus roughly $2.25 per Agent Compute Unit, with higher Pro and Max tiers above. Manus is the generalist version with credit-based pricing and agent-driven research. Bolt and Lovable are website-focused. base44 sits closer to the no-code edge of the same category.
+
+**Bring-your-own-agent runtimes** sell infrastructure. You install your existing agent CLI on a persistent remote workstation that the platform manages. The CLI runs as it always has. The platform contributes runtime properties the CLI on a laptop doesn't have: surviving a closed lid, running in parallel without state collisions, gating privileged actions like git push behind a passkey. You keep your BYOK arrangement with the model vendor, your CLI's muscle memory, and your codebase ownership. [Ellul](/) is the version of this category we built.
+
+These aren't the same purchase. They cost differently, lock you in differently, and fail differently when you outgrow them.
+
+## How does the cost actually compare?
+
+Headline pricing reads cleanly. Real cost is murkier.
+
+<BulletList>
+  <BulletItem heading="Managed agent headline">
+    Devin 2.0 starts at $20 a month Core and bills pay-as-you-go around $2.25 per Agent Compute Unit, with Pro and Max tiers and enterprise pricing above. Manus Plus is around $39 a month with credit-based usage. Bolt and Lovable start around $20 to $25 a month with token usage caps. base44 sits in the lower-priced no-code range. The headline usually includes the model. You don't pay separately.
+  </BulletItem>
+  <BulletItem heading="BYOA headline">
+    Ellul is $20 a month for Hobby and $50 a month for Pro. That doesn't include the model. You pay your model vendor (Anthropic, OpenAI, or whoever else) directly via your own API key. For heavy use, model spend is the larger line item.
+  </BulletItem>
+  <BulletItem heading="Real cost: heavy use">
+    A heavy Claude Code user on Anthropic's Pro ($20) or Max ($100 or $200) plus Ellul Pro ($50) lands at $70 to $250 a month all-in. A heavy Devin user with sustained usage past the included credits routinely passes $200 a month on per-ACU billing and can exceed Ellul-plus-Claude-Max for the same workload. The gap narrows in either direction depending on usage, and the structural difference (whose model, whose workflow) stays real.
+  </BulletItem>
+  <BulletItem heading="Real cost: light use">
+    A light user pays Cursor Pro ($20) or Claude Pro ($20) plus Ellul Hobby ($20), totaling $40 a month. A light Manus user pays roughly $39. Roughly the same.
+  </BulletItem>
+</BulletList>
+
+The structural cost difference isn't the dollar figure. It's the **opinionation tax**. Managed agents bake in their model, their workflow, and their tool stack. Switching is a re-platform. BYOA decouples those, which is a recurring small saving rather than a single large one.
+
+## Lock-in, more honestly
+
+The lock-in conversation gets glossed over because it sounds boring. It is not.
+
+**Managed agents lock you into the vendor's model.** Devin's stack is Cognition's. Manus's stack is Manus's. If the vendor's model regresses, you can't switch to a different model without switching products. That's a real risk in a year when frontier models change every few months. (Note: Cursor's Cloud Agents are an interesting hybrid here; the runtime is managed but the model selection is not opinionated to the same degree.)
+
+**Managed agents lock you into the vendor's workflow.** Devin opens PRs with Devin's commit message style. Manus produces documents in Manus's format. If your team has strong preferences (commit conventions, code review style, doc templates), you fight the product or accept the vendor's version.
+
+**Managed agents lock you into the vendor's credential model.** Devin holds your GitHub credentials inside Devin. Manus holds your tools' tokens inside Manus. If you want the credentials to live somewhere else (your vault, your IAM, your secrets manager), managed-agent products generally don't support it. This becomes load-bearing once you grow past one engineer.
+
+**BYOA decouples all three.** The agent is yours. The model contract is yours. The workflow is yours. The runtime is the only thing the platform owns. Exit cost is moving the agent CLI to a different runtime, measured in hours not quarters.
+
+This is real money over a multi-year horizon. It's also engineering culture. Teams that care about craft typically dislike opinionated end-to-end agent products for the same reasons they disliked low-code in the 2010s.
+
+## When is managed actually right?
+
+Many real users are correctly served by managed agents. The shape is wrong-fit-forced when teams pretend it isn't.
+
+<NumberedList>
+  <NumberedItem heading="One-off work">
+    A research project. A marketing site. A standalone script. The work doesn't need to compose with an existing codebase or agent setup. Managed agents are faster to start. The integration cost on a runtime you bring is overhead.
+  </NumberedItem>
+  <NumberedItem heading="No engineering team to run agents">
+    A product manager, a researcher, a non-engineer founder. Setting up a workstation, configuring an agent CLI, managing BYOK keys are real chores. Managed agents do them for you, and that's worth paying for.
+  </NumberedItem>
+  <NumberedItem heading="The vendor's model is the right model">
+    Cognition's stack is genuinely strong for some classes of engineering work. If you've A/B tested it and Devin produces better results than your Claude Code setup for your specific work, the right answer is to use Devin.
+  </NumberedItem>
+  <NumberedItem heading="The vendor's workflow is your workflow">
+    If your team has no strong preference about commit style or PR shape, the vendor's defaults are fine. You're not paying an opinionation tax because you have no opinion to tax.
+  </NumberedItem>
+</NumberedList>
+
+If three of those four describe you, managed is the right answer. Don't fight it.
+
+## When is BYOA actually right?
+
+The symmetric take.
+
+<NumberedList>
+  <NumberedItem heading="Continuous engineering work">
+    The agent is part of how your team ships every day. The integration depth (your repo conventions, your tools, your CI, your monitoring) matters more than headline turnkey-ness. BYOA earns its keep over months.
+  </NumberedItem>
+  <NumberedItem heading="An existing agent CLI you like">
+    Your team has Claude Code muscle memory, or Cursor command-K muscle memory, or Codex pipeline muscle memory. Asking them to switch to a managed product is asking them to re-learn. The right move is often to keep the CLI and change the runtime under it.
+  </NumberedItem>
+  <NumberedItem heading="Cost discipline at scale">
+    You have ten engineers. Managed-agent pricing scales linearly per seat. BYOA pricing scales sub-linearly because the runtime is per-workstation and the model spend is per-actual-usage. The break-even sits around five engineers, often earlier.
+  </NumberedItem>
+  <NumberedItem heading="Multi-model strategy">
+    You want Claude for some tasks, OpenAI for others, an open-weight local model for triage. Managed agents don't accommodate this. BYOA does, because you bring the keys and the agent.
+  </NumberedItem>
+  <NumberedItem heading="Real-credential operations">
+    Your agent needs to push to production, deploy, run database migrations. You want a single audit trail of every privileged action gated by a single mechanism. BYOA with a passkey-gated boundary makes this clean. Managed agents handle credentials inside their sandbox, which is fine until it isn't.
+  </NumberedItem>
+</NumberedList>
+
+Three of five and BYOA is probably the right shape. See [agent workstation](/concepts/agent-workstation) for the longer architectural argument.
+
+## So which one should I pick?
+
+Pick managed if you don't have an agent CLI you love, the work is one-off, and the vendor's model is the right model for the work. Pick bring-your-own-agent if the agent is part of how your team ships continuously, you have a CLI you already use, and you care about the long-tail properties: multi-model strategy, cost discipline, real credential gating.
+
+The wrong move is picking on hype. Managed agents have had the louder marketing year. Bring-your-own-agent runtimes are quieter. Loudness is not signal. Look at what your work actually is, and what the right shape is for the next two years of doing more of it.
+
+For a closer look at specific alternatives, see [Devin vs Ellul](/vs/devin), [Manus vs Ellul](/vs/manus), and the [agent workstation](/concepts/agent-workstation) primer.
+
+---
+
+## FAQ
+
+<Faq />
+
+---
+
+## References
+
+- [Cognition Devin product page](https://cognition.ai)
+- [Manus product page](https://manus.im)
+- Internal: [Devin vs Ellul](/vs/devin), [Manus vs Ellul](/vs/manus), [Agent workstation](/concepts/agent-workstation)
+
+<Cta
+  eyebrow="Bring-your-own-agent"
+  body="Keep your Claude Code, Cursor, Codex, or OpenCode CLI. Run it on a persistent workstation that gates the dangerous parts. Twenty dollars a month for Hobby, fifty for Pro."
+  primary={{ href: "https://console.ellul.ai/sign-up", label: "Get a workstation" }}
+  links={[
+    { href: "/vs/devin", label: "vs Devin" },
+    { href: "/vs/manus", label: "vs Manus" },
+  ]}
+/>

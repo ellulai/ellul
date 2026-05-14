@@ -1,0 +1,8 @@
+/app
+/bin/
+/tmp/
+*.test
+*.out
+vendor/
+.env*
+!.env.example

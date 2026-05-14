@@ -1,0 +1,62 @@
+{
+  "_comment": "ellul-namespaced manifest source for the FREE tier. Hand-authored; signed at build time by apps/api/scripts/sign-manifests.ts. Daemon attests the running namespace mountinfo against this list.",
+  "manifestVersion": 1,
+  "appliesToTier": "free",
+  "projectSlugRegex": "^sbx-[a-z0-9]{7}$",
+  "hostIdRegex": ".*",
+  "validForDays": 30,
+  "mounts": [
+    {
+      "_comment": "Shield blackholes — load-bearing security boundary",
+      "targetTemplate": "/etc/ellul/shield-data",
+      "kind": "blackhole",
+      "mandatory": true,
+      "postCheckFstype": "tmpfs",
+      "flags": ["EMPTY"],
+      "optionsRequired": []
+    },
+    {
+      "targetTemplate": "/var/lib/ellul-shielded",
+      "kind": "blackhole",
+      "mandatory": true,
+      "postCheckFstype": "tmpfs",
+      "flags": ["EMPTY"],
+      "optionsRequired": []
+    },
+    {
+      "targetTemplate": "/run/shield",
+      "kind": "blackhole",
+      "mandatory": true,
+      "postCheckFstype": "tmpfs",
+      "flags": ["EMPTY"],
+      "optionsRequired": []
+    },
+    {
+      "_comment": "/proc with hidepid=2 — root-owned procfs visibility hidden from agent",
+      "targetTemplate": "/proc",
+      "kind": "proc",
+      "mandatory": true,
+      "postCheckFstype": "proc",
+      "flags": [],
+      "optionsRequired": ["hidepid=2"]
+    },
+    {
+      "_comment": "/tmp tmpfs — fresh per namespace, isolated from host /tmp",
+      "targetTemplate": "/tmp",
+      "kind": "tmpfs",
+      "mandatory": true,
+      "postCheckFstype": "tmpfs",
+      "flags": [],
+      "optionsRequired": []
+    },
+    {
+      "_comment": "Per-project projects tmpfs — hides cross-project visibility",
+      "targetTemplate": "{home}/projects",
+      "kind": "tmpfs",
+      "mandatory": true,
+      "postCheckFstype": "tmpfs",
+      "flags": [],
+      "optionsRequired": []
+    }
+  ]
+}

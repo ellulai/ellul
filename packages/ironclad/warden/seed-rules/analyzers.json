@@ -1,0 +1,6 @@
+{
+  "aesthetics_max_depth": {
+    "enabled": true,
+    "threshold": 2
+  }
+}

@@ -1,0 +1,119 @@
+## What is Cursor's CLI?
+
+Cursor's CLI (the `cursor-agent` binary) is the command-line surface of Anysphere's coding agent. It is a sibling of the Cursor editor, not a replacement. The editor stays on your laptop where it has always lived, doing the work it is best at: inline completions, command-K refactors, codebase indexing, the editor panel for in-the-flow tasks. The CLI runs the long-form agent loop in a terminal. It is how Cursor scales beyond editor-bound work into overnight refactors, autonomous PR drafts, and parallel sessions across branches.
+
+Ellul is the persistent <Term slug="agent-workstation">agent workstation</Term> the CLI runs on.
+
+## Why running Cursor's CLI on Ellul matters
+
+The Cursor editor is the best inline coding surface in the category as of April 2026. Inline completions are instant. Command-K is reflexive after a week. Codebase indexing means the editor's agent panel knows about types and call sites without you re-explaining. None of that experience benefits from moving to a server, and we recommend you do not move it. Keep the editor on your laptop.
+
+The CLI is the part that benefits from a different home. Long unattended sessions, parallel branches, production-touching automations: all of them want a host that does not close. A laptop running `cursor-agent` overnight is a laptop that has to stay open, on Wi-Fi, and unsleeping until the agent finishes. A workstation has none of those constraints.
+
+The composition we see most often:
+
+1. **Cursor editor on your laptop** for inline work. Completions, command-K, the agent panel for editor-local tasks.
+2. **`cursor-agent` on Ellul** for the long unattended runs. Migrations, overnight test suites, multi-session reviews.
+3. **Phone-driven approvals** for production-touching actions. When the CLI hits `git push`, a deploy, or a prod query, it pauses on a passkey gate. You tap from your phone in the kitchen and the agent picks up where it left off.
+
+<Callout type="note" title="The two surfaces serve different jobs">
+The editor on your laptop is where you type alongside the model. The CLI on the workstation is where the agent works while you are doing something else. They share your repo, your prompts, and your Cursor account. They do not compete for the same job.
+</Callout>
+
+## Quick-start: connecting Cursor's CLI to Ellul
+
+This walkthrough assumes you already have a Cursor subscription. If you do not, set that up at [cursor.com](https://cursor.com).
+
+1. **Sign up** at console.ellul.ai. Hobby is $20/mo for up to two parallel workstations. Pro is $50/mo for up to five workstations plus read-only peering.
+2. **Provision a workstation.** A persistent sandbox boots in roughly ninety seconds. `cursor-agent` is pre-installed alongside Claude Code, Codex, and OpenCode.
+3. **Connect a passkey.** FIDO2 from your phone, laptop, or hardware key. The passkey gates `git push`, deploys, and any privileged action the CLI attempts.
+4. **Authenticate the CLI.** Run `cursor-agent login` on the workstation. The OAuth flow returns to your Cursor account and the credential is stored in Ellul's server-side vault. It never sits in plaintext on the agent's filesystem.
+5. **Open a session.** Use Ellul's chat UI in the browser, or SSH into the workstation and run `cursor-agent` directly in any project.
+
+You can start the CLI by hand or with the same `cli.json` you already use:
+
+<CodeTabs>
+  <CodeTab label="CLI">
+```bash
+# Workstation shell. Cursor stays open on your laptop, the CLI runs here.
+cd ~/work/your-repo
+cursor-agent
+```
+  </CodeTab>
+  <CodeTab label="cli.json">
+```jsonc
+// ~/.cursor/cli.json. Same shape as on a laptop. Ellul brokers the auth
+// credential through the vault, so it does not appear here in plaintext.
+{
+  "model": "auto",
+  "rules": [".cursor/rules"]
+}
+```
+  </CodeTab>
+</CodeTabs>
+
+The Cursor editor on your laptop continues to work exactly as it did before. Open the same repository on the workstation in `cursor-agent` for unattended work; switch back to the editor on your laptop when you want inline completions.
+
+## Picking a plan
+
+Hobby is right if you run one CLI session at a time. One workstation, BYO Cursor subscription, passkey gate, and dependencies that survive between sessions.
+
+Pro is the tier that lets you treat the CLI like a fleet:
+
+- **Multiple workstations** for <Term slug="parallel-agents">parallel agents</Term> on different branches. Two `cursor-agent` sessions on adjacent feature branches, no shared filesystem state.
+- **Read-only peering** so a reviewer agent in workstation B can read a coder agent's working tree in workstation A without writing back.
+- **Production credential vault.** Tokens the agent should not see in plaintext live behind the gate. Injection happens only after a passkey tap.
+
+Both tiers preserve your Cursor subscription as-is. Ellul charges for the workstation, not for the agent.
+
+## Common patterns
+
+The CLI on Ellul is the right tool for the work that does not fit in an editor session.
+
+Overnight refactors are the canonical example. Codebase-wide renames, dependency upgrades, framework cutovers. You queue at 11pm and wake up to a draft PR. We have customers running this pattern weekly.
+
+Multi-branch review loops are how teams use it once they get comfortable. A coder agent on `feat/migrate-orm` and a reviewer agent on `main`, both running `cursor-agent` with different system prompts. The reviewer reads the coder's branch via read-only peering and never has write access. This is the pattern that makes <Term slug="always-on-agent">always-on agent</Term> ergonomics feel natural rather than novel.
+
+Production-touching automations are where the passkey gate earns its keep. Anything that ends in `git push`, `vercel deploy`, or a prod database write pauses for a tap. The agent decides what to do. The human approves the consequential action.
+
+Phone-driven approvals are the small habit that ties the rest together. Push notification fires on a gate. You tap your <Term slug="passkey-approval">passkey</Term>. The agent's PR merges. You walk off the train.
+
+For inline editor work, with completions and command-K refactors on the file in front of you, keep the Cursor editor on your laptop. The CLI on Ellul is the wrong tool for that job.
+
+## Honest limits
+
+<Callout type="warning" title="What stays the same, and what does not">
+- **Inline completions stay local.** They have always required the agent to be co-located with the editor. Cursor on your laptop still does this exactly as before.
+- **Codebase indexing stays local.** Cursor's editor indexes your repository on your machine. The CLI on Ellul indexes the workstation's copy of the repo separately.
+- **Agent panel ergonomics are local-first.** For inline work in the editor, the agent panel on your laptop is the right surface. For unattended work, the CLI on Ellul is the right surface. They do different jobs.
+- **Cursor subscription stays with Cursor.** Ellul does not re-bill you for Cursor. You keep your existing subscription and run the CLI on the workstation.
+</Callout>
+
+## Common questions
+
+### Do I need Cursor's subscription to use the CLI on Ellul?
+Yes. Cursor's CLI is part of Cursor's product. You keep your existing Cursor subscription and run the CLI on the workstation as the runtime.
+
+### Will Cursor's editor still work pointed at the workstation?
+Yes. Cursor's editor runs on your laptop as it always has. The CLI runs on the workstation. The two coordinate via Cursor's normal mechanisms; you keep the editor experience and gain the runtime.
+
+### What about Cursor's agent panel?
+Cursor's agent panel is local-first by design. For unattended work, the CLI on Ellul is the right surface. For inline editor work, the agent panel on your laptop is best. They serve different purposes.
+
+### Can I run multiple `cursor-agent` sessions in parallel?
+On Pro you can. Each runs in its own workstation with its own filesystem, branch, and process tree. Read-only peering lets sessions read each other without write access. The standard pattern is a coder agent and a reviewer agent on adjacent branches.
+
+### How does the passkey gate work with Cursor's CLI?
+The CLI runs as a normal Linux process in the workstation. When it attempts a privileged action like `git push`, a deploy, or a secret read, Ellul's gate intercepts the call from outside the agent's process namespace and waits for a FIDO2 passkey approval. The agent cannot patch the gate, read its memory, or prompt-inject around it.
+
+## See also
+
+- [Cursor vs Ellul →](/vs/cursor)
+- [Claude Code vs Cursor →](/vs/claude-code-vs-cursor)
+- [Cursor remote agents →](/solutions/cursor-remote-agents)
+
+## References
+
+- Anysphere, [Cursor](https://cursor.com). Official site, editor and CLI downloads.
+- Anysphere, [Cursor CLI documentation](https://cursor.com/docs/cli). Install, auth, configuration.
+- Model Context Protocol, [specification](https://modelcontextprotocol.io). MCP servers running on the workstation are reachable by `cursor-agent` through the standard transport.

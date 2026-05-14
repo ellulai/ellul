@@ -1,0 +1,202 @@
+{
+  "mcp": {
+    "playwright": {
+      "name": "Playwright MCP",
+      "description": "ヘッドレスブラウザ自動化をMCPサーバとして提供。Ellul上では、ブラウザがエージェントセッション間でウォームを保ちます。認証クッキーとウォームキャッシュは、プロンプトのたびに再構築されるのではなく永続します。",
+      "hero": {
+        "eyebrow": "MCP · サーバ",
+        "headline": "Ellul上のPlaywright MCP",
+        "sub": "永続MCPサーバとしてのヘッドレスブラウザ自動化。ウォームブラウザ、永続クッキー、プロジェクトごとに隔離。近日：Phase 6cで詳細ガイド。"
+      },
+      "capabilities": [
+        "ヘッドレスChromium / Firefox / WebKit",
+        "セッション間で永続するブラウザコンテキスト（クッキー、localStorage、indexedDB）",
+        "プロジェクトごとの名前空間隔離",
+        "認証ブラウジングのためのクレデンシャル仲介"
+      ],
+      "faq": {
+        "vs-laptop": {
+          "q": "なぜPlaywright MCPをラップトップではなくワークステーション上で動かすのですか？",
+          "a": "ブラウザコンテキストのウォームアップは高コストです。ラップトップ上ではブラウザはセッションごとにコールド起動します。Ellul上ではブラウザコンテキストが永続し、エージェントは認証クッキーがまだ有効なウォームブラウザにアタッチします。"
+        },
+        "credentials": {
+          "q": "クレデンシャルはどう扱われますか？",
+          "a": "認証ブラウジング（ログインを必要とするものすべて）はSovereign Shieldを経由します。クレデンシャルはPlaywrightの環境に保存されるのではなく、呼び出しごとにPlaywrightへ仲介されます。"
+        },
+        "full-guide": {
+          "q": "完全ガイドはどこですか？",
+          "a": "進行中です。/mcpのMCPハブが出発点。サーバごとの詳細ページは後続フェーズで出荷されます。"
+        }
+      }
+    },
+    "github": {
+      "name": "GitHub MCP",
+      "description": "GitHubアクセス（イシュー、PR、レビュー、ステータスチェック）をMCPサーバとして。Ellul上では、PATはMCPサーバの環境ではなくshieldに住みます。近日：Phase 6cで詳細ガイド。",
+      "hero": {
+        "eyebrow": "MCP · サーバ",
+        "headline": "Ellul上のGitHub MCP",
+        "sub": "GitHubのイシュー、PR、レビュー、ステータスチェックを永続MCPサーバとして。パーソナルアクセストークンはshieldのvaultに住みます。完全に侵害されたMCPサーバでもそれを漏らせません。"
+      },
+      "capabilities": [
+        "イシュー、PR、レビュー、コメント、ステータスチェック",
+        "ブランチ操作と該当する場合のGit LFS",
+        "Sovereign Shieldが仲介するPAT（MCPサーバの環境変数にはなし）",
+        "書き込みアクションのためのパスキーゲート操作"
+      ],
+      "faq": {
+        "pat-in-env": {
+          "q": "すべてのMCPサーバは環境にPATを必要としないのですか？",
+          "a": "素朴にはそうです。ほとんどのMCPサーバチュートリアルはPATを.envに置くよう指示します。Ellul上では、GitHub MCPサーバはshieldから呼び出しごとにトークンを要求するように構成されています。shieldが長寿命のシークレットを保持し、MCPサーバは操作にスコープされた短寿命トークンを保持します。"
+        },
+        "gated-vs-flow": {
+          "q": "何がゲートされ、何が通り抜けますか？",
+          "a": "読み取り操作（イシュー一覧、PR表示、差分取得）はプロンプトなしで通ります。書き込み操作（push、コメント、マージ、クローズ）はパスキー承認で停止します。アクションがキューに入り、ユーザに通知が届き、ユーザがタップで承認します。"
+        },
+        "full-guide": {
+          "q": "完全ガイドはどこですか？",
+          "a": "進行中です。/mcpのMCPハブが出発点。GitHub固有の詳細ガイドは後続フェーズで出荷されます。"
+        }
+      }
+    },
+    "database": {
+      "name": "Database MCP",
+      "description": "SQLアクセス（Postgres、MySQL、SQLite）をMCPサーバとして。Ellul上では、接続はshieldで仲介され、クエリごとにread/write/migrateゲートが分類されます。詳細ガイドは近日。",
+      "hero": {
+        "eyebrow": "MCP · サーバ",
+        "headline": "Ellul上のDatabase MCP",
+        "sub": "エージェント向けのSQLアクセスを、shieldで仲介される接続と共に。db_read / db_write / db_migrateゲートをクエリごとに分類するため、特権マイグレーションは常にパスキー承認で停止します。"
+      },
+      "capabilities": [
+        "Postgres、MySQL、SQLite（および標準MCPサーバ経由でその他）",
+        "アプリごとのロール階層（owner / app / readonly）",
+        "クエリごとのdb_read / db_write / db_migrateゲート分類",
+        "Sovereign Shieldで仲介される接続文字列、エージェントプロセス内には決してなし"
+      ],
+      "faq": {
+        "any-sql": {
+          "q": "エージェントは任意のSQLを実行できますか？",
+          "a": "デフォルトではいいえ。クエリはdb_read / db_write / db_migrateバケットに分類されます。読み取りクエリは通り、書き込みクエリはパスキー承認で停止し、マイグレーションクエリは短いTTLで保持される明示的な別ゲートを必要とします。"
+        },
+        "connection-string": {
+          "q": "接続文字列はどう保護されますか？",
+          "a": "shieldのvaultに住みます。MCPサーバが呼び出しごとに要求します。クレデンシャルがエージェントのプロセスや環境に入ることはありません。"
+        },
+        "full-guide": {
+          "q": "完全ガイドはどこですか？",
+          "a": "進行中です。/mcpのMCPハブが共通領域をカバー。この詳細ページは後続フェーズで出荷されます。"
+        }
+      }
+    },
+    "claude-code": {
+      "name": "Claude Code MCP統合",
+      "description": "Claude CodeをEllulワークステーション上で動くMCPサーバに接続する方法。近日：Phase 6cで完全ガイド。",
+      "hero": {
+        "eyebrow": "MCP · クライアント統合",
+        "headline": "Ellul上のClaude Code＋MCP",
+        "sub": "Claude Codeは最も成熟したMCPクライアントの1つです。Ellul上では、MCPサーバはshieldで仲介されるクレデンシャルと共にセッション間で永続します。"
+      },
+      "capabilities": [
+        "MCPクライアントとしてのClaude Code（Anthropicのリファレンス実装）",
+        "ワークステーション上の長時間稼働MCPサーバ",
+        "プロジェクトごとのMCP名前空間隔離"
+      ],
+      "faq": {
+        "why-called-out": {
+          "q": "なぜClaude CodeのMCPサポートが特に取り上げられているのですか？",
+          "a": "Claude CodeはAnthropicによるMCPクライアントのリファレンス実装で、統合は異常なほど磨かれています。Ellul上では、ワークステーションの永続ランタイムがClaude CodeのMCPレイヤーに自然な住まいを与えます。サーバは再起動せず、セッションはコンテキストを失いません。"
+        },
+        "full-guide": {
+          "q": "完全な統合ガイドはどこですか？",
+          "a": "進行中です。/mcpのMCPハブが共通領域をカバー。ツールごとの詳細ページは後続フェーズで出荷されます。"
+        }
+      }
+    },
+    "cursor": {
+      "name": "Cursor MCP統合",
+      "description": "Cursor（エディタまたはCLI）をEllulワークステーション上で動くMCPサーバに接続する方法。近日：Phase 6cで完全ガイド。",
+      "hero": {
+        "eyebrow": "MCP · クライアント統合",
+        "headline": "Ellul上のCursor＋MCP",
+        "sub": "クライアントとしてのCursor、ワークステーション上で動くMCPサーバ。どちらの方法でも同じワークフロー。重要なのはランタイムの変化です。"
+      },
+      "capabilities": [
+        "MCPクライアントとしてのCursor CLI",
+        "CursorエディタのネイティブMCPサポート",
+        "ワークステーション上のセッション間で永続するMCPサーバ"
+      ],
+      "faq": {
+        "editor-supports-mcp": {
+          "q": "CursorのエディタはMCPをサポートしますか？",
+          "a": "はい。CursorのエディタとCLIの両方がMCPを話します。Ellul上ではMCPサーバがワークステーション上で動き、Cursorはランタイムとしてのワークステーションでリモート接続します。"
+        },
+        "full-guide": {
+          "q": "完全な統合ガイドはどこですか？",
+          "a": "進行中です。/mcpのMCPハブが共通領域をカバー。ツールごとの詳細ページは後続フェーズで出荷されます。"
+        }
+      }
+    },
+    "setup": {
+      "name": "MCPセットアップガイド",
+      "description": "Ellulワークステーション上でMCPサーバを動かすステップバイステップガイド：名前空間セットアップ、クレデンシャル仲介、エージェントクライアント設定。近日：Phase 6cで詳細ガイド。",
+      "hero": {
+        "eyebrow": "MCP · セットアップ",
+        "headline": "Ellul上でMCPをセットアップ",
+        "sub": "エンドツーエンドのウォークスルー：ワークステーションをプロビジョニングし、MCPサーバをインストールし、クレデンシャルをshield経由で仲介し、エージェントCLIをワークステーションに向けます。近日。"
+      },
+      "capabilities": [
+        "MCP対応のワークステーションをプロビジョニング",
+        "一般的なMCPサーバ（GitHub、Database、Playwright）をインストール",
+        "Sovereign Shield経由でクレデンシャルを仲介",
+        "Claude Code、Cursor、OpenCodeをMCPクライアントとして設定"
+      ],
+      "faq": {
+        "setup-duration": {
+          "q": "セットアップにどれくらい時間がかかりますか？",
+          "a": "1つか2つのMCPサーバを持つ最初のワークステーションには約15分。後続の追加には5分。"
+        },
+        "byo-server": {
+          "q": "自分のMCPサーバを持ち込めますか？",
+          "a": "はい。MCP準拠のサーバ（オープンソースまたはプロプライエタリ）はEllul上で動きます。Sovereign Shieldは、MCPサーバを誰が書いたかに関係なくクレデンシャルを仲介します。"
+        },
+        "full-guide": {
+          "q": "完全ガイドはどこですか？",
+          "a": "進行中です。/mcpのMCPハブが共通領域をカバー。このエンドツーエンドのウォークスルーは後続フェーズで出荷されます。"
+        }
+      }
+    },
+    "overview": {
+      "name": "MCP（Model Context Protocol）",
+      "description": "AIエージェントをツール、データソース、APIに接続するオープンプロトコル。ハブ：MCPとは何か、なぜ重要か、Ellul上でどう動くか、サーバごとのガイドへのリンク。",
+      "hero": {
+        "eyebrow": "MCP · ハブ",
+        "headline": "Ellul上のModel Context Protocol",
+        "sub": "MCPとは何か、なぜエージェントエコシステムを変えたか、MCPサーバがEllulワークステーション上でどう長時間稼働プロセスとして動くか。出発点となる単一ページ。"
+      },
+      "capabilities": [
+        "エージェント・ツール統合のための標準ワイヤープロトコル",
+        "ワークステーション上の永続プロセスとしての長時間稼働MCPサーバ",
+        "MCPサーバへの平文ではなく、Sovereign Shield経由のクレデンシャル仲介",
+        "Claude Code、CursorのCLI、OpenCode、その他MCP対応エージェントと互換",
+        "名前空間プリミティブによるプロジェクトごとのMCPサーバ隔離"
+      ],
+      "faq": {
+        "what-is-mcp": {
+          "q": "一文でMCPとは？",
+          "a": "MCPは、2024年末にAnthropicが発表したオープンプロトコルで、AIエージェントがツール、データソース、APIに接続する方法を標準化し、準拠したエージェントが任意の準拠サーバを利用できるようにします。"
+        },
+        "need-mcp": {
+          "q": "Ellulを使うのにMCPは必要ですか？",
+          "a": "いいえ。MCPはエージェントを拡張するいくつかの方法のうちの1つです。エージェントが外部ツールを必要としないなら、ワークステーションのファイルシステムとシェルで十分です。永続的で構造化されたツールアクセスが欲しいときMCPが不可欠になります。"
+        },
+        "vs-laptop": {
+          "q": "MCPサーバはEllul上とラップトップ上でどう違いますか？",
+          "a": "ラップトップ上では、MCPサーバはターミナルが動いている間だけ動きます。Ellul上では、エージェントと並んで長時間稼働プロセスとして動きます。セッションごとに再起動せず、接続状態を失わず、エージェント自体と同じSovereign Shieldでゲートされます。"
+        },
+        "multiple-servers": {
+          "q": "1ワークステーションあたり複数のMCPサーバを動かせますか？",
+          "a": "はい。名前空間プリミティブがプロジェクトごとに隔離します。1つのワークステーションがplaywright MCP、データベースMCP、GitHub MCP、独自のカスタムMCPを同時にホストでき、それぞれが独自の名前空間に入ります。"
+        }
+      }
+    }
+  }
+}

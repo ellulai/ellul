@@ -1,0 +1,10 @@
+.bundle/
+vendor/bundle/
+tmp/
+log/
+*.log
+.env*
+!.env.example
+storage/
+db/*.sqlite3
+db/*.sqlite3-*

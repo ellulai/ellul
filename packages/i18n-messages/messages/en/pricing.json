@@ -1,0 +1,62 @@
+{
+  "pricing": {
+    "meta": {
+      "title": "Pricing | ellul",
+      "description": "Simple, transparent pricing for the Ellul Cloud Platform. Pick your plan and start building with AI."
+    },
+    "heading": "Pricing that scales with your security needs",
+    "subhead": "Start free with full namespace isolation. Upgrade to an always-on sandbox with encrypted persistent storage when you’re ready for production.",
+    "platformLabel": "Cloud Platform",
+    "everyPlanIncludes": {
+      "heading": "Every plan includes",
+      "subhead": "Security infrastructure is not an add-on. Every plan gets the full stack.",
+      "items": {
+        "fido2": {
+          "title": "FIDO2 Gate System",
+          "desc": "Hardware-backed passkey confirmation for every privileged agent action. 7 gate types with configurable TTLs."
+        },
+        "namespace": {
+          "title": "Namespace Isolation",
+          "desc": "Per-project mount, PID, and network namespaces. Agents cannot see files or processes outside their scope."
+        },
+        "shield": {
+          "title": "Sovereign Shield Proxy",
+          "desc": "On-host security proxy between agent and all privileged operations. Credentials never touch disk."
+        },
+        "postgres": {
+          "title": "Managed PostgreSQL",
+          "desc": "Per-sandbox database with scoped roles (read-only, DML, DDL). Query proxy classifies and gates SQL."
+        },
+        "deploy": {
+          "title": "Deploy & Preview",
+          "desc": "Ship apps with custom domains and automatic HTTPS. Gate-controlled deployment to production."
+        },
+        "hibernate": {
+          "title": "Hibernate & Wake",
+          "desc": "Scale to zero on idle. Volume-backed state preservation. Wake on demand with full state restoration."
+        }
+      }
+    },
+    "faq": {
+      "heading": "Questions",
+      "items": {
+        "diff": {
+          "q": "What is the difference between Hobby and Pro?",
+          "a": "Hobby runs 2 sandboxes with namespace isolation. Great for side projects at a lower price. Pro gives you 5 always-on sandboxes with LUKS2 encrypted persistent storage, custom domains, full port access, and SSH. Both tiers get the complete security stack."
+        },
+        "gateSystem": {
+          "q": "What does the gate system protect?",
+          "a": "The gate system intercepts privileged agent actions (git push, database writes, deployments, secret access) and pauses them until the human owner confirms via FIDO2 passkey. The agent never has direct access to credentials."
+        },
+        "upgrade": {
+          "q": "Can I upgrade from Hobby to Pro?",
+          "a": "Yes. Click upgrade in the dashboard. Your data migrates automatically via encrypted block transfer. Same domains, same endpoints, zero code changes."
+        }
+      }
+    },
+    "cta": {
+      "button": "Get Started Free",
+      "note": "No credit card required."
+    }
+  }
+}

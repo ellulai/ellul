@@ -1,0 +1,60 @@
+{
+  "tier": {
+    "hobby": {
+      "name": "Hobby",
+      "description": "An always-on workstation for side projects.",
+      "capacity": "2 sandboxes",
+      "features": {
+        "fido2": "FIDO2 authentication",
+        "sandboxing": "Per-project sandboxing",
+        "postgres": "PostgreSQL database",
+        "deploy": "Deploy previews"
+      }
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Your daily driver. Parallel sandboxes for production work.",
+      "capacity": "5 sandboxes",
+      "features": {
+        "fido2": "FIDO2 authentication",
+        "sandboxing": "Per-project sandboxing",
+        "postgres": "PostgreSQL database",
+        "deploy": "Deploy previews",
+        "gbrain": "gBrain persistent memory"
+      }
+    },
+    "shieldGateway": {
+      "name": "Shield Gateway",
+      "description": "FIDO2-gated proxy for existing agent frameworks. No SDK, no code changes.",
+      "capacity": "Unlimited projects"
+    },
+    "cta": {
+      "getStarted": "Get Started",
+      "getStartedFree": "Get Started Free",
+      "comingSoon": "Coming Soon",
+      "selectPlan": "Select Plan",
+      "select": "Select",
+      "selected": "Selected",
+      "subscribe": "Subscribe",
+      "loading": "Loading..."
+    },
+    "creating": {
+      "title": "Creating your server",
+      "subtitle": "Spinning up your environment. This will only take a moment.",
+      "retry": "Retry"
+    },
+    "badge": {
+      "current": "Current Plan",
+      "recommended": "Most Popular",
+      "scheduled": "Scheduled"
+    },
+    "specs": {
+      "ram": "RAM",
+      "cpu": "CPU",
+      "disk": "Disk",
+      "transfer": "Transfer"
+    },
+    "perMonth": "/mo",
+    "proOnly": "Pro only"
+  }
+}

@@ -1,0 +1,89 @@
+---
+title: "Sessions"
+description: "How console and connection sessions work and how to manage them."
+section: "Authentication"
+order: 2
+---
+
+A session is the persistent authenticated state between you and your workstation.
+
+## Console session
+
+The primary session for the console (dashboard, workspace tabs, account settings).
+
+| Property | Value |
+|----------|-------|
+| Cookie attributes | Secure, HttpOnly, SameSite |
+| Idle timeout | A few hours of inactivity |
+| Maximum lifetime | Up to one day |
+| Rotation | The platform rotates the session identifier periodically while you are active |
+
+Rotation limits the impact of any leaked identifier: the older identifier becomes invalid quickly.
+
+## Privileged operation tokens
+
+For short-lived privileged operations (git push, deploy, schema migration), the platform issues a separate single-use token. The token is consumed on first use and expires within minutes. You typically do not see these directly: they are issued automatically when you approve a permission request that needs short-lived elevation.
+
+## How sessions get created
+
+In Standard tier:
+
+1. You sign in via the platform with email, OAuth, or a passkey.
+2. The platform issues your session.
+3. The session cookie is set for your workstation's domain.
+
+In Web Locked or Private Locked tier:
+
+1. The browser asks your authenticator for a passkey assertion.
+2. The assertion is verified locally on your workstation.
+3. The session is issued.
+4. The browser generates a non-extractable proof-of-possession key. Its public key is bound to the session.
+5. From this point, all active connections sign continuous proof-of-possession challenges.
+
+## Device fingerprint
+
+Each session captures a coarse device fingerprint: user agent, timezone, screen size, language. The fingerprint is not a tracking primitive (we do not use canvas or WebGL fingerprinting). It is used as a sanity check: if your session cookie suddenly arrives from a wildly different device profile, the platform requires re-authentication.
+
+## Logging out
+
+You can log out from the account menu. Logout:
+
+- Removes the session.
+- Clears the session cookie.
+- Terminates active connections on the next message.
+
+Other devices' sessions are independent and continue until their own expiry. To revoke them, use **Account > Security > Active Sessions**.
+
+## Active sessions panel
+
+Under **Account > Security**, you can review all active sessions:
+
+- Date and time created.
+- IP address (last seen).
+- Device fingerprint summary.
+- Active or idle.
+
+You can revoke any session from this panel. Revocation is immediate.
+
+## What happens after a tier transition
+
+Upgrading from Standard to Web Locked:
+
+- Existing Standard-tier sessions remain valid until they expire naturally.
+- New connections to the workspace require a passkey.
+
+Downgrading from Web Locked to Standard:
+
+- Active passkey-tied sessions remain valid.
+- New sessions accept the standard authentication methods.
+- Audit log records the downgrade.
+
+Transitioning to Private Locked:
+
+- Same authentication mechanism as Web Locked.
+- The volume key delivery changes: the platform no longer holds it.
+
+## Where to go next
+
+- [Cross-Device Recovery](/authentication/cross-device) for handling lost devices.
+- [Security Tiers](/concepts/security-tiers) for tier-specific session behaviour.

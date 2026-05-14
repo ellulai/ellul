@@ -1,0 +1,51 @@
+[package]
+name = "ellul-crypto"
+version = "0.1.0"
+edition = "2021"
+description = "Post-quantum cryptography binary for Ellul.ai VPS operations"
+license = "BUSL-1.1"
+publish = false
+
+[[bin]]
+name = "ellul-crypto"
+path = "src/main.rs"
+
+[dependencies]
+# Post-quantum cryptography (FIPS 203, 204, 205)
+pqcrypto-mlkem = "0.1"
+fips204 = { version = "0.4", features = ["ml-dsa-44", "ml-dsa-65"] }
+pqcrypto-sphincsplus = "0.7"
+pqcrypto-traits = "0.3"
+
+# Hybrid KEM: X25519 classical component
+x25519-dalek = { version = "2", features = ["static_secrets"] }
+
+# Symmetric cryptography
+aes-gcm = "0.10"
+hkdf = "0.12"
+sha2 = "0.10"
+
+# Memory safety
+zeroize = { version = "1", features = ["derive"] }
+memsec = "0.7"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Random
+rand = "0.8"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+opt-level = "z"     # Optimize for binary size
+lto = true          # Link-time optimization
+codegen-units = 1   # Single codegen unit for best optimization
+strip = true        # Strip debug symbols
+panic = "abort"     # No unwinding overhead

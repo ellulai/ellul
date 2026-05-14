@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ellul-docs",
+  "compatibility_date": "2024-12-30",
+  "account_id": "e1e92e3a050e48c3af60dfc793cb2037",
+  "routes": [
+    { "pattern": "docs.ellul.ai/*", "zone_id": "a5087e4660906ef14e2c8899d0cffcb9" }
+  ],
+  "assets": {
+    "directory": "./out"
+  }
+}

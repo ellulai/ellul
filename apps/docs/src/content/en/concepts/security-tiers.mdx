@@ -1,0 +1,111 @@
+---
+title: "Security Tiers"
+description: "Standard, Web Locked, and Private Locked. What each tier guarantees and when to use it."
+section: "Core Concepts"
+order: 2
+---
+
+Three runtime security tiers govern how authentication and key management work. You can transition between them. The tier is independent of your billing plan.
+
+| Tier | Auth | Storage key | Recovery from platform |
+|------|------|-------------|------------------------|
+| Standard | Password / OAuth / passkey | Platform-managed | Yes |
+| Web Locked | Passkey only, with continuous proof of possession | Platform-managed | Yes |
+| Private Locked | Passkey only, with continuous proof of possession | User passkey only | No |
+
+You set the tier in **Account > Server > Security**.
+
+## Standard
+
+The default for new servers. Authentication uses a session issued by the ellul control plane. Convenient: sign in once with email, OAuth, or a passkey, and a session cookie persists.
+
+The encryption key for your storage volume is platform-managed. Recovery is straightforward: if you lose access, the platform can reissue session tokens and unlock the volume on wake.
+
+Choose Standard if you want minimum onboarding friction and you are comfortable with platform-level recovery. This is the right choice for development and prototyping.
+
+## Web Locked
+
+Hardware-bound authentication. Every browser session is tied to a WebAuthn passkey whose private key lives in your device's secure enclave (Touch ID, Windows Hello, security key). The private key cannot be exported.
+
+On top of the passkey, every active connection to your server signs continuous proof-of-possession challenges. Two consecutive failures terminate the connection.
+
+Your storage volume can be unlocked either by the platform or by your passkey. In practice the platform unlocks automatically; you can also unlock manually.
+
+<Callout type="principle" title="What Web Locked changes">
+  Phishing becomes infeasible because WebAuthn is bound to the exact origin. Stolen session cookies become useless because proof-of-possession signatures cannot be forged without the hardware key. A full breach of ellul's control plane cannot compromise your authenticated sessions.
+</Callout>
+
+Choose Web Locked when you treat the workstation as a production tool, when you want hardware-bound auth, or when you have compliance requirements that demand strong authentication.
+
+## Private Locked
+
+The strongest tier. Sometimes called sovereign mode.
+
+Same passkey and continuous proof-of-possession requirements as Web Locked. In addition: the platform-managed key is physically removed from the volume's encryption header during transition. The platform's wrapped key is deleted from the control plane database. A marker is placed on your server so the wake flow knows not to attempt automatic decryption.
+
+After this transition, ellul cannot decrypt your volume. There is no fallback. The only key that can unlock it is the one derived from your WebAuthn passkey.
+
+<Callout type="warning" title="Irreversibility">
+  If you lose your passkey and your recovery codes, the data on a Private Locked volume cannot be recovered. The platform has no key. Recovery codes can re-enroll a passkey, but the new passkey must be on a device that can derive the same key material (typically the same iCloud or Google account, or a synced authenticator).
+</Callout>
+
+The four layers of defence behind sovereign mode:
+
+1. The platform key is removed from the volume's encryption header.
+2. The keyfile on your server is securely overwritten and deleted.
+3. The wrapped key is deleted from the control plane database.
+4. A marker on your server prevents the wake flow from attempting automatic decryption.
+
+Choose Private Locked when you handle data that absolutely cannot be visible to the platform under any circumstance, including legal compulsion. The cost is the loss of platform-side recovery.
+
+## Tier transitions
+
+You can move between tiers from **Account > Server > Security**.
+
+<Steps>
+  <Step number={1} title="Standard to Web Locked">
+    Enrol a passkey. Generate one-time recovery codes. Reversible.
+  </Step>
+  <Step number={2} title="Web Locked to Private Locked">
+    Verify your passkey-derived key works. The platform removes its own key, deletes its wrapped copy, shreds the keyfile on the server, and places the sovereign marker. Conditionally reversible: you can re-enrol a platform key only by first unlocking with your passkey.
+  </Step>
+  <Step number={3} title="Web Locked to Standard">
+    Allowed. Audit-logged. Passkeys remain registered for future re-upgrade.
+  </Step>
+  <Step number={4} title="Private Locked to Web Locked">
+    Possible. Authenticate with your passkey, unlock the volume, then add a fresh platform key. The sovereign marker is removed.
+  </Step>
+</Steps>
+
+## How to choose
+
+| Use case | Recommended tier |
+|----------|-------------------|
+| Trying ellul for the first time | Standard |
+| Personal development | Standard |
+| Production work with sensitive data | Web Locked |
+| Customer code under contract | Web Locked |
+| Regulated workloads (HIPAA, PCI, GDPR-strict) | Web Locked or Private Locked |
+| Workloads that must remain encrypted under all circumstances | Private Locked |
+
+You are not locked into your initial choice. Most users start in Standard and upgrade to Web Locked once they have a passkey set up.
+
+## What does not change between tiers
+
+Some defences are universal:
+
+- Kernel hardening that prevents process and namespace escape attempts.
+- Firewall rules that block mining pools, tunnel services, and other abuse vectors.
+- Per-sandbox namespace isolation.
+- A syscall denylist applied to agent processes.
+- Permission gates for privileged actions.
+- The hash-chained audit log.
+- Cross-sandbox access controls.
+
+These are baseline. Switching tiers does not remove them.
+
+## Where to go next
+
+- [Passkeys](/authentication/passkeys) walks through enrolment and continuous proof-of-possession.
+- [Volume Encryption](/lifecycle/volume-encryption) covers the storage encryption details.
+- [Permission Gates](/permissions/overview) explains the universal authorisation layer.

@@ -1,0 +1,92 @@
+---
+title: "Cross-Device and Recovery"
+description: "Logging in from a new device and recovering when you lose access."
+section: "Authentication"
+order: 3
+---
+
+If you lose access to your authenticator or want to log in from a new device, the path depends on what you have available.
+
+## Recommended setup
+
+We recommend enrolling at least two passkeys, on different devices, before relying on Web Locked or Private Locked tier.
+
+| Setup | Recovery if a device is lost |
+|-------|------------------------------|
+| Single passkey | Recovery codes only |
+| Multiple passkeys on different devices | Use the other device |
+| Passkeys synced via iCloud or Google | Sign in on any synced device |
+| Hardware security key as a backup | Plug in the backup key |
+
+## Logging in from a new device
+
+### When passkeys are synced
+
+If your authenticator syncs (Apple's iCloud Keychain, Google Password Manager, password manager apps that support passkey sync), the passkey appears automatically on any device tied to your account. Log in and authenticate as usual.
+
+### When passkeys are device-specific
+
+If you use a hardware security key or a non-syncing authenticator, you have two options:
+
+<Steps>
+  <Step number={1} title="Cross-device sign-in via QR code">
+    Click the passkey prompt option for "Use a passkey from another device". The browser shows a QR code; scan it with the device that has your passkey. Approve there. The login completes on the new device.
+  </Step>
+  <Step number={2} title="Enrol a passkey on the new device">
+    Sign in once with your existing passkey (using the QR flow), then add a new passkey from the new device's authenticator in **Account > Security**.
+  </Step>
+</Steps>
+
+## Using a recovery code
+
+Recovery codes are the escape hatch when no passkey is available.
+
+<Steps>
+  <Step number={1} title="Visit the console">
+    Click **Recover access** on the login screen.
+  </Step>
+  <Step number={2} title="Paste a recovery code">
+    Enter one of the codes you saved at enrolment.
+  </Step>
+  <Step number={3} title="Enrol a new passkey">
+    On success, you are prompted to enrol a fresh passkey on the current device. The recovery code is consumed.
+  </Step>
+</Steps>
+
+After successful recovery:
+
+- The used recovery code is marked as spent and cannot be reused.
+- The platform records the recovery in the audit log with timestamp and IP.
+- We recommend rotating any other recovery codes by regenerating the set.
+
+## Rate limits
+
+Recovery code attempts are rate-limited. Repeated failed attempts trigger:
+
+- A short cool-down before the next attempt is accepted.
+- An audit log entry recording the failure.
+- An email alert to the account owner.
+
+This protects against attackers attempting to brute-force a recovery code.
+
+## What if you lose everything
+
+| Scenario | Standard | Web Locked | Private Locked |
+|----------|----------|------------|----------------|
+| Lost device, have other passkey | Recover via other device | Recover via other device | Recover via other device |
+| Lost device, no other passkey, have recovery codes | Recover and re-enrol | Recover and re-enrol | Recover and re-enrol (if compatible authenticator) |
+| Lost device, no recovery codes | Contact support; account-level recovery | Contact support; account-level recovery | Volume data is unrecoverable |
+
+For Private Locked specifically: the volume's encryption key is derived from your passkey hardware. If both your passkey and your recovery codes are lost, no party (including us) can decrypt the volume. This is the explicit cost of sovereign mode.
+
+## Recovery code best practices
+
+- Store codes outside your primary device (printed copy, encrypted backup, password manager).
+- Do not photograph them with the same phone whose passkey they would replace.
+- Regenerate codes after a recovery event.
+- Regenerate codes if you suspect they may have been seen.
+
+## Where to go next
+
+- [Passkeys](/authentication/passkeys) for enrolment details.
+- [Security Tiers](/concepts/security-tiers) for the recovery boundary by tier.

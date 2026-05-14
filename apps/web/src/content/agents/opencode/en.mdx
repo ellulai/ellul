@@ -1,0 +1,117 @@
+## What is OpenCode?
+
+OpenCode is an open-source coding-agent runtime. You invoke it as `opencode` from any project. The agent uses pluggable models (Anthropic, OpenAI, Google, OpenRouter, local inference), pluggable <Term slug="mcp">MCP</Term> tools, and a session model that survives across reboots. The project lives at [opencode.ai](https://opencode.ai), is community-maintained, and is BYOK by design. You own your model usage. As of April 2026, OpenCode is the primary open alternative to vendor-bundled agents like Claude Code or Codex.
+
+Ellul is the persistent <Term slug="agent-workstation">agent workstation</Term> OpenCode runs on.
+
+## Why running OpenCode on Ellul matters
+
+OpenCode is designed to be self-hosted. The friction is everything around the agent: a Linux machine that does not sleep, a passkey gate so it can touch real credentials safely, isolation between projects so a runaway agent in one repo cannot scribble into another, sensible defaults for memory pressure when several sessions land at once. Self-hosting that stack is doable, and we did it for ourselves before we did it for customers. It just is not the work the agent is supposed to do.
+
+Ellul provisions the stack as a primitive in roughly ninety seconds, with three things that are specific to how OpenCode behaves under load:
+
+1. **One OpenCode server per project, sessions multiplexed through it.** OpenCode's process footprint is meaningful (around 240 MB per running session). Per-thread spawn would saturate small VPSes. Ellul runs one server per project, multiplexes sessions through it, and reaps idle servers automatically. The model is invisible to users; you just get reliable parallel sessions.
+2. **State persists across reboots.** OpenCode's session model is local-first. When the workstation reboots, sessions resume where they left off. Branches, scratch files, and dependency installs all survive.
+3. **The gate sits at the OS boundary, not in the agent.** Privileged actions like `git push`, deploys, and prod-database queries pause on a FIDO2 passkey gate that runs in a separate process. The agent decides what to attempt; the gate decides what is allowed.
+
+<Callout type="tip" title="The same behavior you would get from a careful self-host">
+Your `opencode.json`, your model selection, your MCP server list all transfer one-to-one. The only difference is that the agent runs on a workstation that does not sleep, and the BYOK credential lives in a server-side vault rather than `~/.config/opencode/`.
+</Callout>
+
+## Quick-start: from sign-up to first session
+
+This walkthrough assumes you already have a model API key from Anthropic, OpenAI, OpenRouter, or any other provider OpenCode supports. If you do not, set one up at the provider of your choice first.
+
+1. **Sign up** at console.ellul.ai. Hobby is $20/mo for up to two parallel workstations. Pro is $50/mo for up to five workstations and read-only peering.
+2. **Provision a workstation.** A persistent sandbox boots in roughly ninety seconds. OpenCode is pre-installed alongside Claude Code, Codex, and Cursor's CLI.
+3. **Connect a passkey.** FIDO2 from your phone, laptop, or hardware key. The passkey gates `git push`, deploys, and any privileged action.
+4. **Authenticate OpenCode.** Paste your model provider's API key into Ellul's vault. The credential is stored server-side and brokered to OpenCode through a separate process the agent cannot read.
+5. **Open a session.** Use Ellul's chat UI in the browser, or SSH into the workstation and run `opencode` directly in any project.
+
+OpenCode reads the same `opencode.json` you keep on your laptop, but you can also drive it entirely from the CLI:
+
+<CodeTabs>
+  <CodeTab label="CLI">
+```bash
+# Workstation shell. The session lives on the project's pooled server.
+cd ~/work/your-repo
+opencode
+```
+  </CodeTab>
+  <CodeTab label="opencode.json">
+```jsonc
+// Same shape as on a laptop. Provider keys are brokered by Ellul's vault,
+// so they do not appear here in plaintext.
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "anthropic/claude-opus-4-7",
+  "mcp": {
+    "github": { "type": "local", "command": ["mcp-github"] }
+  }
+}
+```
+  </CodeTab>
+</CodeTabs>
+
+The session is yours until you cancel.
+
+## Picking a plan
+
+Hobby is right for a single OpenCode session at a time. One workstation, BYO model credential, passkey gate, and persistent state.
+
+Pro is the tier that compounds:
+
+- **Multiple workstations** for <Term slug="parallel-agents">parallel agents</Term>. Several `opencode` sessions on different branches with no shared filesystem state.
+- **Read-only peering** between workstations so a reviewer can read a coder's working tree without writing back.
+- **Production credential vault.** Tokens that should not sit in plaintext live behind the gate. Injection happens only after a <Term slug="passkey-approval">passkey approval</Term>.
+
+OpenCode itself is free. You bring your own model credential. Ellul charges for the workstation, not for OpenCode and not for the model.
+
+## Common patterns
+
+The work that benefits most from OpenCode on Ellul is the work that needs the open-source flexibility together with the always-on host.
+
+Multi-model experiments are the most common reason customers choose OpenCode here. OpenCode lets you swap providers per project: Anthropic for the architect prompt, OpenAI for the test generator, a local model for cheap edits. Running it on a workstation means none of those configurations get torn down between sessions.
+
+MCP-heavy automations are the second pattern. OpenCode's pluggable MCP support lets you compose tools (a database client, a Playwright browser, a shell, a custom internal API) and Ellul keeps those servers resident on the workstation between sessions. Warm-up cost amortizes.
+
+Long unattended runs are where the value is most legible. Migrations and refactors that take eight hours are the canonical use case; the session keeps running while you sleep, and the gate enforces "nothing irreversible without a tap."
+
+The fourth is the one we hear most often from people who tried to self-host first: control without the toil. You wanted the open-source story. We did the toil for you and ship the result as a workstation primitive.
+
+## Honest limits
+
+<Callout type="warning" title="A few things to be straight about">
+- **The session pool is shared per project.** This is a feature: it keeps memory under control on small VPSes. If you specifically need a per-thread isolated `opencode` process, install your own build on the workstation directly. The pool model is the default, not a constraint.
+- **OpenCode is community-maintained.** Releases ship at the project's cadence. We track the latest stable but do not ship vendor-supported SLAs the way the proprietary CLIs do.
+- **Inline editor completions.** OpenCode does not provide them. If you want them, pair OpenCode on Ellul with Cursor as your laptop editor.
+</Callout>
+
+## Common questions
+
+### Why does Ellul use a server pool for OpenCode?
+OpenCode's process footprint is meaningful (around 240 MB per session). Per-thread spawn would hit cgroup ceilings on small VPSes. Ellul runs one OpenCode server per project, multiplexes sessions through it, and reaps idle servers automatically. The model is invisible to users; they just get reliable parallel sessions.
+
+### Can I bring my own OpenCode build?
+Yes. OpenCode is open source; if you want to run a custom fork, you can install it on the workstation directly. The pool model is the default; bring-your-own-build is the override.
+
+### What models does OpenCode support?
+Anything OpenCode itself supports: Anthropic, OpenAI, Google, open-weight models via OpenRouter, or local inference. Ellul is model-agnostic; the agent picks.
+
+### Does OpenCode survive a workstation reboot?
+Yes. OpenCode's session state is local-first and lives in the workstation's persistent filesystem. After a reboot, sessions resume where they left off; in-progress diffs, scratch files, and branches are unchanged.
+
+### How does Ellul's gate work with OpenCode's autonomous mode?
+OpenCode has a configurable autonomous mode that lets the agent run multi-step plans without per-step approval. Ellul's gate intercepts the side-effecting calls (`git push`, deploys, secret reads) at the OS boundary, not at the agent's prompt. The autonomous mode runs as configured; the gate enforces "the agent decides what to do, the human approves the consequential bit."
+
+## See also
+
+- [Claude Code vs Ellul →](/vs/claude-code)
+- [Cursor vs Ellul →](/vs/cursor)
+- [Run Claude Code in the cloud →](/solutions/run-claude-code-in-cloud)
+
+## References
+
+- OpenCode, [opencode.ai](https://opencode.ai). Official project site and downloads.
+- OpenCode, [GitHub repository](https://github.com/sst/opencode). Source, releases, issue tracker.
+- Model Context Protocol, [specification](https://modelcontextprotocol.io). The open standard OpenCode's MCP integration follows.

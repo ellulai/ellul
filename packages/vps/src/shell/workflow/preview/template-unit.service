@@ -1,0 +1,45 @@
+[Unit]
+Description=ellul.ai preview server for %I
+After=network.target ellul-file-api.service
+PartOf=ellul-user-workload-previews.slice
+StartLimitBurst=5
+StartLimitIntervalSec=600
+
+[Service]
+Type=simple
+User=@@SVC_USER@@
+Group=@@SVC_USER@@
+WorkingDirectory=/home/@@SVC_USER@@/projects/%I
+ExecStart=/usr/local/bin/ellul-preview-instance %I
+TimeoutStopSec=15
+KillMode=mixed
+OOMPolicy=kill
+Restart=on-failure
+RestartSec=5
+RestartPreventExitStatus=SIGTERM
+RestartSteps=5
+RestartMaxDelaySec=60
+
+# Resource caps live in the per-instance drop-in written by file-api before
+# every start (writeFrameworkDropin → ellul-preview-ctl dropin). The caps
+# below are invariants that hold regardless of framework — anything sized
+# from physical RAM or framework profile lives in the drop-in.
+MemorySwapMax=0
+IOWeight=100
+LimitNOFILE=1024
+LimitMEMLOCK=0
+OOMScoreAdjust=500
+Slice=ellul-user-workload-previews.slice
+
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ellul-preview-%i
+
+[Install]
+WantedBy=multi-user.target

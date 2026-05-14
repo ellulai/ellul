@@ -1,0 +1,813 @@
+{
+  "comparisons": {
+    "heading": "How Ellul compares",
+    "columnDaytona": "Daytona",
+    "columnE2b": "E2B",
+    "columnEllulStandard": "Ellul Standard",
+    "columnEllulSovereign": "Ellul Sovereign",
+    "metricIsolation": "Isolation",
+    "metricSideChannel": "Side-channel exposure",
+    "metricMonthlyCost": "Monthly cost (2 vCPU, 4GB)",
+    "metricSpinUp": "Spin-up time",
+    "isolationDaytona": "Shared node, container",
+    "isolationE2b": "Shared node, MicroVM",
+    "isolationStandard": "Dedicated namespace",
+    "isolationSovereign": "Dedicated bare-metal",
+    "sideChannelDaytona": "Yes",
+    "sideChannelE2b": "Reduced",
+    "sideChannelStandard": "Reduced",
+    "sideChannelSovereign": "None (no co-tenancy)",
+    "costDaytona": "~$25",
+    "costE2b": "~$30",
+    "costStandard": "~$12",
+    "costSovereign": "~$20",
+    "spinUpDaytona": "~3s",
+    "spinUpE2b": "~5s",
+    "spinUpStandard": "<2s",
+    "spinUpSovereign": "<60s (warm pool)",
+    "migrationNote": "Migration is a Dockerfile. Your agent code does not change.",
+    "cursor": {
+      "competitor": { "tagline": "AI editor with cloud agents and a CLI" },
+      "meta": {
+        "title": "Cursor vs ellul: editor and cloud agents, or sovereign workstation",
+        "description": "Cursor ships an editor, a CLI, and Cloud Agents. Ellul integrates Cursor's Agent SDK for chat and runs cursor-agent (plus Claude Code, Codex, OpenCode) on a passkey-gated workstation you own."
+      },
+      "hero": {
+        "eyebrow": "Cursor vs ellul",
+        "headline": "Cursor's runtime, or yours.",
+        "sub": "Cursor's editor is unmatched, and as of 2026 they also ship a CLI and a Cloud Agent product. Ellul integrates Cursor's Agent SDK for chat and runs cursor-agent (alongside Claude Code, Codex, OpenCode) on a workstation you own. The comparison is less about whether Cursor's agent can run elsewhere and more about which runtime envelope it runs inside."
+      },
+      "ellulPitch": "Anything that involves the agent working without you, on infrastructure you own. Overnight runs. Parallel agents from different vendors. Real-credential operations like git push and database migrations gated by your passkey, not Cursor's auth. Long refactors that take eight hours. Picking up a task on your phone in the subway. Cursor's Cloud Agents put work on Cursor's runtime; Ellul puts work on yours.",
+      "competitorPitch": "Cursor's editing experience is unmatched in 2026. Inline completions, command-K, codebase indexing, and the agent panel are all the strongest in their category. The cursor-agent CLI brings the same loop to your terminal, and Cloud Agents (Cursor's hosted runtime) can keep running while you close your laptop. Stay entirely inside Cursor's ecosystem if it fits.",
+      "fundamentalDifference": "Cursor sells the editor, the agent, and (increasingly) the runtime as one bundled stack. Ellul is the runtime under whichever agent you choose, including Cursor's. Ellul integrates Cursor's Agent SDK for the chat experience and pre-installs cursor-agent on every workstation, so you keep Cursor's editor and CLI but the agent process lives on infrastructure you control, with a passkey gate, parallel-agent peering, and model-agnostic BYOK across Claude Code, Codex, and OpenCode in the same workstation.",
+      "features": {
+        "where-agent-runs": { "capability": "Where the agent runs", "ellul": "Per-user VPS you own and control", "competitor": "Local (editor + CLI) or Cursor's hosted runtime (Cloud Agents)", "note": "Cursor's Cloud Agents run on Cursor-managed infrastructure; Ellul runs on a per-user VPS dedicated to you." },
+        "survives-lid-close": { "capability": "Survives lid close", "ellul": "Yes (workstation persists)", "competitor": "Yes via Cloud Agents; no for local editor / CLI sessions" },
+        "parallel-multi-vendor": { "capability": "Parallel agents from multiple vendors", "ellul": "Yes (Claude Code, Codex, Cursor, OpenCode in one workstation; read-only peering between)", "competitor": "Cursor agents only" },
+        "editor-experience": { "capability": "Editor experience", "ellul": "Browser file browser + terminal; pair with Cursor locally as the editor", "competitor": "The strongest native editor experience in the category" },
+        "inline-completions": { "capability": "Inline completions", "ellul": "Through Cursor on your laptop, paired with Ellul as the runtime", "competitor": "Yes (instant, native to the editor)" },
+        "privileged-action-gating": { "capability": "Privileged action gating", "ellul": "FIDO2 passkey, server-side enforced outside the agent process", "competitor": "Editor permission prompts (in-process, skippable)" },
+        "credentials-location": { "capability": "Where credentials live", "ellul": "Server-side vault, brokered to the agent per-call", "competitor": "Local machine (~/.aws, ~/.ssh, 1Password CLI) or Cursor-managed for Cloud Agents" },
+        "cursor-sdk-integration": { "capability": "Cursor Agent SDK integration", "ellul": "Yes (Ellul's chat surface speaks Cursor's ACP, so cursor-agent runs as a first-class adapter alongside other CLIs)", "competitor": "Native to Cursor's products by definition" },
+        "phone-approvals": { "capability": "Phone access for approvals", "ellul": "Yes (chat, files, passkey approvals from any registered device)", "competitor": "Limited (Cloud Agents have a web UI, no passkey gates)" }
+      },
+      "pricing": {
+        "entry": { "tier": "Entry", "ellul": "$20/mo Hobby", "competitor": "Pro $20/mo" },
+        "mid": { "tier": "Mid", "ellul": "$50/mo Pro", "competitor": "Pro+ $60/mo" },
+        "heavy": { "tier": "Heavy", "ellul": "Pro covers parallel workstations + peering", "competitor": "Ultra $200/mo" },
+        "teams": { "tier": "Teams", "ellul": "Per-seat (contact)", "competitor": "Business $40/seat/mo" },
+        "byok-model-key": { "tier": "Bring your own model key", "ellul": "Yes (BYOK on every supported agent)", "competitor": "Auto/router; some BYOK options" }
+      },
+      "verdict": {
+        "headline": "Cursor for the editor and the agent, Ellul for the runtime that owns the agent.",
+        "body": "Most senior engineers we talk to pay for both. Cursor stays on your laptop as the editor; cursor-agent and any other CLI live on an Ellul workstation. Cursor's Cloud Agents are an option if you want to stay entirely inside their ecosystem; Ellul is the option if you want sovereignty over where the agent runs, multi-vendor agents in parallel, and a passkey gate the runtime enforces."
+      },
+      "whenToUseCompetitor": {
+        "editor-heavy-day": "You spend 90%+ of your day in the editor with the agent doing inline assists.",
+        "short-cycle": "Your work is short-cycle: prompt, see result, accept, move on.",
+        "no-extra-credentials": "You don't need credentials beyond what already lives on your laptop.",
+        "cursor-runtime-fine": "You're happy with Cursor owning the agent's runtime (local or Cloud Agents)."
+      },
+      "whenToUseEllul": {
+        "long-tasks-walk-away": "You want to kick off a long task on infrastructure you own and walk away.",
+        "parallel-multi-vendor": "You want to run multiple agents in parallel: coding (Claude Code), reviewing (cursor-agent), documenting (OpenCode).",
+        "real-infra-passkey": "Your agent needs to touch real infrastructure (GitHub, Vercel, production databases) and you want those credentials gated by your passkey, not Cursor's auth.",
+        "passkey-every-action": "You want passkey approvals for every privileged action, enforced outside the agent process.",
+        "keep-editor-swap-runtime": "You want to keep your editor (Cursor or anything else) and only swap the runtime."
+      },
+      "faq": {
+        "use-cursor-with-ellul": { "q": "Can I use Cursor with Ellul together?", "a": "Yes. Many of our customers do. Cursor stays on your laptop as the editor; cursor-agent runs on Ellul as one of the agent CLIs in the workstation. Ellul's chat surface speaks Cursor's Agent Communication Protocol (ACP), so the integration is first-class. You keep the editor experience and gain a sovereign runtime." },
+        "about-cloud-agents": { "q": "What about Cursor's Cloud Agents?", "a": "Cursor shipped Cloud Agents in 2026, where you push a conversation to Cursor's hosted runtime and it keeps running while you're away. The trade-off is whose runtime owns the work. Cloud Agents run on Cursor-managed infrastructure with Cursor-managed credentials. Ellul is the same shape of capability on a per-user VPS you own, with passkey-gated privileged actions and multi-agent peering." },
+        "pay-for-both": { "q": "Why would I pay for both?", "a": "Different jobs. Cursor is for inline assists at the keyboard and the strongest editor experience in the category. Ellul is for unattended runs on infrastructure you control, parallel agents from multiple vendors, and credential-touching operations gated outside the agent process. Most senior engineers we talk to pay for both." },
+        "ellul-inline-completions": { "q": "Does Ellul have inline completions?", "a": "No. Inline completions assume the agent is co-located with the editor on your machine. Ellul's agent lives on the server. If you want inline completions plus a sovereign runtime, you run Cursor on your laptop and Ellul on the server, and cursor-agent on Ellul handles the long-running work." },
+        "cursor-vs-ellul-security": { "q": "Is Cursor more secure than Ellul?", "a": "Different threat models. Cursor's local agent has the same OS-level access to your filesystem as you do: every credential file, every browser cookie, every SSH key. Cloud Agents move that to Cursor-managed infrastructure with Cursor-managed credentials. Ellul's agent runs in an isolated per-user VPS with credentials in a server-side vault, gated by a separate process the agent cannot ptrace into. If you want kernel-enforced isolation and passkey-gated privileged actions, the architectures aren't comparable." }
+      }
+    },
+    "claude-code": {
+      "competitor": { "tagline": "Anthropic's coding agent CLI" },
+      "meta": {
+        "title": "Claude Code vs ellul: local agent or persistent workstation",
+        "description": "Claude Code is Anthropic's coding-agent CLI that runs on your laptop. Ellul runs Claude Code (and Codex, Cursor, OpenCode) on a persistent cloud workstation that never closes."
+      },
+      "hero": {
+        "eyebrow": "Claude Code vs ellul",
+        "headline": "The agent, and the place the agent lives.",
+        "sub": "Claude Code is the agent. Ellul is the computer the agent runs on. You can run Claude Code locally, or you can run it on Ellul: same agent, different home."
+      },
+      "ellulPitch": "Claude Code on your laptop has an unsolvable problem: it stops when you close the lid. Anthropic's 'Remote Control' feature relays input from another device, but the session still lives on your laptop. Ellul moves the session itself onto a persistent workstation. Same agent. New home.",
+      "competitorPitch": "The agent itself. Anthropic's agent quality is exceptional: Claude Opus 4.7 leads Terminal-Bench 2.0 (~69%) and SWE-bench Verified in the high 80s, with strong code review and multi-step planning. Their CLI experience is clean. Their MCP integration is the deepest in the industry. Their permissions model is the most thoughtful per-action gating any local agent has.",
+      "fundamentalDifference": "Claude Code is one of the strongest coding agents in 2026. We default to it. The question is not Claude Code or Ellul. It's where you want Claude Code to live. On your laptop, where it stops when the lid closes? Or on Ellul, where it runs through the night?",
+      "features": {
+        "where-agent-runs": { "capability": "Where the agent runs", "ellul": "Persistent cloud workstation", "competitor": "Your laptop (or relay via Remote Control)" },
+        "survives-lid-close": { "capability": "Survives laptop closing", "note": "Sessions end when laptop sleeps." },
+        "per-action-gating": { "capability": "Per-action permission gating", "ellul": "FIDO2 passkey, server-enforced", "competitor": "Yes, in-process" },
+        "gate-bypass-protection": { "capability": "Cannot bypass gate (gate enforced outside agent)", "note": "Claude Code's gate runs in the agent process; Ellul's gate runs separately." },
+        "run-claude-code": { "capability": "Run Claude Code", "ellul": "Yes (default)" },
+        "run-other-agents": { "capability": "Run Codex / Cursor CLI / OpenCode" },
+        "parallel-sessions": { "capability": "Parallel sessions", "ellul": "Multiple per user", "competitor": "One per machine" },
+        "mcp-server-access": { "capability": "MCP server access", "ellul": "Local + persistent server-side MCP", "competitor": "Local MCP servers" },
+        "credentials-location": { "capability": "Where credentials live", "ellul": "Server vault, gated injection", "competitor": "Your laptop" }
+      },
+      "pricing": {
+        "anthropic-subscription": { "tier": "Anthropic subscription", "ellul": "BYOK (bring your Claude Pro/Max)", "competitor": "Pro $20/mo, Max $100 or $200/mo" },
+        "workstation": { "tier": "Workstation", "ellul": "$20/mo Hobby or $50/mo Pro", "competitor": "n/a" },
+        "total-monthly-pro": { "tier": "Total monthly (Pro)", "ellul": "$70 ($20 Claude Pro + $50 Ellul Pro)", "competitor": "$20 (Claude Pro alone)", "note": "You're paying for the workstation, not for the agent." }
+      },
+      "verdict": {
+        "headline": "Same agent, different home. Use Claude Code on Ellul when the laptop's lid is the problem.",
+        "body": "Anthropic ships a great agent. We ship the workstation that lets it run while you sleep. Bring your own Claude subscription. Ellul charges only for the computer."
+      },
+      "whenToUseCompetitor": {
+        "trying-claude-code": "You're trying Claude Code for the first time and want to feel the agent quality without committing to a workstation.",
+        "fast-bounded": "Your work is fast and bounded: short cycles where the agent shouldn't outlive your editor.",
+        "no-prod-credentials": "You don't need to touch production credentials."
+      },
+      "whenToUseEllul": {
+        "keep-running-after-lid-close": "You want Claude Code to keep working after you close your laptop.",
+        "parallel-sessions-no-clash": "You want to run two or three Claude Code sessions in parallel without ports clashing.",
+        "safe-git-push-deploy": "You want git push and deploy to be safe, gated by a passkey, with credentials never in the agent's process.",
+        "switch-between-clis": "You want to switch between Claude Code, Codex, OpenCode, and Cursor without changing your workstation."
+      },
+      "faq": {
+        "byok-claude": { "q": "Can I bring my own Claude Pro/Max subscription to Ellul?", "a": "Yes. Ellul is BYOK (bring your own key). Your Claude subscription is yours; Ellul charges only for the workstation." },
+        "remote-control-replace": { "q": "Does Anthropic's 'Remote Control' replace Ellul?", "a": "No. Remote Control lets you send messages from another device into a Claude Code session. The session itself still lives on your laptop, and stops when your laptop sleeps. Ellul moves the session onto a server that never sleeps." },
+        "gate-vs-permissions": { "q": "How is Ellul's gate different from Claude Code's permissions?", "a": "Claude Code's permissions are enforced inside the agent process. Strong by software-engineering standards, but bypassable in principle by anyone with code-edit access to the agent. Ellul's gate is enforced by a separate process the agent cannot read, attach to, or signal. The agent literally cannot exfiltrate credentials at the OS level, not just by convention." },
+        "cloud-claude-code": { "q": "Will Anthropic ship a cloud Claude Code?", "a": "They ship Claude Managed Agents on platform.claude.com, a managed agent product tied to Anthropic's cloud and model. Ellul is model-agnostic: same workstation runs Claude Code, Codex, Cursor, and OpenCode. Different scope." },
+        "mcp-servers": { "q": "What about MCP servers?", "a": "Ellul runs MCP servers either locally inside the workstation or as long-lived server-side processes. Local MCPs that need GPU or persistent state actually work, because the workstation isn't being torn down every time you close the lid." }
+      }
+    },
+    "claude-code-vs-cursor": {
+      "competitor": { "tagline": "AI code editor on your laptop" },
+      "meta": {
+        "title": "Claude Code vs Cursor: where the agent should live",
+        "description": "Claude Code and Cursor compared head-to-head: agent quality, editor surface, and the question neither vendor wants you to ask. Where does the agent run when you close your laptop?"
+      },
+      "hero": {
+        "eyebrow": "Claude Code vs Cursor",
+        "headline": "The agent vs the editor, and the place either of them lives.",
+        "sub": "Claude Code wins on agent quality. Cursor wins on editor polish. Both run on your laptop. Here is the head-to-head, and the third option neither sells."
+      },
+      "ellulPitch": "Claude Code on a workstation that doesn't sleep. Run multiple sessions in parallel, gate every privileged action behind a passkey, keep credentials out of the agent process. Bring your own Claude/Codex/Cursor CLI subscription. Ellul charges for the workstation, not the model.",
+      "competitorPitch": "Cursor's editor experience is the best in the category in 2026. Inline completions are instant. Codebase indexing is deep. Command-K is reflexive after a week. If you spend ninety percent of your day in the editor, Cursor's surface is hard to beat.",
+      "fundamentalDifference": "Claude Code is the agent. Cursor is the editor. Ellul is the computer the agent runs on. Most senior engineers we talk to use Claude Code for the model and Cursor for the keyboard, then run Claude Code on Ellul so the lid problem stops mattering.",
+      "features": {
+        "where-agent-runs": { "capability": "Where the agent runs", "ellul": "Persistent cloud workstation", "competitor": "Your laptop" },
+        "agent-quality": { "capability": "Agent quality (Terminal-Bench 2.0, May 2026)", "ellul": "Claude Code default; Codex / OpenCode optional", "competitor": "Cursor agent panel + 3rd-party model routing", "note": "Independent of where the agent runs." },
+        "inline-completions": { "capability": "Inline completions", "note": "Inline completions assume the agent is co-located with the editor. Use Cursor on your laptop AND Ellul on the server; they compose." },
+        "cmd-k-refactors": { "capability": "Command-K / Cmd-K refactors" },
+        "codebase-indexing": { "capability": "Codebase indexing", "ellul": "Per-workstation, persistent", "competitor": "Per-machine, ephemeral" },
+        "survives-lid-close": { "capability": "Survives lid close / lid sleep" },
+        "parallel-sessions": { "capability": "Parallel agent sessions", "ellul": "Multiple, isolated sandboxes per workstation", "competitor": "One at a time" },
+        "per-action-gating": { "capability": "Per-action privileged-action gating", "ellul": "FIDO2 passkey, server-enforced separate process", "competitor": "OS-level prompts (skippable)" },
+        "credentials-location": { "capability": "Where credentials live", "ellul": "Server vault, never in agent process", "competitor": "Your machine (~/.aws, ~/.ssh, browser cookies)" },
+        "run-other-agents": { "capability": "Run other agents (Claude Code, Codex, OpenCode)", "note": "Cursor's CLI works on Ellul too." },
+        "phone-approvals": { "capability": "Mobile / phone access", "ellul": "Tap-to-approve from passkey-bound device" },
+        "time-to-first-run": { "capability": "Time to first agent run", "ellul": "5 min from sign-up", "competitor": "Install + provision + configure" }
+      },
+      "pricing": {
+        "hobby": { "tier": "Hobby", "ellul": "$20/mo (Hobby)", "competitor": "$20/mo (Pro)", "note": "Cursor Pro is the default subscription tier." },
+        "pro": { "tier": "Pro", "ellul": "$50/mo (Pro)", "competitor": "$40/mo (Business per seat)" },
+        "byok-model-key": { "tier": "Bring your own model key", "ellul": "Yes (Anthropic, OpenAI, Google, etc.)", "competitor": "Yes for some providers" }
+      },
+      "verdict": {
+        "headline": "Use Cursor for inline editing on your laptop. Use Claude Code for the agent itself. Run Claude Code on Ellul so it survives the lid closing.",
+        "body": "If you're forced to pick one, the answer in April 2026 is Cursor for short-cycle in-the-editor work, Claude Code for anything resembling an unattended run. The interesting question is whether you should be running either of them on a machine you carry around in a bag."
+      },
+      "whenToUseCompetitor": {
+        "editor-heavy-day": "You spend 90%+ of your day in the editor with the agent doing inline assists.",
+        "short-cycle": "Your work is short-cycle: prompt, see result, accept, move on.",
+        "best-inline-completions": "You want the best inline-completion experience in the industry.",
+        "no-extra-credentials": "You don't need credentials beyond what already lives on your laptop."
+      },
+      "whenToUseEllul": {
+        "overnight-runs-laptop-closed": "You want to run Claude Code (or Codex, or Cursor's CLI) overnight without your laptop staying open.",
+        "parallel-sessions-no-clash": "You want multiple parallel agent sessions without state collisions.",
+        "real-infra-no-laptop": "Your agent needs to touch real infrastructure (GitHub, Vercel, production databases) and you don't want those credentials on your laptop.",
+        "passkey-gated-git-push": "You want a passkey-gated git push and deploy that the agent literally cannot bypass.",
+        "move-agent-keep-editor": "You want to keep your favorite editor (Cursor or otherwise) and just move the agent off."
+      },
+      "faq": {
+        "claude-code-vs-cursor-better": { "q": "Is Claude Code better than Cursor?", "a": "Different products. Claude Code's agent quality leads in 2026: Claude Opus 4.7 sits at the top of Terminal-Bench 2.0 (~69%) and posts SWE-bench Verified in the high 80s, with deeper code review and more reliable multi-step planning. Cursor's editor surface is the best in the category: inline completions, command-K, codebase indexing. Most senior engineers we talk to use both." },
+        "run-claude-code-on-cursor": { "q": "Can I run Claude Code on Cursor?", "a": "Cursor and Claude Code coexist on your laptop. Cursor is the editor; Claude Code is a CLI you trigger from a terminal. They don't conflict, but they both run on your machine, which means they both stop when your laptop sleeps." },
+        "cursor-cloud-agent": { "q": "Does Cursor have a cloud-agent product?", "a": "Cursor shipped Cloud Agents and the cursor-agent CLI in 2026, plus a Cursor SDK for embedding the same runtime in other apps. Cloud Agents push a conversation to Cursor's hosted runtime so it keeps running while you close your laptop. Ellul's positioning sits next to that: same shape of capability on a per-user VPS you own, with passkey-gated privileged actions, multi-vendor agents in parallel (Claude Code, Codex, OpenCode beside cursor-agent), and Cursor's Agent Communication Protocol integrated so the chat surface is first-class." },
+        "anthropic-cloud-claude-code": { "q": "Does Anthropic have a cloud Claude Code?", "a": "Anthropic ships Claude Managed Agents on platform.claude.com and a 'Remote Control' feature in Claude Code that lets another device send messages into a session. Both still tie you to Anthropic's cloud and Anthropic's model. Ellul is model-agnostic: the same workstation runs Claude Code, Codex, OpenCode, and Cursor's CLI." },
+        "pay-for-both": { "q": "Why would I pay for both Cursor and Ellul?", "a": "Different jobs. Cursor is for inline assists at the keyboard. Ellul is for unattended work, parallel agents, and credential-touching operations. Cursor on your laptop and an agent on Ellul is the most common configuration we see." },
+        "cursor-more-secure-than-claude-code-on-ellul": { "q": "Is Cursor more secure than Claude Code on Ellul?", "a": "No. Cursor's agent has the same OS-level access to your filesystem as you do: every credential file, every browser cookie, every SSH key. Ellul's agent runs in an isolated sandbox with credentials in a server-side vault, gated by a separate process the agent cannot read or attach to. Threat model is fundamentally different." }
+      }
+    },
+    "codespaces": {
+      "competitor": { "tagline": "Cloud dev environment for humans" },
+      "meta": {
+        "title": "GitHub Codespaces vs ellul: dev env or agent home",
+        "description": "GitHub Codespaces was built for humans writing code in a browser. Ellul is built for AI agents: gated, parallel, agent-native. The shape of the product follows from who it's for."
+      },
+      "hero": {
+        "eyebrow": "Codespaces vs ellul",
+        "headline": "Built for humans, or built for agents.",
+        "sub": "GitHub Codespaces is the canonical cloud dev environment for humans typing code in a browser. Ellul is built for agents: gated, parallel, agent-native. The shape of the product follows from who it's for."
+      },
+      "ellulPitch": "Anything where the agent is doing the work and the human is approving. Codespaces has no concept of an agent that runs unattended, no FIDO2 gate, no per-agent isolation, no peering primitive. We were built for the agent first.",
+      "competitorPitch": "GitHub-native. Free tier. Tight integration with the GitHub ecosystem. If you're a human writing code in a browser and your work lives in GitHub, Codespaces is excellent.",
+      "fundamentalDifference": "Codespaces' design assumption: a human is in the editor, the agent (Copilot) helps them. Ellul's: an agent is in the workstation, the human approves the dangerous parts. Once you change who is at the keyboard, almost every product decision changes: gating, parallelism, peering, credential handling.",
+      "features": {
+        "designed-for": { "capability": "Designed for", "ellul": "AI agents (humans approve)", "competitor": "Human developers" },
+        "always-on": { "capability": "Always-on", "ellul": "Always-on by default", "competitor": "Auto-suspend after 30 min idle" },
+        "per-agent-isolation": { "capability": "Per-agent isolation", "ellul": "Per-agent workstation", "competitor": "One Codespace per repo" },
+        "passkey-gates": { "capability": "FIDO2 passkey gates" },
+        "read-only-peering": { "capability": "Read-only peering between agents" },
+        "github-actions": { "capability": "GitHub Actions integration", "ellul": "Via integration", "competitor": "Native" },
+        "free-tier": { "capability": "Free tier", "competitor": "60 hr/month free" },
+        "bring-any-agent": { "capability": "Bring any agent (Claude, Codex, Cursor, OpenCode)", "note": "Codespaces is Copilot-centric." }
+      },
+      "pricing": {
+        "free-tier": { "tier": "Free tier", "ellul": "None", "competitor": "60 hr/month free" },
+        "hobby-occasional": { "tier": "Hobby / occasional", "ellul": "$20/mo flat", "competitor": "Pay-as-you-go after free hours" },
+        "daily-driver": { "tier": "Daily driver", "ellul": "$50/mo flat (Pro)", "competitor": "Usage-based, often more for >40hr/wk" }
+      },
+      "verdict": {
+        "headline": "Codespaces is for humans typing in a browser. Ellul is for the agent doing the work.",
+        "body": "If your agent usage is light Copilot inline assists, Codespaces' free tier is a great deal. If you want unattended overnight runs, multiple parallel agents, and gated production access, that's a different shape of product."
+      },
+      "whenToUseCompetitor": {
+        "human-typing-browser": "You're a human typing code in a browser-based VS Code.",
+        "github-standardized": "Your team standardizes on GitHub for everything.",
+        "free-tier-occasional": "You want a free tier for occasional cloud work.",
+        "light-copilot-assists": "Your agent usage is light Copilot inline assists."
+      },
+      "whenToUseEllul": {
+        "agent-not-at-keyboard": "You want an agent to do the work while you're not at the keyboard.",
+        "multi-parallel-each-workstation": "You want multiple agents in parallel, each with its own workstation.",
+        "passkey-gates-on-actions": "You want passkey gates on git push and deploys.",
+        "choose-agent-not-copilot": "You want to choose your agent (Claude, Codex, Cursor, OpenCode) without being tied to Copilot."
+      },
+      "faq": {
+        "claude-code-or-cursor-in-codespace": { "q": "Why can't I just run Claude Code or Cursor in a Codespace?", "a": "You can. People do. The problem is structural: Codespaces auto-suspend on idle, there's no gate model for the agent's privileged actions, there's no peering primitive, and credentials live in your GitHub-attached environment with no per-action approval. It works for short sessions; for unattended overnight runs it's painful." },
+        "ellul-free-tier": { "q": "Does Ellul have a free tier?", "a": "No. We've found that free tiers attract a different ICP than the senior engineers we serve. We may add one later." },
+        "codespaces-cheaper-occasional": { "q": "Is Codespaces cheaper for occasional use?", "a": "Yes. 60 free hours/month plus pay-as-you-go beats $20/month flat if you Codespace once a week. Ellul is for daily-driver use where the workstation is always on." },
+        "github-agent-first-codespace": { "q": "Will GitHub ship an agent-first Codespace?", "a": "They've shipped agent features tied to Copilot. Whether that converges to a real agent workstation with gating and peering remains to be seen. Until then Ellul is years ahead on those specific axes." },
+        "codespaces-and-ellul-together": { "q": "Can I use Codespaces and Ellul together?", "a": "Yes; they don't conflict. Use Codespaces for in-the-browser human coding, use Ellul for unattended agent runs. The pricing structures are independent." }
+      }
+    },
+    "daytona": {
+      "competitor": { "tagline": "Stateful workspace primitive" },
+      "meta": {
+        "title": "Daytona vs ellul: workspace primitive or product",
+        "description": "Daytona is a workspace primitive that targets platform engineers building developer environments. Ellul is the assembled, opinionated agent workstation that uses workspace primitives internally."
+      },
+      "hero": {
+        "eyebrow": "Daytona vs ellul",
+        "headline": "A primitive, or the product built on it.",
+        "sub": "Daytona's docs target platform engineers building developer environments. Ellul is the assembled product an engineer signs up for. Different audiences."
+      },
+      "ellulPitch": "Daytona has a solid foundation but no agent-specific UX, no passkey gating, no peering primitive, no integrations. We've built the layer above. A senior engineer signs up for Ellul and is productive in five minutes.",
+      "competitorPitch": "Stateful workspaces with unlimited persistence and a clean SDK. Strong primitive for platform engineers. Open-source posture is honest.",
+      "fundamentalDifference": "Daytona is to dev environments what Kubernetes is to containers: a powerful primitive that requires assembly. Ellul is the assembled experience: chat, gates, peering, integrations. If you have a platform team and want to build your own internal agent platform, Daytona is sensible. If you want to use an agent today, Ellul is the answer.",
+      "features": {
+        "target-audience": { "capability": "Target audience", "ellul": "Senior engineers using agents", "competitor": "Platform engineers building dev envs" },
+        "stateful-persistence": { "capability": "Stateful persistence", "ellul": "Yes (unlimited)", "competitor": "Yes (unlimited)" },
+        "builtin-chat": { "capability": "Built-in agent chat" },
+        "passkey-gating": { "capability": "Passkey gating (FIDO2)" },
+        "read-only-peering": { "capability": "Read-only peering between agents" },
+        "integrations": { "capability": "GitHub / Vercel / Neon integrations", "ellul": "Built-in, gated", "competitor": "Generic SDK access" },
+        "open-source": { "capability": "Open source", "ellul": "Partial (agent runtime, sandbox primitives)", "competitor": "Yes (workspace primitive)" },
+        "time-to-first-run": { "capability": "Time to first agent run", "ellul": "5 minutes (sign up)", "competitor": "Hours-days (build the product)" }
+      },
+      "pricing": {
+        "hobby": { "tier": "Hobby", "ellul": "$20/mo flat", "competitor": "Free (self-host) + cloud cost" },
+        "pro": { "tier": "Pro", "ellul": "$50/mo flat", "competitor": "Self-host + ops cost" },
+        "total-individual": { "tier": "Total cost (individual)", "ellul": "$20 to $50/mo", "competitor": "Cloud + ops time, typically more for individuals" }
+      },
+      "verdict": {
+        "headline": "Daytona for platform teams; Ellul for individual senior engineers.",
+        "body": "If your job is to build a developer platform, Daytona is a sensible primitive. If your job is to ship code with an agent, Ellul is the assembled product you sign up for."
+      },
+      "whenToUseCompetitor": {
+        "platform-team-internal": "You have a platform team and you want to build an internal developer platform.",
+        "workspace-primitives-extend": "You need workspace primitives you can extend yourself.",
+        "oss-priority-time-control": "Your priority is open source and you'll trade time for control."
+      },
+      "whenToUseEllul": {
+        "use-agent-not-build-platform": "You want to use an agent, not build a platform.",
+        "gates-peering-integrations-oob": "You want passkey gates, peering, and integrations out of the box.",
+        "productive-minutes-not-weeks": "You want to be productive in minutes, not weeks."
+      },
+      "faq": {
+        "build-ellul-on-daytona": { "q": "Could I build Ellul on Daytona?", "a": "In principle, yes. Daytona provides the workspace primitive. Ellul is roughly 18 months of additional product engineering: chat, gates, peering, integrations, identity, billing. We've already built it." },
+        "ellul-uses-daytona": { "q": "Does Ellul use Daytona under the hood?", "a": "No. Our sandboxes use a different stack with a security model that requires the gate to be enforced outside the agent process, which off-the-shelf workspace primitives don't ship with." },
+        "daytona-oss-story": { "q": "What about Daytona's open-source story?", "a": "We respect it. Open-source workspace primitives are valuable. They live one layer below where Ellul operates. The full product Ellul ships is not yet open source." },
+        "daytona-cheaper": { "q": "Is Daytona cheaper?", "a": "Daytona is free if you self-host, plus the cost of the cloud you run it on. The total cost of operating a self-hosted Daytona workspace plus building the agent product on top usually exceeds Ellul's $20 to $50 per month for individual engineers." },
+        "daytona-passkey-gate": { "q": "Does Daytona have a passkey gate?", "a": "No. Daytona provides workspace primitives. Authorization and gating are something you assemble on top. Ellul ships an opinionated FIDO2-enforced gate that's part of the product." }
+      }
+    },
+    "e2b": {
+      "competitor": { "tagline": "Sandbox SDK for AI applications" },
+      "meta": {
+        "title": "E2B vs ellul: ephemeral execution or persistent agent",
+        "description": "E2B provides ephemeral code-execution sandboxes (capped at 24 hours on Pro) via Firecracker microVMs. Ellul is a persistent agent workstation that lasts as long as your account."
+      },
+      "hero": {
+        "eyebrow": "E2B vs ellul",
+        "headline": "Ephemeral code execution, or persistent agent work.",
+        "sub": "E2B is for short bursts of code execution inside a sandbox. Ellul is for an agent that lives on a workstation indefinitely. Different problems."
+      },
+      "ellulPitch": "Persistence. An Ellul workstation is yours for the duration of your account. Your installed packages, your config, your in-progress branches stay where you left them. E2B sandboxes don't.",
+      "competitorPitch": "Firecracker microVMs with strong isolation. Solid SDK for building 'run user code in a sandbox' features. The right primitive for code interpreters and untrusted-input scenarios.",
+      "fundamentalDifference": "E2B sandboxes are ephemeral by design: they exist for the duration of a code-execution call, capped at 24 hours on Pro. Ellul workstations are persistent by design: they exist until you cancel your subscription. If you're building an LLM app that runs untrusted code, use E2B. If you're an engineer who wants an always-on agent, use Ellul.",
+      "features": {
+        "sandbox-lifetime": { "capability": "Sandbox lifetime", "ellul": "Indefinite (account lifetime)", "competitor": "Minutes to 24h (Pro cap)" },
+        "state-persistence": { "capability": "State preserved between sessions" },
+        "designed-for-agents": { "capability": "Designed for agents", "ellul": "Agent-native", "competitor": "Code execution; agents bolt on" },
+        "builtin-chat": { "capability": "Built-in agent chat" },
+        "passkey-gating": { "capability": "Passkey gating" },
+        "code-interpreter": { "capability": "Code-interpreter use case", "ellul": "Possible but overkill", "competitor": "Excellent" },
+        "time-to-first-sandbox": { "capability": "Time-to-first-sandbox", "ellul": "Sandbox already running", "competitor": "Sub-second cold start" }
+      },
+      "pricing": {
+        "hobby": { "tier": "Hobby", "ellul": "$20/mo flat", "competitor": "Per-second usage" },
+        "pro": { "tier": "Pro", "ellul": "$50/mo flat", "competitor": "Per-second usage" },
+        "heavy-unattended": { "tier": "Heavy unattended use", "ellul": "$50/mo flat is cheaper for daily-driver", "competitor": "Per-second wins for bursty / short-lived workloads" }
+      },
+      "verdict": {
+        "headline": "E2B for code interpreters. Ellul for an engineer's daily-driver agent workstation.",
+        "body": "Some products use both: E2B for code interpreters and Ellul for the engineering workstation that builds them. They aren't substitutes; they're tools at different layers of the stack."
+      },
+      "whenToUseCompetitor": {
+        "untrusted-user-code": "You're building an LLM app that needs to run untrusted user code.",
+        "seconds-to-minutes": "Your sandboxes live for seconds to minutes, not hours.",
+        "per-second-billing": "You want per-second billing tied to actual usage.",
+        "no-state-persistence": "You don't need state to survive between sandbox lifetimes."
+      },
+      "whenToUseEllul": {
+        "agent-not-sdk": "You're an engineer who wants an agent, not an SDK.",
+        "hours-or-days-context": "Your agent needs hours or days of context, not seconds.",
+        "persistent-home-deps": "You want a persistent home for installed packages, branches, and in-progress work.",
+        "passkey-gated-git-push": "You want passkey-gated git push and deploys."
+      },
+      "faq": {
+        "e2b-vs-ellul": { "q": "Is E2B competitive with Ellul?", "a": "They solve different problems. E2B is the right answer for ephemeral code execution. Ellul is the right answer for persistent agent work. Some products use both: E2B for code interpreters and Ellul for the engineering workstation that builds them." },
+        "e2b-as-workstation": { "q": "Could I use E2B as my agent's workstation?", "a": "It would work for short tasks. For anything taking longer than the sandbox cap (24h on Pro), the sandbox dies and the agent's work goes with it. Ellul exists because that ceiling is too low for serious unattended work." },
+        "e2b-persistence": { "q": "What about persistence in E2B?", "a": "E2B's Pro plan supports sessions up to 24 hours. After that the sandbox tears down. State has to be exfiltrated and re-loaded, which is fine for code interpreters and painful for agents." },
+        "pricing-comparison": { "q": "Pricing comparison?", "a": "If your sandbox usage is bursty (lots of short sessions), E2B's per-second pricing is cheaper. If you're keeping an agent alive for hours every day, Ellul's flat monthly wins." },
+        "e2b-passkey-gating": { "q": "Does E2B have passkey gating?", "a": "No. E2B is sandbox infrastructure; gating is something you build at the application layer. Ellul ships a FIDO2-enforced gate as a first-class part of the product." }
+      }
+    },
+    "sprites": {
+      "competitor": { "tagline": "Stateful sandboxes for AI coding agents" },
+      "meta": {
+        "title": "Sprites vs ellul: sandbox infrastructure or product",
+        "description": "Sprites.dev provides stateful sandboxes for AI coding agents on Firecracker microVMs. Ellul is the assembled product (chat, file browser, gates, integrations) built on top of stateful sandboxes."
+      },
+      "hero": {
+        "eyebrow": "Sprites.dev vs ellul",
+        "headline": "Sandbox infrastructure, or the product on top of it.",
+        "sub": "Sprites.dev provides stateful sandboxes other companies build on. Ellul is the product an engineer signs up for. Both have a place; they live at different layers."
+      },
+      "ellulPitch": "We are the assembled experience. Chat surface. File browser. Live preview. Passkey gates. Composition primitive. GitHub/Vercel/Neon/Supabase integrations. A senior engineer can sign up for Ellul and have an agent running in five minutes. They don't have to assemble it themselves.",
+      "competitorPitch": "Firecracker microVMs with checkpoint and rollback on fast NVMe. Genuine 'unlimited persistence.' Strong primitive for builders who need sandbox-as-a-service. Their docs are clean and their pricing is honest.",
+      "fundamentalDifference": "Sprites is infrastructure. Ellul is a product. If you're building an AI coding tool and need stateful sandboxes as a primitive, Sprites is the right call. If you're a senior engineer who wants an always-on workstation for your agent, Ellul is what you sign up for. The two are complementary.",
+      "features": {
+        "stack-layer": { "capability": "Layer of stack", "ellul": "End-user product", "competitor": "Sandbox infrastructure (B2B SDK)" },
+        "stateful-persistence": { "capability": "Stateful persistence", "ellul": "Yes (unlimited)", "competitor": "Yes (unlimited)" },
+        "checkpoint-rollback": { "capability": "Checkpoint / rollback", "ellul": "Volume snapshots", "competitor": "Yes (NVMe-backed)" },
+        "builtin-ux": { "capability": "Built-in agent UX (chat, files, preview)", "note": "Sprites: you build it. Ellul: ships with it." },
+        "passkey-gating": { "capability": "Passkey gating (FIDO2, server-enforced)" },
+        "multi-agent-peering": { "capability": "Multi-agent peering", "ellul": "Read-only snapshot peering" },
+        "integrations": { "capability": "GitHub / Vercel / Neon integrations" },
+        "time-to-first-run": { "capability": "Time to first agent run", "ellul": "5 minutes (sign up)", "competitor": "Hours-days (build the product)" }
+      },
+      "pricing": {
+        "hobby": { "tier": "Hobby / individual", "ellul": "$20/mo flat", "competitor": "Per-sandbox usage" },
+        "pro": { "tier": "Pro", "ellul": "$50/mo flat", "competitor": "Per-sandbox usage" },
+        "high-volume": { "tier": "High-volume", "ellul": "Custom", "competitor": "Per-second pricing wins for thousands of short-lived sandboxes" }
+      },
+      "verdict": {
+        "headline": "Different layers of the stack: Sprites is infrastructure, Ellul is the product.",
+        "body": "Use Sprites if you're building a coding-agent product and need sandbox primitives. Use Ellul if you're a senior engineer who wants to use an agent today, not assemble one over six months."
+      },
+      "whenToUseCompetitor": {
+        "building-coding-agent": "You're building a coding agent product and need stateful sandboxes as infrastructure.",
+        "own-ux-from-scratch": "You want to own the entire user experience from scratch.",
+        "granular-per-second": "You need granular per-second pricing for a high-volume sandbox workload."
+      },
+      "whenToUseEllul": {
+        "use-agent-not-build": "You're a senior engineer who wants to use an agent, not build one.",
+        "chat-files-preview-oob": "You want chat, files, preview, and integrations out of the box.",
+        "passkey-without-writing-gate": "You want passkey-gated privileged actions without writing the gate yourself.",
+        "flat-monthly": "You want a flat monthly price."
+      },
+      "faq": {
+        "sprites-build-ellul-like": { "q": "Could Sprites.dev be used to build something like Ellul?", "a": "In principle, yes. Sprites is infrastructure. The full product (chat, files, gates, peering, integrations) is roughly 18 months of engineering on top. We've already built it." },
+        "ellul-uses-sprites": { "q": "Does Ellul use Sprites under the hood?", "a": "No. Our sandboxes are built on a different stack with a custom security model. Passkey gating is enforced by a separate process the agent cannot read or attach to, which requires more than what an off-the-shelf sandbox provides." },
+        "sprites-cheaper-high-volume": { "q": "Is Sprites cheaper for high-volume agent runs?", "a": "If you're spinning up thousands of short-lived sandboxes per day, Sprites' per-second pricing wins. If you're a senior engineer running a few persistent workstations, our flat monthly is usually cheaper." },
+        "sprites-passkey-gating": { "q": "Does Sprites have passkey gating?", "a": "No. Sprites provides sandbox primitives. Gating is something you build on top, and getting it right is hard, because the gate has to be enforced outside the agent process to be meaningful." },
+        "composition-primitive": { "q": "What about the composition primitive?", "a": "Read-only peering between agents (letting one agent see another's source without writing) is a property of the orchestration layer, not the sandbox layer. Sprites doesn't ship it. Ellul does." }
+      }
+    },
+    "base44": {
+      "competitor": { "tagline": "Prompt-to-app builder for non-coders, owned by Wix" },
+      "meta": {
+        "title": "Base44 vs ellul: app generator or engineer's tool",
+        "description": "Base44 generates full apps from prompts for non-coders. Ellul is the persistent workstation your AI coding agent lives on. Different audiences: head-to-head for the rare case you're choosing."
+      },
+      "hero": {
+        "eyebrow": "Base44 vs ellul",
+        "headline": "Generated app, or engineered software.",
+        "sub": "Base44 builds entire apps from prompts in a managed runtime, designed for non-engineers, acquired by Wix. Ellul is for engineers who want their AI agent on a persistent workstation, working inside their real codebase. Different products, different users."
+      },
+      "ellulPitch": "Engineering work in real codebases: code review, refactors, multi-day migrations, real-credential operations, parallel agents, integration with your existing stack. The shape of the user is 'professional engineer with an agent' rather than 'non-coder building a v0 app'.",
+      "competitorPitch": "Base44's category is 'idea to v1 app' for people who don't write code. The runtime is integrated; the deployment is integrated; the model behind it is hidden. For a non-engineer with a clear idea and modest needs, the time-to-MVP is hard to beat.",
+      "fundamentalDifference": "Base44 abstracts away the codebase. Ellul puts an engineer's agent inside a real codebase. The two products do not really compete; they serve adjacent users with non-overlapping needs. We list the comparison only because the question shows up.",
+      "features": {
+        "target-user": { "capability": "Target user", "ellul": "Professional engineer with an AI agent", "competitor": "Non-coder building an app from a prompt" },
+        "output": { "capability": "Output", "ellul": "Diffs, PRs, deployed code in your repo", "competitor": "A hosted app on Base44/Wix infrastructure" },
+        "codebase-ownership": { "capability": "Codebase ownership", "ellul": "Yours: git-based, your repo, your CI", "competitor": "Hosted in Base44's runtime; export limited" },
+        "byoa": { "capability": "Bring-your-own-agent", "ellul": "Claude Code, Cursor, Codex, OpenCode", "competitor": "Base44's own model + tooling" },
+        "real-credential-ops": { "capability": "Real-credential operations", "ellul": "Passkey-gated, server-side enforced", "competitor": "Managed by Base44; black-box" },
+        "persistent-workstation": { "capability": "Persistent workstation", "ellul": "Yes (branches, deps, MCP servers persist)", "competitor": "Hosted runtime; per-app" },
+        "parallel-agents": { "capability": "Parallel agents", "ellul": "Multiple, with read-only peering", "competitor": "Not applicable" },
+        "hosting-deployment": { "capability": "Hosting / deployment", "ellul": "You deploy anywhere (Vercel, Fly, Railway, your infra)", "competitor": "Hosted on Wix/Base44 (lock-in)" },
+        "time-to-first-v0": { "capability": "Time to first usable v0 (non-coder)", "ellul": "Several hours (engineer-shaped)", "competitor": "Minutes (the headline pitch)" },
+        "integration-existing-stack": { "capability": "Integration with existing stack", "ellul": "Native (your repo, your CI, your monitoring)", "competitor": "Limited; designed for greenfield apps" },
+        "open-ecosystem": { "capability": "Open ecosystem", "ellul": "Open agent CLIs, BYOK, MCP", "competitor": "Closed product" },
+        "best-fit": { "capability": "Best fit", "ellul": "Production engineering with an agent", "competitor": "Non-coder MVPs" }
+      },
+      "pricing": {
+        "entry": { "tier": "Entry", "ellul": "$20/mo Hobby", "competitor": "Free → Pro ~$20/mo" },
+        "pro-teams": { "tier": "Pro / Teams", "ellul": "$50/mo Pro", "competitor": "Higher tiers via Wix bundling" },
+        "self-hosting": { "tier": "Self-hosting", "ellul": "Code lives in your repo (deploy anywhere)", "competitor": "Hosted on Base44/Wix" }
+      },
+      "verdict": {
+        "headline": "Different products for different users; choose by your workflow shape.",
+        "body": "If you can't write code and want an app, Base44 is in your category. If you write code, want your AI agent inside your real codebase, and want production-grade controls, Ellul is in your category. The two products rarely come up in the same evaluation; we wrote this comparison because some users searched for it."
+      },
+      "whenToUseCompetitor": {
+        "dont-write-code": "You don't write code and want an app from a prompt.",
+        "happy-base44-wix-hosting": "You're happy hosting on Base44/Wix infrastructure.",
+        "v0-single-purpose": "Your needs fit a v0 single-purpose app rather than an integrated codebase.",
+        "time-to-mvp-binding": "Time-to-first-MVP is the binding constraint."
+      },
+      "whenToUseEllul": {
+        "engineer-with-agent": "You're an engineer with an AI agent and a real codebase.",
+        "code-in-git-repo": "You want your code in your git repo, deployed where you choose.",
+        "credential-touching-safely": "Your agent needs to do credential-touching work safely.",
+        "keep-tools-model-editor": "You want to keep your existing tools, model, and editor.",
+        "parallel-or-unattended": "You expect to run agents in parallel or unattended."
+      },
+      "faq": {
+        "is-base44-coding-agent": { "q": "Is Base44 a coding agent?", "a": "Not in the same sense as Claude Code or Cursor. Base44 generates apps end-to-end from prompts and hosts them. There is no concept of an agent CLI you keep using; the model is hidden inside the product." },
+        "export-base44-to-ellul": { "q": "Can I export my Base44 app and run it on Ellul?", "a": "Export is limited and depends on the Wix/Base44 plan. The shape that's worth checking is whether the generated codebase comes out as something you can keep developing, and whether you'd want to. The two products are different enough that 'migrate from Base44 to Ellul' usually means 'rewrite, not migrate.'" },
+        "why-comparison-on-site": { "q": "Why is this comparison even on this site?", "a": "Some users searching 'AI app builder vs AI coding agent' end up with both Base44 and Ellul on their list. We put together an honest comparison so you don't have to triangulate from product pages. They're meaningfully different shapes." },
+        "base44-after-wix": { "q": "Does Base44 still exist as a product after the Wix acquisition?", "a": "Base44 continues to ship as a Wix property. The naming and bundling have shifted with successive Wix releases; for current details, the Base44 product page is the source of truth." },
+        "lovable-bolt-v0": { "q": "What about Lovable, Bolt, V0?", "a": "All in the same prompt-to-app builder category, with different polish and different model stacks. Same orthogonality to Ellul as Base44: they make apps from prompts, Ellul gives engineers a place to put their agent. We have a separate Lovable comparison and a Bolt comparison if you want the head-to-heads." }
+      }
+    },
+    "bolt": {
+      "competitor": { "tagline": "StackBlitz's prompt-to-app builder with in-browser preview" },
+      "meta": {
+        "title": "Bolt.new vs ellul: in-browser builder vs agent workstation",
+        "description": "Bolt.new from StackBlitz turns prompts into running web apps in a browser-based dev environment. Ellul is the persistent workstation an engineer's AI agent lives on. Different categories."
+      },
+      "hero": {
+        "eyebrow": "Bolt vs ellul",
+        "headline": "Prompt-to-app, or agent's runtime.",
+        "sub": "Bolt is a strong prompt-to-running-app product on top of StackBlitz's WebContainer tech. Ellul is the persistent computer an engineer's AI agent lives on. They serve different users. Here's where each one wins."
+      },
+      "ellulPitch": "Engineering on a real codebase: your agent, your model, your tools, your repo. Long-running tasks, parallel agents, real credentials gated by a passkey, persistent workstation between sessions. Ellul is the runtime; you bring whichever agent CLI suits the job.",
+      "competitorPitch": "Bolt's WebContainer-based runtime gives it a unique 'browser preview = real Node.js' experience. For prototypes, MVPs, and demos by people who don't want to set up a local environment, Bolt's prompt-to-running-app speed is hard to match, and the lineage with StackBlitz means the dev environment is well-engineered.",
+      "fundamentalDifference": "Bolt is opinionated about the runtime (browser-based via WebContainer) and the workflow (prompt → app → preview). Ellul is the runtime under your agent: you bring the editor, the agent, the model, the deploy target. The two products serve adjacent users; we list the comparison because both show up under 'AI codes my app' searches.",
+      "features": {
+        "target-user": { "capability": "Target user", "ellul": "Professional engineer with an agent", "competitor": "Prototyper, designer-engineer, indie builder" },
+        "output": { "capability": "Output", "ellul": "Diffs, PRs, deployed code in your repo", "competitor": "A live app in a Bolt workspace, exportable to GitHub" },
+        "codebase-ownership": { "capability": "Codebase ownership", "ellul": "Yours: git, your repo, your CI", "competitor": "Bolt-hosted; GitHub export available" },
+        "byoa": { "capability": "Bring-your-own-agent", "ellul": "Claude Code, Cursor, Codex, OpenCode", "competitor": "Bolt's own model + tooling" },
+        "byom": { "capability": "Bring-your-own-model", "ellul": "Yes (BYOK)", "competitor": "Hidden" },
+        "persistent-workstation": { "capability": "Persistent workstation", "ellul": "Yes (branches, deps, MCP servers persist)", "competitor": "Per-project Bolt workspace" },
+        "real-credential-ops": { "capability": "Real-credential operations", "ellul": "Passkey-gated, server-side vault", "competitor": "Limited; designed around hosted demos" },
+        "parallel-agents": { "capability": "Parallel agents", "ellul": "Multiple workstations, read-only peering", "competitor": "Multiple Bolt sessions, no peering" },
+        "in-browser-execution": { "capability": "In-browser execution", "ellul": "Server-side terminal in browser", "competitor": "WebContainer (real Node in browser); unique strength" },
+        "time-to-first-app": { "capability": "Time to first running app (prototyper)", "ellul": "Hours (engineer-shaped)", "competitor": "Minutes (the headline pitch)" },
+        "editor-experience": { "capability": "Editor experience", "ellul": "Pair with your IDE locally; or browser file browser", "competitor": "Built-in editor + preview pane" },
+        "best-fit": { "capability": "Best fit", "ellul": "Production engineering with an agent", "competitor": "Prototypes, MVPs, demos, indie launches" }
+      },
+      "pricing": {
+        "entry": { "tier": "Entry", "ellul": "$20/mo Hobby", "competitor": "Free or Pro $25/mo" },
+        "pro-teams": { "tier": "Pro / Teams", "ellul": "$50/mo Pro", "competitor": "Teams $30/member/mo" },
+        "self-hosting": { "tier": "Self-hosting", "ellul": "Your repo, deploy anywhere", "competitor": "Hosted on Bolt; GitHub export" }
+      },
+      "verdict": {
+        "headline": "Bolt for prototypes; Ellul for the agent inside your real codebase.",
+        "body": "Bolt is the right tool for someone who wants a running app from a prompt and is fine with Bolt's runtime. Ellul is the right tool for an engineer with an AI agent and a real codebase, who wants the agent on a persistent workstation with real-credential gating. Most engineers we talk to who try both use Bolt for v0 demos and Ellul for shipping the actual product."
+      },
+      "whenToUseCompetitor": {
+        "web-app-from-prompt": "You want a running web app from a prompt, in the browser, in minutes.",
+        "prototype-not-production": "Your project is a prototype, demo, or indie MVP, not a production codebase.",
+        "happy-bolt-hosting": "You're happy hosting on Bolt or exporting to GitHub later.",
+        "webcontainer-matters": "WebContainer's in-browser runtime matters for your demo's distribution."
+      },
+      "whenToUseEllul": {
+        "engineer-on-real-codebases": "You're an engineer running AI agents on real codebases.",
+        "code-in-git-deployed-where-you-choose": "You want your code in your git repo, deployed where you choose.",
+        "real-credential-passkey": "Your agent needs real-credential operations gated by passkey.",
+        "parallel-or-unattended": "You expect to run agents in parallel or unattended.",
+        "flat-rate-pricing": "You want flat-rate pricing rather than usage credits."
+      },
+      "faq": {
+        "bolt-coding-agent-like-claude": { "q": "Is Bolt a coding agent like Claude Code?", "a": "Different shape. Bolt is a prompt-to-app product; the agent is implicit. Claude Code, Cursor, and Codex are coding agents you keep using across projects, with their own CLI and model contracts. Ellul is the runtime under those coding agents." },
+        "export-bolt-to-ellul": { "q": "Can I export from Bolt to Ellul?", "a": "Yes. Bolt supports GitHub export. Once you have the repo, you can clone it onto an Ellul workstation and continue with Cursor, Claude Code, or your preferred agent. The 'graduate from prompt-builder to engineer-with-agent' path is a common one." },
+        "what-is-webcontainer": { "q": "What's WebContainer and why does it matter?", "a": "StackBlitz built WebContainer, a Node.js runtime that runs inside the browser via WebAssembly. It's a real strength for Bolt: 'preview' is actual code execution in the browser, not a server round-trip. It does not generalize to all environments (no Docker, limited native modules) but for the apps Bolt targets, it's a uniquely fast loop." },
+        "bolt-vs-other-builders": { "q": "Bolt vs Lovable vs v0 vs Base44: are they all the same?", "a": "All in the same prompt-to-app builder category, with different polish and different model stacks. Bolt's WebContainer runtime is its differentiator; Lovable's React quality is its; v0's design fidelity is its; Base44's full-stack scope is its. Ellul is structurally orthogonal to all four." },
+        "bolt-graduates-to-real-product": { "q": "What if my Bolt prototype graduates into a real product?", "a": "Export to GitHub, clone onto an Ellul workstation, point your preferred agent CLI at the repo. The agent now lives on a persistent server, can run unattended, has passkey-gated production access, and works alongside other agents you spin up." }
+      }
+    },
+    "devin": {
+      "competitor": { "tagline": "Cognition's autonomous AI engineer in a managed sandbox" },
+      "meta": {
+        "title": "Devin vs ellul: managed autonomous engineer or workstation",
+        "description": "Devin is Cognition's autonomous AI engineer in a managed sandbox. Ellul is the persistent workstation for your own agent (Claude Code, Cursor, Codex) with your credentials and model."
+      },
+      "hero": {
+        "eyebrow": "Devin vs ellul",
+        "headline": "A managed engineer, or your agent's workstation.",
+        "sub": "Devin is Cognition's product: hand it a task, it works in their sandbox, you get a PR. Ellul is the runtime under your own agent (your Claude Code, your Cursor, your Codex) on a persistent workstation that's yours. Different commitments, different shapes."
+      },
+      "ellulPitch": "Engineering work where you keep your existing agent CLI, your model contract, your codebase ownership, and your deploy target. Ellul is the runtime; you choose the agent and the model. Flat pricing, persistent workstation, parallel-capable, passkey-gated.",
+      "competitorPitch": "If you want a fully managed product where Cognition's agent does the engineering, picks the model, runs the sandbox, and produces a PR with minimal handholding, Devin is the highest-profile entry in that category. The product is opinionated end-to-end and well-funded.",
+      "fundamentalDifference": "Devin is the agent and the runtime, sold together as a managed product. Ellul is the runtime under your agent: your existing Claude Code or Cursor CLI on a persistent workstation, with your credentials and your tools. Devin is high-end SaaS; Ellul is infrastructure. They are not the same kind of purchase.",
+      "features": {
+        "byoa": { "capability": "Bring-your-own-agent", "ellul": "Claude Code, Cursor, Codex, OpenCode", "competitor": "Devin only" },
+        "byom": { "capability": "Bring-your-own-model", "ellul": "Yes (BYOK on every supported agent)", "competitor": "Cognition-managed model stack" },
+        "codebase-ownership": { "capability": "Codebase ownership", "ellul": "Yours: git, your repo, your CI", "competitor": "Yours, but Devin operates inside its sandbox by default" },
+        "persistent-workstation": { "capability": "Persistent workstation between tasks", "ellul": "Yes (installed deps, branches, MCP servers persist)", "competitor": "Per-task sandbox; some session continuity" },
+        "real-credential-ops": { "capability": "Real-credential operations", "ellul": "Passkey-gated, server-side vault", "competitor": "Devin-managed credentials inside their sandbox" },
+        "parallel-agents": { "capability": "Parallel agents", "ellul": "Multiple workstations, read-only peering", "competitor": "Multiple Devin sessions; no peering primitive" },
+        "editor-experience": { "capability": "Editor experience", "ellul": "Pair with your IDE locally; browser file browser as backup", "competitor": "Devin's chat + workspace UI" },
+        "always-on-agent": { "capability": "Always-on agent", "ellul": "Yes (workstation persists, agent runs continuously)", "competitor": "Tasks run autonomously per session" },
+        "phone-approvals": { "capability": "Phone-as-keyboard", "ellul": "Yes (passkey approval from any device)", "competitor": "Devin web app on any device" },
+        "pricing-model": { "capability": "Pricing model", "ellul": "$20 / $50 per month flat", "competitor": "Core $20/mo PAYG at $2.25 per ACU; higher tiers above" },
+        "scope-of-work": { "capability": "Scope of work the product is shaped for", "ellul": "All engineering work an agent is suited to", "competitor": "End-to-end task autonomy on bounded engineering tickets" },
+        "open-ecosystem": { "capability": "Open ecosystem", "ellul": "Open agent CLIs, open MCP, BYOK", "competitor": "Closed product" }
+      },
+      "pricing": {
+        "individual": { "tier": "Individual", "ellul": "$20/mo Hobby", "competitor": "Core $20/mo PAYG (~$2.25/ACU)" },
+        "pro": { "tier": "Pro", "ellul": "$50/mo Pro", "competitor": "Higher tiers (Pro/Max) and enterprise via sales" },
+        "byom": { "tier": "Bring-your-own-model", "ellul": "Yes", "competitor": "No" }
+      },
+      "verdict": {
+        "headline": "Devin for the managed-engineer SaaS pitch; Ellul for the runtime under your own agent.",
+        "body": "If you specifically want a managed product where Cognition's agent does the work and you don't want to operate any infrastructure, Devin is in your category. If you want your existing Cursor / Claude Code / Codex agent on a persistent workstation, with your credentials, your model, and your repo, Ellul is in your category. Most engineers we talk to who evaluate both don't actually choose between them; they end up with their own agent on Ellul because that's the shape of their existing workflow."
+      },
+      "whenToUseCompetitor": {
+        "managed-bundled": "You want a fully managed product where the agent and the runtime are bundled.",
+        "no-existing-cli": "You don't have an existing agent CLI you want to keep using.",
+        "ok-with-pricing": "You're fine with the per-task / high-tier pricing model.",
+        "cognition-owns-model-tools": "You want Cognition to own the model selection and tool integrations."
+      },
+      "whenToUseEllul": {
+        "existing-cli": "You already use Claude Code, Cursor, Codex, OpenCode, or another agent CLI.",
+        "own-model-byok": "You want your own model contract (BYOK) rather than a managed model stack.",
+        "flat-rate-pricing": "You want flat-rate pricing rather than per-task or high-tier subscriptions.",
+        "real-credential-passkey": "Your agent needs real-credential operations gated by your passkey.",
+        "parallel-structural-isolation": "You want parallel agents with structural isolation."
+      },
+      "faq": {
+        "devin-on-ellul": { "q": "Can I run Devin on Ellul?", "a": "Devin is a managed product; it doesn't ship as a CLI you install on your own infrastructure. So no: you'd run Devin on Cognition's cloud and your other agents (Claude Code, Cursor's CLI, etc.) on Ellul." },
+        "devin-autonomy-vs-claude": { "q": "Is Devin's autonomy more advanced than Claude Code on Ellul?", "a": "Hard to say categorically. Devin is opinionated about the loop and the model; Claude Code on Ellul is composable, so the agent's autonomy is whatever your model and your prompts produce. The decision usually comes down to whether you want a packaged product (Devin) or a runtime you can shape (Ellul)." },
+        "devin-pricing": { "q": "What about Devin's pricing?", "a": "Devin 2.0 launched in April 2025 with a Core plan starting at $20/mo, billed pay-as-you-go at roughly $2.25 per Agent Compute Unit (about 15 minutes of agent work). Higher Pro and Max tiers exist for heavier individual usage; team and enterprise plans are above. Ellul is $20/mo Hobby and $50/mo Pro flat, plus whatever model API you're paying directly. The two products price for very different commercial shapes." },
+        "cognition-windsurf": { "q": "Does Cognition's acquisition of Windsurf change anything?", "a": "Cognition acquired Windsurf in 2025. The two products coexist with different deployment models: Devin is managed-cloud, Windsurf is a local IDE. From an Ellul perspective the change is mostly irrelevant. We run agent CLIs from Anthropic, OpenAI, Google, Cursor, Cognition, or anyone else, and the runtime stays the same." },
+        "devin-safer-than-claude-on-ellul": { "q": "Is Devin safer than running Claude Code on Ellul?", "a": "Safer along different axes. Devin's safety is 'we run the agent in our sandbox and curate what it can do.' Ellul's safety is 'kernel-level isolation per agent, passkey-gated privileged actions, credentials never in the agent process.' For real-credential engineering, Ellul's structural model is meaningfully harder to attack; for end-to-end task autonomy on bounded tickets, Devin's curated sandbox is a different reasonable choice." }
+      }
+    },
+    "lovable": {
+      "competitor": { "tagline": "Generate React apps from a prompt; deploy to Lovable cloud" },
+      "meta": {
+        "title": "Lovable vs ellul: app generator or persistent agent",
+        "description": "Lovable builds React apps from a prompt and hosts them. Ellul gives engineers a persistent workstation their AI coding agent lives on. Different categories. Here's how the head-to-head sits."
+      },
+      "hero": {
+        "eyebrow": "Lovable vs ellul",
+        "headline": "Generated React app, or engineered software.",
+        "sub": "Lovable is a prompt-to-app builder for non-engineers and prototypers. Ellul is the persistent workstation an engineer's AI agent lives on, working inside a real codebase. They serve different users, so the right answer is usually 'pick by your workflow.'"
+      },
+      "ellulPitch": "Engineering work where your agent (Cursor, Claude Code, Codex, OpenCode) lives on a persistent server with your repo, your installed dependencies, your MCP servers, and your real credentials. The agent works the way an engineer works, with version control and deploy targets you choose.",
+      "competitorPitch": "Lovable's pitch is 'idea to live React app in minutes.' For a non-engineer or someone prototyping, Lovable's polished prompt-to-deployed flow is hard to match. There's no IDE, no terminal, no dependency wrangling, just a prompt and a URL.",
+      "fundamentalDifference": "Lovable abstracts the codebase. Ellul puts an engineer's agent inside a real codebase. The two products serve adjacent but non-overlapping users. We list the comparison because some search queries land both products on the same shortlist.",
+      "features": {
+        "target-user": { "capability": "Target user", "ellul": "Professional engineer with an AI agent", "competitor": "Non-engineer / prototyper / designer" },
+        "output": { "capability": "Output", "ellul": "Diffs, PRs, deployed code in your repo", "competitor": "A live React app on Lovable's runtime" },
+        "codebase-ownership": { "capability": "Codebase ownership", "ellul": "Yours: git-based, your repo, your CI", "competitor": "Lovable-hosted; export available with caveats" },
+        "byoa": { "capability": "Bring-your-own-agent", "ellul": "Claude Code, Cursor, Codex, OpenCode", "competitor": "Lovable's own model + tooling" },
+        "byom": { "capability": "Bring-your-own-model", "ellul": "Yes (BYOK on every supported agent)", "competitor": "Hidden behind the product" },
+        "persistent-workstation": { "capability": "Persistent workstation", "ellul": "Yes (branches, deps, MCP servers persist)", "competitor": "Per-project Lovable workspace" },
+        "real-credential-ops": { "capability": "Real-credential operations", "ellul": "Passkey-gated, server-side vault", "competitor": "Limited: Lovable manages most credentials" },
+        "parallel-agents": { "capability": "Parallel agents", "ellul": "Multiple workstations, read-only peering", "competitor": "Not applicable" },
+        "hosting-deployment": { "capability": "Hosting / deployment", "ellul": "Anywhere (Vercel, Fly, Railway, your infra)", "competitor": "Lovable cloud; export to GitHub possible" },
+        "time-to-first-v0": { "capability": "Time to first usable v0 (non-coder)", "ellul": "Hours (engineer-shaped)", "competitor": "Minutes (the headline pitch)" },
+        "editor-experience": { "capability": "Editor experience", "ellul": "Browser file browser + your IDE locally as client", "competitor": "Built-in chat + preview pane (no real IDE)" },
+        "best-fit": { "capability": "Best fit", "ellul": "Production engineering with an agent", "competitor": "Non-engineer prototyping, MVP demos" }
+      },
+      "pricing": {
+        "entry": { "tier": "Entry", "ellul": "$20/mo Hobby", "competitor": "Free → Starter ~$20/mo" },
+        "pro": { "tier": "Pro", "ellul": "$50/mo Pro", "competitor": "Pro tier (~$25 to $50/mo, varies by usage)" },
+        "self-hosting": { "tier": "Self-hosting", "ellul": "Your repo, deploy anywhere", "competitor": "Hosted on Lovable" }
+      },
+      "verdict": {
+        "headline": "Different shapes for different users; almost no real overlap.",
+        "body": "Lovable is the right tool for a non-engineer who wants a working React app from a prompt. Ellul is the right tool for an engineer with an AI agent who wants their agent in their real codebase, with their real tooling, on a persistent workstation. We get this question because both show up under 'AI builds my software' searches, but the answer is almost always 'they're not in the same category.'"
+      },
+      "whenToUseCompetitor": {
+        "dont-write-code": "You don't write code, or don't want to.",
+        "react-app-fast": "You want a working React app on a hosted URL fast.",
+        "prototyping-not-shipping": "You're prototyping, demoing, or learning, not shipping production engineering.",
+        "lovable-runtime-acceptable": "Hosting on Lovable's runtime is acceptable, and you don't need your own deploy target."
+      },
+      "whenToUseEllul": {
+        "engineer-on-real-codebases": "You're an engineer running AI coding agents on real codebases.",
+        "code-in-git-deployed-where-you-choose": "You want code in your git repo, deployed where you choose.",
+        "real-credential-passkey": "Your agent needs real-credential operations gated by a passkey.",
+        "keep-ide-model-tools": "You want to keep your existing IDE, model, and tools.",
+        "parallel-or-unattended": "You expect to run agents in parallel or unattended."
+      },
+      "faq": {
+        "is-lovable-coding-agent": { "q": "Is Lovable a coding agent?", "a": "Not in the same sense as Claude Code or Cursor. Lovable generates and hosts apps; there is no agent CLI to keep using, and the model behind it is product-controlled. The agent is implicit, not addressable." },
+        "export-lovable-to-ellul": { "q": "Can I export a Lovable app to GitHub and continue with an agent on Ellul?", "a": "Yes. Lovable supports GitHub export. The exported code is yours; you can clone it onto an Ellul workstation and continue with Cursor or Claude Code or your preferred agent. Many engineers we talk to do exactly this once a Lovable prototype graduates into a real product." },
+        "lovable-vs-bolt-base44": { "q": "Lovable vs Bolt vs Base44: which is closest to Ellul?", "a": "None of them. They're all prompt-to-app builders for non-engineers; Ellul is a persistent workstation for an engineer's agent. We have head-to-head pages for each of the builders if you want the comparisons among them, but the comparison to Ellul is structurally similar across all three." },
+        "lovable-cheaper-ellul": { "q": "Is Lovable cheaper than Ellul?", "a": "Headline tiers are in the same range, but Lovable's heavier usage tiers add up. Ellul's pricing is flat at $20 or $50 per month; the bill doesn't change with agent usage." },
+        "lovable-roadmap": { "q": "What about Lovable's roadmap?", "a": "Lovable has been investing in code quality and export quality through 2025. If they ship a product that lets engineers point their existing agent CLI at a Lovable workspace with real-credential gating, the comparison narrows. Today it's still a prompt-to-hosted-app product." }
+      }
+    },
+    "manus": {
+      "competitor": { "tagline": "Generalist autonomous agent in a managed cloud sandbox" },
+      "meta": {
+        "title": "Manus vs ellul: managed agent or your own agent's PC",
+        "description": "Manus runs a generalist agent in its own managed sandbox. Ellul is the persistent computer your AI coding agent lives on with your credentials and tools. Different shapes for different work."
+      },
+      "hero": {
+        "eyebrow": "Manus vs ellul",
+        "headline": "A managed agent product, or a place for your agent.",
+        "sub": "Manus is an opinionated agent product: you give it a task, it works in Manus's sandbox, you get a result. Ellul sits upstream of that. It is a persistent workstation your own agent (Claude Code, Cursor, Codex) lives on. They serve different jobs."
+      },
+      "ellulPitch": "Software engineering work where you want your agent, your tools, your model, and your credentials, all on a persistent computer that doesn't share your laptop's lifecycle. Ellul is the runtime. Pick whichever agent suits the job.",
+      "competitorPitch": "Manus's Cascade-style 'give it a task and walk away' is genuinely useful for one-shot research, document synthesis, and small standalone scripts. If you don't have an existing agent CLI you want to keep using and you don't need to integrate the agent into your own toolchain, the managed product is faster to start with.",
+      "fundamentalDifference": "Manus is the agent and the runtime, bundled, with their model and their tools. Ellul is the runtime under your agent. It is the computer your Claude Code or Cursor or Codex session lives on, with your credentials and your tooling. The choice is whether you want to bring your own agent or hire one of theirs.",
+      "features": {
+        "byoa": { "capability": "Bring-your-own-agent", "ellul": "Any CLI: Claude Code, Codex, Cursor, OpenCode", "competitor": "Manus's own agent only" },
+        "byom": { "capability": "Bring-your-own-model", "ellul": "Yes (BYOK on every supported agent)", "competitor": "Manus's hosted model stack" },
+        "persistent-workstation": { "capability": "Persistent workstation between tasks", "ellul": "Yes (installed deps, branches, MCP servers persist)", "competitor": "Per-task sandbox, ephemeral" },
+        "real-credential-ops": { "capability": "Real-credential operations", "ellul": "Passkey-gated through server vault", "competitor": "Manus-managed credentials inside their sandbox" },
+        "one-shot-task": { "capability": "One-shot autonomous task", "ellul": "Yes (set up an always-on agent and queue work)", "competitor": "The strongest UX for this shape" },
+        "tool-integrations": { "capability": "Tool integrations", "ellul": "MCP servers, your IDE, your CLI, your shell", "competitor": "Manus's tool catalog (curated)" },
+        "parallel-agents": { "capability": "Parallel agents", "ellul": "Multiple, with read-only peering", "competitor": "Multiple Manus sessions, no cross-session peering" },
+        "editor-experience": { "capability": "Editor experience", "ellul": "Browser file browser + terminal; pair with Cursor / Windsurf locally", "competitor": "Manus chat UI + result viewer" },
+        "cross-device-approval": { "capability": "Cross-device approval", "ellul": "Yes (phone-as-keyboard for passkey approval)", "competitor": "Manus's web app on any device" },
+        "open-ecosystem": { "capability": "Open ecosystem", "ellul": "Yes (runs any open or proprietary agent)", "competitor": "Closed product, no extensibility into your toolchain" },
+        "pricing-transparency": { "capability": "Pricing transparency", "ellul": "Flat $20/$50 per month", "competitor": "Plus / Pro tiers (~$39 / $199 per month, plus credit-based usage)" },
+        "best-for": { "capability": "Best for", "ellul": "Engineers integrating agents into real codebases", "competitor": "Generalist research, reports, one-shot tasks" }
+      },
+      "pricing": {
+        "entry": { "tier": "Entry", "ellul": "$20/mo Hobby (one workstation)", "competitor": "Free trial → Plus ~$39/mo" },
+        "pro": { "tier": "Pro", "ellul": "$50/mo Pro (parallel workstations)", "competitor": "~$199/mo Pro tier" },
+        "byom": { "tier": "Bring-your-own-model", "ellul": "Yes", "competitor": "No" }
+      },
+      "verdict": {
+        "headline": "Manus for one-shot autonomy on small tasks. Ellul for your agent on real codebases.",
+        "body": "Manus is shaped like a managed result service: tell it what you want, get something back. Ellul is shaped like infrastructure: bring your own agent and tooling, run them on a persistent workstation, integrate into your real codebase. Most engineers we talk to who try both end up using Manus for occasional research and Ellul for everything that touches their actual repo."
+      },
+      "whenToUseCompetitor": {
+        "one-shot-no-setup": "You want one-shot autonomous tasks (research, document drafting, small scripts) without setting anything up.",
+        "no-real-codebase": "Your work doesn't touch your real codebase, real credentials, or production infrastructure.",
+        "no-existing-cli": "You don't have an existing agent CLI you want to keep using.",
+        "credit-usage-ok": "You're fine paying credit-based usage on top of subscription tiers for opaque task-level work."
+      },
+      "whenToUseEllul": {
+        "agent-in-codebase": "Your agent needs to live in your codebase, with your real branches, your real dependencies, your real CI.",
+        "byoa-byom": "You want bring-your-own-agent (Claude Code, Cursor, Codex, OpenCode) and bring-your-own-model.",
+        "flat-rate-pricing": "You want flat-rate pricing rather than usage credits.",
+        "passkey-not-third-party-trust": "Privileged actions need to be gated by your passkey, not by trust in a third party's sandbox.",
+        "structural-parallel-not-sessions": "You want parallel agents with structural isolation, not multiple unrelated sessions."
+      },
+      "faq": {
+        "is-manus-coding-agent": { "q": "Is Manus a coding agent?", "a": "It can write code, but it's a generalist agent: research, reports, document synthesis, one-shot tasks. Most coding-engineer workflows want their own agent (Claude Code, Cursor, Codex) running in their own codebase, which is the gap Ellul fills." },
+        "manus-and-ellul-together": { "q": "Can I use Manus and Ellul together?", "a": "Yes, but they don't compose like a frontend and a backend. Manus is its own stack. Ellul is your stack. Some teams use Manus for one-shot research tasks and Ellul for engineering work; the two run side by side rather than on top of each other." },
+        "manus-codebase-integration": { "q": "Does Manus integrate with my codebase?", "a": "Manus can clone a repo into its sandbox per task. The sandbox is ephemeral: your branches, your MCP servers, your installed dependencies don't persist between tasks. That's a deliberate trade for the managed UX, not a bug; it's just a different shape from a persistent workstation." },
+        "manus-cheaper-ellul": { "q": "Is Manus cheaper than Ellul?", "a": "It depends on usage. Manus's headline tier is in the same range as Ellul's Pro plan, but Manus tiers include task credits, so heavy usage adds up quickly. Ellul's pricing is flat. Your bill doesn't change with how hard your agent works." },
+        "data-sovereignty": { "q": "What about data sovereignty?", "a": "Manus runs your tasks in their cloud, in their region, on their infrastructure. Ellul provisions your workstation in a region you choose, with LUKS-encrypted persistent storage and credentials that never leave your VPS. If your work is governed by data-handling rules that don't permit a managed third-party sandbox, Ellul is structurally easier to defend." }
+      }
+    },
+    "replit": {
+      "competitor": { "tagline": "Cloud IDE with Replit Agent and managed app hosting" },
+      "meta": {
+        "title": "Replit vs ellul: cloud IDE bundle or agent's home",
+        "description": "Replit bundles cloud IDE, agent, and hosting for a broad audience. Ellul is a focused, isolated agent workstation for engineers running Claude Code, Cursor, or Codex on real codebases."
+      },
+      "hero": {
+        "eyebrow": "Replit vs ellul",
+        "headline": "Generalist cloud IDE, or focused agent workstation.",
+        "sub": "Replit's been the cloud IDE since 2016 and now bundles Replit Agent plus deploy. Ellul is purpose-built for an engineer's AI agent: isolated, passkey-gated, model-agnostic. Different shapes, different users; here's where each one wins."
+      },
+      "ellulPitch": "Engineering work where you bring your own agent (Claude Code, Cursor, Codex, OpenCode), keep your model contract direct with the model provider, and need real-credential operations gated by your passkey. Ellul is the runtime; you choose the agent, the model, and the deploy target.",
+      "competitorPitch": "Replit's broad reach, integrated hosting, education tier, and built-in Replit Agent give it an unusually low time-to-running-app for a wide range of users. If you want one product that does IDE, agent, and hosting in a single subscription, and you're fine with Replit's model and runtime choices, Replit is hard to beat for that bundle.",
+      "fundamentalDifference": "Replit bundles IDE, agent, and hosting into one product, optimized for breadth (learners through prosumers). Ellul unbundles those: it is the agent's runtime and nothing else, optimized for professional engineers running their own agent CLI in their own repo. The two products overlap in the keyword 'cloud development environment' and diverge from there.",
+      "features": {
+        "target-user": { "capability": "Target user", "ellul": "Professional engineer with an agent", "competitor": "Broad: learners, prosumers, professional teams" },
+        "byoa": { "capability": "Bring-your-own-agent", "ellul": "Any CLI: Claude Code, Cursor, Codex, OpenCode", "competitor": "Replit Agent (proprietary)" },
+        "byom": { "capability": "Bring-your-own-model", "ellul": "Yes (BYOK on every supported agent)", "competitor": "Replit-managed model stack" },
+        "always-on-agent": { "capability": "Always-on agent", "ellul": "Yes (workstation persists, agent runs continuously)", "competitor": "Replit Agent runs as a session; not always-on by default" },
+        "privileged-action-gating": { "capability": "Privileged action gating", "ellul": "FIDO2 passkey, server-side enforced", "competitor": "Standard auth; no per-action passkey gate" },
+        "credentials-location": { "capability": "Where credentials live", "ellul": "Server vault, never in agent process", "competitor": "Replit Secrets manager (env-injected)" },
+        "parallel-agents": { "capability": "Parallel agents", "ellul": "Multiple workstations, read-only peering", "competitor": "Multiple Replit projects, no cross-project peering primitive" },
+        "hosting-deployment": { "capability": "Hosting / deployment", "ellul": "Deploy anywhere (Vercel, Fly, Railway, your infra)", "competitor": "Replit Deployments built-in (lock-in)" },
+        "editor-experience": { "capability": "Editor experience", "ellul": "Browser file browser + terminal; pair with your IDE locally", "competitor": "Replit IDE in browser" },
+        "education-fit": { "capability": "Education / learning fit", "ellul": "Not a goal", "competitor": "Unmatched (classroom, multiplayer, share-by-link)" },
+        "phone-approvals": { "capability": "Phone-as-keyboard", "ellul": "Yes (chat, files, approvals from any device)", "competitor": "Replit mobile app (limited)" },
+        "sandbox-isolation": { "capability": "Sandbox isolation per agent", "ellul": "Per-agent VPS, kernel-level isolation", "competitor": "Replit's shared runtime; per-project containers" }
+      },
+      "pricing": {
+        "entry": { "tier": "Entry", "ellul": "$20/mo Hobby", "competitor": "Core $20/mo" },
+        "pro-teams": { "tier": "Pro / Teams", "ellul": "$50/mo Pro", "competitor": "Pro $100/mo (replaced Teams Feb 2026)" },
+        "byom": { "tier": "Bring-your-own-model", "ellul": "Yes", "competitor": "Limited" }
+      },
+      "verdict": {
+        "headline": "Replit for the bundle; Ellul for the engineer who wants control of the runtime.",
+        "body": "Replit is the right answer if you want IDE + agent + hosting in one subscription and you're fine with their stack. Ellul is the right answer if you're a professional engineer who wants to keep your existing agent CLI and model, host where you choose, and gate privileged actions with a passkey. They overlap on the keyword 'cloud dev environment' and diverge sharply on user shape and runtime model."
+      },
+      "whenToUseCompetitor": {
+        "bundle-ide-agent-hosting": "You want one product for IDE, agent, and hosting.",
+        "education-multiplayer": "You teach or learn in Replit's education tier and the multiplayer / share-by-link features matter.",
+        "replit-stack-ok": "You're fine with Replit's model and runtime choices.",
+        "no-passkey-byok-needed": "Your work doesn't require per-action passkey gating or BYOK on a specific agent CLI."
+      },
+      "whenToUseEllul": {
+        "keep-existing-cli": "You want to keep using Claude Code, Cursor, Codex, or OpenCode as the agent.",
+        "real-prod-credentials-passkey": "Your agent needs to touch real production credentials, gated by passkey.",
+        "flat-rate-pricing": "You want flat-rate pricing and predictable bills.",
+        "parallel-structural-isolation": "You want parallel agents with structural isolation.",
+        "deploy-elsewhere": "You deploy your apps elsewhere (Vercel, Fly, Railway, your infra)."
+      },
+      "faq": {
+        "replit-agent-with-ellul": { "q": "Can I use Replit Agent with Ellul?", "a": "Replit Agent is tightly bundled with Replit's runtime; it doesn't ship as a standalone CLI you can run on another host. If you want an agent on Ellul, the practical agents are Claude Code, Cursor's Agent CLI, Codex, and OpenCode, all of which run on Ellul." },
+        "replit-pricing-comparable": { "q": "Is Replit's pricing comparable?", "a": "Roughly. Replit Core dropped to $20/mo (from $25) in February 2026, and Replit Pro at $100/mo replaced the old Teams plan in the same reshuffle. Ellul is $20/mo Hobby and $50/mo Pro. The thing that bundles differently is hosting: Replit Deployments are inside the same subscription; on Ellul, deploys go wherever you choose, which is sometimes free and sometimes a separate bill." },
+        "ellul-isolation-vs-replit": { "q": "How does Ellul's isolation differ from Replit's?", "a": "Replit runs each project in a managed container on shared infrastructure. Ellul provisions a per-user VPS with kernel-level isolation: separate user, mount and PID namespaces, LUKS-encrypted storage, and a shield process that the agent cannot ptrace into. The threat model is meaningfully different." },
+        "ellul-replaces-replit": { "q": "Does Ellul replace Replit?", "a": "If you're a professional engineer and you specifically want an agent's runtime, yes. If you're a learner, hobbyist, or someone who wants the IDE-plus-hosting bundle, Replit is shaped for that and Ellul is not." },
+        "replit-agent-v2": { "q": "What about Replit Agent v2 / Ghostwriter?", "a": "Replit ships continuous improvements to its agent. The two-year-out comparison may narrow if Replit ships per-action gating, model-agnostic agent CLI support, and per-tenant kernel isolation. As of April 2026, the runtime model is still 'managed Replit container,' which is structurally different from Ellul's 'per-tenant VPS with shield.'" }
+      }
+    },
+    "windsurf": {
+      "competitor": { "tagline": "Cascade agent inside a VS Code fork on your laptop" },
+      "meta": {
+        "title": "Windsurf vs ellul: agentic editor or persistent agent",
+        "description": "Windsurf is a VS Code fork with the Cascade agent built in. Ellul is the persistent workstation that agent can live on: no lid problem, parallel agents, passkey-gated production access."
+      },
+      "hero": {
+        "eyebrow": "Windsurf vs ellul",
+        "headline": "Editor with an agent, or computer for the agent.",
+        "sub": "Windsurf bundles a Cascade agent into a polished VS Code fork. Ellul is upstream of that: the persistent workstation an agent lives on, regardless of which editor you use to talk to it. They are not the same product."
+      },
+      "ellulPitch": "Anything where the agent's runtime matters: overnight runs, parallel agents on the same problem, real-credential operations, multi-day refactors, phone-as-keyboard for approvals while you're away. The thing Windsurf doesn't address is the runtime. The agent still lives on your laptop and inherits your laptop's lifecycle and credentials.",
+      "competitorPitch": "Windsurf's Cascade agent and Cascade Memories give it a strong inline experience with an opinionated editor. If your work is keyboard-bound and short-cycle, the in-editor flow is hard to beat, particularly for engineers who want a Cursor-style experience under different ownership and pricing.",
+      "fundamentalDifference": "Windsurf is the editor with the agent baked in. Ellul is the computer that agent runs on. They compose: keep Windsurf as your editor, point its Cascade-CLI workflows at an Ellul workstation so the agent doesn't share your laptop's lid, credentials, or single-process bottleneck.",
+      "features": {
+        "where-agent-runs": { "capability": "Where the agent runs", "ellul": "Persistent cloud workstation", "competitor": "Your laptop" },
+        "survives-lid-close": { "capability": "Survives lid close" },
+        "editor-experience": { "capability": "Editor experience", "ellul": "Browser file browser + terminal", "competitor": "VS Code fork (Cascade panel + memories)" },
+        "inline-completions": { "capability": "Inline completions", "ellul": "Through agent chat", "competitor": "Yes, native (Codeium roots)" },
+        "parallel-agents": { "capability": "Parallel agents", "ellul": "Multiple, with read-only peering", "competitor": "One Cascade session at a time" },
+        "privileged-action-gating": { "capability": "Privileged action gating", "ellul": "FIDO2 passkey, server-side enforced", "competitor": "OS-level prompts (skippable)" },
+        "credentials-location": { "capability": "Where credentials live", "ellul": "Server vault, never in agent process", "competitor": "Your machine (~/.aws, ~/.ssh, 1Password CLI)" },
+        "long-running-tasks": { "capability": "Long-running tasks (8h+)", "ellul": "Close laptop, agent keeps working", "competitor": "Laptop must stay open" },
+        "phone-approvals": { "capability": "Phone access", "ellul": "Yes (chat, files, approvals)" },
+        "byom": { "capability": "Bring-your-own-model", "ellul": "Any agent CLI; BYOK supported", "competitor": "Proprietary stack with some BYOK" },
+        "editor-base-source": { "capability": "Open-source editor base", "ellul": "Editor-agnostic (Cursor, Claude Code, OpenCode, Codex all work)", "competitor": "Forked from VS Code (open core)" },
+        "vendor-independence": { "capability": "Vendor independence", "ellul": "Model-agnostic; agent-agnostic", "competitor": "Tied to Cascade + Codeium models" }
+      },
+      "pricing": {
+        "hobby-pro": { "tier": "Hobby / Pro", "ellul": "$20/mo (Hobby), $50/mo (Pro)", "competitor": "Free / Pro $15/mo" },
+        "teams": { "tier": "Teams", "ellul": "Per-seat (contact)", "competitor": "Teams pricing via Windsurf sales" },
+        "byom": { "tier": "Bring-your-own-model", "ellul": "Yes", "competitor": "Limited" }
+      },
+      "verdict": {
+        "headline": "Windsurf for the editor; Ellul for the agent's runtime. Compose them.",
+        "body": "If you like Windsurf's in-editor flow, keep using it. Move the heavy agent work (overnight runs, parallel agents, anything that touches production) onto an Ellul workstation. They solve different problems and stack cleanly."
+      },
+      "whenToUseCompetitor": {
+        "cursor-style-codeium-stack": "You want a Cursor-style editor under different ownership and prefer Codeium's model stack.",
+        "short-cycle-keyboard-bound": "Your work is short-cycle, in-editor, and keyboard-bound.",
+        "no-unattended-runs": "You don't run agents unattended, and your credentials live happily on your laptop.",
+        "opinionated-editor-builtin-agent": "You want an opinionated editor with a built-in agent rather than composing your own stack."
+      },
+      "whenToUseEllul": {
+        "kick-off-and-walk-away": "You want to kick off a long task and walk away from the keyboard.",
+        "parallel-coding-reviewing-documenting": "You want multiple agents in parallel: coding, reviewing, documenting.",
+        "real-creds-not-on-laptop": "Your agent needs real credentials (GitHub, Vercel, production DB) and you don't want them on your laptop.",
+        "approve-from-phone": "You want to approve actions from a phone.",
+        "tired-of-laptop-stopping": "You're tired of long jobs stopping when you close the lid."
+      },
+      "faq": {
+        "windsurf-with-ellul": { "q": "Can I use Windsurf with Ellul?", "a": "Yes. Windsurf stays where it is, on your laptop, for the inline editor flow. Whichever agent CLI you prefer (Claude Code, Cursor's Agent CLI, Codex, OpenCode) points at an Ellul workstation so the agent itself runs on a persistent server. You keep the editor; the agent moves." },
+        "windsurf-teams-instead": { "q": "Why not just buy Windsurf Teams?", "a": "Windsurf Teams gives you better usage on Cascade and team features inside the editor. It does not give you a place for the agent to run when you close the laptop, parallel-agent peering, or passkey-gated production access. Those are runtime concerns; Windsurf is an editor." },
+        "cascade-vs-composer": { "q": "Does Windsurf's Cascade agent work as well as Cursor's Composer?", "a": "Both have improved sharply through 2025 and 2026. Day-to-day, most reviews call it a near-tie on editor agent quality, with each ahead in different micro-cases. The decision between them is rarely about agent quality and usually about ecosystem preference (model stack, pricing, ownership)." },
+        "windsurf-cloud-product": { "q": "Will Windsurf launch a cloud product?", "a": "Possible. Codeium's lineage is in self-hosted enterprise inference, and they've experimented with cloud workspaces. If Windsurf ships a competing always-on, parallel-agent, passkey-gated workstation, the comparison will narrow. Until then, Windsurf is local-first and Ellul is the runtime layer." },
+        "cognition-acquisition-relevant": { "q": "Is the Cognition acquisition relevant here?", "a": "Cognition (the company behind Devin) acquired Windsurf in 2025. It changed Windsurf's ownership and roadmap, not its architecture: Windsurf is still a local-first VS Code fork. Devin and Windsurf are still distinct products with different deployment models." }
+      }
+    }
+  }
+}

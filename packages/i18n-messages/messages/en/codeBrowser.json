@@ -1,0 +1,58 @@
+{
+  "codeBrowser": {
+    "emptyStates": {
+      "noFolders": "No folders yet",
+      "noFoldersHint": "Clone a repo or create a folder to get started",
+      "noCommits": "No commits found",
+      "selectTab": "Select a tab",
+      "selectFile": "Select a file to view"
+    },
+    "search": {
+      "placeholder": "Search files…",
+      "globPlaceholder": "Filter: *.ts",
+      "noResults": "No results found",
+      "truncated": "Results truncated — refine your search"
+    },
+    "changes": {
+      "noUncommitted": "No uncommitted changes"
+    },
+    "errors": {
+      "connectionTitle": "Connection Error",
+      "connectionFallback": "Cannot connect to file API",
+      "authTitle": "Authentication Required",
+      "authBody": "Please re-authenticate to access your files.",
+      "authPrompt": "Authentication required. Please re-authenticate.",
+      "retry": "Retry"
+    },
+    "toasts": {
+      "blameFailed": "Could not load blame data",
+      "historyFailed": "Could not load file history",
+      "copyFailed": "Couldn't copy — try Ctrl+C",
+      "loadError": "Error loading file",
+      "commitNotPresent": "Path not present in selected commit"
+    },
+    "file": {
+      "deletedBanner": "File deleted",
+      "fixThis": "Fix this",
+      "askAi": "Ask AI",
+      "copy": "Copy"
+    },
+    "tooltips": {
+      "copyPath": "Copy path",
+      "showBlame": "Show blame",
+      "hideBlame": "Hide blame",
+      "fileHistory": "File history",
+      "copySelection": "Copy selection",
+      "askAiSelection": "Ask AI about selection"
+    },
+    "previewStatus": {
+      "ready": "Ready",
+      "starting": "Starting",
+      "sleeping": "Sleeping",
+      "failed": "Failed"
+    },
+    "diff": {
+      "noChanges": "No changes detected"
+    }
+  }
+}

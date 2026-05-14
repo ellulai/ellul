@@ -1,0 +1,38 @@
+{
+  "footer": {
+    "featured": "Featured",
+    "product": {
+      "label": "Product",
+      "autonomy": "Autonomy",
+      "composition": "Composition",
+      "howItWorks": "How It Works",
+      "safety": "Safety",
+      "pricing": "Pricing"
+    },
+    "resources": {
+      "label": "Resources",
+      "documentation": "Documentation",
+      "quickStart": "Quick Start",
+      "sovereignModel": "Sovereign Model",
+      "security": "Security Whitepaper",
+      "tierComparison": "Tier Comparison",
+      "faq": "FAQ"
+    },
+    "explore": {
+      "label": "Explore",
+      "blog": "Blog",
+      "comparisons": "Comparisons",
+      "concepts": "Concepts",
+      "solutions": "Solutions",
+      "glossary": "Glossary",
+      "agents": "Agents",
+      "mcp": "MCP Integrations"
+    },
+    "company": {
+      "label": "Company",
+      "github": "GitHub",
+      "privacy": "Privacy",
+      "terms": "Terms"
+    }
+  }
+}

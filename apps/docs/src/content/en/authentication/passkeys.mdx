@@ -1,0 +1,113 @@
+---
+title: "Passkeys"
+description: "Hardware-bound authentication for Web Locked and Private Locked tiers."
+section: "Authentication"
+order: 1
+---
+
+Passkeys are the foundation of Web Locked and Private Locked tiers. They replace passwords with a private key that lives in your device's secure hardware and never leaves it.
+
+## Why passkeys
+
+Passwords can be phished, leaked, or guessed. Session cookies can be stolen. Passkeys solve both:
+
+- **Phishing-resistant.** A passkey is bound to the exact origin (your console URL). It will not authenticate to a copycat domain.
+- **Hardware-bound.** The private key is generated inside your authenticator (Touch ID, Windows Hello, security key, or platform passkey vault) and cannot be exported.
+- **Stealable cookies are useless.** In Web Locked tier, every active connection signs continuous proof-of-possession challenges. A leaked cookie has no value without the matching authenticator.
+
+## Enrolling your first passkey
+
+You enrol when you upgrade to Web Locked, or any time after.
+
+<Steps>
+  <Step number={1} title="Open Account > Security in the console">
+    Click your account icon, then **Security**.
+  </Step>
+  <Step number={2} title="Choose 'Add passkey' or 'Upgrade to Web Locked'">
+    The console begins the WebAuthn ceremony.
+  </Step>
+  <Step number={3} title="Authenticate with your device">
+    Your device prompts: Touch ID, Windows Hello, or the password to unlock your security key. The browser generates a key pair; the private key stays on your device.
+  </Step>
+  <Step number={4} title="Save your recovery codes">
+    The platform shows a one-time list of recovery codes. Store them somewhere safe. They are the only way back in if you lose your authenticator.
+  </Step>
+</Steps>
+
+After this, your workstation transitions to Web Locked. New connections require a passkey assertion.
+
+## Enrolling additional passkeys
+
+We strongly recommend enrolling at least two passkeys (for example, your laptop and your phone). If one is lost or unavailable, the other still works.
+
+From the same Security panel, click **Add passkey** and authenticate. Each new passkey is recorded.
+
+## Logging in with a passkey
+
+When you visit your workstation:
+
+<Steps>
+  <Step number={1} title="The browser asks for a passkey">
+    A standard WebAuthn prompt appears.
+  </Step>
+  <Step number={2} title="You authenticate">
+    Touch ID, Windows Hello, security key tap, or whichever method your authenticator supports.
+  </Step>
+  <Step number={3} title="Your device signs a challenge">
+    The platform issues a fresh challenge; your device signs it.
+  </Step>
+  <Step number={4} title="The session opens">
+    A session cookie is set, scoped to your workstation's domain. Long-lived connections also bind to a per-session proof-of-possession key.
+  </Step>
+</Steps>
+
+## Continuous proof of possession
+
+This is what makes Web Locked stronger than session cookies alone.
+
+When you log in, the browser generates a second key pair (separate from the passkey itself), called the proof-of-possession key. The private key is non-extractable; even browser code cannot read it. The public key is registered with your server.
+
+Every active connection (chat, code browser, observability streams) gets challenged periodically. The browser must sign each challenge with the proof-of-possession key. Two consecutive failures terminate the connection.
+
+What this defends against:
+
+- **Stolen cookies.** Useless without the matching browser hardware.
+- **Cookie injection on a compromised network.** Useless without the matching browser hardware.
+- **Persistent client-side malware that attempts to exfiltrate the proof-of-possession key.** The key is non-extractable; malware cannot read it. It can only sign while the browser is open and you are present.
+
+## Recovery codes
+
+When you enrol your first passkey, you receive a small set of one-time recovery codes. They are the escape hatch when you lose all your passkeys.
+
+Properties:
+
+- Each code is single-use.
+- Codes are hashed before storage; the platform does not retain them in plain text.
+- Using a code is rate-limited to prevent brute force.
+- Codes are recorded in the audit log when used.
+
+Store them somewhere durable: a password manager, a printout in a safe place, an encrypted file on a backup drive. If you lose both your passkey and your recovery codes, you cannot recover access in Private Locked tier.
+
+## Cross-device passkeys
+
+Modern operating systems sync passkeys across devices in your account (iCloud Keychain on Apple, Google Password Manager on Android and Chrome). If your devices share an account, your passkey works on both without separate enrolment.
+
+If you use hardware security keys (such as YubiKeys), they are device-specific. Enrol one per device or carry the same key.
+
+For Private Locked tier specifically: the volume unlock key is derived from the passkey's hardware secret. iCloud-synced passkeys derive the same key on both devices, so they unlock the same volume. Hardware security keys do not synchronise; if you lose the key, you lose access to the volume unless another enrolled key can derive a compatible secret.
+
+## Removing a passkey
+
+You can revoke any registered passkey from **Account > Security**. After revocation:
+
+- The passkey is removed.
+- Any active sessions on that passkey continue until they expire.
+- Future logins from that device require a different enrolled passkey or a recovery code.
+
+If you suspect a device is compromised, revoke its passkey and rotate any sessions you suspect have been used.
+
+## Where to go next
+
+- [Sessions](/authentication/sessions) covers session lifetime and rotation.
+- [Cross-Device Recovery](/authentication/cross-device) covers losing a device.
+- [Security Tiers](/concepts/security-tiers) explains the differences between Standard, Web Locked, and Private Locked.

@@ -1,0 +1,58 @@
+{
+  "codeBrowser": {
+    "emptyStates": {
+      "noFolders": "フォルダはまだありません",
+      "noFoldersHint": "リポジトリをクローンするか、フォルダを作って始めましょう",
+      "noCommits": "コミットが見つかりません",
+      "selectTab": "タブを選択",
+      "selectFile": "ファイルを選んで表示"
+    },
+    "search": {
+      "placeholder": "ファイルを検索…",
+      "globPlaceholder": "絞り込み: *.ts",
+      "noResults": "結果が見つかりません",
+      "truncated": "結果は途中で打ち切られました。検索を絞り込んでください"
+    },
+    "changes": {
+      "noUncommitted": "未コミットの変更はありません"
+    },
+    "errors": {
+      "connectionTitle": "接続エラー",
+      "connectionFallback": "file API に接続できません",
+      "authTitle": "再認証が必要です",
+      "authBody": "ファイルにアクセスするには再認証してください。",
+      "authPrompt": "再認証が必要です。もう一度認証してください。",
+      "retry": "再試行"
+    },
+    "toasts": {
+      "blameFailed": "blame データを読み込めませんでした",
+      "historyFailed": "ファイル履歴を読み込めませんでした",
+      "copyFailed": "コピーに失敗しました — Ctrl+C をお試しください",
+      "loadError": "ファイルの読み込みに失敗しました",
+      "commitNotPresent": "選択したコミットにパスが存在しません"
+    },
+    "file": {
+      "deletedBanner": "ファイルが削除されました",
+      "fixThis": "修正する",
+      "askAi": "AI に聞く",
+      "copy": "コピー"
+    },
+    "tooltips": {
+      "copyPath": "パスをコピー",
+      "showBlame": "blame を表示",
+      "hideBlame": "blame を隠す",
+      "fileHistory": "ファイル履歴",
+      "copySelection": "選択範囲をコピー",
+      "askAiSelection": "選択範囲について AI に聞く"
+    },
+    "previewStatus": {
+      "ready": "準備完了",
+      "starting": "起動中",
+      "sleeping": "スリープ中",
+      "failed": "失敗"
+    },
+    "diff": {
+      "noChanges": "変更は検出されませんでした"
+    }
+  }
+}

@@ -1,0 +1,125 @@
+Prompt engineering for an agent on a laptop and prompt engineering for an agent on a persistent workstation are different problems. Most existing guides assume the laptop case: short sessions, immediate feedback, the human at the keyboard the whole time. The patterns that work well there don't always carry over.
+
+This page covers the patterns that work specifically for AI coding agents running on Ellul: <Term slug="always-on-agent">always-on</Term>, <Term slug="parallel-agents">parallel</Term>-capable, <Term slug="passkey-approval">passkey-gated</Term>. The focus is engineering work, not chat. The goal is to make your agent productive on long horizons without you babysitting it.
+
+## The mental model: direction, not dictation
+
+Agents on a workstation work best when you give direction and let them run. The contrast is "tell the agent every keystroke" (which works on a laptop, where the feedback loop is fast and human supervision is constant) versus "tell the agent the goal and the constraints" (which works on a workstation, where the agent will be working when you're not in the room).
+
+A good direction-style prompt has four parts:
+
+<Callout type="note" title="The four-part prompt">
+1. **Goal.** What does done look like, in one sentence?
+2. **Constraints.** What must remain true (test passing, API unchanged, no migrations, etc.)?
+3. **Approach (optional).** A nudge if you have a preference, but leave the agent room to disagree.
+4. **Stopping criteria.** When to pause for review (e.g., "stop after the schema change and ping me").
+</Callout>
+
+The fourth part is the one most engineers under-use. An agent that knows when to stop is far more useful than an agent that runs to completion and presents you with five hundred lines of changes you don't have time to review.
+
+## Patterns that work for unattended runs
+
+### Scope to a single goal per session
+
+A single Ellul session = a single goal. Multi-goal sessions ("refactor X, then update tests, then deploy") drift; the agent compounds context across the whole arc and the second goal inherits the first goal's mistakes. Run them as separate sessions, with explicit handoffs between them.
+
+### Use checkpoint commits
+
+Tell the agent to commit after each meaningful step. "Commit after each file you finish; commit before any risky change; commit before the test pass." This makes recovery from crashes free (the supervisor restarts the agent at the last commit, not from scratch) and gives you reviewable, reversible state at each step.
+
+### Pre-declare your tooling
+
+The agent on a workstation has access to <Term slug="mcp">MCP</Term> servers, terminal commands, your codebase, and your test suite. Before you ask for work, tell the agent what tools matter: "Use the Postgres MCP for schema queries. Use `pnpm test --filter @ellul.ai/web` for the frontend test suite. Don't run `pnpm install`; the dependencies are already pinned."
+
+### Make stop conditions cheap to enforce
+
+A good stop condition is something the agent can verify without asking: "stop when all tests pass," "stop after opening the PR," "stop when the migration runs cleanly against staging." Bad stop conditions require human judgment ("stop when it looks good") and force the agent to over-summon you for approval.
+
+## Patterns for parallel-agent setups
+
+When you run two or three agents on adjacent workstations, the prompts shift further toward direction-only.
+
+### Define the seam
+
+Two agents working on overlapping resources fail when there's no clear seam. Declare it. "Coder agent owns the `/apps/web` tree. Reviewer agent reads from coder's branch via peering and produces a review document at `.shared/reviews/{branch}.md`. Documenter agent reads from main and updates `/docs` only."
+
+### One writer per resource
+
+Always. If two agents both want to write to the same file, the answer is not concurrent edit; it's serialization. Have agent A finish, hand off, agent B starts. The agentic-handoff prompt template:
+
+> "When you finish your part, commit and push. Tag the PR with `ready-for-{next-agent}`. Stop. Wait for the next agent to be triggered manually."
+
+### Read-only is the default; write is the exception
+
+The reviewer agent doesn't need write access to the coder's branch. The documenter doesn't need write access to the codebase. Most parallel-agent failure modes come from giving the wrong agent write authority and watching it edit something it shouldn't have. Default everyone to read-only; grant write narrowly.
+
+
+
+## Patterns for passkey-gated work
+
+Privileged actions (`git push`, deploy, secret reads, database writes) pause for <Term slug="passkey-approval">passkey approval</Term> on Ellul. Your prompts should design around this rather than try to circumvent it.
+
+### Batch privileged actions
+
+Group privileged actions so the agent prompts you once instead of many times. "Open the PR after the test pass; don't push individual commits." Better: "Run all the work locally on a branch; push the whole branch at the end."
+
+### Surface the approval naturally
+
+The agent should describe what it's about to do before triggering the gate. "I'm going to run the migration against staging; confirm to proceed." This makes the approval prompt informative, not interruptive. You read the description, tap your passkey, the work continues.
+
+### Don't try to "auto-approve"
+
+Auto-approval rules exist for a reason (low-risk, frequent actions). They are not a way to skip the gate model. If your prompt is structured to need approval-skipping, the prompt is wrong; restructure it so the approval point is meaningful.
+
+## Patterns for MCP-aware prompts
+
+When the agent has MCP servers available, the prompts should treat them like first-class tools.
+
+### Name the tool, not the operation
+
+"Query the database for users registered in the last week" is fine on its own. "Use the Postgres MCP (pg_users) to query for users registered in the last week" is more reliable, because the agent knows exactly which tool to reach for and doesn't have to guess from your description which one fits.
+
+### Pre-load the schema or context
+
+If your MCP server has a schema, table layout, or capability list, mention the relevant pieces in the prompt. The agent's reasoning quality is better when the relevant context is in the conversation than when the agent has to discover it through tool calls.
+
+### Constrain destructive operations
+
+For database MCPs especially, the prompt should specify which gate class is allowed. "Use db_read only for this task; if you need to write, stop and ask me." This pairs with the gate model: the agent knows it shouldn't try, and the gate would stop it anyway.
+
+## Anti-patterns
+
+A short list of patterns that work on a laptop but bite on a workstation.
+
+**"Run this and tell me what happens."** Fine when you're at the keyboard watching. On a workstation, the agent runs the thing, the result is in a buffer somewhere, you come back six hours later and have lost the context. Better: "Run this; if X happens commit and continue with step Y; if anything else happens stop and write what you found to /tmp/agent-report.md."
+
+**"Just do whatever you think is best."** Lazy direction. The agent does whatever, and "whatever" usually drifts away from what you wanted by step five. Always include constraints, even if just "don't change the public API" or "don't touch the database schema."
+
+**"Use the shell to figure out what to do."** Works on a laptop because you're there to redirect. On a workstation, the agent reading random parts of the filesystem in search of context produces undirected motion. Tell it where to look.
+
+**"Run for as long as it takes."** No stop condition is a recipe for runaway sessions. Always include a stop condition, even a generous one.
+
+**"Skip the test suite for speed."** Saves five minutes, costs you the equivalent of a full session when the agent ships a regression. Tests on the workstation are cheap; the agent isn't bottlenecked by your battery.
+
+## Prompt templates
+
+Three templates that show up repeatedly in real Ellul work.
+
+**The overnight refactor:**
+> "Refactor /apps/web/src/components/foo to use the new MCP transport. Constraints: no breaking changes to the public API, all existing tests must pass. Approach: keep individual commits small; commit after each file. Stop after opening a PR titled 'refactor: foo to MCP transport'. If you hit a test failure you can't resolve in three attempts, stop and write a report."
+
+**The parallel-review setup:**
+> "Coder agent: implement feature X on branch feature/x; commit, push, open PR, stop. Reviewer agent: read from coder's branch via .shared/coder, produce a review at .shared/reviews/x.md, stop. I'll merge after reading the review."
+
+**The credential-touching deploy:**
+> "Deploy the API to staging. Steps: run tests; build the docker image; tag it; push to the registry; update the staging deployment. The push to registry and the deployment update are passkey-gated; describe what you're about to do before each, then proceed. Stop after the deployment update if it succeeds; if it fails, roll back and report."
+
+These templates are starting points, not laws. The right prompt is the one that fits your specific workflow. The patterns above are the heuristics that show up most often.
+
+## Where to go next
+
+- [Agent workstation →](/concepts/agent-workstation)
+- [Parallel agents →](/concepts/parallel-agents)
+- [Always-on AI agent →](/concepts/always-on-ai-agent)
+- [MCP hub →](/mcp)
+- [Glossary →](/glossary)

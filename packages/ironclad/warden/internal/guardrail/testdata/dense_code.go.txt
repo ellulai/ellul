@@ -1,0 +1,5 @@
+package main
+
+func dense() {
+	result := foo(bar(baz(x)))
+}

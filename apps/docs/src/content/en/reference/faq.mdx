@@ -1,0 +1,60 @@
+---
+title: "FAQ"
+description: "Common questions about how ellul works."
+section: "Reference"
+order: 2
+---
+
+<FaqSection>
+  <FaqItem question="What agents are supported?">
+    Claude Code, Codex, Cursor, and OpenCode. You bring your own credentials for each agent and authenticate them inside your workstation. The credentials live on your encrypted volume; ellul cannot read them.
+  </FaqItem>
+
+  <FaqItem question="Can ellul see my code or my data?">
+    Not in Web Locked or Private Locked tier. Your code, application secrets, and per-sandbox database all live on your encrypted volume. The platform handles billing and provisioning; it does not read the contents of your sandboxes. In Standard tier, the platform retains the wrapped storage key for recovery, but does not access it day to day.
+  </FaqItem>
+
+  <FaqItem question="What if I lose my passkey?">
+    On enrolment you receive one-time recovery codes. Use one to re-enrol a passkey on a new device. If you lose your passkey and your recovery codes, you can still recover access in Standard and Web Locked tiers via account-level recovery. In Private Locked (sovereign) tier, there is no recovery: this is the explicit cost of the strongest tier.
+  </FaqItem>
+
+  <FaqItem question="Can ellul push a malicious update to my workstation?">
+    Updates to the on-server runtime are signed with a key held in a hardware security module. Your workstation verifies the signature locally before applying any update, and a hash chain prevents downgrade attacks. A rogue update would have to come from the signing key holder; the path you would need to compromise is significantly narrower than a typical CI pipeline.
+  </FaqItem>
+
+  <FaqItem question="What happens if my server hibernates?">
+    Hobby and Pro plans are always-on; they do not hibernate. Other product configurations (such as the agent adapter for orchestrators) may pause workstations during inactivity to save cost. In all cases, your encrypted volume is preserved, so all sandboxes resume exactly where they left off.
+  </FaqItem>
+
+  <FaqItem question="What is the difference between Hobby and Pro?">
+    Hobby includes always-on compute, persistent storage, the AI agents, and namespace isolation. Pro adds: encrypted persistent storage, custom domains, direct deploy, full port access, SSH, and global regions. See the [Tier Comparison](/reference/tier-comparison) for the full matrix.
+  </FaqItem>
+
+  <FaqItem question="Can I run the agent on my own infrastructure?">
+    The Shield Gateway product is designed for that case. You run your existing agent framework wherever you already host it, and ellul provides a FIDO2-gated proxy in front for authentication and permission gates. No SDK, no code changes.
+  </FaqItem>
+
+  <FaqItem question="What if ellul disappears?">
+    Your workstation is a standard Linux server on a major cloud provider. ellul is a management layer on top, not a proprietary container or locked-down image. If we go offline, your server keeps running. You can SSH in (Pro plan), disable our agent, and continue with billing transferred to your own cloud account.
+  </FaqItem>
+
+  <FaqItem question="Why do I need to approve permission gates?">
+    Without gates, the agent would have unrestricted access to your secrets, your database, your code repository, and your production deployments. With gates, the agent must ask. This catches both buggy agents and adversarial agent inputs (such as prompt injection) before they touch sensitive data. You can configure standing rules so routine, low-risk operations do not interrupt you.
+  </FaqItem>
+
+  <FaqItem question="What data residency guarantees do you offer?">
+    Region selection on paid plans places your workstation and storage in a specific geographic region. The encrypted volume, the application database, and platform-retained logs stay in the region. Heartbeat telemetry (server health, no customer data) and authentication events do leave the region by design. For specific compliance requirements, please contact us.
+  </FaqItem>
+
+  <FaqItem question="Has the security model been audited?">
+    The architecture is described in the [Security Whitepaper](/security). We publish our model so you can audit the design yourself. Independent third-party audits are conducted on a periodic basis; please contact us if you need attestation for a specific compliance requirement.
+  </FaqItem>
+
+  <FaqItem question="Can multiple people share a workstation?">
+    Each ellul account corresponds to one workstation. For team setups with multiple people, contact us about org-mode configurations. The agent-adapter product supports multi-team scenarios.
+  </FaqItem>
+
+  <FaqItem question="What logs are kept and for how long?">
+    The audit log on your workstation is permanent (subject to disk space). Application development logs are retained for a period configurable per sandbox. Platform-side logs (heartbeat telemetry, billing events) are kept according to our standard retention policy.
+  </FaqItem>
+</FaqSection>

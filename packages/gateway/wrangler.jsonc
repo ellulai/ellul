@@ -1,0 +1,56 @@
+{
+  "name": "gateway",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-01-01",
+  "account_id": "e1e92e3a050e48c3af60dfc793cb2037",
+
+  // Create the KV namespace:
+  //   wrangler kv namespace create SERVER_ROUTES
+  // Then paste the ID below.
+  "kv_namespaces": [
+    {
+      "binding": "SERVER_ROUTES",
+      "id": "4d4ce487b68941148583690a79da7961"
+    }
+  ],
+
+  // Worker intercepts all subdomains on both zones.
+  // CF Pages Custom Domains (console, docs, web) have higher priority and are NOT intercepted.
+  // api.ellul.ai is excluded via route exclusion (no-script route) — see scripts/setup-route-exclusions.sh.
+  // Route exclusions can't be declared here; they're created via Cloudflare API on deploy.
+  // PLATFORM_ZONE, APP_ZONE, CONSOLE_ORIGIN passed at deploy time via --var flags.
+  // See deploy commands below.
+
+  "routes": [
+    { "pattern": "*.ellul.ai/*", "zone_id": "a5087e4660906ef14e2c8899d0cffcb9" },
+    { "pattern": "*.ellul.app/*", "zone_id": "1d07d4a0bf88c8a2db77c483b9438fda" }
+  ],
+
+  "env": {
+    "staging": {
+      "name": "gateway",
+      "account_id": "d8565cfb4db1cfb138c32bac477a093d",
+      "kv_namespaces": [
+        {
+          "binding": "SERVER_ROUTES",
+          "id": "c6f703cfb5974df88a247f3a9f3bb623"
+        }
+      ],
+      "routes": [
+        { "pattern": "*.phone-stack.com/*", "zone_id": "e039a39ef07a8c827e1b44312ed441f9" },
+        { "pattern": "*.phone-stack.app/*", "zone_id": "150403c0b8a06432c09a552cf086f5b0" }
+      ]
+    }
+  }
+
+  // Deploy commands:
+  //   Staging:
+  //     wrangler deploy --env staging \
+  //       --var PLATFORM_ZONE:phone-stack.com --var APP_ZONE:phone-stack.app \
+  //       --var CONSOLE_ORIGIN:https://console.phone-stack.com
+  //
+  //   Production:
+  //     wrangler deploy \
+  //       --var PLATFORM_ZONE:ellul.ai --var APP_ZONE:ellul.app \
+  //       --var CONSOLE_ORIGIN:https://console.ellul.ai
+}

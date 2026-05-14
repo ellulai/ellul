@@ -1,0 +1,111 @@
+---
+title: "Tier Comparison"
+description: "Plans, security tiers, and what each one includes."
+section: "Reference"
+order: 1
+---
+
+ellul has two related but distinct tier systems: the **billing plan** (Hobby, Pro, Shield Gateway, Agent Adapter) and the **security tier** (Standard, Web Locked, Private Locked). They are independent. You pick a billing plan when you sign up; you choose a security tier any time later.
+
+## Billing plans
+
+| Plan | Price | What it is |
+|------|-------|-----------|
+| **Hobby** | $20 / month | Always-on workstation for side projects. Multiple sandboxes. |
+| **Pro** | $50 / month | Always-on workstation with encrypted persistent storage, custom domains, direct deploy, full port access, SSH. |
+| **Shield Gateway** | $10 / month | FIDO2-gated proxy for existing agent frameworks. No SDK or code changes. |
+| **Agent Adapter** | Custom | Full headless trust API for orchestrators. Provision hosts, sync secrets, webhook gate decisions. |
+
+### Hobby
+
+| Feature | Included |
+|---------|---------|
+| Always-on (no hibernation) | Yes |
+| Persistent storage | Yes |
+| Web Terminal + AI agents | Yes |
+| Namespace isolation per sandbox | Yes |
+| Region selection | Yes |
+| Custom domains | No |
+| Encrypted persistent storage (LUKS2) | No |
+| SSH | No |
+
+### Pro
+
+| Feature | Included |
+|---------|---------|
+| Always-on | Yes |
+| LUKS2 encrypted persistent storage | Yes |
+| Custom domains and direct deploy | Yes |
+| Full port access | Yes |
+| SSH | Yes |
+| Global regions | Yes |
+| Recommended for production work | Yes |
+
+Pro is the daily-driver plan. It includes everything in Hobby plus the production features.
+
+### Shield Gateway
+
+A standalone product. A FIDO2-gated authentication and authorisation proxy you place in front of your existing agent framework. No SDK to integrate, no code changes; the proxy handles passkey auth and gate decisions for you.
+
+Includes:
+
+- Unlimited projects through the proxy.
+- FIDO2 (passkey) authentication.
+- Permission gate model for tool calls.
+
+If you already have an agent framework that runs elsewhere and just want our authentication and gate layer in front of it, this is the product.
+
+### Agent Adapter
+
+A managed integration for orchestrator platforms (Paperclip, CrewAI, custom). The full headless trust API:
+
+- Provision and manage workstations programmatically.
+- Sync secrets across hosts.
+- Webhook gate decisions to your orchestrator.
+- Full permission gate enforcement.
+
+Pricing and exact feature mix depend on integration scope. Contact us.
+
+## Security tiers
+
+Independent of billing plan. You can use any security tier on any billing plan that supports passkeys (Hobby and Pro).
+
+| Tier | Auth | Storage key | Recovery from platform |
+|------|------|-------------|------------------------|
+| **Standard** | Password / OAuth / passkey | Platform-managed | Yes |
+| **Web Locked** | Passkey only, with continuous proof of possession | Platform-managed | Yes |
+| **Private Locked** | Passkey only, with continuous proof of possession | User passkey only | No |
+
+For details on each: [Security Tiers](/concepts/security-tiers).
+
+## Encryption modes
+
+Tied to the security tier and only applicable on Pro:
+
+| Mode | Available on | Platform key | User key |
+|------|-------------|--------------|----------|
+| Standard | All tiers | Yes | No |
+| Enhanced | Pro plan | Yes | Yes (passkey) |
+| Sovereign | Pro plan, Private Locked tier | No | Yes (passkey) |
+
+For details: [Volume Encryption](/lifecycle/volume-encryption).
+
+## What is universal
+
+Some features are baseline on every plan:
+
+- Sovereign Shield (auth + gate enforcement).
+- Per-sandbox namespace isolation (mount, process, network).
+- Permission gates for privileged actions.
+- Hash-chained audit log.
+- Cross-sandbox access controls.
+- Curated outbound allowlist (mining pools and tunnel services blocked).
+- Session management.
+
+The plan and tier control which extras are available; the safety baseline is the same.
+
+## Where to go next
+
+- [The Sovereign Model](/concepts/sovereign-model) for the trust philosophy.
+- [Security Tiers](/concepts/security-tiers) for the runtime tier model.
+- [Permission Gates](/permissions/overview) for the authorisation layer.

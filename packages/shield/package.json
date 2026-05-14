@@ -1,0 +1,45 @@
+{
+  "name": "@ellul.ai/shield",
+  "version": "0.1.0",
+  "description": "ellul.ai Shield — AI agent governance CLI and daemon",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/cloud/index.js",
+  "bin": {
+    "ellul": "./dist/cloud/index.js",
+    "ellul-mcp": "./dist/cloud/mcp-server.js",
+    "ellul-local": "./dist/cloud/index.js",
+    "ellul-mcp-local": "./dist/cloud/mcp-server.js"
+  },
+  "files": [
+    "dist",
+    "native"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "postinstall": "bash scripts/install-guardrail.sh",
+    "prepublishOnly": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@ellul.ai/shield-proxy": "workspace:*",
+    "@ellul.ai/pqc-types": "workspace:*",
+    "@noble/curves": "2.0.1",
+    "@noble/post-quantum": "0.5.4"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^11.10.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20.11.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.17"
+  }
+}

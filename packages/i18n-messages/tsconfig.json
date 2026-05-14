@@ -1,0 +1,11 @@
+{
+  "extends": "@ellul.ai/ts-config/base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "declaration": true,
+    "declarationMap": true,
+    "lib": ["ES2022"]
+  },
+  "include": ["src/**/*", "messages/**/*", "agent-context/**/*", "__tests__/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

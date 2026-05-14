@@ -1,0 +1,106 @@
+The AI editor war in April 2026 is mostly two products: Cursor and Windsurf. Both are VS Code forks. Both ship the same checklist of features. The differences that matter are smaller, more specific, and don't show up on a spec sheet.
+
+This is a third-party editorial. We build the workstation that either editor can talk to, and we have no stake in which fork wins. What follows is what an engineer comparing them in 2026 actually needs to know.
+
+## Same starting point, different lineage
+
+Both editors started as VS Code forks with AI built in. Cursor came out of Anysphere: well funded, opinionated, fast on the release schedule. Windsurf grew out of Codeium: older, autocomplete-first, more conservative on big-bet features. After a few hours in either one, they each feel like their own editor.
+
+The lineage shows up in small ways. Cursor's release cadence is roughly weekly. Windsurf's is closer to monthly. Cursor's docs read like a startup. Windsurf's read like an enterprise sale that has been polished for the security review. Neither is wrong. They are optimized for different buyers.
+
+## What both ship in 2026 (the boring middle)
+
+In April 2026, both editors ship:
+
+<BulletList>
+  <BulletItem heading="An agent panel">
+    A side panel with a long-running agent you can ask to plan, edit, run, and iterate on a task. Cursor's is "Composer" plus chat. Windsurf's is "Cascade." Both can edit many files in one turn, run shell commands with permission prompts, and read your codebase index.
+  </BulletItem>
+  <BulletItem heading="Codebase indexing">
+    A persistent embedding index of your repo so the agent panel doesn't re-explain types and call sites every turn. Cursor's index includes a cloud-augmented Merkle-tree component. Windsurf's leans more local with selective augmentation. To the user, the output is roughly the same.
+  </BulletItem>
+  <BulletItem heading="Inline completions">
+    Both inherit a strong autocomplete heritage. Cursor's traces back to Anysphere's models and prompt engineering. Windsurf's traces back to Codeium's older Cypher Prime stack. In day-to-day use the suggestions are within rounding distance of each other.
+  </BulletItem>
+  <BulletItem heading="Native MCP">
+    Both editors read a Model Context Protocol config file and treat MCP servers as first-class. Cursor reads `~/.cursor/mcp.json`. Windsurf reads its equivalent under `~/.codeium/windsurf/`. The wire format is identical because MCP is a wire format. Any MCP server that runs against one runs against the other.
+  </BulletItem>
+  <BulletItem heading="Command-K equivalents">
+    Both have a chord that lets you select code, type a natural-language instruction, and accept the diff inline. The shortcuts differ. The muscle memory transfers in a day.
+  </BulletItem>
+</BulletList>
+
+If your decision criterion is "which one has feature X," the 2026 answer is almost always "both, or one of them will ship it next month." Stop using the checklist.
+
+## Where do the differences actually live?
+
+The interesting differences are at the layer below features.
+
+**Indexing strategy.** Cursor bets that a cloud-augmented Merkle index scales further on very large repos than a purely local one. We're talking millions of lines, hundreds of thousands of files. Engineers in giant monorepos report Cursor's agent panel finds relevant files faster on those repos. Windsurf indexes more locally, which is a privacy-positive tradeoff for shops that don't want repo embeddings leaving their machine. On small or medium repos the difference is invisible. At the high end it is real.
+
+**Composer vs Cascade.** Both UIs propose a multi-file diff that you accept or reject. The difference is rhetorical. Composer is terser. It produces the diff, you read it, you accept. Cascade narrates more of the plan and exposes intermediate steps. If you like reading the agent's reasoning before reading the diff, Cascade fits better. If you trust the diff and just want to read it, Composer fits better.
+
+**MCP defaults.** Cursor's docs lean toward a curated list of MCP servers known to work well. Windsurf's lean toward "here's the schema, drop in what you want." Both work. Cursor's curated path is easier for a first setup. Windsurf's open path is easier for a custom internal server.
+
+**Pricing.** Cursor Pro is $20 per month with usage-based overages. Cursor Ultra is the higher headline tier, around $200 a month for heavy users. Windsurf Pro sits around $15 a month and inherits Codeium's heritage of a generous free tier. Per seat, the dollar gap is small. At fleet scale it matters.
+
+**Release cadence.** Cursor ships fast and breaks small things. Windsurf ships slower and breaks fewer things. If you file an editor bug, Cursor's cadence rewards you faster (there's a fix in a week). Windsurf's cadence rewards stability (the bug was less likely to be there to begin with).
+
+## Where does each one win in practice?
+
+Sketched in one sentence each.
+
+<NumberedList>
+  <NumberedItem heading="Pick Cursor if">
+    you work on a very large monorepo and want indexing that scales at the high end; you ship in a TypeScript or Python codebase that the model has seen a lot of; you want the latest editor feature within a week of it being announced.
+  </NumberedItem>
+  <NumberedItem heading="Pick Windsurf if">
+    pricing matters at scale and Codeium's free tier covers your team's reads; your repo is small to medium and the indexing gap doesn't show up; you prefer Cascade's narrating-the-plan style; you want a slower, more conservative release cadence.
+  </NumberedItem>
+  <NumberedItem heading="Pick neither, this month">
+    you've used VS Code without AI for years, you're happy, and you don't have a specific use case that breaks. The editor war isn't a tax on you yet.
+  </NumberedItem>
+</NumberedList>
+
+The dirty secret is that most engineers who care about the comparison have used both, decided it didn't matter that much, and switched once or twice on whim or pricing. Five years from now someone will look back and say "this was the JetBrains-vs-Visual-Studio of its era," and that person will be right.
+
+## The question neither editor answers
+
+Both Cursor and Windsurf assume the agent runs on your laptop. That assumption was fine in 2023, when the agent was a completion you accepted between sips of coffee. It is more strained in 2026, when the agent is doing eight-hour refactors, opening pull requests overnight, and reaching out to your real production database.
+
+Close your laptop and the agent stops. WiFi flakes and it crashes mid-step. The agent inherits your laptop's filesystem permissions, which means your `~/.aws/credentials`, your `~/.ssh`, your 1Password CLI. You can't run two of them in parallel without state collisions.
+
+None of this is a bug in Cursor or Windsurf. These are properties of where the editor lives. The runtime question, where does the agent live, is a layer above the editor question.
+
+<Callout variant="info" title="Composes with either">
+[Ellul](/) is the persistent workstation an agent CLI lives on. We support Cursor's CLI directly. See [/agents/cursor](/agents/cursor) for that. Windsurf's CLI flow works but isn't yet a first-class adapter. You can run the editor on your laptop and have it talk to a workstation via SSH today, and a Windsurf-specific agent page is on the list. Pick whichever editor fits your hands. Pick the workstation question separately.
+</Callout>
+
+## So which one should I pick?
+
+If you are starting from zero in May 2026, install both, point each at a real repo for an afternoon, and decide on feel. The comparison reads big in a blog post. In practice the answer shows up in five minutes when one of them has the keyboard ergonomic you didn't know you wanted. Both are good. Either is fine. The thing that actually matters, where the agent lives, sits a layer above either choice and is worth more attention than the choice between them.
+
+---
+
+## FAQ
+
+<Faq />
+
+---
+
+## References
+
+- [Cursor docs: index, MCP, Composer](https://docs.cursor.com)
+- [Windsurf docs: Cascade, MCP, configuration](https://docs.windsurf.com)
+- [Codeium MCP configuration](https://codeium.com/blog)
+- Internal: [Cursor on Ellul](/agents/cursor), [Cursor vs Ellul](/vs/cursor), [Windsurf vs Ellul](/vs/windsurf)
+
+<Cta
+  eyebrow="The runtime question"
+  body="Either editor pointed at a workstation that doesn't sleep is the configuration we recommend in 2026. Twenty dollars a month for Hobby, fifty for Pro."
+  primary={{ href: "https://console.ellul.ai/sign-up", label: "Get a workstation" }}
+  links={[
+    { href: "/agents/cursor", label: "Cursor on Ellul" },
+    { href: "/vs/windsurf", label: "Windsurf vs Ellul" },
+  ]}
+/>

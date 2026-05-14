@@ -1,0 +1,157 @@
+{
+  "glossary": {
+    "agent-workstation": {
+      "term": "Agent workstation",
+      "definition": "A persistent, isolated computer that exists for an AI coding agent to live on. Always on, with its own filesystem, processes, and network. Privileged actions are gated at the boundary so the agent must request human approval before touching real credentials. The agent runs there instead of on a developer's laptop.",
+      "context": "Agent workstations are the answer to three structural problems with running an AI coding agent on a laptop: the lid closes (long jobs stop), the laptop already holds your real credentials (every agent process inherits them), and only one agent can sit at the keyboard at a time. An agent workstation moves the agent into a place built for it (persistent, isolated, gated) and lets the human operate it from any device, including a phone.",
+      "synonyms": [
+        "agent computer",
+        "persistent agent environment",
+        "agent VM",
+        "remote agent workstation"
+      ],
+      "seeAlso": {
+        "concept-agent-workstation": "Concept: Agent workstation",
+        "solution-run-claude-code": "Solutions: Run Claude Code in cloud"
+      }
+    },
+    "sovereign-shield": {
+      "term": "Sovereign Shield",
+      "definition": "Ellul's authentication and credential-brokering layer. Runs in a separate process from the agent, holds session keys and OAuth tokens, and enforces passkey approval for privileged actions. The agent never sees credentials directly. It asks the shield to broker the action, and the shield pauses until a human taps a passkey to approve.",
+      "context": "The shield process runs as a different system user with its own group memberships and ptrace restrictions, so an agent running adjacent code on the same workstation cannot read the shield's memory, environment, or git subprocess credentials. Every privileged operation (git push, deploy, database writes, secret reads) flows through the shield, which decides whether it requires a fresh passkey approval based on per-gate TTLs and the action's classification.",
+      "synonyms": [
+        "credential broker",
+        "shield process",
+        "auth boundary",
+        "Ellul shield"
+      ],
+      "seeAlso": {
+        "docs-sovereign-model": "Docs: Sovereign Model",
+        "docs-permissions": "Docs: Permissions"
+      }
+    },
+    "passkey-approval": {
+      "term": "Passkey approval",
+      "definition": "A FIDO2 / WebAuthn confirmation that gates privileged actions. When an AI agent on Ellul attempts a sensitive operation (git push, deploy, database write, secret read), execution pauses and the action queues for approval. The user receives a notification, taps Touch ID, Face ID, or a hardware key, and the action proceeds only on approval.",
+      "context": "Passkey approval is enforced server-side by the Sovereign Shield, not by a permission prompt the agent could be coached to skip. Each gate type (write, push, deploy, secret-read, etc.) has a configurable TTL: once approved, follow-up actions of the same class can flow through within the window without re-prompting. The TTL is bounded; long-running agents must re-authorize. Approvals can be granted from any registered device, including a phone, so agents stay productive while the human is mobile.",
+      "synonyms": [
+        "passkey gate",
+        "passkey confirmation",
+        "FIDO2 approval",
+        "WebAuthn approval",
+        "passkey-gated action"
+      ],
+      "seeAlso": {
+        "docs-cross-device": "Docs: Cross-device approval",
+        "faq-passkey-gating": "FAQ: passkey gating"
+      }
+    },
+    "parallel-agents": {
+      "term": "Parallel agents",
+      "definition": "Multiple AI coding agents working at the same time, each in its own isolated workstation, with read-only peering between them. One agent codes, another reviews, a third documents: all running simultaneously, none stepping on the others' state. Coordination is read-only by default; write operations stay scoped to a single agent per resource.",
+      "context": "Each parallel agent gets its own filesystem, processes, and network namespace, so port collisions, state corruption, and credential bleed-through cannot occur. A peering primitive grants one agent read-only access to another's source code (with secrets and credential files filtered out), so a reviewing agent can analyze a coding agent's branch without ever being able to push, edit, or escalate. The pattern that emerges in practice is one writing agent plus one or more reviewing/documenting agents on adjacent workstations.",
+      "synonyms": [
+        "multi-agent",
+        "concurrent agents",
+        "agent fleet",
+        "multi-agent orchestration"
+      ],
+      "seeAlso": {
+        "concept-parallel-agents": "Concept: Parallel agents",
+        "docs-sharing-projects": "Docs: Sharing projects"
+      }
+    },
+    "long-running-agent": {
+      "term": "Long-running agent",
+      "definition": "An AI coding agent that operates for hours or days without continuous human supervision. Long-running agents survive lid closes, network changes, and laptop reboots because they live on a persistent server. They check in for approval on privileged actions and continue otherwise. The human reviews progress at their own cadence rather than babysitting every step.",
+      "context": "On a laptop, an agent's session ends when the laptop sleeps; long-running work has to fit inside the time the user is at the keyboard. On a persistent agent workstation, the same agent keeps making progress through overnight refactors, multi-day migrations, and end-to-end test suites that take eight hours to run. Recovery from crashes is automatic. Supervisor processes restart the agent and resume from the last checkpoint, so a single bad call doesn't lose a night's work.",
+      "synonyms": [
+        "always-on agent",
+        "overnight agent",
+        "unattended agent",
+        "background agent"
+      ],
+      "seeAlso": {
+        "solution-overnight-refactors": "Solutions: Overnight refactors",
+        "faq-unattended-duration": "FAQ: How long can an agent run unattended?"
+      }
+    },
+    "ironclad-tier": {
+      "term": "Ironclad tier",
+      "definition": "Ellul's hardened security tier. Each agent runs inside an isolated VPS image with LUKS2-encrypted persistent storage, a locked-down init chain that disables `su` after provisioning, kernel-level ptrace restrictions, and seccomp/AppArmor profiles around every adapter. The agent has no path to its own credential broker, the host network, or other tenants' data.",
+      "context": "The Ironclad tier is the basis of Ellul's claim that the agent cannot leak credentials even if it tries. The guarantee is enforced at multiple kernel layers, not just by application logic. Full Ironclad applies to paid plans; a partial Ironclad mode applies to free / hobby tiers with looser network egress rules. The tier is set at provisioning time and cannot be changed without re-provisioning.",
+      "synonyms": [
+        "Ellul Ironclad",
+        "ironclad mode",
+        "hardened tier",
+        "full ironclad",
+        "partial ironclad"
+      ],
+      "seeAlso": {
+        "docs-security-tiers": "Docs: Security tiers",
+        "docs-volume-encryption": "Docs: Volume encryption"
+      }
+    },
+    "vibe-coding": {
+      "term": "Vibe coding",
+      "definition": "A development style where a human describes intent in natural language and an AI agent implements, tests, and iterates without the human writing code line-by-line. Coined by Andrej Karpathy in early 2025. The human reviews diffs, runs the result, and steers the next iteration: closer to direction than authorship. Useful for prototypes; risky for production without gating.",
+      "context": "Vibe coding works well in throwaway environments: prototypes, scripts, side projects, sandbox experiments. It becomes risky when the same loose loop touches real credentials, production data, or shared infrastructure. The agent that hallucinated an unsafe rm command can now run it. Agent workstations make vibe coding safer by adding a passkey gate at the boundary: the human still vibes, but privileged actions pause until the human explicitly approves them.",
+      "synonyms": [
+        "AI-driven development",
+        "intent-driven coding",
+        "natural-language coding",
+        "LLM-driven coding"
+      ],
+      "seeAlso": {
+        "pricing": "Pricing",
+        "faq-what-agent-does": "FAQ: What can an agent on Ellul actually do?"
+      }
+    },
+    "mcp": {
+      "term": "MCP (Model Context Protocol)",
+      "definition": "An open protocol introduced by Anthropic in late 2024 that lets AI agents connect to external tools, data sources, and APIs through a standardized interface. MCP servers expose capabilities (file access, database queries, search, custom APIs); MCP clients (agents) call them. The protocol decouples agent code from tool integrations, so any MCP-compatible agent can use any MCP server.",
+      "context": "Before MCP, every agent tool integration was bespoke: each agent had its own plugin format, its own authentication model, its own discovery mechanism. MCP standardizes the wire format so the same `playwright-mcp` server works with Claude Code, Cursor, and any other compliant client. On an agent workstation, MCP servers run as long-lived processes alongside the agent, with credentials brokered by the shield rather than passed in plaintext to the server process.",
+      "synonyms": [
+        "Model Context Protocol",
+        "MCP protocol",
+        "MCP server",
+        "MCP client"
+      ],
+      "seeAlso": {
+        "mcp-hub": "MCP hub",
+        "docs-the-agent": "Docs: The Agent"
+      }
+    },
+    "agentic-workflow": {
+      "term": "Agentic workflow",
+      "definition": "A development pattern where an AI agent drives a multi-step task end-to-end (planning, file edits, terminal commands, test runs, and revisions) with the human approving privileged actions and steering high-level direction. Distinct from one-shot prompts: agentic workflows run for minutes to days and produce diffs, PRs, or deployed changes rather than chat replies.",
+      "context": "Agentic workflows generalize the loop that Cursor's Composer, Claude Code, Codex, and OpenCode all implement: the agent reads code, plans, executes, observes results, and iterates. The workflow's productivity is bounded by where the agent runs. On a laptop, the workflow stops when the laptop sleeps. On an agent workstation, the same workflow runs through to completion. The human checks in when an approval is needed, and the agent keeps moving otherwise.",
+      "synonyms": [
+        "agent loop",
+        "agent-driven workflow",
+        "autonomous agent task",
+        "agent task loop"
+      ],
+      "seeAlso": {
+        "concept-always-on": "Concept: Always-on AI agent",
+        "solution-cursor-remote-agents": "Solutions: Cursor remote agents"
+      }
+    },
+    "always-on-agent": {
+      "term": "Always-on agent",
+      "definition": "An AI coding agent that runs continuously rather than starting and stopping with a developer's session. Always-on agents handle background work (overnight refactors, long test runs, multi-step migrations, dependency upgrades) and notify the human only when an action requires approval. They live on a server, not a laptop.",
+      "context": "An always-on agent is the operational cousin of a long-running agent: long-running describes a single task spanning many hours; always-on describes the agent's lifecycle, in which sessions don't really begin and end. The user opens a chat, gives direction, closes the laptop, walks away, and reopens later from a phone or another device. The agent has been working the whole time. Approval requests buffer in a notification queue and resolve when the human is next reachable.",
+      "synonyms": [
+        "always-on AI agent",
+        "persistent agent",
+        "background agent",
+        "ambient agent",
+        "24/7 agent"
+      ],
+      "seeAlso": {
+        "concept-always-on": "Concept: Always-on AI agent",
+        "faq-always-on": "FAQ: Always on"
+      }
+    }
+  }
+}

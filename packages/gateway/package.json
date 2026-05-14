@@ -1,0 +1,15 @@
+{
+  "name": "@ellul-ai/gateway",
+  "version": "0.1.0",
+  "private": true,
+  "license": "BUSL-1.1",
+  "scripts": {
+    "deploy": "wrangler deploy && ./scripts/setup-route-exclusions.sh",
+    "dev": "wrangler dev",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260109.0",
+    "wrangler": "^4.0.0"
+  }
+}

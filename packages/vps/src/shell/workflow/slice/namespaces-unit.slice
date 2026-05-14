@@ -1,0 +1,24 @@
+[Unit]
+Description=ellul.ai per-project namespace anchors
+Before=slices.target
+
+[Slice]
+# Holds the transient ellul-ns-<project>.service units that anchor each
+# per-project namespace (mount + PID + net). Lives outside the
+# control-plane slice on purpose: anchor lifecycle is decoupled from
+# every other service. agent-bridge can crash, restart, or be redeployed
+# without disturbing warm namespaces; conversely a wedged anchor cannot
+# pressure-kill the control plane.
+#
+# Anchors are sleep-infinity processes (a few KB of RSS each) so the
+# aggregate footprint of even hundreds of warm sandboxes is negligible.
+# The caps below are guard rails for runaway warmth, not a budget that
+# normal operation approaches.
+MemoryMax=256M
+MemorySwapMax=0
+TasksMax=512
+# Anchors are NOT candidates for systemd-oomd pressure-kill: losing one
+# invalidates a namespace and forces a user-visible rebuild. The control
+# plane and previews slices absorb pressure first; only kernel OOM under
+# genuine starvation should ever touch this slice.
+ManagedOOMSwap=kill

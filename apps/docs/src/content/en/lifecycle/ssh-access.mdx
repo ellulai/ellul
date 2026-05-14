@@ -1,0 +1,66 @@
+---
+title: "SSH Access"
+description: "Direct shell access to your workstation on the Pro plan."
+section: "Lifecycle"
+order: 4
+---
+
+The Pro plan includes SSH access to your workstation. This is for direct shell work outside the chat interface, system-level debugging, or deploying via your own tooling.
+
+## Adding an SSH key
+
+<Steps>
+  <Step number={1} title="Open Account > Security > SSH Keys">
+    The list shows current keys (none by default).
+  </Step>
+  <Step number={2} title="Paste your public key">
+    Use the standard `ssh-ed25519 ...` or `ssh-rsa ...` format. Provide a label so you can identify the key later.
+  </Step>
+  <Step number={3} title="Save">
+    The key is recorded immediately. Removing it later revokes access.
+  </Step>
+</Steps>
+
+The action is recorded in the audit log.
+
+## Connecting
+
+```bash
+ssh dev@<your-server-domain>
+```
+
+The exact username and host are shown in the SSH Keys panel after you add a key.
+
+## What you can do over SSH
+
+- Run any command available on the workstation (subject to system-wide firewall rules).
+- Move between sandbox namespaces using platform-provided tools.
+- Inspect logs and processes.
+- Use `git`, `npm`, `pip`, `cargo`, and other standard developer toolchains.
+
+What you cannot do:
+
+- Bypass permission gates. Privileged operations still go through the gate flow.
+- Modify the encrypted vault contents from outside a properly-mounted environment.
+- Disable the workstation's security configuration without an explicit, audited tier transition.
+
+## Tier interaction
+
+| Tier | SSH availability |
+|------|------------------|
+| Standard | Available. Authentication uses your registered SSH keys. |
+| Web Locked | Available. Authentication uses your registered SSH keys; high-risk operations still require permission gates approved through the console. |
+| Private Locked | Available, but requires the volume to be unlocked first via passkey. |
+
+## Audit
+
+SSH connections, login successes and failures, and any privileged operations are recorded in the audit log along with operations performed via the console.
+
+## Removing access
+
+Remove an SSH key in **Account > Security > SSH Keys**. Future connections from that key are refused. Existing sessions stay alive until they disconnect.
+
+## Where to go next
+
+- [Tier Comparison](/reference/tier-comparison) to see what each plan includes.
+- [Working in a Sandbox](/projects/working-in-a-sandbox) for the console-based workflow.

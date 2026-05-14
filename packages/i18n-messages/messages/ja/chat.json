@@ -1,0 +1,412 @@
+{
+  "chat": {
+    "emptyStates": {
+      "noThreads": "スレッドはまだありません",
+      "noThreadsHint": "上のセッションをタップして、新しい会話を始めましょう",
+      "connecting": "接続中…",
+      "selectOrCreate": "スレッドを選ぶか、新しく作って始めましょう。"
+    },
+    "relativeTime": {
+      "justNow": "今",
+      "minutesAgo": "{count, plural, other {#分前}}",
+      "hoursAgo": "{count, plural, other {#時間前}}",
+      "daysAgo": "{count, plural, other {#日前}}"
+    },
+    "errors": {
+      "notConnected": "ワークベンチに接続できていません。",
+      "sendFailed": "メッセージの送信に失敗しました。"
+    },
+    "planSidebar": {
+      "label": "プラン"
+    },
+    "threads": {
+      "heading": "スレッド",
+      "newThread": "新しいスレッド",
+      "newThreadFallback": "新しいスレッド",
+      "activeThreadFallback": "スレッド",
+      "scopedLabel": "スコープ内",
+      "allLabel": "すべて"
+    },
+    "tooltips": {
+      "expandThreads": "スレッドを展開",
+      "collapseSidebar": "サイドバーを折りたたむ",
+      "showScopedThreads": "スコープされたスレッドを表示",
+      "showThreadsFrom": "{scope} のスレッドを表示"
+    },
+    "connection": {
+      "disconnected": "接続が切れています",
+      "disconnectedHint": "再接続を試みています。スレッドは安全に保たれています。",
+      "reconnecting": "再接続中…",
+      "reconnectingWithAttempt": "再接続中（{attempt} 回目）…",
+      "reconnectingHint": "接続が戻るとスレッドが再表示されます。",
+      "disconnectedShort": "接続が切れています。再接続を試みています。",
+      "errorShort": "接続エラーです。直らない場合はリロードしてください。"
+    },
+    "fileDrop": {
+      "title": "ファイルをドロップしてアップロード",
+      "hint": "ファイルは AI に送信されます"
+    },
+    "copy": {
+      "tooltip": "クリップボードにコピー",
+      "copied": "コピーしました",
+      "error": "コピーに失敗しました"
+    },
+    "composer": {
+      "selectOptionsHint": "1つ以上のオプションを選んでください。",
+      "sendFailed": "送信に失敗しました。もう一度お試しください。"
+    },
+    "modelPin": {
+      "pinFailed": "モデルのピン留めに失敗しました",
+      "unpinFailed": "モデルのピン留め解除に失敗しました"
+    },
+    "perTurnRevert": {
+      "label": "{count, plural, other {# ターンを取り消し}}",
+      "tooltip": "{count, plural, one {このターンを取り消し} other {# ターンを取り消し}}"
+    },
+    "providerAuth": {
+      "checking": "確認中…",
+      "recheck": "再確認",
+      "verifyingTitle": "{provider} のサインインを確認中…",
+      "verifyingBody": "ブリッジで新しい認証状態を確認しています。サインインが反映された瞬間からセッションは動作するので、入力は続けてかまいません。",
+      "providerUnavailable": "{provider} プロバイダーは利用できません。",
+      "providerLimited": "{provider} プロバイダーの利用は制限されています。",
+      "notReady": "{provider} の準備ができていません",
+      "runAndRecheck": "サーバーで実行して再確認してください:",
+      "signInTo": "{provider} にサインイン"
+    },
+    "threadError": {
+      "dismissAria": "エラーを閉じる",
+      "friendly": {
+        "noHeadroom": "起動するメモリが不足しています。少し待ってからもう一度お試しください。",
+        "tierCap": "現在のティアのスロット上限に達しています。",
+        "degradedRed": "システムが高負荷です。負荷が下がるまで処理を停止しています。",
+        "pressureHigh": "メモリ圧迫が高い状態です。数秒お待ちください。",
+        "frameworkTooBig": "このワークロードはティアごとの上限を超えています。",
+        "queueFull": "送信が多すぎます。少しお待ちください。",
+        "slotHydrateFailed": "Pro Claude スロットを再開できませんでした。セッションをリセットしました。",
+        "slotSpawnFailed": "Pro Claude スロットを起動できませんでした。runbook を確認してください。",
+        "slotEvictTimeout": "スロットの切り替えがタイムアウトしました。再試行しました。",
+        "spawnScopeBinaryMissing": "サーバーのバイナリが見つかりません。再デプロイしてください。",
+        "portBindTimeout": "プレビューのポートバインドに時間がかかりすぎました。dev コマンドを確認してください。",
+        "checkpointDiskFull": "ボールトのディスクが満杯です。空き容量が確保されるまでチェックポイントは無効です。",
+        "cgroupv2NotMounted": "サーバーで cgroup-v2 がマウントされていません。縮退モードで動作します。"
+      }
+    },
+    "authSetup": {
+      "fallbackProvider": "プロバイダー",
+      "title": "{provider} にサインイン",
+      "descriptionDefault": "サーバー上で動作する CLI を一度だけ認証します。下の 2 ステップに従ってください。",
+      "descriptionCursor": "サーバー上で動作する CLI を一度だけ認証します。下のリンクを開けば、サインインは自動で検出されます。",
+      "openLinkSignIn": "このリンクを開いてサインイン",
+      "openLinkBrowser": "このリンクをブラウザで開く",
+      "copyUrl": "URL をコピー",
+      "copyFullUrl": "完全な URL をコピー",
+      "copy": "コピー",
+      "copied": "コピー済み",
+      "enterCode": "このワンタイムコードを入力",
+      "pasteCode": "返ってきたコードを貼り付け",
+      "pastePlaceholder": "コードを貼り付けて Enter",
+      "send": "送信",
+      "sending": "送信中…",
+      "sent": "送信しました ✓",
+      "retry": "再試行",
+      "contacting": "サインインプロバイダーに接続中… 通常は数秒で完了します。",
+      "directTokenSummary": "すでにトークンをお持ちなら、こちらから直接貼り付け →",
+      "directTokenHelp": "ノートパソコンで <code>claude setup-token</code> を実行し、生成された <code>sk-ant-oat01-…</code> トークンを下に貼り付けてください。モーダル内のサインインは省略されます。",
+      "tokenPlaceholder": "sk-ant-oat01-...",
+      "directTokenInvalid": "トークンは sk-ant-oat01- で始まる必要があります",
+      "saveToken": "トークンを保存",
+      "saving": "保存中…",
+      "transcriptHeader": "セッションのトランスクリプト",
+      "transcriptStarting": "セッションを開始しています…",
+      "tryAgain": "もう一度試す",
+      "close": "閉じる",
+      "cancel": "キャンセル",
+      "status": {
+        "starting": "セッションを開始しています…",
+        "waitingPaste": "下に貼り付けるコードを待っています",
+        "urlReady": "サインイン URL の準備ができました。開いて続行してください",
+        "startingCli": "サーバーで CLI を起動中…",
+        "connected": "接続できました。仕上げ中です",
+        "errorPrefix": "エラー: {message}",
+        "signinFailed": "サインインに失敗しました（終了コード {exitCode}）",
+        "idle": "待機中"
+      }
+    },
+    "system": {
+      "autoTidy": "自動整理中。古いセッションを圧縮し、アイドル状態のプレビューを縮小してメモリを解放しています。",
+      "degradedMode": "システムが高負荷です。新しい送信はキューに入り、新規プレビューは負荷が下がるまで一時停止されます。"
+    },
+    "archive": {
+      "heading": "アーカイブ済みスレッド",
+      "title": "アーカイブ済み（{count}）",
+      "untitledDefault": "無題のスレッド",
+      "unarchiveTooltip": "アーカイブ解除",
+      "restoreButton": "復元"
+    },
+    "toast": {
+      "copy": {
+        "errorTitle": "コピーエラー"
+      },
+      "expandable": {
+        "showDetails": "詳細を表示",
+        "hideDetails": "詳細を非表示"
+      },
+      "dismissNotificationAria": "通知を閉じる"
+    },
+    "providerStatus": {
+      "title": "{provider} プロバイダーの状態",
+      "providerUnavailable": "{provider} プロバイダーは利用できません。",
+      "providerLimited": "{provider} プロバイダーの利用は制限されています。"
+    },
+    "ui": {
+      "dialog": {
+        "closeAria": "閉じる"
+      },
+      "modelPicker": {
+        "noModels": "利用可能なモデルはありません",
+        "newModelAria": "新しいモデル",
+        "newBadge": "NEW",
+        "pinDefault": "デフォルトモデルとしてピン留め",
+        "unpinDefault": "デフォルトモデルのピン留めを解除"
+      }
+    },
+    "markdown": {
+      "copyCode": "コードをコピー",
+      "copied": "コピーしました"
+    },
+    "approval": {
+      "cancelTurn": "ターンをキャンセル",
+      "decline": "拒否",
+      "alwaysAllowSession": "このセッション中は常に許可",
+      "approveOnce": "一度だけ承認",
+      "pendingHeading": "承認待ち",
+      "command": "コマンドの承認が必要です",
+      "fileRead": "ファイル読み取りの承認が必要です",
+      "fileChange": "ファイル変更の承認が必要です"
+    },
+    "primaryActions": {
+      "submitting": "送信中…",
+      "submit": "送信",
+      "next": "次へ",
+      "nextQuestion": "次の質問",
+      "submitAnswer": "回答を送信",
+      "submitAnswers": "回答を送信",
+      "previous": "戻る",
+      "previousQuestionAria": "前の質問",
+      "stopGenerationAria": "生成を停止",
+      "sending": "送信中…",
+      "refine": "見直す",
+      "implement": "実装する",
+      "implementInNewThread": "新しいスレッドで実装",
+      "implementationActionsAria": "実装アクション",
+      "connectingAria": "接続中",
+      "preparingWorktreeAria": "ワークツリーを準備中",
+      "sendingAria": "送信中",
+      "sendMessageAria": "メッセージを送信"
+    },
+    "queuedSend": {
+      "label": "キュー · 位置 {position} · 約 {eta}",
+      "minutes": "{count} 分",
+      "seconds": "{count} 秒"
+    },
+    "runtimeModeToggle": {
+      "groupAria": "ランタイムモード",
+      "lite": "Lite",
+      "pro": "Pro",
+      "useProTitle": "Pro Claude を使用（フルアクセス）",
+      "atCapacityTitle": "Pro スロットが満杯です。切り替えると LRU スロットが追い出されます"
+    },
+    "compactControls": {
+      "moreControlsAria": "コンポーザーの追加コントロール",
+      "modeGroupLabel": "モード",
+      "accessGroupLabel": "アクセス",
+      "chat": "チャット",
+      "plan": "プラン",
+      "supervised": "監督あり",
+      "autoAcceptEdits": "編集を自動承認",
+      "fullAccess": "フルアクセス",
+      "showPlanSidebar": "{label} サイドバーを表示",
+      "hidePlanSidebar": "{label} サイドバーを非表示"
+    },
+    "runtimeMode": {
+      "supervisedLabel": "監督あり",
+      "supervisedDescription": "コマンドとファイル変更の前に確認します。",
+      "autoAcceptEditsLabel": "編集を自動承認",
+      "autoAcceptEditsDescription": "編集は自動承認、それ以外は確認します。",
+      "fullAccessLabel": "フルアクセス",
+      "fullAccessDescription": "確認なしでコマンドと編集を許可します。",
+      "selectAria": "ランタイムモード",
+      "planModeTitle": "プランモード — クリックすると通常のビルドモードに戻ります",
+      "buildModeTitle": "デフォルトモード — クリックするとプランモードに切り替わります",
+      "planModeShort": "プラン",
+      "buildModeShort": "ビルド"
+    },
+    "composerExtended": {
+      "preparingWorktree": "ワークツリーを準備中…",
+      "draftAttachmentWarning": "下書きの添付ファイルは保持されない可能性があります",
+      "draftAttachmentTooltip": "下書きの添付ファイルをローカル保存できなかったため、移動時に失われる可能性があります。",
+      "previewImageAria": "{name} をプレビュー",
+      "removeImageAria": "{name} を削除",
+      "approvalPlaceholder": "続行するにはこの承認リクエストを解決してください",
+      "pendingAnswerPlaceholder": "自由回答を入力するか、空欄のまま選択肢を使ってください",
+      "planRefinePlaceholder": "プランを見直すフィードバックを追加するか、空欄のまま実装してください",
+      "disconnectedPlaceholder": "追加の変更を依頼するか、画像を添付してください",
+      "defaultPlaceholder": "なんでも質問できます。@ でファイルやフォルダを参照、/ で利用可能なコマンドを表示します",
+      "attachAfterPlanQuestions": "プランの質問に答えてから画像を添付してください。",
+      "unsupportedFileType": "ファイル形式 '{name}' はサポートされていません。画像ファイルのみ添付できます。",
+      "exceedsImageLimit": "'{name}' は添付制限 {limit} を超えています。",
+      "tooManyImages": "1 つのメッセージに添付できる画像は最大 {max} 枚です。",
+      "imageFallback": "image",
+      "planReady": "プラン準備完了",
+      "terminalContextExpired": "ターミナルコンテキストの有効期限が切れました。{label} をメッセージに含めるには、削除してから再追加してください。"
+    },
+    "commandMenu": {
+      "skillsLabel": "スキル",
+      "builtInLabel": "ビルトイン",
+      "providerLabel": "プロバイダー",
+      "noMatchingSkills": "スキルが見つかりません。/ でプロバイダーコマンドを参照できます。",
+      "noMatchingFiles": "一致するファイルやフォルダはありません。",
+      "noMatchingCommand": "一致するコマンドはありません。",
+      "searchingSkills": "ワークスペースのスキルを検索中…",
+      "searchingFiles": "ワークスペースのファイルを検索中…"
+    },
+    "slashCommands": {
+      "model": "/model",
+      "modelDescription": "このスレッドの応答モデルを切り替え",
+      "plan": "/plan",
+      "planDescription": "このスレッドをプランモードに切り替え",
+      "default": "/default",
+      "defaultDescription": "このスレッドを通常のビルドモードに戻す",
+      "providerCommandFallback": "プロバイダーコマンドを実行",
+      "providerSkillFallback": "プロバイダースキルを実行",
+      "skillScopeFallback": "{scope} スキル"
+    },
+    "contextWindow": {
+      "label": "コンテキストウィンドウ",
+      "usedAria": "コンテキストウィンドウは {percent} 使用中",
+      "tokensUsedAria": "コンテキストウィンドウは {tokens} トークン使用中",
+      "tokensUsedSoFar": "これまでに {tokens} トークン使用",
+      "contextUsed": "{used} / {total} コンテキスト使用",
+      "totalProcessed": "処理合計: {tokens} トークン",
+      "autoCompacts": "必要に応じてコンテキストを自動圧縮します。"
+    },
+    "traits": {
+      "variantTitle": "バリアント",
+      "effortTitle": "推論レベル",
+      "thinkingTitle": "思考",
+      "fastModeTitle": "高速モード",
+      "contextWindowTitle": "コンテキストウィンドウ",
+      "agentTitle": "エージェント",
+      "thinkingOnDefault": "オン（デフォルト）",
+      "thinkingOff": "オフ",
+      "fastModeOn": "オン",
+      "fastModeOff": "オフ",
+      "ultrathinkInBodyText": "本文に \"ultrathink\" が含まれています。推論レベルを変更するには削除してください。",
+      "defaultSuffix": "（デフォルト）",
+      "ultrathinkLabel": "Ultrathink",
+      "thinkingOnSuffix": "思考オン",
+      "thinkingOffSuffix": "思考オフ",
+      "fastLabel": "高速",
+      "normalLabel": "通常"
+    },
+    "traitsLegacy": {
+      "title": "特性",
+      "reasoningEffort": "推論レベル",
+      "fastMode": "高速モード",
+      "thinking": "思考",
+      "alwaysThink": "常に思考",
+      "variant": "バリアント",
+      "variantPlaceholder": "（デフォルト）",
+      "on": "オン",
+      "off": "オフ",
+      "default": "デフォルト",
+      "low": "低",
+      "medium": "中",
+      "high": "高",
+      "extraHigh": "超高",
+      "max": "最大",
+      "ultrathink": "Ultrathink"
+    },
+    "providerPicker": {
+      "modelTitle": "モデル",
+      "discovering": "検索中…",
+      "discoveringModels": "モデルを検索中…",
+      "noModelsConfigured": "モデルが設定されていません",
+      "recent": "最近使用",
+      "all": "すべて",
+      "model": "モデル"
+    },
+    "actionsDropdown": {
+      "actions": "アクション",
+      "destructive": "この操作は破壊的です",
+      "areYouSure": "本当によろしいですか？",
+      "cancel": "キャンセル",
+      "confirm": "確定",
+      "agentRequesting": "エージェントが {action} をリクエスト中"
+    },
+    "expandedImage": {
+      "previewAria": "拡大画像プレビュー",
+      "closeAria": "画像プレビューを閉じる",
+      "previousAria": "前の画像",
+      "nextAria": "次の画像"
+    },
+    "proposedPlan": {
+      "fallbackTitle": "提案されたプラン",
+      "planLabel": "プラン",
+      "copy": "プランをコピー",
+      "copied": "コピーしました",
+      "downloadAria": "プランをダウンロード",
+      "expand": "プランを展開",
+      "collapse": "プランを折りたたむ"
+    },
+    "messagesTimeline": {
+      "emptyStartConversation": "メッセージを送信して会話を始めてください。",
+      "revertToMessageTitle": "このメッセージまで戻る",
+      "previewImageAria": "{name} をプレビュー",
+      "responseLabel": "応答",
+      "responseWithSummary": "応答 • {summary}",
+      "workingFor": "作業中",
+      "workingFallback": "作業中…",
+      "workingZeroSeconds": "0秒",
+      "emptyResponse": "（空の応答）",
+      "toolCallsHeader": "ツール呼び出し",
+      "workLogHeader": "作業ログ",
+      "groupCount": "{label} ({count})",
+      "showLess": "折りたたむ",
+      "showMore": "さらに {count} 件表示",
+      "changedFiles": "変更されたファイル ({count})",
+      "collapseAll": "すべて折りたたむ",
+      "expandAll": "すべて展開",
+      "viewDiff": "差分を表示",
+      "sendFailed": "未送信",
+      "retryAria": "メッセージを再送信"
+    },
+    "sandbox": {
+      "switchAria": "サンドボックスを切り替え",
+      "noSandbox": "サンドボックスなし",
+      "warm": "● ウォーム",
+      "cold": "○ コールド",
+      "proSlots": " · pro ×{count}"
+    },
+    "uploading": "アップロード中…",
+    "thread": {
+      "newThreadOf": "新しい {provider} スレッド",
+      "rename": "名前を変更",
+      "delete": "削除",
+      "threadsCountTotal": "スレッド {count} 件"
+    },
+    "skillSource": {
+      "app": "アプリ",
+      "system": "システム",
+      "project": "プロジェクト",
+      "personal": "個人"
+    },
+    "agentAuth": {
+      "authRequired": "認証が必要です",
+      "authFailed": "認証に失敗しました",
+      "networkError": "ネットワークエラー"
+    },
+    "scrollToBottom": "最新のメッセージへスクロール"
+  }
+}

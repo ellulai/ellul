@@ -1,0 +1,177 @@
+## What is Claude Code MCP?
+
+Claude Code is Anthropic's coding agent. You run it in a terminal, and it has access to your files, your shell, and (through MCP) any tool you've wired into it. **Claude Code MCP** is the part of that picture that handles <Term slug="mcp">Model Context Protocol</Term>: how Claude Code finds MCP servers, how it speaks the wire protocol, and how those servers behave inside a long-running session.
+
+It's worth talking about separately because Claude Code is the reference implementation. MCP shipped from Anthropic in November 2024, and Claude Code had first-class MCP support from day one. The integration is more thorough than most clients. The agent's permission model, the tool-use logging, the resource subscription, all of it lines up with the spec rather than around it. If a feature exists in MCP, Claude Code probably uses it correctly.
+
+This page covers running Claude Code's MCP integration on an <Term slug="agent-workstation">agent workstation</Term> instead of on a laptop, why that's a different runtime, and how it interacts with Ellul's gate and secret model.
+
+## How Claude Code talks to MCP servers
+
+When Claude Code starts, it reads `~/.config/claude-code/mcp.json` for user-level servers and `<project>/.mcp.json` for project-level ones, then connects to each. The protocol is JSON-RPC; transport is stdio for local servers and SSE/HTTP for remote ones.
+
+Two Claude Code-specific behaviors matter.
+
+**Permission classification.** Claude Code wraps every MCP tool call in its permission system. Read-class operations (anything in the `resources/` namespace, plus tools the server marks side-effect-free) flow through. Write-class operations pause for approval. The permission layer sits in Claude Code, not in the MCP server. That's why Anthropic can add new MCP servers without re-evaluating the agent's safety story end-to-end.
+
+**Resource subscription.** Claude Code subscribes to MCP resource updates and feeds them into the model's context as they change. A filesystem MCP pushing "this file just changed" updates the agent's working memory without a tool round-trip. Other clients implement subscription too; Claude Code uses it more aggressively, which matters for sessions that watch a codebase for long stretches.
+
+Claude Code is opinionated about how MCP servers should behave, and most servers (especially the Anthropic-blessed ones) are tuned for it.
+
+<Callout type="note" title="The Anthropic-blessed MCP servers">
+Anthropic publishes a small set of reference MCP servers (filesystem, GitHub, Postgres, Slack, Sentry) that all follow the conventions Claude Code expects. They're the lowest-friction starting point. Third-party servers work fine; they sometimes need a little configuration to match the conventions.
+</Callout>
+
+## Step-by-step: install MCP servers in a Claude Code session on Ellul
+
+The shortest path from a fresh workstation to Claude Code calling Ellul's gate tools and a GitHub MCP server.
+
+**1. Provision the workstation.** From the Ellul console, create one and pick "Claude Code". Anthropic's CLI is preinstalled at the right version, and the workstation's authentication flows through your Anthropic account.
+
+**2. Open the MCP config.** Project-local first, since the workstation's project structure already exists:
+
+```bash
+nano <project>/.mcp.json
+```
+
+It ships with Ellul's own MCP server registered:
+
+```json
+{
+  "mcpServers": {
+    "ellul": { "command": "ellul-mcp", "args": [], "env": {} }
+  }
+}
+```
+
+The `ellul-mcp` binary exposes `ellul_exec`, `ellul_gate_request`, `ellul_gate_status`, `ellul_list_guardrails`, `ellul_env_read`, `ellul_env_import`, and `ellul_scan`. Those are the tools Claude Code uses to run commands behind gates, request approvals from you, and read the tree-sitter guardrail rules in the workspace.
+
+**3. Add a second server.** For the Anthropic-published GitHub MCP:
+
+```json
+{
+  "mcpServers": {
+    "ellul": { "command": "ellul-mcp", "args": [], "env": {} },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"]
+    }
+  }
+}
+```
+
+The PAT lives in `.ellul/secrets.db`, encrypted at rest. Import it once via the agent's `ellul_env_import` call (or via the daemon REPL); the runtime injects it as an environment variable when the GitHub server is launched through `ellul_exec`. You never paste the token into `mcp.json`.
+
+**4. Restart the Claude Code session.** Either exit and re-launch, or use `/mcp reload` from inside the session. The startup banner lists each connected server.
+
+**5. Verify.** Ask Claude Code to "list the open issues on this repo, oldest first". It calls the GitHub server's `list_issues` tool. The result streams back. You're done.
+
+<CodeTabs>
+
+**Stdio mode (server runs as a Claude Code subprocess):**
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/workspace"]
+    }
+  }
+}
+```
+
+**SSE mode (server runs as a long-lived process on the workstation):**
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "url": "http://127.0.0.1:7800/mcp",
+      "transport": "sse"
+    }
+  }
+}
+```
+
+</CodeTabs>
+
+The right choice depends on the server. Stdio is fine for short-lived local servers. SSE is the right answer when you want the server to outlive a single session, which is most of the time on a workstation.
+
+## Common patterns
+
+**Filesystem MCP**, scoped to the project's namespace. Claude Code uses it for cross-file reasoning even when its native shell access could do the same thing, because the MCP layer adds resource subscription that the shell doesn't have.
+
+**GitHub MCP** for issue triage, PR review summarization, and status checks. Read calls flow through; write calls pause for <Term slug="passkey-approval">passkey approval</Term>. Claude Code's `--dangerously-skip-permissions` flag (occasionally useful inside a hardened workstation) doesn't bypass the workstation's gate layer, so the namespace and approval boundaries still apply.
+
+**Postgres / database MCP** for read-only schemas, scoped role hierarchies, and classified per-query gates (`db_read`, `db_write`, `db_migrate`). See the [database MCP page](/mcp/database) for the full setup.
+
+**Custom Anthropic-style MCPs.** Most teams write one or two: internal docs, design system, customer-data API. The protocol is small, the SDK is well-documented, and Claude Code consumes them transparently.
+
+**Sub-agent isolation.** Claude Code can spawn sub-agents (the `Task` tool) and pass them a restricted MCP server set. Useful when the wide search wants filesystem read but the sub-task should not have write.
+
+## Security: gate-aware installs and secret handling
+
+The strongest claim about Claude Code MCP on Ellul is that long-lived secrets (your Anthropic key, your GitHub PAT, your database password) don't sit unencrypted in Claude Code's process. They live in `.ellul/secrets.db`. The daemon injects them per-call into the child processes that need them, and redacts them from output before the agent reads it.
+
+The mechanism in three steps:
+
+- The agent imports a secret once via `ellul_env_import`. The value goes through the daemon, gets encrypted with a per-project derived key, and lands in `.ellul/secrets.db`.
+- When the agent runs a command via `ellul_exec` (or launches an MCP server through it), the daemon injects the relevant secrets as environment variables in the child only.
+- Streamed stdout and stderr go through a redaction pass before the agent receives them. Even if the secret leaks into a log line, the agent doesn't see it.
+
+<Callout type="warning" title="The Anthropic API key isn't different">
+Even Claude Code's own Anthropic API key follows the same path. A compromised Claude Code process can't dump its `process.env` to find the key, because the key isn't there. The daemon's exec layer brokers it into the network call. That's the piece a laptop runtime can't match.
+</Callout>
+
+For installs, every new MCP server entry in `mcp.json` triggers a passkey approval before the runtime launches the server. The agent can edit its own configuration file (it has filesystem access), but the runtime gates the actual launch on your tap. That blocks the "agent installs an attacker-controlled server" path.
+
+## What the workstation runtime adds
+
+Two things change when Claude Code MCP runs on Ellul rather than a laptop.
+
+**Servers persist.** SSE-mode MCP servers stay running between sessions. A Postgres MCP with a warm connection pool. A GitHub MCP with cached rate-limit state. A custom internal MCP with whatever long-lived resource it manages. Closing your terminal doesn't restart them.
+
+**Servers are namespace-isolated.** Every MCP server runs inside the project namespace (mount, PID, network). Project A's session can't see project B's MCP servers, even if both are on the same workstation under the same system user. The boundary is in the kernel, not in Claude Code.
+
+The combination lets you run Claude Code on multiple projects on one workstation, each with its own MCP server set, each fully isolated. The agent's tools are sticky; the agent's reach is bounded.
+
+## FAQ
+
+### Why is Claude Code's MCP support called out specifically?
+
+Claude Code is Anthropic's reference implementation of an MCP client; the integration is unusually polished. On Ellul, the workstation's persistent runtime gives Claude Code's MCP layer a natural home. Servers don't restart, and sessions don't lose context.
+
+### Does Claude Code work with non-Anthropic MCP servers?
+
+Yes. The protocol is open and Claude Code follows the spec. Any MCP-compliant server works. The Anthropic-blessed servers are the lowest-friction starting point because they follow the conventions Claude Code's permission classification expects.
+
+### Can I run multiple MCP servers at once?
+
+Yes. Claude Code reads N entries from `mcp.json` and connects to each in parallel. The model sees the union of their tools.
+
+### Does `/mcp reload` work without restarting Claude Code?
+
+Yes. The session reconnects to the listed servers. Long-lived state on SSE servers is preserved.
+
+### How do I install an MCP server safely?
+
+Add the entry to `<project>/.mcp.json`, import any secrets via `ellul_env_import` rather than pasting them into the file, and approve the new server when the workstation prompts you. The runtime won't launch the server until you tap.
+
+## Where to go next
+
+- [MCP setup on Ellul](/mcp/setup) for the end-to-end walkthrough
+- [GitHub MCP](/mcp/github) for the most common first server
+- [Database MCP](/mcp/database) for Postgres with classified gates
+- [Playwright MCP](/mcp/playwright) for long-running browser automation
+- [Claude Code on Ellul](/agents/claude-code) for agent-side capabilities and limits
+- [The MCP hub](/mcp) for what MCP is in one page
+
+## References
+
+- [Model Context Protocol specification](https://spec.modelcontextprotocol.io)
+- [Anthropic: Introducing MCP](https://www.anthropic.com/news/model-context-protocol)
+- [Anthropic: Claude Code MCP documentation](https://docs.anthropic.com/en/docs/claude-code/mcp)
+- [Anthropic-published MCP servers](https://github.com/modelcontextprotocol/servers)
+
+<FAQ />

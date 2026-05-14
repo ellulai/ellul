@@ -1,0 +1,26 @@
+{
+  "nav": {
+    "product": {
+      "autonomy": "自律",
+      "composition": "連携",
+      "howItWorks": "仕組み",
+      "pricing": "料金",
+      "docs": "ドキュメント"
+    },
+    "resources": {
+      "label": "リソース",
+      "blog": "ブログ",
+      "comparisons": "比較",
+      "concepts": "コンセプト",
+      "solutions": "ソリューション",
+      "glossary": "用語集"
+    },
+    "mobile": {
+      "toggleMenu": "メニューを開閉",
+      "home": "ホーム",
+      "privacy": "プライバシー",
+      "terms": "利用規約",
+      "safety": "安全性"
+    }
+  }
+}

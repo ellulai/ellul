@@ -1,0 +1,11 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "signingIn": "Signing in…",
+    "notFound": {
+      "title": "Page not found.",
+      "backHome": "Back to Home",
+      "docs": "Docs"
+    }
+  }
+}

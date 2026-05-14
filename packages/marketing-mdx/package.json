@@ -1,0 +1,42 @@
+{
+  "name": "@ellul.ai/marketing-mdx",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/index.tsx",
+      "types": "./src/index.tsx"
+    },
+    "./Callout": {
+      "import": "./src/Callout.tsx",
+      "types": "./src/Callout.tsx"
+    },
+    "./CodeTabs": {
+      "import": "./src/CodeTabs.tsx",
+      "types": "./src/CodeTabs.tsx"
+    },
+    "./Image": {
+      "import": "./src/Image.tsx",
+      "types": "./src/Image.tsx"
+    },
+    "./PricingTable": {
+      "import": "./src/PricingTable.tsx",
+      "types": "./src/PricingTable.tsx"
+    },
+    "./FAQ": {
+      "import": "./src/FAQ.tsx",
+      "types": "./src/FAQ.tsx"
+    }
+  },
+  "scripts": {},
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@ellul.ai/ts-config": "workspace:*",
+    "@types/react": "^19.0.2",
+    "typescript": "^5.7.2"
+  }
+}

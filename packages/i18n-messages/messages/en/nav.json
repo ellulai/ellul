@@ -1,0 +1,26 @@
+{
+  "nav": {
+    "product": {
+      "autonomy": "Autonomy",
+      "composition": "Composition",
+      "howItWorks": "How It Works",
+      "pricing": "Pricing",
+      "docs": "Docs"
+    },
+    "resources": {
+      "label": "Resources",
+      "blog": "Blog",
+      "comparisons": "Comparisons",
+      "concepts": "Concepts",
+      "solutions": "Solutions",
+      "glossary": "Glossary"
+    },
+    "mobile": {
+      "toggleMenu": "Toggle menu",
+      "home": "Home",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "safety": "Safety"
+    }
+  }
+}

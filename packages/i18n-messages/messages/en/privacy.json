@@ -1,0 +1,108 @@
+{
+  "privacy": {
+    "meta": {
+      "title": "Privacy Policy | ellul",
+      "description": "Privacy Policy for ellul and ZeroClaw. Learn how we handle your data."
+    },
+    "header": {
+      "title": "Privacy Policy",
+      "effectiveLine": "Effective date: 16 February 2025 · Last updated: 16 February 2025",
+      "intro": "Ellul AI (“we”, “us”, “our”) operates the ellul website, the ellul cloud platform, and the ZeroClaw mobile application (collectively, the “Services”). This Privacy Policy explains what information we collect, how we use it, and the choices you have."
+    },
+    "collected": {
+      "heading": "1. Information We Collect",
+      "account": {
+        "title": "Account Information",
+        "body": "When you create an account, we collect your name, email address, and authentication credentials provided through third-party sign-in providers (such as GitHub or Google). We do not store passwords directly."
+      },
+      "usage": {
+        "title": "Usage Data",
+        "body": "We collect basic usage telemetry to operate and improve the Services, including server provisioning events, session duration, feature usage, and error logs. This data is associated with your account but does not include the content of your code or terminal sessions."
+      },
+      "device": {
+        "title": "Device Information",
+        "body": "When you use the ZeroClaw mobile application, we may collect device type, operating system version, and application version for diagnostics and compatibility purposes."
+      },
+      "payment": {
+        "title": "Payment Information",
+        "body": "Payment processing is handled entirely by our third-party payment processor (Stripe). We do not store credit card numbers or bank account details on our servers. We receive only a transaction reference and subscription status."
+      }
+    },
+    "notCollected": {
+      "heading": "2. Information We Do Not Collect",
+      "items": {
+        "apiKeys": {
+          "label": "API Keys",
+          "desc": "Your API keys for third-party services (such as Anthropic, OpenAI, or OpenRouter) are stored locally on your device or within your provisioned server. They are never transmitted to or stored on ellul infrastructure."
+        },
+        "code": {
+          "label": "Code & Files",
+          "desc": "The content of your source code, files, and terminal sessions lives on your provisioned server. We do not access, read, or analyse your code."
+        },
+        "crypto": {
+          "label": "Cryptographic Keys",
+          "desc": "Sovereign key pairs are generated on your device. Only the public key is transmitted to our servers for authentication purposes. We never have access to your private key."
+        }
+      }
+    },
+    "howUsed": {
+      "heading": "3. How We Use Your Information",
+      "items": {
+        "provision": "To provision, operate, and maintain your cloud development environment.",
+        "auth": "To authenticate your identity and secure access to your account.",
+        "billing": "To process payments and manage subscriptions.",
+        "transactional": "To send transactional communications (e.g., account verification, billing receipts, security alerts).",
+        "diagnose": "To diagnose technical issues and improve reliability.",
+        "legal": "To comply with legal obligations."
+      }
+    },
+    "thirdParty": {
+      "heading": "4. Third-Party Services",
+      "intro": "The Services integrate with third-party providers you actively choose to use. When you elect one of these integrations, your interactions with the provider are governed by the provider’s own privacy policy:",
+      "services": {
+        "anthropic": { "name": "Anthropic", "purpose": "AI model provider (Claude)" },
+        "openai": { "name": "OpenAI", "purpose": "AI model provider" },
+        "openrouter": { "name": "OpenRouter", "purpose": "AI model routing" },
+        "github": { "name": "GitHub", "purpose": "Authentication & Git hosting" },
+        "google": { "name": "Google", "purpose": "Authentication" }
+      },
+      "subprocessorsHeading": "Operational subprocessors",
+      "subprocessorsIntro": "We engage a vetted set of operational subprocessors to deliver the Services. By category these include:",
+      "subprocessors": {
+        "payment": "Payment processing",
+        "cloud": "Cloud infrastructure (EU-based VPS provider; fallback providers as needed for capacity)",
+        "cdn": "CDN, DNS, and edge networking",
+        "support": "Customer support and email delivery"
+      },
+      "requestList": "A current list of named subprocessors is available on request. To request the list, write to <email>legal@ellul.ai</email>. We will provide reasonable advance notice of material changes to the subprocessor list.",
+      "noSell": "We do not sell, rent, or share your personal information with third parties for their marketing purposes."
+    },
+    "storage": {
+      "heading": "5. Data Storage & Security",
+      "body1": "Account data is stored on infrastructure within the European Union. Your provisioned servers are hosted in EU regions by default; if EU capacity is unavailable, we fall back to the closest available region automatically. We use industry-standard security measures including TLS encryption in transit, encrypted volumes at rest, and least-privilege access controls.",
+      "body2": "While we take every reasonable precaution to protect your data, no method of electronic transmission or storage is 100% secure. We cannot guarantee absolute security."
+    },
+    "retention": {
+      "heading": "6. Data Retention",
+      "body": "We retain your account information for as long as your account is active. When you delete your account, we remove your personal data within 30 days, except where retention is required by law or to resolve disputes. Server volumes and associated data are destroyed when a server is terminated."
+    },
+    "children": {
+      "heading": "7. Children’s Privacy",
+      "body": "The Services are not directed at children under the age of 13. We do not knowingly collect personal information from children under 13. If you believe a child under 13 has provided us with personal information, please contact us and we will take steps to delete that information promptly."
+    },
+    "rights": {
+      "heading": "8. Your Rights",
+      "body": "Depending on your jurisdiction, you may have the right to access, correct, delete, or port your personal data, as well as the right to restrict or object to certain processing. To exercise any of these rights, please contact us at <email>legal@ellul.ai</email>. We will respond within 30 days."
+    },
+    "changes": {
+      "heading": "9. Changes to This Policy",
+      "body": "We may update this Privacy Policy from time to time. When we do, we will revise the “Last updated” date at the top of this page. For material changes, we will notify you by email or through a prominent notice within the Services."
+    },
+    "contact": {
+      "heading": "10. Contact Us",
+      "body": "If you have questions about this Privacy Policy or our data practices, please contact us at <email>legal@ellul.ai</email>."
+    },
+    "backLink": "← Back to ellul",
+    "referenceDisclaimer": ""
+  }
+}

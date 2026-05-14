@@ -1,0 +1,16 @@
+{
+  "vpsShell": {
+    "motd": {
+      "tagline": "マルチアプリ AI ワークベンチ",
+      "deployedHeader": "デプロイ済みアプリ:",
+      "noAppsHint": "アプリはまだありません。デプロイ: ellul-expose <name> <port>",
+      "aiHeader": "AI:",
+      "toolsInstalling": "ツールをインストール中...",
+      "cmdsHeader": "コマンド:"
+    },
+    "unauthorizedPage": {
+      "body": "このサーバーは個人で管理されています。<br>サインアップして自分専用のクラウド開発環境を手に入れましょう。",
+      "cta": "はじめる"
+    }
+  }
+}

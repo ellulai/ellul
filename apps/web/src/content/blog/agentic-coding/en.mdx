@@ -1,0 +1,129 @@
+Agentic coding is the practice of letting an AI agent drive a multi-step engineering task end to end. Planning, file edits, terminal commands, test runs, revisions. The human approves privileged actions and steers high-level direction. The work product is a diff, a PR, or a deployed change, produced by a loop that ran for minutes to days.
+
+That is the working definition. It is short on purpose. The longer your definition, the more rope you give vendors to claim properties they haven't built.
+
+## Why "agentic" needs a defensible definition
+
+Three years into the agent boom, the word does not mean what its proponents think it means. We've watched it slide from a precise technical claim into a marketing modifier. "Agentic" now appears in product copy for tools that ship a single chat panel. The result is that a senior engineer evaluating two products called "agentic coding tools" has no idea whether either of them survives a lid close. There is no shared vocabulary, so the conversation devolves into demos and screenshots.
+
+This essay is an attempt to put the rope back. The goal isn't gatekeeping; it's utility. If we agree on what agentic coding actually is, we can have honest conversations about which tools meet the bar and which don't.
+
+## The spectrum: chat to pair to autonomous
+
+The work has been migrating along a spectrum. Different teams sit at different points. None of these are wrong; they are different products solving overlapping problems.
+
+<NumberedList>
+  <NumberedItem heading="Inline completion">
+    The agent suggests one to a few tokens of code as you type. You accept or reject with a tab. Surface area: cursor position. Time horizon: under a second. Examples: Copilot's original product, Cursor's tab-completion. Productive but not agentic.
+  </NumberedItem>
+  <NumberedItem heading="Chat-assisted coding">
+    The agent answers a question or writes a snippet in a chat panel. You copy-paste or apply a patch. Surface area: a sidebar. Time horizon: seconds to minutes. Examples: ChatGPT's coding mode, Cursor's chat tab. Closer to agentic, still not the loop.
+  </NumberedItem>
+  <NumberedItem heading="Pair programming">
+    The agent makes inline edits across multiple files based on a high-level prompt, runs tests, and shows you a diff. You approve or revise. Surface area: the editor. Time horizon: a few minutes to half an hour. Examples: Cursor's Composer, Claude Code's inline mode, OpenCode in interactive mode. This is the line where "agentic" starts to apply.
+  </NumberedItem>
+  <NumberedItem heading="Autonomous agent">
+    The agent takes a goal ("fix this bug," "upgrade these dependencies," "implement the spec in this design doc") and runs an open-ended loop until it reaches a stopping condition. It edits, runs tests, observes failures, plans corrections, calls external tools, opens PRs. Surface area: the project. Time horizon: hours to days. Examples: Claude Code in headless mode, Devin, OpenCode running unattended. Fully agentic.
+  </NumberedItem>
+</NumberedList>
+
+A given product can sit at multiple points. <Comparison slug="cursor">Cursor</Comparison> is unmatched at inline completion and pair programming. It can run autonomous tasks but the laptop runtime fights it. <Agent slug="claude-code">Claude Code</Agent> is built for the autonomous end and works as a pair programmer but doesn't ship inline completion. Devin is autonomous-only by design.
+
+The trap is treating these as substitutable. They aren't. A team that needs autonomous loops can't buy inline completion and call it agentic. A team that wants inline completion won't be served by a product built for unattended runs. The honest question is which point on the spectrum your work demands.
+
+## The four runtime properties that define real agentic coding
+
+A product can market itself as agentic and only deliver one or two of these. We've stopped counting how many demos we've seen with a heroic chat panel that crumbles the first time you ask it to do work that takes longer than the demo.
+
+### 1. Persistence
+
+The agent's loop survives the things that interrupt a developer's session: laptop sleep, network changes, restart, context window saturation. Concretely, if you start a four-hour run and close your laptop after fifteen minutes, the agent should still be making progress at hour three.
+
+Persistence is the property most tools fail at first. Anything running on the developer's machine inherits the machine's lifecycle. The fix is moving the agent off the laptop and onto a place built to host it: a server, a cloud workspace, an [agent workstation](/concepts/agent-workstation). The agent's loop becomes a server-side process, not a foreground GUI app.
+
+### 2. Parallelism
+
+You can run multiple agents on different tasks at the same time, and they don't step on each other's state. Concretely, agent A is refactoring the auth module on branch X, agent B is reviewing agent A's branch from a peering snapshot, agent C is drafting docs from the same source. Three agents simultaneously, none corrupting the others' working directories.
+
+Parallelism is structurally hard on a laptop. Two agents share a file system, share ports, share package managers, share credentials. The first time both of them try to `npm install` against the same `node_modules`, the loop dies. The fix is per-agent isolation: each agent in its own filesystem, its own process tree, its own network. Read-only [parallel-agent peering](/concepts/parallel-agents) lets a reviewing agent see the coder's files without the coder's permissions, which is what makes the multi-agent pattern useful instead of dangerous.
+
+### 3. Real-credential operations
+
+The agent can push to production, deploy a service, write to a real database, read a real secret. But the action is gated. Concretely, the agent decides what to attempt, and the credential never enters the agent's process. A separate broker holds the secret, and a passkey approval is required before the action proceeds.
+
+This is the property most security models fail at. The naive answer is "run the agent in a Docker container with read-only credentials," which makes the agent useful for half a day and then someone needs it to actually deploy. The mature answer is to keep the credentials outside the agent's process and broker every privileged action. We've written about how this works in [zero-knowledge BYOK](/blog/zero-knowledge-byok) and the [Sovereign Shield](/glossary/sovereign-shield) glossary entry.
+
+### 4. Reversible boundary
+
+The agent's actions are scoped tightly enough that you can review, approve, or revert each one without losing state. Every privileged action shows up in an audit log. Every approval has a timestamp and a device. The agent's environment is a snapshot you can roll forward or backward.
+
+Reversibility is what makes agentic coding survive the inevitable bad day. The agent will at some point run a command you didn't expect. Your protection is not that the agent is perfectly aligned. Alignment is improving but isn't the bar. Your protection is that the action passed through a gate you control, and that you can see exactly what happened and undo it.
+
+A product that ships any of these is doing some agentic work. A product that ships all four is doing the real thing. Most vendors ship two and a half.
+
+## Where current tools sit
+
+A quick honest map of the late-2026 landscape, mapping each product onto the four properties.
+
+<BulletList>
+  <BulletItem heading="Claude Code">
+    Strong on persistence (when run on a server), strong on real-credential operations (with permission prompts inside the agent process, which is better than nothing and weaker than out-of-process gating), moderate on parallelism (you can run multiple sessions, but they fight on a laptop), moderate on reversibility (good audit, weak rollback). On its own, in [a workstation runtime](/agents/claude-code), gets all four.
+  </BulletItem>
+  <BulletItem heading="Cursor">
+    Excellent at inline completion and pair programming. The agent panel runs an autonomous loop but the laptop runtime undermines persistence, parallelism, and real-credential operations. Cursor on a workstation gets dramatically better. Cursor on a laptop is unmatched for the editor but isn't built for the autonomous end of the spectrum. See [our /vs/cursor head-to-head](/vs/cursor).
+  </BulletItem>
+  <BulletItem heading="Devin">
+    Built for autonomous from the start. Strong on persistence (server-side by design), weak on parallelism (one session per workspace), interesting on credentials (its own broker, your trust). The product makes hard tradeoffs in the autonomous direction. See [our /vs/devin comparison](/vs/devin) for the details.
+  </BulletItem>
+  <BulletItem heading="OpenCode and Codex">
+    Both ship as CLIs that can be embedded in any runtime. They inherit the runtime's properties. On a laptop: limited. On a workstation: most of the four. The CLI shape lets them compose with the rest of your toolchain in ways the all-in-one products don't.
+  </BulletItem>
+  <BulletItem heading="Vibe-tier tools (Lovable, Bolt, Base44, Replit Agent)">
+    Closer to "AI builds an app for you" than "agent does engineering work in your codebase." Cloud-side runtime so persistence is fine, but parallelism, real-credential operations, and reversibility are designed for prototypes, not production. Useful for the right shape of work; not the same product as agentic coding for engineers. See [our /vs/lovable](/vs/lovable), [/vs/bolt](/vs/bolt), [/vs/replit](/vs/replit), and [/vs/base44](/vs/base44).
+  </BulletItem>
+</BulletList>
+
+The clearest pattern: the model is no longer the bottleneck. The runtime is. Two products with the same model produce dramatically different work depending on whether the runtime affords the four properties. For a practical walkthrough of what changes when you move the agent off the laptop, see <Solution slug="run-claude-code-in-cloud">running Claude Code in the cloud</Solution>.
+
+## Why the workstation matters
+
+If the four properties are functions of the runtime, the runtime is where engineering teams should focus. The workstation pattern (a persistent computer that exists for the agent to live on) is one path. We obviously believe in it. There are other paths: ephemeral cloud sandboxes that hibernate, dedicated agent VMs per repo, hosted-agent products that own the runtime end to end. They share the property of moving the agent off the developer's laptop.
+
+What does not work is keeping the agent on the laptop and bolting on agentic features. The laptop is where every one of the four properties hits its ceiling. The marginal cost of an additional agent on a laptop is high. On a workstation, it's essentially free.
+
+For a longer treatment of the workstation idea, our [agent-workstation pillar](/concepts/agent-workstation) lays out the case in detail. The short version: the laptop fights you. A workstation is for the agent to fight with instead.
+
+## The 2026 maturity bar
+
+Twelve months ago, "agentic" meant "the agent edits more than one file." Today, after watching enough teams adopt and abandon and re-adopt these tools, we'd argue the bar should be:
+
+Persistence, where the agent's loop survives a closed laptop. Parallelism, where you can run more than one without state collisions. Real-credential operations, where the agent can do real work, gated by something the agent can't bypass. Reversible boundary, where every action is auditable and revertable.
+
+A tool that meets all four is delivering on the promise. A tool that meets two is useful for a workflow you've designed around its limits. A tool that meets none is a chat panel.
+
+When you next evaluate an "agentic coding" tool, run the four-property test. The marketing answer will tell you the pitch. The runtime answer will tell you whether you can actually use it for the work that matters.
+
+---
+
+## FAQ
+
+<Faq />
+
+---
+
+## References
+
+- Anthropic, "Building effective agents," [anthropic.com/research](https://www.anthropic.com/research)
+- Karpathy, *Software 2.0* and 2025 follow-ups on agentic loops, [karpathy.medium.com](https://karpathy.medium.com/)
+- Stanford HAI, *Foundation Model Transparency Index* (2025), [crfm.stanford.edu/fmti](https://crfm.stanford.edu/fmti/)
+- Cognition, *autonomous engineering benchmarks*, [cognition.ai](https://www.cognition.ai/)
+
+<Cta
+  eyebrow="Run all four properties"
+  body="Ellul gives every agent (Claude Code, Codex, OpenCode, Cursor's CLI) its own persistent workstation, parallel-capable, with passkey-gated real-credential operations and full audit. $20/month Hobby, $50/month Pro."
+  primary={{ href: "https://console.ellul.ai/sign-up", label: "Get a workstation" }}
+  links={[
+    { href: "/concepts/agent-workstation", label: "Workstation concept →" },
+    { href: "/blog/agentic-workflow", label: "Designing agentic workflows →" },
+  ]}
+/>

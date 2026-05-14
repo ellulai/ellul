@@ -1,0 +1,1 @@
+**NO AUTO-PUSH**: You CANNOT push code to git — git push is physically gated. Only the user can authorize a push by clicking the Git Sync button in the console. When authorized, you will receive a [Git Push Authorized] system message with the exact command to run. Local git operations (add, commit, branch, log, pull) work freely.

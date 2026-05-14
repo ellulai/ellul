@@ -1,0 +1,55 @@
+{
+  "useCases": {
+    "cursor-remote-agents": {
+      "title": "Cursor remote agents: keep the editor, move the agent",
+      "description": "Cursor's editor is the strongest in its category. The agent panel ties it to your laptop. Run Cursor's CLI on an Ellul workstation so the agent survives the lid closing, without giving up the editor.",
+      "hero": {
+        "eyebrow": "Solution · Cursor + remote agent",
+        "headline": "Keep your editor. Move the agent.",
+        "sub": "Cursor on your laptop is unbeatable for in-the-editor work. Cursor's CLI on an Ellul workstation gives you the same agent without the lid problem. They compose; you don't have to choose."
+      },
+      "cta": { "label": "Start a workstation" },
+      "faq": {
+        "give-up-cursor": { "q": "Do I have to give up Cursor on my laptop?", "a": "No. Cursor stays where it is for inline completions, command-K, and codebase indexing. Cursor's CLI on Ellul handles unattended runs and parallel agents. They compose." },
+        "agent-panel-vs-workstation": { "q": "Will Cursor's agent panel work against an Ellul workstation?", "a": "The agent panel is local-first. Cursor's CLI works against any environment. Ellul provisions a workstation, you point the CLI at it, and the agent runs there." },
+        "vs-ssh": { "q": "Is this just SSH to a server?", "a": "No. Ellul ships passkey-gated privileged actions, server-side credential vault, per-agent sandboxes, and read-only peering between agents. The workstation is opinionated for agent work, not generic Linux." },
+        "codebase-context": { "q": "What about my codebase context?", "a": "Each Ellul workstation persists across sessions: your repo, your installed packages, your in-progress branches. You don't re-clone every time you start a session." },
+        "already-paying-cursor": { "q": "Pricing if I'm already paying for Cursor?", "a": "Cursor stays on your laptop ($20/mo). Add an Ellul workstation ($20 to $50/mo) for unattended work. Most senior engineers we talk to pay for both. They pay for different things." }
+      }
+    },
+    "overnight-refactors": {
+      "title": "Overnight refactors: let the agent work while you sleep",
+      "description": "Codebase-wide refactors, dependency upgrades, framework migrations. The kind of work that takes eight hours of agent time and one minute of your morning. Run them on Ellul instead of your laptop.",
+      "hero": {
+        "eyebrow": "Solution · Overnight unattended runs",
+        "headline": "The agent works through the night.",
+        "sub": "Long refactors and migrations stop being painful when you're not the one staying up. Kick off the run before bed; review the PR with your morning coffee."
+      },
+      "cta": { "label": "Run an agent overnight" },
+      "faq": {
+        "single-run-duration": { "q": "How long can a single agent run go?", "a": "Hours. Days, in principle. Ellul workstations are persistent and don't time out at 24 hours like ephemeral sandboxes do. The actual limit is the agent's own context budget and the size of the work." },
+        "agent-failure": { "q": "What if the agent fails halfway through?", "a": "The workstation persists. The agent's branch, its scratch files, its context: all of it stays. You can re-attach in the morning, see what happened, and either resume or restart." },
+        "api-token-cost": { "q": "Will it cost me a fortune in API tokens?", "a": "BYOK: you bring your own Anthropic / OpenAI / Google key. Your token budget is yours. Ellul charges only for the workstation ($20/mo Hobby, $50/mo Pro)." },
+        "open-and-merge-pr": { "q": "Can the agent open the PR and merge it?", "a": "Yes for opening the PR. Merging (and any other privileged action) pauses on the passkey gate. The agent literally cannot merge until you tap. That's the point of the gate." },
+        "vs-ci": { "q": "How is this different from running it in CI?", "a": "CI is for tasks you can fully specify. Refactors with thousands of small judgment calls don't fit that shape. The agent does the judging; the gate enforces the boundaries." }
+      }
+    },
+    "run-claude-code-in-cloud": {
+      "title": "Run Claude Code in the cloud, without ops or YAML",
+      "description": "Move your Claude Code session from your laptop onto a workstation that doesn't sleep. Bring your Claude Pro/Max key, get a sandbox in 5 minutes, gate every push behind a passkey.",
+      "hero": {
+        "eyebrow": "Solution · Claude Code in the cloud",
+        "headline": "Claude Code where the lid never closes.",
+        "sub": "Anthropic's agent on a server-side workstation that survives the lid, the WiFi, and the eight-hour refactor. Bring your own Claude Pro or Max. Ellul charges only for the workstation."
+      },
+      "cta": { "label": "Get a workstation" },
+      "faq": {
+        "claude-subscription-included": { "q": "Does Ellul include a Claude subscription?", "a": "No. Ellul is BYOK (bring your own key). Use your existing Claude Pro or Claude Max subscription. Ellul charges only for the workstation: $20/mo Hobby or $50/mo Pro." },
+        "works-after-laptop-close": { "q": "Will Claude Code keep working when I close my laptop?", "a": "Yes. The agent runs on a persistent workstation; your laptop is just a thin client. Close it, walk away, come back in eight hours and read the agent's output." },
+        "agent-reads-api-key": { "q": "Can the agent read my Anthropic API key?", "a": "No. The key sits in a server-side vault and is brokered into the agent process for the duration of a single tool call. The agent process never sees the key file directly." },
+        "mcp-servers": { "q": "What about MCP servers?", "a": "Ellul runs MCP servers either inside the workstation (the way you'd run them locally) or as long-lived server-side processes outside the agent's namespace. Both are gated." },
+        "vs-remote-control": { "q": "How is this different from Anthropic's Remote Control feature?", "a": "Remote Control sends messages from another device into a Claude Code session that still lives on your laptop. The session itself stops when the laptop sleeps. Ellul moves the session onto a server that doesn't sleep." }
+      }
+    }
+  }
+}

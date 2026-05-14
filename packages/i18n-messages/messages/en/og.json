@@ -1,0 +1,121 @@
+{
+  "og": {
+    "agents": {
+      "title": "Agents.",
+      "highlight": "Bring your own.",
+      "eyebrow": "Agents · Ellul",
+      "subtitle": "Claude Code, Codex, Cursor, OpenCode, on a workstation that doesn't sleep.",
+      "alt": "ellul agents. Bring your own."
+    },
+    "blog": {
+      "title": "The blog.",
+      "highlight": "Field notes.",
+      "eyebrow": "Engineering · Ellul",
+      "subtitle": "Founder voice on agents, workstations, and the laptop problem.",
+      "alt": "ellul blog: agents, workstations, and the laptop problem"
+    },
+    "blogTag": {
+      "eyebrow": "Tag · Ellul Blog",
+      "subtitleTemplate": "All posts tagged \"{label}\". Agents, workstations, the laptop problem.",
+      "alt": "ellul blog tag"
+    },
+    "concepts": {
+      "title": "Concepts.",
+      "highlight": "The category.",
+      "eyebrow": "Cornerstones · Ellul",
+      "subtitle": "Agent workstation, always-on AI agent, parallel agents: the structural primitives.",
+      "alt": "ellul concepts: agent workstation, always-on, parallel"
+    },
+    "docs": {
+      "title": "Documentation.",
+      "eyebrow": "Docs · Ellul",
+      "subtitle": "Mission, getting started, use cases, and security capabilities.",
+      "alt": "ellul documentation"
+    },
+    "faq": {
+      "title": "Questions,",
+      "highlight": "answered.",
+      "eyebrow": "FAQ · Ellul",
+      "subtitle": "What an agent workstation is, how passkey gating works, parallel agents.",
+      "alt": "ellul FAQ"
+    },
+    "glossary": {
+      "title": "Glossary.",
+      "highlight": "Definitions.",
+      "eyebrow": "Reference · Ellul",
+      "subtitle": "Agent workstation, sovereign shield, passkey approval, parallel agents, MCP: citation-friendly definitions.",
+      "alt": "ellul glossary: terms, synonyms, definitions"
+    },
+    "mcp": {
+      "title": "MCP.",
+      "highlight": "On a workstation.",
+      "eyebrow": "MCP · Ellul",
+      "subtitle": "GitHub, Database, Playwright, and more. Model Context Protocol with credential brokering.",
+      "alt": "ellul MCP: Model Context Protocol"
+    },
+    "pricing": {
+      "title": "Pricing.",
+      "highlight": "$20 or $50.",
+      "eyebrow": "Plans · Ellul",
+      "subtitle": "Hobby for side projects. Pro for parallel sandboxes. Both always on.",
+      "alt": "ellul pricing: Hobby and Pro plans"
+    },
+    "privacy": {
+      "title": "Privacy",
+      "highlight": "policy.",
+      "eyebrow": "Legal · Ellul",
+      "subtitle": "How we handle your data.",
+      "alt": "ellul privacy policy"
+    },
+    "promptEngineering": {
+      "title": "Prompts.",
+      "highlight": "Direction, not dictation.",
+      "eyebrow": "Reference · Ellul",
+      "subtitle": "Patterns for prompting AI coding agents on a persistent workstation. Direction, stop conditions, parallel seams.",
+      "alt": "ellul prompt engineering"
+    },
+    "solutions": {
+      "title": "Solutions.",
+      "highlight": "Agent workstations.",
+      "eyebrow": "Solutions · Ellul",
+      "subtitle": "How teams ship overnight runs, parallel agents, and gated infrastructure on Ellul.",
+      "alt": "ellul solutions"
+    },
+    "terms": {
+      "title": "Terms",
+      "highlight": "of service.",
+      "eyebrow": "Legal · Ellul",
+      "subtitle": "Read before using the platform.",
+      "alt": "ellul terms of service"
+    },
+    "vs": {
+      "title": "Compare.",
+      "highlight": "Move the agent.",
+      "eyebrow": "Comparisons · Ellul",
+      "subtitle": "Side-by-side breakdowns vs Cursor, Claude Code, Codespaces, Sprites, E2B, Daytona.",
+      "alt": "ellul comparisons"
+    },
+    "vsDetail": {
+      "highlight": "ellul",
+      "eyebrow": "Comparison · ellul",
+      "subtitleFallback": "Move your agent off your laptop."
+    },
+    "solutionsDetail": {
+      "titleFallback": "ellul",
+      "eyebrowFallback": "Solution · ellul",
+      "subtitleFallback": "Move your agent off your laptop."
+    },
+    "agentsDetail": {
+      "titleFallback": "Agent",
+      "highlight": "on Ellul",
+      "eyebrowFallback": "Agent · Ellul",
+      "subtitleFallback": "AI coding agent on a persistent workstation."
+    },
+    "mcpDetail": {
+      "titleFallback": "MCP",
+      "highlight": "on Ellul",
+      "eyebrowFallback": "MCP · Ellul",
+      "subtitleFallback": "Model Context Protocol entry on Ellul."
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "extends": "@ellul.ai/ts-config/base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "declaration": true,
+    "declarationMap": true,
+    "paths": {
+      "@vps/shared/*": ["./src/services/shared/*"],
+      "@vps/version": ["./src/version"],
+      "@vps/configs": ["./src/configs/index.ts"],
+      "@vps/configs/*": ["./src/configs/*"],
+      "@vps/services/*": ["./src/services/*"],
+      "@vps/shell/*": ["./src/shell/*"],
+      "@vps/templates/*": ["./src/templates/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/vendor/**/*.js",
+    "src/**/*.test.ts",
+    // Scaffold-template trees are user-app source — they ship as
+    // data (via tree-manifest.generated.ts) and must not be type-
+    // checked against the vps package's own tsconfig/deps. Each
+    // tree carries its own tsconfig + node_modules post-hydrate.
+    "src/templates/scaffold/trees/**"
+  ]
+}

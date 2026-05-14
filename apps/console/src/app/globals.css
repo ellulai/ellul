@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Sodium-lit night palette */
+    --background: 240 14% 5%;           /* #0B0B0F ink */
+    --foreground: 36 37% 93%;           /* #F5EFE6 cream */
+    --card: 240 14% 9%;                 /* #13131A ink-1 */
+    --card-foreground: 36 37% 93%;
+    --popover: 240 14% 9%;
+    --popover-foreground: 36 37% 93%;
+
+    /* Sodium amber — the single accent */
+    --primary: 29 83% 65%;              /* #F0A65A sodium */
+    --primary-foreground: 240 14% 5%;   /* ink on sodium */
+    --secondary: 240 10% 12%;
+    --secondary-foreground: 36 37% 93%;
+    --muted: 240 10% 10%;
+    --muted-foreground: 36 20% 65%;
+    --accent: 29 83% 65%;
+    --accent-foreground: 240 14% 5%;
+    --destructive: 10 70% 65%;          /* #E5806B terra */
+    --destructive-foreground: 240 14% 5%;
+    --border: 36 20% 14%;               /* hairline on cream */
+    --input: 240 10% 12%;
+    --ring: 29 83% 65%;
+    --radius: 0.75rem;
+
+    /* Glow */
+    --glow: 29 83% 65%;
+    --glow-muted: 29 50% 45%;
+  }
+
+  .dark {
+    --background: 240 14% 5%;
+    --foreground: 36 37% 93%;
+    --card: 240 14% 9%;
+    --card-foreground: 36 37% 93%;
+    --popover: 240 14% 9%;
+    --popover-foreground: 36 37% 93%;
+    --primary: 29 83% 65%;
+    --primary-foreground: 240 14% 5%;
+    --secondary: 240 10% 12%;
+    --secondary-foreground: 36 37% 93%;
+    --muted: 240 10% 10%;
+    --muted-foreground: 36 20% 65%;
+    --accent: 29 83% 65%;
+    --accent-foreground: 240 14% 5%;
+    --destructive: 10 70% 65%;
+    --destructive-foreground: 240 14% 5%;
+    --border: 36 20% 14%;
+    --input: 240 10% 12%;
+    --ring: 29 83% 65%;
+    --glow: 29 83% 65%;
+    --glow-muted: 29 50% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    overscroll-behavior: none;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    overflow-x: hidden;
+    background:
+      radial-gradient(ellipse at 50% -5%, rgba(240, 166, 90, 0.06) 0%, transparent 55%),
+      #0B0B0F;
+    background-attachment: fixed;
+    min-height: 100dvh;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "ss01", "cv11";
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  ::selection {
+    background: rgba(240, 166, 90, 0.2);
+    color: #F5EFE6;
+  }
+}
+
+@layer components {
+  .panel-ascente {
+    @apply rounded-2xl;
+    background: #13131A;
+    border: 1px solid rgba(245, 239, 230, 0.07);
+    box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.5);
+  }
+}
+
+@layer utilities {
+  .glow {
+    box-shadow: 0 0 30px rgba(240, 166, 90, 0.12), 0 0 60px rgba(240, 166, 90, 0.04);
+  }
+  .glow-sm {
+    box-shadow: 0 0 15px rgba(240, 166, 90, 0.1);
+  }
+  .glow-lg {
+    box-shadow: 0 0 40px rgba(240, 166, 90, 0.18), 0 0 80px rgba(240, 166, 90, 0.06);
+  }
+  .glow-text {
+    text-shadow: 0 0 12px rgba(240, 166, 90, 0.3);
+  }
+  .border-glow {
+    box-shadow: 0 0 15px rgba(240, 166, 90, 0.08), inset 0 0 15px rgba(240, 166, 90, 0.02);
+  }
+}
+
+/* Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(245, 239, 230, 0.12) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(245, 239, 230, 0.12);
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 239, 230, 0.22);
+}
+
+@media (hover: hover) {
+  *::-webkit-scrollbar-thumb {
+    background: transparent;
+  }
+  *:hover::-webkit-scrollbar-thumb {
+    background: rgba(245, 239, 230, 0.12);
+  }
+  *:hover::-webkit-scrollbar-thumb:hover {
+    background: rgba(245, 239, 230, 0.22);
+  }
+}

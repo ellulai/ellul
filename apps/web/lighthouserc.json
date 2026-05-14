@@ -1,0 +1,46 @@
+{
+  "ci": {
+    "collect": {
+      "url": [
+        "http://localhost:3002/",
+        "http://localhost:3002/pricing",
+        "http://localhost:3002/blog",
+        "http://localhost:3002/blog/claude-code-vs-cursor",
+        "http://localhost:3002/faq",
+        "http://localhost:3002/vs",
+        "http://localhost:3002/vs/claude-code-vs-cursor",
+        "http://localhost:3002/vs/devin",
+        "http://localhost:3002/solutions",
+        "http://localhost:3002/solutions/run-claude-code-in-cloud",
+        "http://localhost:3002/concepts",
+        "http://localhost:3002/concepts/agent-workstation",
+        "http://localhost:3002/glossary",
+        "http://localhost:3002/glossary/agent-workstation",
+        "http://localhost:3002/agents",
+        "http://localhost:3002/agents/claude-code",
+        "http://localhost:3002/mcp",
+        "http://localhost:3002/mcp/mcp",
+        "http://localhost:3002/prompt-engineering"
+      ],
+      "startServerCommand": "pnpm start -p 3002",
+      "startServerReadyPattern": "Ready in",
+      "numberOfRuns": 1,
+      "settings": {
+        "preset": "desktop",
+        "chromeFlags": "--no-sandbox --disable-dev-shm-usage"
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.9 }],
+        "categories:seo": ["error", { "minScore": 1.0 }],
+        "categories:accessibility": ["warn", { "minScore": 0.9 }],
+        "categories:best-practices": ["warn", { "minScore": 0.9 }]
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": "lighthouseci"
+    }
+  }
+}

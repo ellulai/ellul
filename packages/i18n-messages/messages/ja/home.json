@@ -1,0 +1,359 @@
+{
+  "home": {
+    "llmsTxt": {
+      "summary": "Ellulは、AIエージェントのための常時稼働ワークステーションです。一晩中ジョブを走らせ、複数のエージェントを並列で動かし、すべての特権操作はパスキーで承認します。CursorやClaude Codeはあなたのラップトップで、Ellulはそれらを閉じない持続的なコンピュータの上で動かします。"
+    },
+    "meta": {
+      "title": "ellul | あなたのエージェントの、コンピューター",
+      "description": "AIエージェントのための、常時稼働するワークステーション。夜通し動き続け、ノートPCがスリープしている間も作業を進め、複数のエージェントを並列に協調させます。認証情報の漏えいなし。混乱なし。",
+      "keywords": [
+        "エージェントワークステーション",
+        "常時稼働AIエージェント",
+        "並列エージェント",
+        "Claude Code クラウド",
+        "Claude Code リモート",
+        "Cursor クラウド",
+        "Codex サンドボックス",
+        "OpenCode クラウド",
+        "マルチエージェントオーケストレーション",
+        "AIエージェントサンドボックス",
+        "エージェント自律性",
+        "夜間エージェント",
+        "ラップトップから外す",
+        "パスキー承認",
+        "AI開発プラットフォーム"
+      ]
+    },
+    "hero": {
+      "eyebrow": "Ellul Cloud",
+      "headlineLine1": "あなたのエージェントの、",
+      "headlineLine2": "コンピューター。",
+      "subhead": "AIエージェントのための、常時稼働するワークステーション。夜通し動き続け、ノートPCがスリープしている間も作業を進めます。エージェントのチームを並列に動かし、協調させます。",
+      "bringAgent": "好きなエージェントを",
+      "ctaPrimary": "ワークステーションを取得",
+      "ctaSecondary": "夜のうちに何が出荷されたかを見る",
+      "stats": {
+        "runValue": "8時間",
+        "runLabel": "無人実行",
+        "parallelValue": "3+",
+        "parallelLabel": "並列エージェント数",
+        "credsValue": "0",
+        "credsLabel": "ノートPC上の認証情報"
+      },
+      "nightLog": {
+        "eyebrow": "昨夜、あなたのワークステーションで",
+        "timestamp": "07:30 · 火",
+        "entries": {
+          "branchStart": "branch start: fix/race-condition-checkout",
+          "wroteTests": "Webhookハンドラに対して失敗するテストを3本書いた",
+          "addedIdempotency": "/api/orders に冪等性キーを追加した",
+          "testsGreen": "テストが通った (47 passed, 0 failed)",
+          "regenSchema": "/api/orders から openapi.json を再生成した",
+          "gitPush": "git push origin fix/race-condition-checkout",
+          "openedPr": "PR #847 を main に向けて開いた",
+          "waiting": "マージのためにあなたのpasskeyを待っています"
+        },
+        "agentLabels": {
+          "checkout": "checkout",
+          "docs": "docs",
+          "ellul": "ellul"
+        },
+        "prTitle": "PR #847 はマージ準備完了です",
+        "prSub": "fix/race-condition-checkout · +127 −44 · 47 tests",
+        "prCta": "Passkeyをタップ",
+        "footnote": "ノートPCは23:42からずっと閉じたままです。"
+      }
+    },
+    "highlights": {
+      "eyebrow": "得られるもの",
+      "headlineLine1": "エージェントのために作ったワークステーション。",
+      "headlineLine2": "もうひとつのIDEではありません。",
+      "items": {
+        "alwaysOn": {
+          "title": "常時稼働",
+          "body": "ノートPCを閉じても、エージェントは動き続けます。夜通しの実行、並列ブランチ、お守りは不要です。"
+        },
+        "previews": {
+          "title": "ライブプレビュー",
+          "body": "開発サーバーが起動した瞬間に共有可能なURLが発行されます。ブランチをpullしなくても、エージェントが作ったものをすぐに見られます。"
+        },
+        "anywhere": {
+          "title": "どこからでも、どの端末からでも",
+          "body": "Web、デスクトップ、モバイル専用ビュー。地下鉄からエージェントの様子を確認できます。Passkeyの承認はスマートフォンから。"
+        },
+        "integrations": {
+          "title": "本物の統合",
+          "body": "GitHub、Vercel、Fly、Neon、Supabase、Postgres。本番の認証情報があなたのノートPCに触れることはありません。Passkeyタップのたびに、私たちのvaultから安全に橋渡しします。"
+        },
+        "passkey": {
+          "title": "Passkeyで守られたセキュリティ",
+          "body": "git push、本番DB、デプロイ。特権的なアクションはすべてFIDO2タップで一時停止します。だから8時間の無人実行も安全です。"
+        },
+        "composable": {
+          "title": "組み合わせられるエージェント",
+          "body": "Claude、Codex、Cursor、OpenCodeを並列に動かせます。それぞれが自分のコンピューターを持ち、互いの状態を読み取り専用でのぞけます。だから壊し合いません。"
+        }
+      }
+    },
+    "problem": {
+      "eyebrow": "自律",
+      "headlineLine1": "ノートPCを閉じてください。",
+      "headlineLine2": "エージェントは動き続けます。",
+      "bodyTop": "Cursor、Claude Code、Copilot。どれもあなたのノートPCの上で動きます。蓋を閉じればセッションは終わります。回線が切れれば数時間の作業が消えます。プロジェクトを切り替えれば、エージェントは自分がどこにいたかを忘れます。",
+      "bodyMiddle": "Ellulは、エージェントに <emphasis>専用の</emphasis> ワークステーションを与えます。永続的、隔離、常時稼働。夜通し動き、朝起きると、機能は完成し、PRはレビュー済みで、ドキュメントは下書きが揃っています。",
+      "bodyBottom": "それでもエージェントの最終決裁者はあなたです。会議の合間にマージを承認する。地下鉄から進捗を確認する。夜のうちに出荷するために、デスクの前に座っている必要はありません。",
+      "timeline": {
+        "heading": "昨夜",
+        "branchLabel": "checkout-rewrite",
+        "events": {
+          "closeLaptop": "あなたがノートPCを閉じる",
+          "agentFinish": "エージェントがリファクタを完了",
+          "testsPushed": "テスト通過 · ブランチをpush",
+          "prDrafted": "PR下書き、あなたの承認待ち",
+          "youApprove": "あなたがスマートフォンからタップで承認"
+        }
+      }
+    },
+    "pillars": {
+      "eyebrow": "連携",
+      "headlineLine1": "見ても、",
+      "headlineLine2": "触れない。",
+      "bodyTop": "3つのエージェントを並列に動かします。1つはコードを書く。1つはローンチコピーを下書きする。1つはドキュメントを再生成する。それぞれが自分のサンドボックスに住み、互いの作業を読み取り専用でのぞきます。互いの状態を踏み荒らすことはありません。",
+      "bodyBottom": "エージェントのチームは、こう作るべきです。誰もまだ出荷していません。",
+      "panes": {
+        "coding": {
+          "label": "サンドボックス 1",
+          "role": "コーディングエージェント",
+          "activity": "checkout-flow をリファクタ中",
+          "detail": "書き込み中 · 4h 12m",
+          "canRead": "読み取り",
+          "canWrite": "書き込み",
+          "canBuild": "ビルド",
+          "canTest": "テスト"
+        },
+        "marketing": {
+          "label": "サンドボックス 2",
+          "role": "マーケティングエージェント",
+          "activity": "PRの差分からローンチコピーを下書き",
+          "detail": "読み取り中 · checkout-flow",
+          "canRead": "サンドボックス 1 を読み取り",
+          "blocked": "サンドボックス 1 を編集できない"
+        },
+        "docs": {
+          "label": "サンドボックス 3",
+          "role": "ドキュメントエージェント",
+          "activity": "APIリファレンスを再生成中",
+          "detail": "読み取り中 · checkout-flow",
+          "canRead": "サンドボックス 1 を読み取り",
+          "blocked": "サンドボックス 1 を編集できない"
+        }
+      },
+      "summary": {
+        "eachAgentLabel": "エージェントごとに",
+        "eachAgentValue": "専用のサンドボックス",
+        "crossLabel": "サンドボックス間",
+        "crossValue": "読み取り専用のピアリング",
+        "coordLabel": "協調",
+        "coordValue": "混乱なしで"
+      }
+    },
+    "howItWorks": {
+      "eyebrow": "仕組み",
+      "headline": "クラウドの上のワークステーション。クリック1つで。",
+      "subhead": "サインアップ、起動、エージェントを走らせる。3ステップで、あなたが寝ている間にも出荷する常時稼働のワークステーションができます。",
+      "steps": {
+        "signup": {
+          "title": "Passkeyでサインアップ",
+          "desc": "最初からFIDO2。指紋またはハードウェアキーが、特権アクションを承認できる唯一の手段です。パスワードはなく、漏れるものもありません。"
+        },
+        "spinup": {
+          "title": "ワークステーションを起動",
+          "desc": "Createをクリック。EUの永続的なLinuxマシンが立ち上がり、エージェントは既に動き、リポジトリはクローン済み、開発サーバーも稼働中です。"
+        },
+        "handoff": {
+          "title": "仕事を渡して、立ち去る",
+          "desc": "Claude Code、Codex、Cursor、OpenCode。お好きなドライバを選んでください。タブを閉じる。戻ってくると、ブランチは完成、PRは下書き、タップして承認するだけです。"
+        }
+      },
+      "featuresEyebrow": "得られるもの",
+      "features": {
+        "alwaysOn": {
+          "title": "常時稼働",
+          "desc": "ノートPCが止まっても、エージェントは止まりません。長時間のリファクタ、夜通しのテストループ、1週間がかりの移行も、すべて走り続けます。"
+        },
+        "parallel": {
+          "title": "複数のエージェントを並列で",
+          "desc": "1ロールに1つ。それぞれが自分のサンドボックスを持ちます。読み取り専用でピアリングし、互いを壊しません。"
+        },
+        "offLaptop": {
+          "title": "ノートPCの外で",
+          "desc": "SSHキー、AWS認証情報、1Password CLIは、あなたのマシンを離れません。認証情報はvaultに住み、エージェントには触れさせません。"
+        },
+        "persistent": {
+          "title": "永続的な状態",
+          "desc": "暗号化されたストレージは、再起動、ハイバネーション、ウェイクを越えて生き残ります。エージェントは毎回、止めたところから再開します。"
+        },
+        "realDev": {
+          "title": "本物の開発環境",
+          "desc": "Bash、git、Node、Bun、Python、Postgres、Caddy。カスタムドメイン。ライブプレビューURL。エージェントが書き込むのと同じマシンに、あなたもSSHできます。"
+        },
+        "stack": {
+          "title": "あなたのスタックに直結",
+          "desc": "GitHub、Vercel、Fly、Neon、Supabase。本番の認証情報は承認時に橋渡しされます。エージェントが鍵を見ることは一度もありません。"
+        }
+      },
+      "bringEyebrow": "好きなエージェントを"
+    },
+    "gates": {
+      "eyebrow": "安全性",
+      "headline": "Yesは、Yesの意味で。",
+      "bodyTop": "この自律性が成立するのは、特権的なアクションが毎回あなたのpasskeyで一時停止するからです。git push、本番DB、ドメイン変更。これらは止まり、生体認証のタップを待ち、そしてようやく実行されます。",
+      "bodyBottom": "これが、エージェントを8時間無人で走らせても焦げないやり方です。",
+      "flow": {
+        "agentLabel": "エージェント",
+        "agentDetail": "尋ねる",
+        "sandboxLabel": "サンドボックス",
+        "sandboxDetailPause": "一時停止",
+        "youLabel": "あなた",
+        "youDetail": "Passkeyをタップ",
+        "sandboxDetailAct": "1度だけ実行"
+      },
+      "gatesHeading": "タップを待つもの",
+      "items": {
+        "gitPush": {
+          "name": "git push",
+          "controls": "リモートリポジトリへコミットをpush",
+          "ttl": "5分"
+        },
+        "deploy": {
+          "name": "deploy",
+          "controls": "ホスティング先へビルドを昇格",
+          "ttl": "5分"
+        },
+        "dbWrite": {
+          "name": "db write",
+          "controls": "本物のデータベース行を変更",
+          "ttl": "30秒"
+        },
+        "secretRead": {
+          "name": "secret read",
+          "controls": "APIキーまたはトークンを露出",
+          "ttl": "30秒"
+        },
+        "domain": {
+          "name": "domain change",
+          "controls": "DNS、TLS、ルート設定を変更",
+          "ttl": "5分"
+        },
+        "policy": {
+          "name": "policy update",
+          "controls": "ゲート、スコープ、信頼デバイスを変更",
+          "ttl": "セッション中"
+        }
+      },
+      "disclaimer": "あなたの認証情報はvaultに、ワークステーションの中にあります。私たちには見えません。エージェントは読めません。GitHubへpushしたり、Vercelへデプロイしたりする必要が出たら、エージェントは尋ねます。あなたがタップする。トークンは1回のアクションのために橋渡しされ、その後シュレッドされます。"
+    },
+    "pricingOverview": {
+      "eyebrow": "料金",
+      "headlineLine1": "あなたのスタックに、もう1つのツールを足すのではありません。",
+      "headlineLine2": "残りすべてが走る、ワークステーションそのものです。",
+      "stackHeader": "あなたはすでにスタックに払っています:",
+      "priceLine": "Ellulは <strong>$20 から $50</strong> で足せます。同じエージェントを、深夜0時に閉じないコンピューターの上で動かす、ということです。",
+      "perMonth": "{price}/月"
+    },
+    "contentHub": {
+      "eyebrow": "深く理解する",
+      "headlineLine1": "ワークステーションを理解する。",
+      "headlineLine2": "他サービスと比較する。",
+      "concepts": {
+        "label": "コアコンセプト",
+        "agentWorkstation": {
+          "title": "エージェントワークステーション",
+          "desc": "AIエージェント専用に設計された、永続的で隔離されたコンピューター。"
+        },
+        "alwaysOnAiAgent": {
+          "title": "常時稼働AIエージェント",
+          "desc": "ノートPCを閉じても、エージェントは作業を続けます。"
+        },
+        "parallelAgents": {
+          "title": "並列エージェント",
+          "desc": "隔離されたサンドボックスで複数のエージェントを読み取り専用ピアリングで実行。"
+        }
+      },
+      "comparisons": {
+        "label": "比較",
+        "vsCursor": {
+          "title": "Ellul vs Cursor",
+          "desc": "AI機能付きIDEと、専用エージェントワークステーションの違い。"
+        },
+        "vsDevin": {
+          "title": "Ellul vs Devin",
+          "desc": "クローズドエージェント vs passkeyセキュリティ付きBYOA。"
+        },
+        "vsReplit": {
+          "title": "Ellul vs Replit",
+          "desc": "クラウドIDEと、自律エージェント用の常時稼働ワークステーション。"
+        }
+      },
+      "more": {
+        "label": "もっと探す",
+        "solutions": {
+          "title": "ソリューション",
+          "desc": "夜間の出荷から並列リファクタまでのユースケース。"
+        },
+        "blog": {
+          "title": "ブログ",
+          "desc": "エンジニアリングの深掘りとプロダクトアップデート。"
+        },
+        "agents": {
+          "title": "エージェント",
+          "desc": "Claude Code、Codex、Cursor、OpenCode、その他。"
+        }
+      }
+    },
+    "cta": {
+      "headlineLine1": "あなたのエージェントの、",
+      "headlineLine2": "コンピューター。",
+      "subhead": "エージェントのためのワークステーション。仕事を渡す。蓋を閉じる。戻ってくると、何かが出荷されています。",
+      "primary": "ワークステーションを取得",
+      "secondary": "料金を見る"
+    },
+    "softwareSchema": {
+      "description": "AIエージェントのための、常時稼働するワークステーション。夜通し動き続け、ノートPCがスリープしている間も作業を進め、複数のエージェントを並列に協調させます。認証情報の漏えいなし。混乱なし。",
+      "applicationSubCategory": "AIエージェントワークステーション",
+      "features": {
+        "alwaysOn": "ユーザーごとに常時稼働するクラウドワークステーション",
+        "parallel": "読み取り専用ピアリングによる並列マルチエージェント実行",
+        "passkey": "passkeyでゲート制御された特権アクション (git push、deploy、シークレット、データベース書き込み)",
+        "byoa": "好きなエージェントを持ち込み: Claude Code、Codex、Cursor、OpenCode",
+        "namespace": "ユーザーごとの名前空間隔離",
+        "encrypted": "暗号化された永続ストレージ",
+        "integrations": "GitHub、Vercel、Fly、Railway、Neon、Supabaseとの統合"
+      }
+    },
+    "faqSchema": {
+      "items": {
+        "agentWorkstation": {
+          "q": "エージェントワークステーションとは何ですか?",
+          "a": "エージェントワークステーションとは、AIエージェントが作業するために存在する、永続的で隔離されたコンピューターのことです。常時稼働しています。専用のファイルシステム、プロセス、ネットワークを持ちます。特権的なアクションは境界でゲート制御され、人間のpasskey承認が必要です。エージェントはそこで動きます。あなたのノートPCではなく。"
+        },
+        "vsCursor": {
+          "q": "EllulはCursorやClaude Codeとどう違いますか?",
+          "a": "CursorとClaude Codeはエージェントです。Ellulはエージェントが動くコンピューターです。既存のエージェントを使い続けてかまいません。EllulはエージェントをあなたのノートPCから、決して閉じないワークステーションへ移し、複数のエージェントを並列にサポートし、すべての特権アクションをpasskeyで制御します。"
+        },
+        "parallel": {
+          "q": "複数のAIエージェントを並列に動かせますか?",
+          "a": "できます。それぞれのエージェントが自分のワークステーションを持ち、独立して走ります。読み取り専用ピアリングにより、あるエージェントが別のエージェントのソースコードを見られますが、編集、push、特権昇格はできません。"
+        },
+        "passkey": {
+          "q": "passkeyによるゲート制御は具体的にどう動きますか?",
+          "a": "特権的なアクション (git push、deploy、データベース書き込み、シークレットアクセス) は実行の途中で一時停止します。あなたに通知が届きます。passkeyをタップして、承認するか拒否します。エージェントはあなたが承認したときだけ続行します。認証情報がエージェントのプロセスに到達することはありません。"
+        },
+        "duration": {
+          "q": "エージェントは無人で何時間まで動かせますか?",
+          "a": "無期限に動かせます。あなたがノートPCの前にいるかどうかにかかわらず、ワークステーションはオンラインを保ちます。実際に、長時間のリファクタやマイグレーションスクリプトを通じて、数日間中断なく走り続けたエージェントもあります。"
+        }
+      }
+    }
+  }
+}

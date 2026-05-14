@@ -1,0 +1,14 @@
+{
+  "name": "@ellul.ai/ts-config",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "exports": {
+    "./base.json": "./base.json",
+    "./node.json": "./node.json",
+    "./nextjs.json": "./nextjs.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

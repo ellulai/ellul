@@ -1,0 +1,2 @@
+const db = require('better-sqlite3')('app.db');
+db.exec('DROP TABLE users');

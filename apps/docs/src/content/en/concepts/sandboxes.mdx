@@ -1,0 +1,89 @@
+---
+title: "Sandboxes"
+description: "Each project on your workstation runs in a kernel-isolated sandbox. What that means in practice."
+section: "Core Concepts"
+order: 3
+---
+
+A sandbox on ellul is a persistent, isolated environment for one project. State survives. The agent picks up where it left off. The compute is always-on. Multiple sandboxes run in parallel without interfering with each other.
+
+It is also more than a directory. It is a kernel-isolated environment that constrains what the agent and your code can see and do.
+
+## What a sandbox includes
+
+Each sandbox gets:
+
+- A unique identifier (a sandbox slug).
+- A workspace directory for your source code.
+- A per-sandbox database, provisioned on demand.
+- A per-sandbox secrets manager.
+- Its own preview port for development servers.
+- Its own outbound network identity.
+
+## Three layers of isolation
+
+Within a single workstation, multiple sandboxes coexist as separate kernel namespaces. The agent in sandbox A cannot see sandbox B unless you explicitly grant access.
+
+<Steps>
+  <Step number={1} title="Filesystem isolation">
+    The agent in a sandbox sees only that sandbox's files. Other sandboxes' source code is not visible at all unless you grant cross-sandbox read access. Sensitive system locations are hidden behind empty filesystem overlays.
+  </Step>
+  <Step number={2} title="Process isolation">
+    The agent's process tree is private. It cannot see, signal, or attach to processes from other sandboxes or system services.
+  </Step>
+  <Step number={3} title="Network isolation">
+    Each sandbox has its own network identity with a curated outbound allowlist. The agent cannot reach private network ranges, cloud metadata endpoints, or other sandboxes' internal services.
+  </Step>
+</Steps>
+
+## What the agent CAN do inside a sandbox
+
+- Read and write files in the active sandbox.
+- Read source code of explicitly shared sandboxes (read-only snapshots).
+- Spawn subprocesses (with a syscall denylist applied).
+- Make outbound HTTPS calls to allowlisted destinations (npm, PyPI, AI providers, code hosting).
+- Call internal services through controlled gateways.
+- Request permission gates for privileged actions, which you approve or deny.
+
+## What the agent CANNOT do
+
+- See files in other sandboxes without explicit access.
+- See processes in other sandboxes.
+- Reach other sandboxes' network endpoints directly.
+- Modify firewall rules.
+- Read application secrets without an `env` gate.
+- Read the authentication database.
+- Push code without a `git` gate.
+- Deploy without a `deploy` gate.
+- Mine cryptocurrency, tunnel traffic, or scan ports (network and DNS blocks).
+
+## Cross-sandbox access
+
+You can grant sandbox A read access to sandbox B from **Settings > Security**. When you do:
+
+- B's source code is rsync-copied as a frozen, read-only snapshot into A's workspace at `.shared/<B-id>/`.
+- The snapshot excludes secrets, environment files, credentials, and dependencies.
+- The snapshot is read-only at the kernel level. The agent in A cannot modify B's source.
+- Permission gates remain scoped: even with read access to B, the agent in A cannot request `db_read` against B's database. Cross-sandbox gate requests are auto-denied.
+
+This lets you give the agent context across sandboxes (for example, when writing client code that mirrors a server's API) while preserving isolation boundaries.
+
+## When sandboxes are created and destroyed
+
+Sandboxes are created from the dashboard. Provisioning is fast. The platform allocates a slug, sets up the namespace, and prepares an empty workspace. The first message you send to the agent triggers any workspace bootstrap.
+
+Sandboxes are destroyed from the dashboard. Destruction:
+
+- Stops any running preview server.
+- Tears down the sandbox's namespace.
+- Removes the workspace directory.
+- Drops the per-sandbox database.
+- Revokes any cross-sandbox grants.
+
+Sandbox deletion is irreversible. Make sure you have backups or pushed code if you want to keep anything.
+
+## Where to go next
+
+- [Cross-Sandbox Sharing](/projects/sharing-projects) for the access-grant flow.
+- [Permission Gates](/permissions/overview) for the universal authorisation layer.
+- [The Agent](/concepts/the-agent) for how chat sessions interact with sandboxes.

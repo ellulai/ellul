@@ -1,0 +1,62 @@
+# Tunnel Guard Rules — ellul.ai Paid Dev Tiers
+#
+# Only blocks tunnel services and crypto mining.
+# All HTTP methods, git push, WebSocket, etc. are allowed.
+
+mode: tunnel_guard
+
+# Platform domains — all methods allowed
+platform_domains:
+  - "ellul.ai"
+  - "*.ellul.ai"
+  - "ellul.app"
+  - "*.ellul.app"
+
+# Blacklisted domains — blocked in all modes
+blacklisted_domains:
+  # === Tunnel Services ===
+  - "*.ngrok.com"
+  - "*.ngrok.io"
+  - "*.ngrok-agent.com"
+  - "equinox.io"
+  - "*.trycloudflare.com"
+  - "*.argotunnel.com"
+  - "*.localtunnel.me"
+  - "*.loca.lt"
+  - "localhost.run"
+  - "serveo.net"
+  - "bore.pub"
+  - "*.telebit.cloud"
+  - "*.tailscale.com"
+  - "*.zerotier.com"
+  - "pagekite.net"
+  - "burrow.io"
+  - "expose.dev"
+  - "*.zrok.io"
+  - "pinggy.io"
+  - "packetriot.com"
+
+  # === Crypto mining pools ===
+  - "pool.minergate.com"
+  - "xmr.pool.minergate.com"
+  - "moneroocean.stream"
+  - "*.coinhive.com"
+  - "*.cryptoloot.pro"
+  - "*.nanopool.org"
+  - "*.2miners.com"
+  - "*.herominers.com"
+  - "*.hashvault.pro"
+  - "*.supportxmr.com"
+  - "*.unmineable.com"
+  - "*.nicehash.com"
+  - "*.ethermine.org"
+  - "*.flexpool.io"
+  - "*.f2pool.com"
+  - "*.poolin.com"
+  - "antpool.com"
+  - "minexmr.com"
+
+# Not used in tunnel_guard mode (all methods allowed)
+git_blocked_content_types: []
+git_allowed_content_types: []
+max_external_url_length: 0

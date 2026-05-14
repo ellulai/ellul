@@ -1,0 +1,63 @@
+Cursor's editor experience is the best in the category in April 2026. Inline completions are instant. Command-K is reflexive. Codebase indexing means the agent panel knows about types and call sites without you re-explaining. The editing experience is a hundred small things that you feel a hundred times a day.
+
+The editor is the keeper. The agent panel is the part that ties Cursor to your laptop.
+
+## What Ellul changes
+
+<Callout type="note" title="The composition">
+Cursor stays where it is, on your laptop, as the editing surface you love. The agent moves to an Ellul workstation that doesn't sleep. They compose: same Cursor experience for in-the-editor work, no lid problem for unattended work.
+</Callout>
+
+The shape of the change:
+
+1. **Editor stays local.** Inline completions, command-K, codebase indexing, polish; all of it. You don't lose any of the keyboard ergonomics you actually use.
+2. **Agent moves to Ellul.** Cursor's CLI runs on a persistent workstation. Multiple sessions in parallel, real-credential operations behind a passkey, MCP servers running long-lived in the same workstation.
+3. **Both at once when it matters.** Cursor for inline work. Ellul-hosted CLI for the eight-hour refactor that you don't want sitting on your battery.
+
+## A typical day
+
+Mornings, you're at the keyboard with Cursor open on your laptop. Inline completions, command-K, codebase indexing: the editor does what it's best at.
+
+Around lunch you queue an agent task: "Refactor the entire job-runner module to use the new MCP transport." Instead of running it on your laptop and waiting, you fire it off on Ellul. Cursor stays open for the rest of your day-job. You shut your laptop and walk to lunch.
+
+You come back. The agent has opened a draft PR. You review it on your phone. Tap your passkey. Merged.
+
+That's the shape.
+
+## What you don't lose
+
+<Callout type="tip" title="Compatibility check">
+- **Inline completions:** unchanged. They've always required the agent to be co-located with the editor; Cursor on your laptop still does this.
+- **Codebase indexing:** unchanged. Cursor indexes your repo locally for editor features.
+- **Command-K refactors:** unchanged. Local agent action against the file in your editor.
+- **Cursor account:** unchanged. Your subscription stays with Cursor.
+</Callout>
+
+## What you gain
+
+- **Always-on agent.** Cursor's CLI keeps running on Ellul when your laptop sleeps.
+- **Parallel agents.** Two or three Cursor CLI sessions on different branches, in different sandboxes, with no port collisions.
+- **Passkey-gated production access.** `git push`, `vercel deploy`, `psql production`: pause until you tap.
+- **Server-side credential vault.** Your tokens never sit in `~/.aws` on the agent's machine. They're brokered through a separate process the agent can't read.
+- **Phone access.** Open your phone in the subway. Approve a PR. Walk off the train.
+
+## Setup
+
+1. Sign up for Ellul (Hobby $20/mo or Pro $50/mo).
+2. Provision a workstation. Cursor's CLI is pre-installed.
+3. Connect a passkey (FIDO2 from any device).
+4. Open a session. Cursor stays on your laptop; the CLI runs on the workstation.
+
+## When this isn't right
+
+If your work is genuinely inline-only (short refactors, one-shot completions, no eight-hour runs, no production credentials) you don't need Ellul. Cursor on your laptop is enough.
+
+If you spend any meaningful time waiting for the agent to finish, or your agent ever needs to touch real infrastructure, the composition is the answer.
+
+## See also
+
+- [Cursor vs Ellul →](/vs/cursor)
+- [Claude Code vs Cursor →](/vs/claude-code-vs-cursor)
+- [Why we built the gate outside the agent process →](/blog/claude-code-vs-cursor)
+
+<FAQ />

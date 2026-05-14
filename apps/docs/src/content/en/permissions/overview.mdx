@@ -1,0 +1,112 @@
+---
+title: "Permission Gates"
+description: "How the agent asks for permission to perform privileged actions, and how you grant or deny it."
+section: "Permissions"
+order: 1
+---
+
+The agent in your sandbox has limited default capabilities. Anything that touches secrets, your database, your code repository, or production traffic requires a permission gate. You decide whether to grant.
+
+## Why gates
+
+Without gates, every CLI tool call and shell command would have access to everything. That is a poor security model: a misbehaving agent or a buggy library could exfiltrate or destroy data.
+
+With gates, the default is restrictive. The agent must ask, and you must approve. You can also configure standing rules so that common operations do not interrupt your flow.
+
+<Callout type="principle" title="The contract">
+  The agent is the requester. You are the authoriser. Sovereign Shield is the broker. Every approved gate is bound to a short time window and recorded in the audit log.
+</Callout>
+
+## How a gate request flows
+
+<Steps>
+  <Step number={1} title="The agent makes a tool call">
+    For example: "read the value of `STRIPE_SECRET_KEY`" or "run a write query against the database".
+  </Step>
+  <Step number={2} title="The gate engine inspects the call">
+    Sovereign Shield checks your standing rules. If you have a matching `allow always` rule, the request is auto-granted. If you have a `never` rule, it is auto-denied. Otherwise it is held as pending.
+  </Step>
+  <Step number={3} title="A popup appears in the workspace">
+    You see what the agent is asking for, why, and which sandbox it belongs to. Pending requests are also visible under **Observability > Gates**.
+  </Step>
+  <Step number={4} title="You approve or deny">
+    On approval, a short-lived gate token is issued and the operation proceeds. On denial, the agent gets an error and continues without that operation.
+  </Step>
+  <Step number={5} title="The gate expires">
+    After the time-to-live, the gate is closed. New attempts at the same operation require a fresh approval.
+  </Step>
+</Steps>
+
+## Gate types
+
+The platform recognises a fixed set of gate types. Each has its own time-to-live and access model.
+
+| Gate | Purpose | Default TTL | Access model |
+|------|---------|-------------|--------------|
+| **Log Access** (`logs`) | View unredacted application logs. | 5 min | Timed window |
+| **Secret Injection** (`env`) | Run a single command with secrets injected as environment variables. | 30 sec | One-time |
+| **Database Access** (`db`) | General database access. | 10 min | Timed window |
+| **DB Read** (`db_read`) | Read-only database queries. | 10 min | Timed window |
+| **DB Write** (`db_write`) | Insert, update, or delete rows. | 5 min | Timed window |
+| **DB Migrate** (`db_migrate`) | Run schema migrations. | 5 min | One-time token |
+| **DB Full Access** (`db_full`) | Full database owner credentials, including drop and truncate. | 5 min | One-time token |
+| **Git Push** (`git`) | Push code to your remote repository. | 5 min | One-time token |
+| **Deploy** (`deploy`) | Deploy your application to production. | 5 min | One-time token |
+
+Gates marked **One-time token** issue a single-use credential consumed by the next operation. Gates marked **Timed window** allow multiple operations within the time-to-live.
+
+## Three permission modes per gate
+
+For each gate type, scoped per sandbox, you can set a default behaviour:
+
+| Mode | Behaviour |
+|------|-----------|
+| `ask` (default) | Show a popup. You approve or deny each time. |
+| `allow always` | Auto-grant for the configured time-to-live, no popup. |
+| `never` | Auto-deny, no popup. |
+
+You configure these from **Settings > Security**, scoped per sandbox.
+
+## High-risk gates
+
+Several gates are flagged as high risk in the UI. They are listed with a destructive variant and show a warning callout in the approval popup:
+
+- **Secret Injection** (`env`). One-time access to inject secrets into a command.
+- **DB Write** (`db_write`). Modifies application data.
+- **DB Migrate** (`db_migrate`). Schema changes; single-use token.
+- **DB Full Access** (`db_full`). Full owner credentials, including destructive operations.
+- **Git Push** (`git`). Pushes code to the remote.
+- **Deploy** (`deploy`). Deploys to production.
+
+The popup shows a warning and asks for explicit confirmation. We recommend leaving these on `ask` rather than `allow always`.
+
+## Cross-sandbox safety
+
+When you grant sandbox A read access to sandbox B, the agent in A can read B's source code. But this does not extend to gates against B.
+
+Sandbox-scoped gate types auto-deny if the request mentions another sandbox's identifier. Even if you click approve, the platform refuses. This prevents the agent from using shared context to manipulate you into authorising actions against the wrong sandbox.
+
+## What is recorded
+
+Every gate event is logged:
+
+- Request received (gate type, sandbox, requested reason).
+- Auto-granted (with the matching rule).
+- User-granted (with timestamp and authoriser).
+- Auto-denied or user-denied (with reason).
+- Token expired.
+
+The audit log is hash-chained. You can review it from **Settings > Security > Audit** at any time.
+
+## Best practices
+
+- Start strict. Leave most gates on `ask` until you observe the agent's actual usage pattern.
+- Promote routine, low-risk gates (such as `logs`) to `allow always` once you trust the agent's behaviour.
+- Keep `db_write`, `db_migrate`, `db_full`, `deploy`, and `git` on `ask`. They are infrequent and deserve attention.
+- Review the audit log periodically. It is the source of truth for what the agent did with your data.
+
+## Where to go next
+
+- [Cross-Sandbox Sharing](/projects/sharing-projects) for the access-grant flow.
+- [Audit Log](/concepts/sovereign-model#audit-trail) for the tamper-evident record.
+- [Security Tiers](/concepts/security-tiers) for tier-specific behaviour.

@@ -1,0 +1,8 @@
+# ============================================
+# Cloudflare Workers Development Variables
+# ============================================
+# Copy to .dev.vars and fill in your values
+# These are used when running: pnpm preview
+# ============================================
+
+NEXT_PUBLIC_API_URL=http://localhost:3001

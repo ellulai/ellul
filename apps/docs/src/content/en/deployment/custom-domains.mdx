@@ -1,0 +1,51 @@
+---
+title: "Custom Domains"
+description: "Wire your own domain to your deployed sandboxes (Pro plan)."
+section: "Deployment"
+order: 2
+---
+
+Custom domains let you serve a deployed sandbox at a domain you own (`acme.com`, `app.example.com`). Available on the Pro plan.
+
+## Adding a custom domain
+
+<Steps>
+  <Step number={1} title="Open Account > Server > Domains">
+    The current default domain is shown. Click **Add custom domain**.
+  </Step>
+  <Step number={2} title="Enter your domain">
+    Enter the full host (`app.example.com`).
+  </Step>
+  <Step number={3} title="Verify ownership">
+    The platform shows a verification record (TXT or CNAME). Add it at your registrar's DNS panel.
+  </Step>
+  <Step number={4} title="Wait for propagation">
+    DNS changes typically propagate within minutes. The platform polls and confirms when verification succeeds.
+  </Step>
+  <Step number={5} title="Point your domain to your workstation">
+    Add a CNAME record for your domain pointing to the value the platform provides.
+  </Step>
+</Steps>
+
+After verification and DNS propagation, your domain serves your deployed sandbox.
+
+## Domains and TLS
+
+The platform automatically issues and renews TLS certificates for verified domains. There is nothing you need to configure for HTTPS.
+
+## Domain to sandbox mapping
+
+Each custom domain maps to one sandbox. Multiple custom domains can map to the same sandbox (for example, `acme.com` and `www.acme.com`). One custom domain cannot serve multiple sandboxes simultaneously.
+
+## Removing a domain
+
+From the same Domains panel, click **Remove** next to the domain. The mapping is deleted; certificates are revoked and not renewed. DNS at your registrar is unchanged; you can repoint elsewhere.
+
+## Production restriction
+
+Custom domains map to deployed sandboxes only, not to development previews. Preview URLs always use the platform-provided subdomain. This is a deliberate separation of dev and production traffic.
+
+## Where to go next
+
+- [Deploying Apps](/deployment/deploying-apps) for the deploy gate flow.
+- [Preview Servers](/deployment/preview) for development URLs.

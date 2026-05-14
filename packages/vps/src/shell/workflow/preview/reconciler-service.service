@@ -1,0 +1,27 @@
+[Unit]
+Description=ellul.ai preview reconciler (boot-durable safety-net sweep)
+# Requires file-api — if file-api itself is down, the reconciler has
+# nothing to sweep. Timer will retry.
+Wants=ellul-file-api.service
+After=ellul-file-api.service
+
+[Service]
+Type=oneshot
+# Post an empty body; the endpoint triggers a full reconcile.
+# Internal token auth so this doesn't need to carry a user JWT.
+ExecStart=/usr/bin/curl -sS -X POST --max-time 10 \
+  -H "X-Internal-Token: $$(cat /run/shield/internal-file-api.token 2>/dev/null || echo missing)" \
+  http://127.0.0.1:3002/api/preview/reconcile
+# Systemd exit-code handling: curl exits non-zero on HTTP >= 400,
+# network errors, or timeout. Timer will fire again regardless.
+SuccessExitStatus=0 22 28
+# Minimal privilege — just needs network + read access to the token file.
+User=dev
+Group=dev
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true

@@ -1,0 +1,116 @@
+---
+title: "The Agent"
+description: "How chat threads and CLI sessions interact with your isolated sandbox."
+section: "Core Concepts"
+order: 4
+---
+
+The agent is your AI collaborator inside a sandbox. It is not a single program. It is a chat thread bound to a CLI session running in your sandbox's isolated namespace.
+
+## Threads and sessions
+
+A thread is a continuous conversation. Each thread is bound to one CLI session. You can have multiple threads per sandbox.
+
+Available session types:
+
+| Session | What it runs |
+|---------|-------------|
+| **Shell** | A shell with no AI. Useful for direct commands. |
+| **ZeroClaw** | The autonomous agent runtime. |
+| **OpenCode** | The OpenCode CLI. |
+| **Claude** | Claude Code. |
+| **Codex** | OpenAI's Codex CLI. |
+| **Cursor** | The Cursor agent. |
+
+Threads survive sandbox deletion only if you back up your code first. Sessions persist across browser refreshes; the workbench reconnects to the same conversation.
+
+## How a message flows
+
+When you send a message:
+
+<Steps>
+  <Step number={1} title="The chat layer accepts the message">
+    Authenticated by your session. In Web Locked tier, also signed by your hardware passkey.
+  </Step>
+  <Step number={2} title="The agent runs inside the sandbox namespace">
+    Every CLI invocation enters the sandbox's mount, process, and network namespace. The agent sees only its sandbox's files; it cannot see other sandboxes, system services, or your secrets.
+  </Step>
+  <Step number={3} title="The agent reads files, runs commands, edits code">
+    Source code is bind-mounted writable for the active sandbox only. Subprocesses are constrained by a syscall denylist that blocks namespace escape, debugging primitives, and other dangerous operations.
+  </Step>
+  <Step number={4} title="The agent requests gates when it needs privileges">
+    Reading application secrets, querying the database for writes, pushing code, deploying: these all flow through Sovereign Shield as permission requests. You approve or deny in the workbench.
+  </Step>
+  <Step number={5} title="Output streams back to the chat">
+    Output streams to the chat panel as the agent works. File changes appear in the Code tab. Database writes appear in Database tabs after approval.
+  </Step>
+</Steps>
+
+## Tool calls and gates
+
+The agent uses tools to do its work. Tools are categorised by capability. Some categories are sandbox-scoped: they can only operate on the sandbox the agent is in, never on a sandbox's data even if the agent has read access to its source.
+
+The four-layer scope check:
+
+1. The chat layer's tool resolver auto-denies sandbox-scoped tool calls that reference another sandbox.
+2. Permission requests for non-scoped tools are enriched with hints when other sandboxes are mentioned.
+3. Sovereign Shield independently verifies any permission request that names a sandbox the requester has read access to.
+4. The agent's system prompt tells the agent that shared snapshots are inspect-only.
+
+This means even if the agent reads sandbox B's source through a granted snapshot, it cannot trick you into approving a write against B while running in sandbox A.
+
+For the tool and gate types: [Permission Gates](/permissions/overview).
+
+## CLI authentication
+
+Some agents (Claude, Codex, Cursor) need their own credentials separate from your ellul account. The first time you start one of those sessions, the chat panel walks you through the agent's login flow:
+
+<Steps>
+  <Step number={1} title="Begin authentication">
+    Click "Authenticate" or send a message. The chat panel launches the agent's login flow under a controlled wrapper.
+  </Step>
+  <Step number={2} title="Visit the URL the agent prints">
+    Standard OAuth or token-paste flow. The chat panel surfaces the URL and any device code.
+  </Step>
+  <Step number={3} title="Paste the token if needed">
+    The chat panel passes it to the CLI. The token is stored on your encrypted volume by the agent itself.
+  </Step>
+</Steps>
+
+Tokens never touch the ellul control plane. They live only on your server.
+
+## Persistent context
+
+Each sandbox can have a context file (commonly `CLAUDE.md` or `AGENTS.md`) that the platform aggregates and prepends to the agent's context. This is how you give the agent durable instructions: project conventions, code style, the meaning of acronyms, anything you want repeated across threads.
+
+Manage context from **Settings > Context**.
+
+## What the agent sees as input
+
+The agent receives:
+
+- Your message.
+- Aggregated context from `CLAUDE.md`, global context, and thread-specific notes.
+- The CLI session's persistent state from prior turns.
+- The tool definitions for everything it can call.
+- Explicit instructions for behaving safely with shared content.
+
+The agent does NOT receive:
+
+- Other sandboxes' source code (unless explicitly shared, and even then only in inspect-only mode).
+- Any plaintext secrets.
+- The contents of other CLI sessions.
+
+## Multiple agents in parallel
+
+This is one of the core things ellul gets right. Run three agents in parallel, each in its own sandbox. One writes code. One reviews it. One drafts the docs. They work concurrently and cannot interfere with each other.
+
+If you want one agent to read another's output (for example, the doc-writer needs to see the code-writer's output), you grant explicit cross-sandbox read access. The reader sees a frozen, read-only snapshot. Permission gates remain scoped: the reader cannot act on the writer's database, secrets, or deployments. Read, do not touch.
+
+This is how agent teams compose. See [Cross-Sandbox Sharing](/projects/sharing-projects).
+
+## Where to go next
+
+- [Permission Gates](/permissions/overview) for the authorisation layer.
+- [Sandboxes](/concepts/sandboxes) for kernel-level isolation.
+- [The Console](/getting-started/the-console) for the workspace tabs.

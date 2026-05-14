@@ -1,0 +1,121 @@
+{
+  "og": {
+    "agents": {
+      "title": "エージェント。",
+      "highlight": "BYOで持ち込み。",
+      "eyebrow": "エージェント · Ellul",
+      "subtitle": "Claude Code、Codex、Cursor、OpenCodeを、スリープしないワークステーション上で。",
+      "alt": "ellulエージェント。BYOで持ち込み。"
+    },
+    "blog": {
+      "title": "ブログ。",
+      "highlight": "現場ノート。",
+      "eyebrow": "エンジニアリング · Ellul",
+      "subtitle": "エージェント、ワークステーション、ふた問題に関する創業者の声。",
+      "alt": "ellulブログ：エージェント、ワークステーション、ふた問題"
+    },
+    "blogTag": {
+      "eyebrow": "タグ · Ellul ブログ",
+      "subtitleTemplate": "「{label}」タグの全記事。エージェント、ワークステーション、ふた問題。",
+      "alt": "ellulブログタグ"
+    },
+    "concepts": {
+      "title": "コンセプト。",
+      "highlight": "カテゴリ。",
+      "eyebrow": "礎 · Ellul",
+      "subtitle": "エージェントワークステーション、常時稼働AIエージェント、並列エージェント：構造的プリミティブ。",
+      "alt": "ellulコンセプト：エージェントワークステーション、常時稼働、並列"
+    },
+    "docs": {
+      "title": "ドキュメント。",
+      "eyebrow": "ドキュメント · Ellul",
+      "subtitle": "ミッション、はじめに、ユースケース、セキュリティ機能。",
+      "alt": "ellulドキュメント"
+    },
+    "faq": {
+      "title": "質問、",
+      "highlight": "答え。",
+      "eyebrow": "FAQ · Ellul",
+      "subtitle": "エージェントワークステーションとは、パスキーゲートはどう動くか、並列エージェント。",
+      "alt": "ellul FAQ"
+    },
+    "glossary": {
+      "title": "用語集。",
+      "highlight": "定義。",
+      "eyebrow": "リファレンス · Ellul",
+      "subtitle": "エージェントワークステーション、Sovereign Shield、パスキー承認、並列エージェント、MCP：引用しやすい定義。",
+      "alt": "ellul用語集：用語、同義語、定義"
+    },
+    "mcp": {
+      "title": "MCP。",
+      "highlight": "ワークステーション上で。",
+      "eyebrow": "MCP · Ellul",
+      "subtitle": "GitHub、Database、Playwrightなど。クレデンシャル仲介付きModel Context Protocol。",
+      "alt": "ellul MCP：Model Context Protocol"
+    },
+    "pricing": {
+      "title": "料金。",
+      "highlight": "$20または$50。",
+      "eyebrow": "プラン · Ellul",
+      "subtitle": "個人プロジェクト向け個人。並列サンドボックス向けプロ。どちらも常時稼働。",
+      "alt": "ellul料金：個人プランとプロプラン"
+    },
+    "privacy": {
+      "title": "プライバシー",
+      "highlight": "ポリシー。",
+      "eyebrow": "リーガル · Ellul",
+      "subtitle": "あなたのデータをどう扱うか。",
+      "alt": "ellulプライバシーポリシー"
+    },
+    "promptEngineering": {
+      "title": "プロンプト。",
+      "highlight": "指示ではなく方向。",
+      "eyebrow": "リファレンス · Ellul",
+      "subtitle": "永続ワークステーション上のAIコーディングエージェントへのプロンプトパターン。方向、停止条件、並列の継ぎ目。",
+      "alt": "ellulプロンプトエンジニアリング"
+    },
+    "solutions": {
+      "title": "ソリューション。",
+      "highlight": "エージェントワークステーション。",
+      "eyebrow": "ソリューション · Ellul",
+      "subtitle": "チームがEllul上で一晩のランや並列エージェント、ゲート付きインフラをどう出荷するか。",
+      "alt": "ellulソリューション"
+    },
+    "terms": {
+      "title": "利用規約",
+      "highlight": "。",
+      "eyebrow": "リーガル · Ellul",
+      "subtitle": "プラットフォームを使う前にお読みください。",
+      "alt": "ellul利用規約"
+    },
+    "vs": {
+      "title": "比較。",
+      "highlight": "エージェントを移動。",
+      "eyebrow": "比較 · Ellul",
+      "subtitle": "Cursor、Claude Code、Codespaces、Sprites、E2B、Daytonaとの並列比較。",
+      "alt": "ellul比較"
+    },
+    "vsDetail": {
+      "highlight": "ellul",
+      "eyebrow": "比較 · ellul",
+      "subtitleFallback": "エージェントをラップトップから移動。"
+    },
+    "solutionsDetail": {
+      "titleFallback": "ellul",
+      "eyebrowFallback": "ソリューション · ellul",
+      "subtitleFallback": "エージェントをラップトップから移動。"
+    },
+    "agentsDetail": {
+      "titleFallback": "エージェント",
+      "highlight": "Ellul上で",
+      "eyebrowFallback": "エージェント · Ellul",
+      "subtitleFallback": "永続ワークステーション上のAIコーディングエージェント。"
+    },
+    "mcpDetail": {
+      "titleFallback": "MCP",
+      "highlight": "Ellul上で",
+      "eyebrowFallback": "MCP · Ellul",
+      "subtitleFallback": "Ellul上のModel Context Protocolエントリ。"
+    }
+  }
+}

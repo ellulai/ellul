@@ -1,0 +1,166 @@
+A multi-agent system is two or more language-model agents collaborating on a task. That definition is short enough to be useful. Almost everything else in the field is contested: there's no agreed-on architecture, no canonical framework, and no benchmark for "did my multi-agent setup work better than one agent with better tools."
+
+This post is a builder's view of which patterns hold up, where each one fails, and what your runtime has to give you for any of them to be safe in production.
+
+If you're new to the territory, "multi-agent" is the software pattern. "[Parallel agents](/concepts/parallel-agents)" is the runtime property: multiple agents executing at the same time without state collision. The two get conflated often. Most multi-agent demos in 2026 run their agents serially. Only some need true parallelism. Both are useful, but they aren't the same problem.
+
+## The three patterns that hold up
+
+After watching a few hundred multi-agent attempts ship and unship, three architectural shapes recur. Almost everything else is a variation on one of them.
+
+### Pattern 1: Pipeline
+
+One agent finishes a step and hands off explicitly to the next. Each agent has a narrow role, a clear input contract, and a clear output contract. The pipeline is sequential, not concurrent, and the handoff is the design surface.
+
+<CodeTabs>
+
+**Sketch (Python pseudocode):**
+
+```python
+# A research, write, review pipeline.
+research_agent = Agent(role="researcher", tools=[search_web, read_url])
+writer_agent   = Agent(role="writer",     tools=[draft_doc])
+review_agent   = Agent(role="reviewer",   tools=[lint, fact_check])
+
+brief = research_agent.run(topic="multi-agent systems in 2026")
+draft = writer_agent.run(brief=brief)
+final = review_agent.run(draft=draft, brief=brief)
+
+return final
+```
+
+</CodeTabs>
+
+The pipeline pattern works when the task decomposes into stages with well-defined boundaries. It fails when the stages aren't independent: the writer needs context the researcher didn't capture, or the reviewer wants to challenge a premise already baked into the brief. Handoffs lose information. Pipelines are good at the kind of work where the lost information turns out not to matter.
+
+### Pattern 2: Supervisor
+
+A supervising agent decides which sub-agent to invoke for each step. The supervisor holds the plan. The sub-agents are tools the supervisor calls. From the supervisor's view, "the python coder" is a function. From the python coder's view, it's running with a fresh context every invocation.
+
+<CodeTabs>
+
+**Sketch (Python pseudocode):**
+
+```python
+# A supervisor with three specialists.
+specialists = {
+  "code":   Agent(role="python-coder",   tools=[run_python, edit_file]),
+  "data":   Agent(role="data-analyst",   tools=[query_sql, plot]),
+  "search": Agent(role="web-researcher", tools=[search_web, read_url]),
+}
+
+supervisor = Agent(
+  role="supervisor",
+  tools={ name: agent.as_tool() for name, agent in specialists.items() }
+)
+
+answer = supervisor.run(
+  task="Investigate this customer churn anomaly and propose a fix."
+)
+```
+
+</CodeTabs>
+
+The supervisor pattern shines when the task's structure is "pick the right specialist for each sub-step." Research, code, debug, summarize. It fails when the supervisor has to reason about state that the sub-agents are mutating, because the supervisor only sees what the sub-agent returns. If the sub-agent had a useful intermediate observation that didn't make it into the return value, the supervisor doesn't have it.
+
+### Pattern 3: Peer
+
+Multiple agents run concurrently, each with its own tools and goal, coordinating via explicit messages or a shared (but rarely mutable) workspace. The classic version is the [parallel agents](/concepts/parallel-agents) pattern: a coding agent, a reviewing agent, and a documenting agent each working on the same source tree at the same time, with read-only peering between them.
+
+<CodeTabs>
+
+**Sketch (orchestration pseudocode):**
+
+```python
+# A coder, a reviewer, and a documenter running concurrently.
+# Each has its own workstation. The reviewer and documenter
+# read the coder's working tree via a read-only peer mount.
+
+coder      = Workstation(role="coder",       project="payments-api")
+reviewer   = Workstation(role="reviewer",    peer_read=[coder])
+documenter = Workstation(role="documenter",  peer_read=[coder])
+
+# Run all three concurrently.
+results = await asyncio.gather(
+  coder.run(task="Add idempotency keys to POST /charges"),
+  reviewer.run(task="Watch for SQL injection, missing tests"),
+  documenter.run(task="Update the API reference for the new param"),
+)
+```
+
+</CodeTabs>
+
+Peer is the pattern most prone to subtle bugs. Two agents writing to the same file at the same time. An agent reading half-applied changes from another. A "lost update" where two agents both committed changes that overwrote each other. The fix isn't better discipline. It's structural. Each agent gets its own filesystem, its own process tree, its own credentials. Coordination is read-only by default. Write authority belongs to one agent per resource.
+
+## Where does each pattern fail?
+
+Each pattern has a characteristic failure mode. Knowing what breaks first is the difference between a multi-agent system that ships and one that gets ripped out after a quarter.
+
+<Callout variant="warn" title="Pipeline: handoff loss">
+The most common bug is "the next stage didn't have what it needed." The brief was too short. The draft missed a constraint. The review couldn't tell why a decision was made. The fix is contract design: what does this stage produce that the next one consumes, and the contract has to be explicit. "The agent will figure it out" is not a contract.
+</Callout>
+
+<Callout variant="warn" title="Supervisor: brittle decomposition">
+The supervisor is a single point of reasoning. If its plan is wrong, the sub-agents execute the wrong plan with high competence. Worse, supervisors sometimes loop, calling the same sub-agent in slightly different ways waiting for a different result, burning context window and tokens. Bound the depth of supervision (max steps per task) and watch for the loop signature in traces.
+</Callout>
+
+<Callout variant="warn" title="Peer: state corruption and runaway costs">
+Peer parallelism multiplies state at the same time it multiplies the chance of corruption. Two coding agents on the same branch is the failure mode that kills most early peer setups. Costs scale with the number of concurrent agents, and unbounded peer parallelism (eight agents instead of three) produces output no human can review at the rate the fleet generates it. The fleet's output is unread. The spend is real.
+</Callout>
+
+## What your runtime has to give you
+
+The framework choice (LangGraph, CrewAI, AutoGen, your own) matters less than the runtime properties under the framework. Three things matter, and most demos skip all three because the demo runs once on a laptop.
+
+<NumberedList>
+  <NumberedItem heading="State isolation">
+    Each agent has its own filesystem, process tree, credentials, and network namespace. Two agents on the same laptop fighting over `node_modules` and `.git/index.lock` is a category of failure no orchestration framework can paper over. The fix is below the framework, in the runtime.
+  </NumberedItem>
+  <NumberedItem heading="Explicit handoff">
+    Shared mutable state between agents is a footgun. The disciplined version is read-only peering. Agent A grants agent B a filtered, read-only snapshot of A's workspace. B can analyze, summarize, or write a review against it. B cannot mutate A's tree. Write authority stays scoped per resource.
+  </NumberedItem>
+  <NumberedItem heading="Gated privileged actions">
+    No agent in the fleet pushes to production without human approval. No agent runs `terraform apply` against the real account without a passkey tap. The gate sits at the runtime boundary, outside the agent process, so a compromised agent in the fleet cannot bypass it. This matters most for multi-agent because the failure surface scales with agent count.
+  </NumberedItem>
+</NumberedList>
+
+The pattern that has held up in practice is two or three agents, each on its own [agent workstation](/concepts/agent-workstation), with read-only peering and a server-side gate on privileged actions. It is unsexy compared to the framework demos. It is what works when the work is real.
+
+## Frameworks: which one?
+
+LangGraph, CrewAI, and AutoGen are the three frameworks worth understanding in 2026, in roughly that order of adoption. Each has a different primary metaphor. LangGraph is graph-explicit: you draw the state machine, it executes the state machine. CrewAI is role-explicit: you define personas (researcher, writer, reviewer), each with tools and goals, and the framework orchestrates the conversation. AutoGen is conversation-explicit: agents talk to each other (and to a human) in a transcript the framework manages.
+
+Pick whichever metaphor matches your task. If your control flow is the design, LangGraph. If your role decomposition is the design, CrewAI. If your iterative back-and-forth is the design, AutoGen. Don't pick on benchmarks. Pick on which abstraction makes the code in your codebase shorter.
+
+The framework you pick is not load-bearing. The runtime properties below it are. A two-agent CrewAI setup on isolated workstations with a passkey gate beats an eight-agent LangGraph fleet on a single laptop sharing credentials, every time.
+
+## When multi-agent is the wrong answer
+
+Most "multi-agent" problems are one-agent problems with better tools. If you've designed a five-agent system to write, review, deploy, monitor, and document a single feature, ask whether the same agent with five tools does it better. Often the answer is yes. Fewer handoffs, less prompt overhead, no plan-supervision loops.
+
+The case for multi-agent gets stronger when the agents have genuinely different goals (coder versus reviewer is the canonical example: they should disagree), when the agents need different tools or models (a cheap model for triage, an expensive model for writing), or when concurrency wins (one agent on the bug while another runs the regression suite). If none of those apply, one agent is the answer.
+
+---
+
+## FAQ
+
+<Faq />
+
+---
+
+## References
+
+- [LangGraph docs: multi-agent systems](https://langchain-ai.github.io/langgraph/)
+- [CrewAI docs: crews and tasks](https://docs.crewai.com)
+- [AutoGen docs: conversation patterns](https://microsoft.github.io/autogen/)
+- Internal: [Parallel agents](/concepts/parallel-agents), [Agent workstation](/concepts/agent-workstation)
+
+<Cta
+  eyebrow="The runtime layer"
+  body="Multi-agent systems live or die on what's underneath the framework. Ellul gives each agent its own workstation, read-only peering, and a passkey-gated boundary for the dangerous parts."
+  primary={{ href: "https://console.ellul.ai/sign-up", label: "Try parallel agents" }}
+  links={[
+    { href: "/concepts/parallel-agents", label: "Parallel agents primer" },
+    { href: "/concepts/agent-workstation", label: "Agent workstation" },
+  ]}
+/>

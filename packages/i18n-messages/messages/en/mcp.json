@@ -1,0 +1,202 @@
+{
+  "mcp": {
+    "playwright": {
+      "name": "Playwright MCP",
+      "description": "Headless browser automation as an MCP server. On Ellul, the browser stays warm between agent sessions. Auth cookies and warm caches persist instead of being re-built every prompt.",
+      "hero": {
+        "eyebrow": "MCP · Server",
+        "headline": "Playwright MCP on Ellul",
+        "sub": "Headless browser automation as a persistent MCP server. Warm browser, persistent cookies, isolated per project. Coming soon: deep guide in Phase 6c."
+      },
+      "capabilities": [
+        "Headless Chromium / Firefox / WebKit",
+        "Persistent browser context (cookies, localStorage, indexedDB) between sessions",
+        "Per-project namespace isolation",
+        "Brokered credentials for authenticated browsing"
+      ],
+      "faq": {
+        "vs-laptop": {
+          "q": "Why run Playwright MCP on the workstation vs the laptop?",
+          "a": "Browser context warm-up is expensive. On a laptop, the browser starts cold every session. On Ellul, the browser context persists; the agent attaches to a warm browser with auth cookies still valid."
+        },
+        "credentials": {
+          "q": "How are credentials handled?",
+          "a": "Authenticated browsing (anything that requires a login) flows through the Sovereign Shield. The credential is brokered to Playwright per-call, not stored in Playwright's environment."
+        },
+        "full-guide": {
+          "q": "Where's the full guide?",
+          "a": "In progress. The MCP hub at /mcp is the start; per-server deep pages ship in a follow-up phase."
+        }
+      }
+    },
+    "github": {
+      "name": "GitHub MCP",
+      "description": "GitHub access (issues, PRs, reviews, status checks) as an MCP server. On Ellul, the PAT lives in the shield, not the MCP server's environment. Coming soon: deep guide in Phase 6c.",
+      "hero": {
+        "eyebrow": "MCP · Server",
+        "headline": "GitHub MCP on Ellul",
+        "sub": "GitHub issues, PRs, reviews, status checks as a persistent MCP server. The personal access token lives in the shield's vault. Even a fully compromised MCP server cannot leak it."
+      },
+      "capabilities": [
+        "Issues, PRs, reviews, comments, status checks",
+        "Branch operations and Git LFS where applicable",
+        "PAT brokered by Sovereign Shield (not in MCP server env)",
+        "Passkey-gated operations for write actions"
+      ],
+      "faq": {
+        "pat-in-env": {
+          "q": "Doesn't every MCP server need the PAT in its environment?",
+          "a": "Naively, yes; most MCP server tutorials walk you through dropping the PAT into a .env. On Ellul, the GitHub MCP server is configured to request the token per-call from the shield. The shield holds the long-lived secret; the MCP server holds short-lived tokens scoped to the operation."
+        },
+        "gated-vs-flow": {
+          "q": "What's gated and what flows through?",
+          "a": "Read operations (list issues, view PR, get diff) flow through with no prompt. Write operations (push, comment, merge, close) pause for passkey approval. The action queues, the user gets a notification, the user taps to approve."
+        },
+        "full-guide": {
+          "q": "Where's the full guide?",
+          "a": "In progress. The MCP hub at /mcp is the start; the GitHub-specific deep guide ships in a follow-up phase."
+        }
+      }
+    },
+    "database": {
+      "name": "Database MCP",
+      "description": "SQL access (Postgres, MySQL, SQLite) as an MCP server. On Ellul, the connection is brokered by the shield with read/write/migrate gates classified per query. Deep guide coming soon.",
+      "hero": {
+        "eyebrow": "MCP · Server",
+        "headline": "Database MCP on Ellul",
+        "sub": "SQL access for agents, with the connection brokered by the shield. db_read / db_write / db_migrate gates classified per query so privileged migrations always pause for passkey approval."
+      },
+      "capabilities": [
+        "Postgres, MySQL, SQLite (and others via standard MCP server)",
+        "Per-app role hierarchy (owner / app / readonly)",
+        "db_read / db_write / db_migrate gate classification per query",
+        "Connection string brokered by Sovereign Shield, never in agent process"
+      ],
+      "faq": {
+        "any-sql": {
+          "q": "Can the agent run any SQL?",
+          "a": "By default, no. Queries are classified into db_read / db_write / db_migrate buckets. Read queries flow through; write queries pause for passkey approval; migration queries require an explicit, separate gate that holds for a short TTL."
+        },
+        "connection-string": {
+          "q": "How is the connection string protected?",
+          "a": "It lives in the shield's vault. The MCP server requests it per-call; the credential never enters the agent's process or environment."
+        },
+        "full-guide": {
+          "q": "Where's the full guide?",
+          "a": "In progress. The MCP hub at /mcp covers the common ground; this deep page ships in a follow-up phase."
+        }
+      }
+    },
+    "claude-code": {
+      "name": "Claude Code MCP integration",
+      "description": "How to connect Claude Code to MCP servers running on an Ellul workstation. Coming soon: full guide in Phase 6c.",
+      "hero": {
+        "eyebrow": "MCP · Client integration",
+        "headline": "Claude Code + MCP on Ellul",
+        "sub": "Claude Code is one of the most mature MCP clients. On Ellul, the MCP servers persist between sessions with credentials brokered by the shield."
+      },
+      "capabilities": [
+        "Claude Code as MCP client (Anthropic's reference implementation)",
+        "Long-lived MCP servers on the workstation",
+        "Per-project MCP namespace isolation"
+      ],
+      "faq": {
+        "why-called-out": {
+          "q": "Why is Claude Code's MCP support called out specifically?",
+          "a": "Claude Code is Anthropic's reference implementation of an MCP client; the integration is unusually polished. On Ellul, the workstation's persistent runtime gives Claude Code's MCP layer a natural home. Servers don't restart, sessions don't lose context."
+        },
+        "full-guide": {
+          "q": "Where's the full integration guide?",
+          "a": "In progress. The MCP hub at /mcp covers the common ground; per-tool deep pages ship in a follow-up phase."
+        }
+      }
+    },
+    "cursor": {
+      "name": "Cursor MCP integration",
+      "description": "How to connect Cursor (editor or CLI) to MCP servers running on an Ellul workstation. Coming soon: full guide in Phase 6c.",
+      "hero": {
+        "eyebrow": "MCP · Client integration",
+        "headline": "Cursor + MCP on Ellul",
+        "sub": "Cursor as the client, MCP servers running on the workstation. Same workflow either way; the runtime change is what matters."
+      },
+      "capabilities": [
+        "Cursor's CLI as MCP client",
+        "Cursor editor's native MCP support",
+        "MCP servers persisted between sessions on the workstation"
+      ],
+      "faq": {
+        "editor-supports-mcp": {
+          "q": "Does Cursor's editor support MCP?",
+          "a": "Yes. Cursor's editor and CLI both speak MCP. On Ellul, the MCP servers run on the workstation; Cursor connects to them remotely with the workstation as the runtime."
+        },
+        "full-guide": {
+          "q": "Where's the full integration guide?",
+          "a": "In progress. The MCP hub at /mcp covers the common ground; per-tool deep pages ship in a follow-up phase."
+        }
+      }
+    },
+    "setup": {
+      "name": "MCP setup guide",
+      "description": "Step-by-step guide to running MCP servers on an Ellul workstation: namespace setup, credential brokering, agent client configuration. Coming soon: deep guide in Phase 6c.",
+      "hero": {
+        "eyebrow": "MCP · Setup",
+        "headline": "Set up MCP on Ellul",
+        "sub": "End-to-end walkthrough: provision a workstation, install MCP servers, broker credentials through the shield, point your agent CLI at the workstation. Coming soon."
+      },
+      "capabilities": [
+        "Provision a workstation with MCP support",
+        "Install common MCP servers (GitHub, Database, Playwright)",
+        "Broker credentials through the Sovereign Shield",
+        "Configure Claude Code, Cursor, or OpenCode as the MCP client"
+      ],
+      "faq": {
+        "setup-duration": {
+          "q": "How long does setup take?",
+          "a": "About fifteen minutes for the first workstation with one or two MCP servers. Subsequent additions take five minutes."
+        },
+        "byo-server": {
+          "q": "Can I bring my own MCP server?",
+          "a": "Yes. Any MCP-compliant server (open-source or proprietary) runs on Ellul. The Sovereign Shield brokers credentials regardless of who wrote the MCP server."
+        },
+        "full-guide": {
+          "q": "Where's the full guide?",
+          "a": "In progress. The MCP hub at /mcp covers the common ground; this end-to-end walkthrough ships in a follow-up phase."
+        }
+      }
+    },
+    "overview": {
+      "name": "MCP (Model Context Protocol)",
+      "description": "An open protocol connecting AI agents to tools, data sources, and APIs. The hub: what MCP is, why it matters, how it runs on Ellul, and links to per-server guides.",
+      "hero": {
+        "eyebrow": "MCP · Hub",
+        "headline": "Model Context Protocol on Ellul",
+        "sub": "What MCP is, why it changed the agent ecosystem, and how MCP servers run as long-lived processes on an Ellul workstation. The single page to start from."
+      },
+      "capabilities": [
+        "Standard wire protocol for agent-to-tool integrations",
+        "Long-lived MCP servers as persistent processes on the workstation",
+        "Credential brokering through the Sovereign Shield, not plaintext to MCP servers",
+        "Compatible with Claude Code, Cursor's CLI, OpenCode, and any MCP-aware agent",
+        "Per-project MCP server isolation via namespace primitives"
+      ],
+      "faq": {
+        "what-is-mcp": {
+          "q": "What is MCP in one sentence?",
+          "a": "MCP is an open protocol introduced by Anthropic in late 2024 that standardizes how AI agents connect to tools, data sources, and APIs, letting any compliant agent use any compliant server."
+        },
+        "need-mcp": {
+          "q": "Do I need MCP to use Ellul?",
+          "a": "No. MCP is one of several ways to extend an agent. If your agent doesn't need external tools, the workstation's filesystem and shell are enough. MCP becomes essential when you want persistent, structured tool access."
+        },
+        "vs-laptop": {
+          "q": "How are MCP servers different on Ellul vs a laptop?",
+          "a": "On a laptop, MCP servers run as long as your terminal does. On Ellul, they run as long-lived processes alongside the agent. They don't restart every session, they don't lose connection state, and they're gated by the same Sovereign Shield as the agent itself."
+        },
+        "multiple-servers": {
+          "q": "Can I run multiple MCP servers per workstation?",
+          "a": "Yes. The namespace primitive isolates them per-project. A single workstation can host the playwright MCP, a database MCP, a GitHub MCP, and your own custom MCP simultaneously, each in its own namespace."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,151 @@
+## What is the Playwright MCP server?
+
+The **Playwright MCP server** is an <Term slug="mcp">MCP</Term>-compliant wrapper around [Playwright](https://playwright.dev), Microsoft's headless-browser automation library. It exposes Playwright's primitives (open page, click, type, screenshot, wait for selector, evaluate JavaScript) as MCP tools so any compliant agent can drive a real browser the same way it calls any other tool.
+
+It sits in the same conceptual slot as the GitHub MCP or the Postgres MCP: a long-lived process the agent talks to, scoped to a project, with a real upstream behind it.
+
+What makes Playwright a particularly good fit for an <Term slug="agent-workstation">agent workstation</Term> (and a particularly painful fit for a laptop) is the cost of starting a browser. Every Chromium launch is a few hundred milliseconds of process startup, plus another second or two of HTTP/2 connection warming, plus however long it takes to log in and reach the page you want. On a laptop, that cost is paid at the start of every session. On a workstation, the browser stays warm and the agent attaches and detaches without re-paying.
+
+## What the Playwright MCP gives the agent
+
+The standard tool set across implementations:
+
+- **Navigation:** `goto`, `back`, `forward`, `reload`.
+- **Interaction:** `click`, `type`, `select_option`, `check`, `hover`, `press_key`.
+- **Inspection:** `get_text`, `get_attribute`, `screenshot`, `pdf`, `accessibility_tree`.
+- **Waiting:** `wait_for_selector`, `wait_for_url`, `wait_for_load_state`.
+- **JavaScript evaluation:** `evaluate` runs JS in the page context and returns the result.
+
+Plus convenience tools that wrap common multi-step patterns: `fill_form`, `extract_table`, `download_file`.
+
+The agent calls them like any MCP tool. Most "ask the agent to do something on a website" flows reduce to ten or twenty of these in sequence. The agent picks the sequence; the MCP server executes it.
+
+## Step-by-step: install Playwright MCP on an Ellul workstation
+
+**1. Provision a workstation.** Any agent CLI is fine. Playwright doesn't care which client is connecting.
+
+**2. Pick a Playwright MCP implementation.** The two common ones in 2026:
+
+- The [official Playwright MCP](https://github.com/microsoft/playwright-mcp) from Microsoft.
+- The community [`@modelcontextprotocol/server-puppeteer`](https://github.com/modelcontextprotocol/servers/tree/main/src/puppeteer), Anthropic-blessed.
+
+The official one is the right default. Install:
+
+```bash
+npx -y @playwright/mcp@latest --port 7810 --headless
+```
+
+That starts a long-lived SSE server on port 7810 inside the project namespace.
+
+**3. Wire it into your agent's MCP config.** For Claude Code in `<project>/.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "ellul": { "command": "ellul-mcp", "args": [], "env": {} },
+    "playwright": {
+      "url": "http://127.0.0.1:7810/mcp",
+      "transport": "sse"
+    }
+  }
+}
+```
+
+For Cursor, the same entry under `mcpServers` in its `mcp.json`.
+
+**4. Persist authenticated sessions.** Most useful Playwright work involves logging into something. To make logins survive between sessions, point Playwright at a persistent storage state:
+
+```bash
+npx -y @playwright/mcp@latest \
+  --port 7810 \
+  --headless \
+  --storage-state /home/dev/.playwright-state.json
+```
+
+The workstation's bind-mounted vault keeps that file across reboots.
+
+**5. Verify.** Ask the agent to navigate to a page and report the title. The Playwright MCP runs in the background; the agent's response includes the page metadata.
+
+<Callout type="note" title="The persistence claim, in one sentence">
+On Ellul, the Playwright browser context (cookies, localStorage, indexedDB, service-worker state) survives across agent sessions and across workstation reboots. On a laptop, every session starts cold.
+</Callout>
+
+## A worked example: agent runs a Playwright suite overnight
+
+You're shipping a new checkout flow. There's a Playwright suite that takes about forty minutes to run end-to-end against staging, plus another twenty minutes if anything fails. You don't want to babysit it.
+
+The shape of the flow on Ellul:
+
+1. **Late afternoon, you queue the task.** From the agent panel: "Run the full Playwright suite against staging. If anything fails, investigate, capture screenshots, and open a draft PR with the fix or a description of the bug."
+2. **Agent attaches to the running Playwright MCP.** The browser is already warm; staging cookies are already in `storage-state.json`. No setup time.
+3. **You shut your laptop.** The agent runs. The workstation doesn't sleep. Playwright drives the browser; results stream back to the agent's reasoning loop.
+4. **The agent hits a failure.** It captures a screenshot, evaluates the page's accessibility tree, pokes a few JS expressions, narrows the bug.
+5. **The agent opens a draft PR.** The body has the screenshot, the failure reason, and either a proposed fix or a description that's good enough for the morning.
+6. **You wake up.** Phone has a notification. Tap to approve. PR ready for human review.
+
+Without persistence, every restart of the agent (and there will be restarts during a multi-hour run) re-launches a cold browser, re-logs into staging, re-warms the cache. Each restart is two minutes of dead time. With persistence, restarts are free. The browser is already there.
+
+## Security: credentials and gotchas
+
+Playwright MCP's main attack surface is **the URLs it visits and the JavaScript it evaluates**. Both are agent-controlled in the general case, which means a compromised agent could try to steer Playwright toward exfiltrating data or running malicious JS in a logged-in context.
+
+The Ellul mitigations:
+
+- **Project-namespace isolation.** The Playwright server's network namespace can't reach other projects' MCP servers, internal services, or shielded vaults. It can reach the public internet (the point of the server), but not `127.0.0.1` outside its own namespace.
+- **Secrets stay encrypted.** Login passwords don't go into Playwright's environment. They live in `.ellul/secrets.db` and only get injected when an Ellul-managed exec call needs them. The storage-state file holds session cookies, not raw passwords.
+- **Passkey-gated logins on first run.** The first time Playwright needs to authenticate to a new domain, the runtime pauses for <Term slug="passkey-approval">passkey approval</Term>. After the storage state is captured, subsequent runs reuse the cookie until it expires.
+
+<Callout type="warning" title="JavaScript evaluation is the long pole">
+Playwright's `evaluate` tool runs arbitrary JavaScript in the page's context. If the page is logged in, that JS has the page's full DOM, cookies, and any in-memory state. A compromised agent calling `evaluate` could read whatever the user could read. Treat the Playwright MCP the same way you'd treat a logged-in browser tab: namespace-isolated, but powerful inside its own scope.
+</Callout>
+
+One footgun: **headless mode is not a security boundary**. Headful and headless Chromium have the same privilege envelope. Use `--headless` for performance, not for safety. The safety story comes from the namespace and the gate model, not from the rendering mode.
+
+## Common patterns
+
+**E2E test runs**, as above. Playwright MCP runs your suite; the agent investigates failures.
+
+**Internal admin tools the API doesn't expose.** Some internal tools never get APIs. Playwright MCP lets the agent drive them as if it were a person. Useful but slow; treat it as a fallback to APIs, not a substitute.
+
+**Web research.** Public web pages, no login. The agent fetches, summarizes, captures snapshots. Cheaper alternatives like `curl` or `fetch` work for most cases, but Playwright matters for sites that require JavaScript rendering.
+
+**Authenticated scraping of your own systems.** Logged-in dashboards, customer-data pages, internal wikis. Storage state survives reboots, so the agent can extract data without re-logging-in every session.
+
+## FAQ
+
+### Why run Playwright MCP on the workstation vs the laptop?
+
+Browser context warm-up is expensive. On a laptop, the browser starts cold every session. On Ellul, the browser context persists; the agent attaches to a warm browser with auth cookies still valid.
+
+### How are credentials handled?
+
+Authenticated browsing flows through Ellul's secret store. The credential is injected when a login is performed; it doesn't sit in Playwright's environment for the rest of the session.
+
+### Can the agent visit any URL it wants?
+
+Within the namespace's network reach, yes. The namespace blocks reaching other projects' loopback services and the host's internal services, but the open internet is open. If you need stricter controls (domain allowlisting, for example), the workstation's egress firewall can be configured; see the [setup guide](/mcp/setup).
+
+### Does the persistent browser context survive workstation reboots?
+
+Yes. Playwright's `storage-state` file lives in the workstation's bind-mounted vault. Reboots, OS updates, and workstation pauses preserve it. Only an explicit "wipe storage" action clears it.
+
+### Headless or headful?
+
+Headless for performance. Faster startup, lower memory. Headful only if you need to debug visually. Neither changes the security envelope.
+
+## Where to go next
+
+- [MCP setup on Ellul](/mcp/setup) for the end-to-end walkthrough
+- [GitHub MCP](/mcp/github) for the agent's PR-opening workflow
+- [Claude Code on Ellul](/agents/claude-code) for a typical Playwright client
+- [Cursor on Ellul](/agents/cursor) for the other typical client
+- [The MCP hub](/mcp) for what MCP is in one page
+
+## References
+
+- [Playwright official documentation](https://playwright.dev)
+- [Microsoft Playwright MCP](https://github.com/microsoft/playwright-mcp)
+- [Model Context Protocol specification](https://spec.modelcontextprotocol.io)
+- [Anthropic-published MCP servers](https://github.com/modelcontextprotocol/servers)
+
+<FAQ />

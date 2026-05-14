@@ -1,0 +1,157 @@
+You want one AI agent to read another agent's code, without that first agent inheriting the second's credentials. That sentence sounds simple. The implementation is where most agent platforms quietly fail. The naive approach (bind-mount the whole project from agent B into agent A) leaks `.env` files, credential JSON, and OAuth tokens by accident the first time you try it. The peering primitive is the right shape for this problem, and this essay is about why.
+
+We'll work from the docs ([Cross-Sandbox Sharing](https://docs.ellul.ai/projects/sharing-projects), [Working in a Sandbox](https://docs.ellul.ai/projects/working-in-a-sandbox)) and treat the architecture seriously. This is one of the more interesting things about Ellul's design and worth a deeper look than the marketing-page treatment.
+
+## The cross-sandbox read problem
+
+A scenario from a real customer:
+
+> "I'm running two agents. One is implementing a feature on branch `auth-refactor`. The other is supposed to review the implementation. The reviewer needs to read the implementer's code (every file, every diff, every test) to do its job. But I emphatically do not want the reviewer to have the implementer's deploy keys, GitHub PAT, or the ability to push directly to the implementer's branch."
+
+This is a structurally common pattern. One agent generates work; another verifies it. They have different roles and different authority. The naive setup gives them the same access, and breaks the whole point of having two agents in the first place.
+
+Generalizing the constraint: the reading agent needs all the source code of the read sandbox to do useful work. The reading agent must not have any privileges over the read sandbox (not the credentials, not the deploy keys, not the database access, not the ability to write back). The boundary must be enforced, not advisory. A determined or confused reader must not be able to escalate by asking the platform politely.
+
+Three constraints that are easy to write down and surprisingly hard to honor in practice.
+
+## How most platforms get this wrong
+
+The default pattern, in most multi-tenant agent platforms we've audited:
+
+```
+mount --bind /workspaces/B/src /workspaces/A/.shared/B
+```
+
+A bind mount of B's source tree into A's workspace, often read-only at the kernel level. Sounds reasonable. The problem is what's inside that source tree:
+
+`.env` and `.env.local` and `.env.production` and `.env.staging`: all of B's secrets, in plaintext, now visible to A. `credentials.json` and `service-account.json`: Google Cloud, Firebase, GCP service accounts, dropped in any project root that integrates with those services. `.npmrc` with NPM authentication tokens: full publish access to private packages. `.netrc` with HTTP credentials. `.pgpass` with PostgreSQL passwords. `.openclaw/`, `.claude/`, `.codex/`, `.gemini/`: agent config directories that often hold OAuth refresh tokens, API keys, or session state. `.docker/config.json`: Docker registry credentials. `node_modules/`: dependencies that themselves can hold secrets in lockfiles or pre-built artifacts. `.git/objects/`: every prior commit, including any secret ever committed and then "redacted" by a follow-up commit.
+
+A read-only bind mount makes none of those harder to read. The reader can read all of them. The fact that the mount is read-only just means the reader can't modify B's source, but the reader was never going to modify the source. The reader was going to exfiltrate the secrets.
+
+This is the failure mode we see most often in agent-platform security reviews. Permission rules say "read-only access to B's source." The bind mount says "everything in B's source directory, including the parts that aren't actually source." The semantic gap between "B's source" and "the contents of B's source directory" is where the breach lives.
+
+## The peering primitive: source-code-only snapshot
+
+The fix is structural: don't mount the whole tree. Copy a curated subset.
+
+The pattern Ellul implements (drawn straight from the [Cross-Sandbox Sharing docs](https://docs.ellul.ai/projects/sharing-projects)):
+
+<NumberedList>
+  <NumberedItem heading="rsync with explicit excludes">
+    The platform takes a snapshot of B's source using rsync, with an explicit exclude list that filters out everything that should not cross the boundary. The excluded patterns include `.env*`, `credentials.json`, `service-account.json`, `.npmrc`, `.pypirc`, `.netrc`, `.htpasswd`, `.pgpass`, agent config directories (`.openclaw/`, `.claude/`, `.codex/`, `.cursor/`, `.config/`, `.vscode/`, `.idea/`, `.docker/`), dependency directories (`node_modules/`, `.yarn/`, `.pnpm-store/`), and bloat (`.git/objects/`, `.git/lfs/`).
+  </NumberedItem>
+  <NumberedItem heading="Snapshot is physical, not virtual">
+    Files that aren't in the rsync output do not physically exist in A's view of the snapshot. This is fundamentally different from a permission rule that says "A can read B's source but not B's secrets." Permission rules can be misconfigured, can be bypassed by clever path manipulation, can fail open under unexpected conditions. A file that wasn't copied does not exist. There is no `.env` to read because there is no `.env`.
+  </NumberedItem>
+  <NumberedItem heading="Symlinks are rejected">
+    rsync runs with `--no-links`. If B's source contains a symlink (to a `.ssh` directory, to a system credential file, to anywhere), the symlink is not followed and not copied. This closes the symlink-to-secret attack: a malicious or compromised B cannot drop a symlink in its source tree pointing to A's-attacker-of-choice file and get the snapshot to slurp it up.
+  </NumberedItem>
+  <NumberedItem heading="Mount is read-only at the kernel level">
+    The snapshot is mounted at `.shared/<B-id>/` inside A's workspace, with read-only flags enforced by the kernel mount layer. A cannot modify B's source even if it tried. This is belt-and-suspenders: even though A's view is a copy, kernel-level read-only enforcement means a mistake in copy permissions can't accidentally allow writes.
+  </NumberedItem>
+</NumberedList>
+
+The combination delivers something stronger than either piece alone. The exclude list says what should not cross. The physical copy enforces it irreversibly. The symlink rejection prevents the most obvious bypass. The read-only mount catches the case where any of the above fails.
+
+## The four-layer scope check
+
+Reading B's source code is one thing. The harder problem is preventing A from being tricked into making B do something. Suppose A's source legitimately contains a comment like:
+
+> // TODO: Run `migration_2024_03.sql` against the production database
+
+A's agent reads this comment via the shared snapshot. The agent might reasonably interpret this as "I should run that migration." If A's agent can request a database operation, and the database operation references B's database, the read access has just become a write capability.
+
+This is the structural risk peering creates that pure isolation doesn't have. The mitigation is a four-layer scope check, run on every permission request:
+
+<NumberedList>
+  <NumberedItem heading="Chat layer auto-denies sandbox-scoped tool calls">
+    The chat-layer tool resolver, before any permission gate even sees the request, auto-denies sandbox-scoped tool calls (database, secrets, deployment, observability) that reference a sandbox other than the requester's. A from-A request to write to B's database is rejected at the resolver, never reaching the gate.
+  </NumberedItem>
+  <NumberedItem heading="Permission requests are enriched with hints">
+    For non-sandbox-scoped tools that A might use against B's resources (a generic shell tool that could in principle reach a B-scoped path), the permission request is enriched with a hint identifying that the request mentions a sandbox the requester has read access to. The user sees the hint in the approval prompt; the gate sees it in the audit log.
+  </NumberedItem>
+  <NumberedItem heading="Sovereign Shield independently verifies">
+    The [Sovereign Shield](/glossary/sovereign-shield), running outside the agent process and kernel-isolated, independently verifies any permission request that names a sandbox the requester has read access to. The Shield's view of "what sandbox is this request actually targeting" cannot be spoofed by the agent's prompt; the Shield sees the underlying syscalls and operations directly.
+  </NumberedItem>
+  <NumberedItem heading="System prompt makes intent explicit">
+    The agent's system prompt is updated when it has read access to a peer sandbox to make the inspect-only intent explicit: "You have read access to sandbox B at `.shared/B`. This is for inspection only. Do not request writes, deploys, or database operations against B." This is the weakest layer (system prompts can be overridden by adversarial input), but it makes the intent unambiguous when the model is operating well.
+  </NumberedItem>
+</NumberedList>
+
+Each layer alone is incomplete. The chat-layer resolver can be bypassed by tools that aren't sandbox-scoped. Permission hints rely on the user noticing them. The Shield's verification can be incorrect if the cross-reference data is wrong. The system prompt can be ignored. Together, they catch the things any single layer misses. The shape is defense-in-depth done deliberately, not by accident.
+
+## The lifecycle: granting, refreshing, revoking
+
+Operationally, the peering primitive has a simple lifecycle worth knowing.
+
+Granting access. From sandbox A's settings, you select sandbox B as a read source. The platform takes a snapshot, rsyncs it into A's `.shared/<B-id>/`, mounts read-only. The grant is audit-logged on both sandboxes.
+
+Refreshing the snapshot. The snapshot is point-in-time. If B's code changes after the grant, A still sees the original snapshot. Click "Refresh shared snapshot" in A's panel to take a fresh snapshot. This is a deliberate design choice: live mounts make scope-check timing harder to reason about, and most read-access use cases don't need real-time updates.
+
+Revoking access. Click "Revoke" in A's panel. The mount is removed immediately. Any active session in A loses visibility into B at that moment. Revocation is audit-logged.
+
+Why point-in-time and not live: real-time updates would mean B's `.env` file appearing in A's view the moment B writes one (for the brief window before the rsync filter runs). Snapshot semantics close that window. The rsync is run once at grant, again on refresh, and the result is what A sees. There is no "between rsyncs" state.
+
+## Why this matters for multi-agent workflows
+
+The peering primitive is the difference between "multi-agent setups are theoretically possible" and "multi-agent setups are operationally safe." We see three patterns in production that depend on it.
+
+<BulletList>
+  <BulletItem heading="Code review across agents">
+    Agent A is implementing a feature. Agent B is reviewing A's branch. B reads from a peering snapshot of A's code, looks at the diff, runs the test suite in B's own sandbox, and posts review comments. B has no path to push, merge, or modify A's code, but B's review is grounded in the actual code rather than a summary the implementer fed it.
+  </BulletItem>
+  <BulletItem heading="Documentation across multiple sandboxes">
+    A documentation agent reads from many sandboxes to generate cross-project docs. It sees source code from each one (types, function signatures, README files) and produces consolidated docs. It never holds any single project's deploy keys, never has database access for any project. The output is text; the input is code; the boundary is the peering primitive.
+  </BulletItem>
+  <BulletItem heading="Frontend referring to backend types">
+    A frontend sandbox needs the API types from a backend sandbox. Read-only peering gives the frontend agent visibility into the backend's TypeScript types, OpenAPI specs, or Protobuf definitions, without giving the frontend agent the backend's database access or deploy authority. When the backend changes, refresh the snapshot.
+  </BulletItem>
+</BulletList>
+
+The shape is always "A needs context from B, but A must not gain B's permissions." That shape comes up everywhere multi-agent collaboration happens. The peering primitive is the runtime property that makes it safe.
+
+## What this primitive does NOT do
+
+Honest limits.
+
+It is not for cross-tenant access. Peering is for sandboxes within the same account. Cross-account access would have a different threat model and would require additional controls beyond the peering primitive itself.
+
+It is not a substitute for git. If A and B are working on a shared codebase, both should be working from a shared git repo, not from a peering snapshot. Peering is for "A reads B's work product"; git is for "A and B collaborate on the same code."
+
+It does not protect against B leaking from inside. If sandbox B itself is compromised and B's agent is exfiltrating data through approved channels, the peering primitive doesn't help; B's actions are still B's actions. Peering protects A from B; it doesn't protect B from B's own faults.
+
+It does not auto-update. The point-in-time semantics are deliberate, but they require the user to refresh. Workflows that depend on real-time cross-sandbox state need a different mechanism (live data products, shared databases with explicit grant).
+
+These are not bugs; they are the boundary of what the primitive is designed to do. Other problems get other primitives.
+
+## Where to read the spec
+
+The implementation details (exact rsync flags, the full exclude list, the scope-check call sequence) live in [the Ellul docs on Cross-Sandbox Sharing](https://docs.ellul.ai/projects/sharing-projects). For the surrounding parallel-agent architecture, our [/concepts/parallel-agents](/concepts/parallel-agents) page lays out the broader pattern. For why the runtime exists at all (and why it's the right place to put primitives like this), the [agent-workstation pillar](/concepts/agent-workstation) is the canonical reference.
+
+The peering primitive is one of the design decisions where we feel like we got the shape right. It generalizes; any agent platform should have something like it. The specifics of "rsync with secret-file exclusion plus scope checks at four layers" are what make the abstraction tractable. Without them, "let agents share read access" is a security disaster waiting to happen.
+
+---
+
+## FAQ
+
+<Faq />
+
+---
+
+## References
+
+- Ellul docs, *Cross-Sandbox Sharing*, [docs.ellul.ai/projects/sharing-projects](https://docs.ellul.ai/projects/sharing-projects)
+- Ellul docs, *Working in a Sandbox*, [docs.ellul.ai/projects/working-in-a-sandbox](https://docs.ellul.ai/projects/working-in-a-sandbox)
+- rsync man page, *file selection rules*, [linux.die.net/man/1/rsync](https://linux.die.net/man/1/rsync)
+- Kernel documentation, *bind mounts*, [kernel.org/doc](https://www.kernel.org/doc/)
+- OWASP, *Top 10 for LLM Applications*, [owasp.org](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
+
+<Cta
+  eyebrow="Multi-agent without the leaks"
+  body="Ellul's peering primitive lets parallel agents collaborate without inheriting each other's credentials. Source-code-only snapshots, secrets and config filtered, scope checks at four layers."
+  primary={{ href: "https://console.ellul.ai/sign-up", label: "Get a workstation" }}
+  links={[
+    { href: "/concepts/parallel-agents", label: "Parallel-agent concept →" },
+    { href: "/blog/ai-agent-security", label: "AI agent security in 2026 →" },
+  ]}
+/>

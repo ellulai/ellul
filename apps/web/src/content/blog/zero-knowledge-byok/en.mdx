@@ -1,0 +1,140 @@
+Zero-knowledge BYOK is the version of "bring your own key" where the platform never sees the key. Not "encrypted at rest." The platform genuinely does not have the means to decrypt your API key, even with full database access, full operator privileges, and a court order. The key lives in ciphertext until the moment of use, decrypted in the agent's process by a secret the platform never holds.
+
+This essay explains the pattern, walks through the cryptographic primitives in plain English, and is honest about the limits. There are real things zero-knowledge BYOK does not protect against, and pretending otherwise is what gets people in trouble.
+
+## The naive BYOK pattern (what's wrong with it)
+
+Almost every BYOK product on the market in 2026 implements the same architecture.
+
+The user enters their API key in a web form. The server encrypts the key using a platform-managed encryption key (often AWS KMS or HashiCorp Vault). The ciphertext is stored in a database. When the agent needs to make an API call, the server decrypts the key, hands it to the agent process, and the agent makes the call.
+
+This is "encrypted at rest." It is necessary baseline security. It is also fundamentally trust-the-platform: the platform owns the encryption key, the platform owns the database, the platform's operators can in principle decrypt every key the platform stores.
+
+The trust failure modes are not theoretical.
+
+Operator-level compromise. A platform engineer with KMS access (legitimately or not) can decrypt all stored keys. Insider threat is real and underrated.
+
+Subpoena. A court order forces the platform to decrypt. The platform's encryption-at-rest does not protect against the platform itself being compelled.
+
+Logging mistakes. A debug log or error trace accidentally captures the plaintext key during a service outage. The key now lives in log retention, possibly for years.
+
+Backup leakage. The platform's database backups go to an offsite store. The encryption key is in the platform's KMS. Both are compromised in a single breach because they're operated by the same company.
+
+Zero-knowledge BYOK closes all four by removing the platform's ability to decrypt. The platform genuinely doesn't have the means.
+
+## The zero-knowledge pattern
+
+The high-level shape:
+
+<NumberedList>
+  <NumberedItem heading="The user registers a passkey">
+    A FIDO2 / WebAuthn credential (Touch ID, Face ID, Windows Hello, a hardware key). The browser generates a public-private keypair on the device. The public part goes to the platform; the private part stays on the device, in hardware where possible.
+  </NumberedItem>
+  <NumberedItem heading="The user enters their API key in the browser">
+    The key is in plaintext, in memory, in the user's browser. It does not yet reach the network.
+  </NumberedItem>
+  <NumberedItem heading="The browser derives an encryption secret from the passkey">
+    Using the WebAuthn PRF extension (more on this below), the browser asks the passkey device to deterministically produce a secret bound to a salt. The secret is the same every time for the same passkey plus salt; it cannot be reproduced without the passkey device. The secret never leaves the browser.
+  </NumberedItem>
+  <NumberedItem heading="The browser encrypts the API key">
+    AES-GCM with the passkey-derived secret as the encryption key. The browser sends the ciphertext (and a nonce) to the platform. The plaintext key is wiped from browser memory.
+  </NumberedItem>
+  <NumberedItem heading="The platform stores ciphertext only">
+    The platform never has the encryption secret. The platform's database holds an encrypted blob it cannot decrypt without the user's passkey device.
+  </NumberedItem>
+  <NumberedItem heading="At call time, the user authorizes a decryption">
+    When the agent needs to make an API call, the platform requests a passkey approval from the user's device. The device produces the same passkey-derived secret. The browser (or a thin client) decrypts the API key, hands it to the agent's request path, and wipes it from memory after the call.
+  </NumberedItem>
+</NumberedList>
+
+The structural property: at no point does the platform's server have both the ciphertext and the decryption material at the same time. The decryption material lives on the user's passkey device, only.
+
+## The cryptographic primitives in plain English
+
+Three primitives carry the pattern. Each is a published standard with documented security properties; there is no homemade cryptography here.
+
+The WebAuthn PRF extension is a 2024 addition to the WebAuthn specification ([w3c.github.io/webauthn/#prf-extension](https://w3c.github.io/webauthn/#prf-extension)) that lets a website ask the user's passkey device to compute a pseudorandom function on a salt. The PRF is bound to the credential. Only that specific passkey, signed by the device, can produce the output. The salt is a value the website chooses; the output is a deterministic 32-byte secret. The site can use the output as an encryption key without ever seeing the raw passkey material. PRF support is now widespread: macOS Touch ID, iOS Face ID, Windows Hello, YubiKey 5 (firmware 5.7+), Google Password Manager. Browser support: Chrome, Edge, Safari since mid-2024.
+
+HKDF is a standard key-derivation function ([RFC 5869](https://datatracker.ietf.org/doc/html/rfc5869)). Takes a high-entropy input (the PRF output) and derives one or more encryption keys with domain separation. We typically derive a separate key per BYOK secret slot, so compromising one decryption can't extend to others.
+
+AES-GCM is authenticated encryption, AES with Galois / Counter Mode. Produces ciphertext plus an authentication tag. The tag detects tampering; if anyone modifies the ciphertext, decryption fails loudly rather than producing garbage. We use 256-bit AES with a per-encryption nonce. Standard, well-understood, browser-native via the WebCrypto API.
+
+The chain in practice: passkey → PRF output (32 bytes) → HKDF expand → AES-GCM encryption key → encrypt API key → store ciphertext plus nonce. Reverse the chain to decrypt. The chain is exclusively client-side; the server's role is to store opaque blobs.
+
+## How Ellul implements it
+
+The pattern at Ellul has a few specific shapes worth naming. The general architecture is the [Sovereign Shield](/glossary/sovereign-shield); zero-knowledge BYOK is one feature within it.
+
+Per-user salts. Each user's BYOK credentials are derived from passkey plus a per-user salt the platform stores. The salt is not secret; it's a public identifier. The combination salt plus passkey is what produces the encryption secret.
+
+Per-credential domain separation. If you have multiple BYOK credentials (Anthropic API key, OpenAI API key, Vercel deploy token), each gets its own derived encryption key via HKDF info parameter. Compromising the decryption of one does not extend to others.
+
+In-memory plaintext window. When the agent makes an API call, the plaintext key exists in the agent's process memory for the duration of the request. Process-level isolation (separate user, namespace, kernel-level ptrace restrictions) means other processes on the same workstation cannot read the plaintext during that window.
+
+No server-side decryption fallback. The platform's database backups, KMS, and operator tooling have no path to the plaintext. We have explicitly built the system so that even with our own database access, we cannot recover your key. The audit trail shows when ciphertext was decrypted; the plaintext itself is unavailable to the server.
+
+Multi-passkey registration. The user registers multiple passkeys (laptop plus phone plus hardware key) so a single device loss doesn't permanently lock the user out of their key. Each passkey produces its own derived secret; the platform stores ciphertext encrypted under each, and decryption can use any of them.
+
+The combination delivers the property: even if Ellul is fully compromised (the database is exfiltrated, the platform's operators are coerced, the KMS is breached), your API key remains in ciphertext that cannot be decrypted without your passkey device.
+
+## What zero-knowledge BYOK does NOT protect against
+
+There are real attacks zero-knowledge BYOK does not stop.
+
+<Callout variant="warn" title="A compromised endpoint device">
+If your laptop is infected with malware, the malware can read the plaintext API key during the brief window when it's in memory. Zero-knowledge protects the platform from compromise; it does not protect the user's device. The mitigation is endpoint security, the same as any sensitive credential. Hardware passkeys (YubiKey, etc.) raise the bar by requiring physical presence for each decryption, but software passkeys on a compromised device can be coerced.
+</Callout>
+
+<Callout variant="warn" title="Post-decryption memory inspection">
+Anything that can read the agent's process memory at the moment of use can grab the plaintext. On a workstation with kernel-level ptrace restrictions and AppArmor / seccomp profiles, this is a high bar. On a default Linux setup without those controls, a compromised process running as the same user can attach a debugger to the agent and read the plaintext. The mitigation is the runtime; see our [agent-security threat model](/blog/ai-agent-security) for the full story.
+</Callout>
+
+<Callout variant="warn" title="The model API itself">
+Anthropic, OpenAI, and other model providers see your API key when you authenticate to them. By definition. Zero-knowledge BYOK is about the platform between you and the model, not about the model vendor. If you don't trust your model provider with your model API key, the answer is to switch model providers, not to use zero-knowledge BYOK against them.
+</Callout>
+
+<Callout variant="warn" title="Phishing">
+A page that looks like the BYOK setup flow but isn't can capture your plaintext key before you encrypt it. Zero-knowledge starts the moment the key reaches the encryption step; if the attacker is the encryption step, you're in trouble. Mitigation is the same as for any sensitive web flow: origin checks, security keys for high-value accounts, password managers.
+</Callout>
+
+The design is honest about these gaps. Zero-knowledge BYOK is the strongest defense against platform-side compromise. It is not a complete defense against all credential threats. Nothing is.
+
+## Where this matters most
+
+Three audiences benefit most from zero-knowledge BYOK.
+
+Engineers using AI agents on a third-party platform. You don't fully trust the platform's operators. You don't have to. Use zero-knowledge BYOK and the platform's compromise stops being your problem.
+
+Compliance-sensitive teams. "We use a vendor for AI infrastructure but the vendor cannot decrypt our keys" is a defensible compliance posture in ways "the vendor's KMS holds our keys" is not.
+
+People who have been burned. If you've been on the receiving end of a vendor's keys leaking, you don't need this pitch. Zero-knowledge is the answer to "never again."
+
+For most users, regular BYOK is enough; the trust assumption is reasonable for most platforms most of the time. Zero-knowledge BYOK is the answer for the cases where it isn't, and it costs us nothing operationally to default everyone to it. Which is what we did.
+
+For the broader sovereignty story, our [sovereign-AI essay](/blog/sovereign-ai) puts BYOK in context. For the runtime security story, the [agent-security threat model](/blog/ai-agent-security) covers what zero-knowledge does and doesn't fix. Both worth reading if this post made you think about your own setup.
+
+---
+
+## FAQ
+
+<Faq />
+
+---
+
+## References
+
+- WebAuthn Level 3, *PRF extension*, [w3c.github.io/webauthn/#prf-extension](https://w3c.github.io/webauthn/#prf-extension)
+- RFC 5869, *HKDF: HMAC-based Key Derivation*, [datatracker.ietf.org/doc/html/rfc5869](https://datatracker.ietf.org/doc/html/rfc5869)
+- NIST SP 800-38D, *AES-GCM specification*, [nvlpubs.nist.gov](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf)
+- WebCrypto API, [w3.org/TR/WebCryptoAPI](https://www.w3.org/TR/WebCryptoAPI/)
+- Bruce Schneier, *Zero-knowledge architecture overview*, [schneier.com](https://www.schneier.com/)
+
+<Cta
+  eyebrow="BYOK that we never see"
+  body="Ellul stores your API keys encrypted under your passkey. We don't have the decryption material; even our own operators can't recover your key. Bring Anthropic, OpenAI, or any model provider; the key stays yours."
+  primary={{ href: "https://console.ellul.ai/sign-up", label: "Get a workstation" }}
+  links={[
+    { href: "/glossary/sovereign-shield", label: "How the Shield works →" },
+    { href: "/blog/sovereign-ai", label: "Sovereign AI in 2026 →" },
+  ]}
+/>

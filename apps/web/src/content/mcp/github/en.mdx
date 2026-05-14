@@ -1,0 +1,182 @@
+## What is the GitHub MCP server?
+
+The **GitHub MCP server** is an <Term slug="mcp">MCP</Term>-compliant interface between an AI agent and the GitHub API. It exposes GitHub's primitives (issues, pull requests, comments, reviews, status checks, branch operations, and where applicable Git LFS) as MCP tools, so a compliant agent can do issue triage, PR review summarization, branch creation, and merge orchestration through ordinary tool calls.
+
+After the filesystem MCP, GitHub MCP is the most useful MCP server for almost any agent doing day-to-day software work. Most engineering work eventually ships through a PR, and the PR's metadata (reviewers, status checks, comments, linked issues) is exactly the context the agent needs to take the next step. Agents without GitHub access spend a lot of their reasoning budget paraphrasing things from your terminal that they could just look up.
+
+The Anthropic-published [`server-github`](https://github.com/modelcontextprotocol/servers/tree/main/src/github) is the reference implementation. Community alternatives exist; the Anthropic one is the right default in 2026.
+
+This page covers wiring the GitHub MCP into an <Term slug="agent-workstation">agent workstation</Term>, why the **personal access token doesn't sit in the MCP server's environment** for the whole session, and what's gated vs. what flows through.
+
+## What the GitHub MCP gives the agent
+
+The standard tool surface, simplified:
+
+- **Issues:** `list_issues`, `get_issue`, `create_issue`, `update_issue`, `add_issue_comment`, `close_issue`.
+- **Pull requests:** `list_pull_requests`, `get_pull_request`, `get_pull_request_diff`, `get_pull_request_files`, `create_pull_request`, `update_pull_request`, `merge_pull_request`, `add_pr_comment`, `request_reviewers`, `submit_pr_review`.
+- **Repository:** `get_repository`, `list_branches`, `create_branch`, `get_commit`, `list_commits`, `get_file_contents`, `update_file`.
+- **Status checks:** `list_check_runs`, `get_check_run`.
+- **Search:** `search_issues`, `search_pull_requests`, `search_code`.
+
+That's roughly the full surface. The agent calls these like any MCP tool. Most "agent does something on GitHub" workflows reduce to a handful of these in sequence.
+
+## Auth: PAT, fine-grained PAT, or GitHub App?
+
+There are three ways the GitHub MCP server can authenticate. Pick one based on blast radius.
+
+**Classic personal access token (PAT).** Easiest to set up, hardest to scope. A classic PAT either has full repo access or it doesn't; you can't grant it for one repo and not another. Acceptable for personal projects and small teams. Avoid for organizations with many repos.
+
+**Fine-grained PAT.** GitHub's modern PAT format. Per-repo selection, per-permission scoping (read issues but not write code, for example), per-token expiration. The right default for individual contributors. Set the expiration short (90 days max) and rotate.
+
+**GitHub App.** Issued per-installation, with selectable per-repo scope and a separate token-issuing flow. The right answer for organizations with multiple users sharing infrastructure. The MCP server holds the app's private key (or, on Ellul, references it from the secret store); each tool call uses the app to mint a short-lived installation token.
+
+<Callout type="note" title="The Ellul recommendation">
+Fine-grained PAT for solo and small-team workstations. GitHub App for any team with more than one workstation talking to the same GitHub organization. In both cases, the long-lived secret lives in `.ellul/secrets.db`, encrypted at rest.
+</Callout>
+
+## Step-by-step: install GitHub MCP on an Ellul workstation
+
+The shortest path from a fresh workstation to an agent that can list and triage issues.
+
+**1. Provision a workstation.** Any agent CLI works.
+
+**2. Mint a fine-grained PAT.** From [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens). Scope it to the specific repos this workstation should access. At minimum: `Contents: Read`, `Issues: Read & Write`, `Pull requests: Read & Write`, `Metadata: Read`. Set expiration to 90 days. **Don't paste the PAT anywhere yet.**
+
+**3. Store the PAT in the secret store.** From the agent (one-shot prompt), or via the daemon REPL:
+
+```
+ellul_env_import: GITHUB_TOKEN=ghp_yourtokenhere
+```
+
+The value goes through the daemon, gets encrypted with a per-project derived key, and lands in `.ellul/secrets.db`. The agent can list secret names afterward, but the value is opaque from this point on.
+
+**4. Install the MCP server.** The Anthropic reference implementation:
+
+```bash
+npx -y @modelcontextprotocol/server-github --port 7830
+```
+
+The server reads `GITHUB_TOKEN` from its environment at launch. The workstation's exec layer injects the encrypted secret only when the server is launched, so the token isn't sitting in `mcp.json` and isn't readable by other processes.
+
+**5. Wire it into the agent's MCP config.** In `<project>/.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "ellul": { "command": "ellul-mcp", "args": [], "env": {} },
+    "github": {
+      "url": "http://127.0.0.1:7830/mcp",
+      "transport": "sse"
+    }
+  }
+}
+```
+
+**6. Verify.** Ask the agent to list the open issues on `owner/repo`, sorted by most recent. It calls the MCP server's `list_issues` tool. Results stream back. You're done.
+
+<CodeTabs>
+
+**Fine-grained PAT (recommended for solo workstations):**
+
+```
+ellul_env_import: GITHUB_TOKEN=ghp_...
+```
+
+**GitHub App (recommended for teams):**
+
+```
+ellul_env_import: GITHUB_APP_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----...
+ellul_env_import: GITHUB_APP_ID=123456
+ellul_env_import: GITHUB_INSTALLATION_ID=789012
+```
+
+</CodeTabs>
+
+## What's gated and what flows through
+
+The Ellul gate model maps cleanly onto GitHub's read/write split.
+
+**Read operations flow through.** `list_issues`, `get_issue`, `get_pull_request`, `get_pull_request_diff`, `search_code`, anything that doesn't mutate. No prompt, no notification. These calls are how the agent figures out what's going on.
+
+**Write operations pause for passkey approval.** `create_issue`, `add_issue_comment`, `merge_pull_request`, `submit_pr_review`, `update_file`, `create_branch`, anything that changes GitHub's state. The action queues, you get a notification with the diff or comment body, you tap to approve. <Term slug="passkey-approval">Passkey approval</Term> is the boundary.
+
+The boundary sits at the API call (not, say, at `git push`) because GitHub MCP makes API calls, not git operations. A merge through `merge_pull_request` is a write to GitHub's database; the workstation's git CLI isn't running `git push origin`. The shield gates the API call directly.
+
+## A worked example: agent reviews a PR overnight
+
+A colleague opens a PR on a shared feature and wants a review before the morning. You'd rather not do it tonight, but a head start before standup is worth something.
+
+1. You queue the task: "Review PR #4521 on owner/repo. Read the diff, the linked issue, the failing tests, and the previous comments. Write a draft review with specific line comments. Don't submit; just leave the draft."
+2. The agent reads. `get_pull_request`, `get_pull_request_diff`, `get_pull_request_files`, `list_check_runs`, `get_issue` for the linked issue. All read calls, no prompts.
+3. It reasons. Three potential issues: a race condition in the merge logic, a missing migration, a copy-paste bug in a test fixture.
+4. It drafts the review with inline comments at the relevant lines and a top-level summary, then stops without submitting.
+5. In the morning you open GitHub, see the draft, edit it, submit. Forty minutes of work compressed to ten.
+
+The "stops without submitting" is the key. Submitting (`submit_pr_review`) is gated, so it waits for you.
+
+## Security: PAT brokering
+
+The strongest claim about GitHub MCP on Ellul is that **a fully compromised MCP server can't exfiltrate the long-lived PAT**. Three steps:
+
+1. The PAT lives in `.ellul/secrets.db`, encrypted at rest. The MCP server's process can't read the blob: wrong filesystem permissions, wrong namespace.
+2. The token enters the server's environment only at launch, brokered by the daemon's exec layer. Streamed output is redacted before the agent reads it. Even if the server logs the token at startup, the agent doesn't see the line.
+3. The daemon runs as a different system user. The MCP server can't `ptrace` it, can't read its environment, and can't attach to its subprocesses.
+
+<Callout type="warning" title="The classic PAT failure mode, in one line">
+The most common mistake on a fresh workstation is running the MCP server with `GITHUB_TOKEN=ghp_...` directly in `mcp.json`. It works, and every public tutorial shows you that, but it puts the token where the agent's process can read it for the whole session. Import once with `ellul_env_import` and let the daemon broker it.
+</Callout>
+
+Scope the PAT minimally. Even with the daemon brokering, the PAT's scope is the upper bound of what an attacker could do if they got it. A PAT scoped to "all repos, all permissions" is dangerous regardless; a PAT scoped to one repo with read-only issues is bounded by GitHub itself. Fine-grained PATs let you scope properly. Use them.
+
+## Common patterns
+
+**Issue triage in the morning.** Agent reads overnight issues, classifies them by severity, drafts triage comments, stops before commenting. You skim and approve in batches.
+
+**PR review preparation.** As above. Agent reads the diff, drafts inline comments, doesn't submit.
+
+**Status check investigation.** A CI check fails. Agent fetches the check log via `get_check_run`, correlates with the diff, suggests fixes. No prompts (it's all read).
+
+**Cross-repo refactors.** Agent opens PRs in several repos at once. Each `create_pull_request` is a separate gate. You can approve them in a batch from your phone.
+
+**Auto-fix for known-pattern bugs.** Agent monitors issue templates, identifies bugs that match a known pattern (broken image links, for example), drafts a fix, opens a PR. The PR-opening gate keeps a human in the loop on every fix.
+
+## FAQ
+
+### Doesn't every MCP server need the PAT in its environment?
+
+Naively, yes. Most MCP server tutorials walk you through dropping the PAT into a .env. On Ellul, the GitHub MCP server gets the token injected only at launch through the daemon's exec layer. The encrypted secret holds the long-lived value; the running process holds a copy that gets cleared on restart.
+
+### What's gated and what flows through?
+
+Read operations (list issues, view PR, get diff) flow through with no prompt. Write operations (push, comment, merge, close) pause for passkey approval. The action queues, the user gets a notification, the user taps to approve.
+
+### Should I use classic PAT, fine-grained PAT, or GitHub App?
+
+Fine-grained PAT for solo workstations. GitHub App for teams with multiple workstations sharing the same organization. Classic PAT only for the smallest setups; the per-repo scoping of fine-grained PATs is worth the extra setup time.
+
+### Does the agent's `git push` go through the MCP server?
+
+No. `git push` is a separate code path with its own credential brokering through the shield. The MCP server's GitHub access is for API operations like issues, PRs, and reviews. Git push protection is handled by the workstation's git wrapper, not by GitHub MCP.
+
+### Can multiple workstations share a GitHub MCP server?
+
+The standard pattern is one MCP server per workstation, each in its own project namespace. Sharing a single server across workstations is possible but creates cross-project visibility (different projects can see each other's GitHub queries). Avoid unless you have a specific reason.
+
+## Where to go next
+
+- [MCP setup on Ellul](/mcp/setup) for the end-to-end walkthrough
+- [Database MCP](/mcp/database) paired with GitHub MCP for "investigate a bug, open a PR" workflows
+- [Playwright MCP](/mcp/playwright) for E2E test runs that report into PR comments
+- [Claude Code on Ellul](/agents/claude-code) for a typical GitHub-MCP client
+- [Cursor on Ellul](/agents/cursor) for the other typical client
+- [Sovereign Shield](/glossary/sovereign-shield) for the credential substrate
+- [The MCP hub](/mcp) for what MCP is in one page
+
+## References
+
+- [Anthropic GitHub MCP server](https://github.com/modelcontextprotocol/servers/tree/main/src/github)
+- [Model Context Protocol specification](https://spec.modelcontextprotocol.io)
+- [GitHub fine-grained PAT documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
+- [GitHub Apps documentation](https://docs.github.com/en/apps)
+
+<FAQ />

@@ -1,0 +1,98 @@
+---
+title: "Quick Start"
+description: "Sign up, create a sandbox, run your first agent. Five minutes."
+section: "Getting Started"
+order: 2
+---
+
+This walkthrough takes you from a fresh account to an agent running in a sandboxed workspace. The whole point is that you can hand it work and walk away. The platform keeps your agent running off your laptop, overnight if you want.
+
+## Step 1. Sign up
+
+Visit [console.ellul.ai/sign-up](https://console.ellul.ai/sign-up). Create your account with email or one of the supported OAuth providers. Pick a plan; you can change it later.
+
+## Step 2. Create a sandbox
+
+Once signed in, you land on the dashboard. Click **New Sandbox** in the sidebar.
+
+You will be asked for:
+
+| Field | Description |
+|-------|-------------|
+| **Name** | A short identifier for your project. Used in URLs and the sidebar. |
+| **Region** | Available on paid plans. Pick the geographic region closest to where you want your data to live. |
+| **Product type** | Defaults to Cloud Platform. Other types are for specialised use cases. |
+
+Click **Create**. Provisioning takes a moment. When it completes you are dropped into the workspace.
+
+## Step 3. Open the workspace
+
+The workspace is the main view for one sandbox. The sidebar shows tabs grouped by area:
+
+- **Workspace.** Chat, Code, Preview.
+- **Database.** Tables, SQL, Bin, Settings.
+- **Observability.** Health, Gates, Development logs, ZeroClaw.
+- **Settings.** Context, Secrets, Security.
+
+You can keep tabs open across sessions. Each tab is independent.
+
+## Step 4. Authenticate an agent
+
+The first time you use the chat tab, you choose which agent to run. The session picker offers:
+
+| Session | What it runs |
+|---------|--------------|
+| **Shell** | A shell with no AI. Useful for direct commands. |
+| **ZeroClaw** | The autonomous agent runtime. |
+| **OpenCode** | The OpenCode CLI. |
+| **Claude** | Claude Code. |
+| **Codex** | OpenAI's Codex CLI. |
+| **Cursor** | The Cursor agent. |
+
+If you pick Claude, Codex, or Cursor, the chat panel walks you through that agent's authentication flow. The agent prints a login URL or device code; you complete the flow in another tab and the credentials are stored on your encrypted volume.
+
+You only authenticate each agent once per sandbox. Credentials persist.
+
+## Step 5. Send a message
+
+Type a request and send it. For a first run try something simple:
+
+> Build me a Next.js app that displays the current time and updates every second.
+
+The agent works inside the sandbox. It scaffolds the app, edits files, starts a preview server, and shows you the URL. Click it to view your app.
+
+While the agent works:
+
+- The **Code** tab shows files appearing in real time.
+- The **Preview** tab shows the running app.
+- The **Observability > ZeroClaw** tab shows the agent's process state.
+
+## Step 6. Approve a permission gate
+
+If the agent asks to do something privileged (push to git, modify a secret, run a database write, deploy), a permission popup appears. Each gate has:
+
+- A label and description of what is being requested.
+- A time-to-live (how long the approval is valid).
+- A risk indicator.
+
+Approve to grant. Deny to refuse.
+
+For routine requests you can configure standing rules under **Settings > Security**: `ask` (the default), `allow always`, or `never`.
+
+## Step 7. Review the audit log
+
+Open **Settings > Security**. Every action is recorded: your login, the sandbox creation, the agent's gate requests, the deploy. Each entry is hash-chained so retroactive tampering is detectable.
+
+## Where to go next
+
+<Steps>
+  <Step number={1} title="Tour the console">
+    Detailed walkthrough of every tab. [The Console](/getting-started/the-console).
+  </Step>
+  <Step number={2} title="Configure permissions">
+    Set sensible defaults so the agent does not interrupt for routine tasks. [Permission Gates](/permissions/overview).
+  </Step>
+  <Step number={3} title="Wire up a custom domain">
+    Make your app reachable at your own domain. [Custom Domains](/deployment/custom-domains).
+  </Step>
+</Steps>

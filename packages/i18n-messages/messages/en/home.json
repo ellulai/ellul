@@ -1,0 +1,359 @@
+{
+  "home": {
+    "llmsTxt": {
+      "summary": "Ellul is the always-on workstation for your AI agent. It runs overnight, parallelizes multiple agents, and gates every privileged action behind a passkey."
+    },
+    "meta": {
+      "title": "ellul | Your agent’s computer",
+      "description": "An always-on workstation for your AI agent. Runs overnight, keeps working while your laptop sleeps, coordinates multiple agents in parallel. No credential leaks. No chaos.",
+      "keywords": [
+        "agent workstation",
+        "always-on AI agent",
+        "parallel agents",
+        "Claude Code cloud",
+        "Claude Code remote",
+        "Cursor cloud",
+        "Codex sandbox",
+        "OpenCode cloud",
+        "multi-agent orchestration",
+        "AI agent sandbox",
+        "agent autonomy",
+        "overnight agent",
+        "off your laptop",
+        "passkey approvals",
+        "AI development platform"
+      ]
+    },
+    "hero": {
+      "eyebrow": "Ellul Cloud",
+      "headlineLine1": "Your agent’s",
+      "headlineLine2": "computer.",
+      "subhead": "An always-on workstation for your AI agent. Runs overnight. Keeps working while your laptop sleeps. Coordinates a team of agents in parallel.",
+      "bringAgent": "Bring your agent",
+      "ctaPrimary": "Get a workstation",
+      "ctaSecondary": "See what shipped overnight",
+      "stats": {
+        "runValue": "8 hr",
+        "runLabel": "Unattended runs",
+        "parallelValue": "3+",
+        "parallelLabel": "Agents in parallel",
+        "credsValue": "0",
+        "credsLabel": "Creds on your laptop"
+      },
+      "nightLog": {
+        "eyebrow": "Last night, on your workstation",
+        "timestamp": "07:30 · Tue",
+        "entries": {
+          "branchStart": "branch start: fix/race-condition-checkout",
+          "wroteTests": "wrote 3 failing tests against webhook handler",
+          "addedIdempotency": "added idempotency key to /api/orders",
+          "testsGreen": "tests green (47 passed, 0 failed)",
+          "regenSchema": "regenerated openapi.json from /api/orders",
+          "gitPush": "git push origin fix/race-condition-checkout",
+          "openedPr": "opened PR #847 → main",
+          "waiting": "waiting for your passkey to merge"
+        },
+        "agentLabels": {
+          "checkout": "checkout",
+          "docs": "docs",
+          "ellul": "ellul"
+        },
+        "prTitle": "PR #847 is ready to merge",
+        "prSub": "fix/race-condition-checkout · +127 −44 · 47 tests",
+        "prCta": "Tap passkey",
+        "footnote": "Your laptop has been closed since 23:42."
+      }
+    },
+    "highlights": {
+      "eyebrow": "What you get",
+      "headlineLine1": "A workstation built for agents,",
+      "headlineLine2": "not another IDE.",
+      "items": {
+        "alwaysOn": {
+          "title": "Always on",
+          "body": "Your agent keeps working when your laptop closes. Overnight runs, parallel branches, no babysitting."
+        },
+        "previews": {
+          "title": "Live previews",
+          "body": "Every dev server gets a shareable URL the moment it boots. See what the agent built without pulling a branch."
+        },
+        "anywhere": {
+          "title": "Anywhere, any device",
+          "body": "Web, desktop, and a mobile-native view. Check on your agent from the subway. Approve a passkey from your phone."
+        },
+        "integrations": {
+          "title": "Real integrations",
+          "body": "GitHub, Vercel, Fly, Neon, Supabase, Postgres. Your prod credentials never touch your laptop. Brokered from our vault on a passkey tap."
+        },
+        "passkey": {
+          "title": "Passkey-gated security",
+          "body": "Git push, prod DB, deploys. Every privileged action pauses for a FIDO2 tap, so 8-hour unattended runs stay safe."
+        },
+        "composable": {
+          "title": "Composable agents",
+          "body": "Run Claude, Codex, Cursor, and OpenCode in parallel. Each gets its own computer. They peer read-only, so they can’t break each other."
+        }
+      }
+    },
+    "problem": {
+      "eyebrow": "Autonomy",
+      "headlineLine1": "Close your laptop.",
+      "headlineLine2": "Your agent keeps working.",
+      "bodyTop": "Cursor, Claude Code, Copilot. Every one of them runs on your laptop. Close the lid and the session ends. A dropped connection erases hours of work. Switch projects and the agent forgets where it was.",
+      "bodyMiddle": "Ellul gives your agent a workstation of <emphasis>its own</emphasis>. Persistent, isolated, always on. It runs through the night, and you wake to a finished feature, a reviewed PR, a drafted doc.",
+      "bodyBottom": "The agent still answers to you. Approve a merge between meetings. Check progress from the subway. Nothing about shipping overnight requires you at a desk.",
+      "timeline": {
+        "heading": "Last night",
+        "branchLabel": "checkout-rewrite",
+        "events": {
+          "closeLaptop": "You close the laptop",
+          "agentFinish": "Agent finishes the refactor",
+          "testsPushed": "Tests pass · branch pushed",
+          "prDrafted": "PR drafted, waiting on you",
+          "youApprove": "You tap to approve from your phone"
+        }
+      }
+    },
+    "pillars": {
+      "eyebrow": "Composition",
+      "headlineLine1": "Agents that see.",
+      "headlineLine2": "Not touch.",
+      "bodyTop": "Run three agents in parallel. One writes the code. One drafts the launch copy. One regenerates the docs. Each lives in its own sandbox. They peer into each other’s work, read-only, without stepping on each other’s state.",
+      "bodyBottom": "This is how an agent team should be built. Nobody else has shipped it.",
+      "panes": {
+        "coding": {
+          "label": "Sandbox 1",
+          "role": "Coding agent",
+          "activity": "Refactoring checkout-flow",
+          "detail": "Writing · 4h 12m",
+          "canRead": "Read",
+          "canWrite": "Write",
+          "canBuild": "Build",
+          "canTest": "Test"
+        },
+        "marketing": {
+          "label": "Sandbox 2",
+          "role": "Marketing agent",
+          "activity": "Drafting launch copy from PR diff",
+          "detail": "Reading · checkout-flow",
+          "canRead": "Read sandbox 1",
+          "blocked": "Cannot edit sandbox 1"
+        },
+        "docs": {
+          "label": "Sandbox 3",
+          "role": "Docs agent",
+          "activity": "Regenerating API reference",
+          "detail": "Reading · checkout-flow",
+          "canRead": "Read sandbox 1",
+          "blocked": "Cannot edit sandbox 1"
+        }
+      },
+      "summary": {
+        "eachAgentLabel": "Each agent",
+        "eachAgentValue": "Its own sandbox",
+        "crossLabel": "Cross-sandbox",
+        "crossValue": "Read-only peering",
+        "coordLabel": "Coordination",
+        "coordValue": "Without chaos"
+      }
+    },
+    "howItWorks": {
+      "eyebrow": "How it works",
+      "headline": "A workstation in the cloud. One click away.",
+      "subhead": "Sign up, spin up, and let the agent run. Three steps to an always-on workstation that ships while you sleep.",
+      "steps": {
+        "signup": {
+          "title": "Sign up with a passkey",
+          "desc": "FIDO2 from the start. Your fingerprint or hardware key is the only thing that ever approves a privileged action. No passwords, nothing to leak."
+        },
+        "spinup": {
+          "title": "Spin up a workstation",
+          "desc": "Click Create. You get a persistent Linux machine in EU with your agent already running, your repo already cloned, your dev server already alive."
+        },
+        "handoff": {
+          "title": "Hand it the work and walk away",
+          "desc": "Claude Code, Codex, Cursor, or OpenCode. Pick your driver. Close the tab. Come back to a finished branch, a drafted PR, a tap-to-approve."
+        }
+      },
+      "featuresEyebrow": "What you get",
+      "features": {
+        "alwaysOn": {
+          "title": "Always on",
+          "desc": "Your agent doesn’t stop when your laptop does. Long refactors, overnight test loops, week-long migrations all keep running."
+        },
+        "parallel": {
+          "title": "Multiple agents in parallel",
+          "desc": "One per role. Each gets its own sandbox. They peer read-only and never break each other."
+        },
+        "offLaptop": {
+          "title": "Off your laptop",
+          "desc": "Your SSH keys, AWS creds, and 1Password CLI never leave your machine. Credentials live in your vault and never touch the agent."
+        },
+        "persistent": {
+          "title": "Persistent state",
+          "desc": "Encrypted storage that survives restarts, hibernation, and wake. The agent picks up where it left off, every time."
+        },
+        "realDev": {
+          "title": "Real dev environment",
+          "desc": "Bash, git, Node, Bun, Python, Postgres, Caddy. Custom domains. Live preview URL. The same machine your agent codes against, you can SSH into."
+        },
+        "stack": {
+          "title": "Plugged into your stack",
+          "desc": "GitHub, Vercel, Fly, Neon, Supabase. Production credentials get brokered at approval time. The agent never sees the key."
+        }
+      },
+      "bringEyebrow": "Bring your agent"
+    },
+    "gates": {
+      "eyebrow": "Safety",
+      "headline": "Yes means yes.",
+      "bodyTop": "All this autonomy is only possible because every privileged action pauses for your passkey. Git push, prod DB, domain changes. They stop, wait for a biometric tap, and only then happen.",
+      "bodyBottom": "That’s how you let an agent run for 8 hours unsupervised without getting burned.",
+      "flow": {
+        "agentLabel": "Agent",
+        "agentDetail": "Asks",
+        "sandboxLabel": "Sandbox",
+        "sandboxDetailPause": "Pauses",
+        "youLabel": "You",
+        "youDetail": "Tap your passkey",
+        "sandboxDetailAct": "Acts once"
+      },
+      "gatesHeading": "What pauses for a tap",
+      "items": {
+        "gitPush": {
+          "name": "git push",
+          "controls": "Push commits to your remote repo",
+          "ttl": "5 min"
+        },
+        "deploy": {
+          "name": "deploy",
+          "controls": "Promote a build to your hosting provider",
+          "ttl": "5 min"
+        },
+        "dbWrite": {
+          "name": "db write",
+          "controls": "Mutate a real database row",
+          "ttl": "30 sec"
+        },
+        "secretRead": {
+          "name": "secret read",
+          "controls": "Surface an API key or token",
+          "ttl": "30 sec"
+        },
+        "domain": {
+          "name": "domain change",
+          "controls": "Touch DNS, TLS, or route config",
+          "ttl": "5 min"
+        },
+        "policy": {
+          "name": "policy update",
+          "controls": "Modify gates, scopes, or trusted devices",
+          "ttl": "Session"
+        }
+      },
+      "disclaimer": "Your credentials live in your vault, on your workstation. We can’t see them. The agent can’t read them. When it needs to push to GitHub or deploy to Vercel, it asks. You tap. The token gets brokered for one action, then shredded."
+    },
+    "pricingOverview": {
+      "eyebrow": "Pricing",
+      "headlineLine1": "Not another tool in your stack.",
+      "headlineLine2": "The workstation the rest of it runs on.",
+      "stackHeader": "You already pay for the stack:",
+      "priceLine": "Add Ellul for <strong>$20 to $50</strong>. The same agent you already pay for, on a computer that doesn’t close at midnight.",
+      "perMonth": "{price}/mo"
+    },
+    "contentHub": {
+      "eyebrow": "Go deeper",
+      "headlineLine1": "Understand the workstation.",
+      "headlineLine2": "See how it compares.",
+      "concepts": {
+        "label": "Core concepts",
+        "agentWorkstation": {
+          "title": "Agent Workstation",
+          "desc": "A persistent, isolated computer purpose-built for AI agents."
+        },
+        "alwaysOnAiAgent": {
+          "title": "Always-On AI Agent",
+          "desc": "Your agent keeps working when your laptop closes."
+        },
+        "parallelAgents": {
+          "title": "Parallel Agents",
+          "desc": "Run multiple agents in isolated sandboxes with read-only peering."
+        }
+      },
+      "comparisons": {
+        "label": "Comparisons",
+        "vsCursor": {
+          "title": "Ellul vs Cursor",
+          "desc": "IDE with AI features vs a dedicated agent workstation."
+        },
+        "vsDevin": {
+          "title": "Ellul vs Devin",
+          "desc": "Closed agent vs bring-your-own with passkey security."
+        },
+        "vsReplit": {
+          "title": "Ellul vs Replit",
+          "desc": "Cloud IDE vs always-on workstation for autonomous agents."
+        }
+      },
+      "more": {
+        "label": "Explore more",
+        "solutions": {
+          "title": "Solutions",
+          "desc": "Use cases from overnight shipping to parallel refactors."
+        },
+        "blog": {
+          "title": "Blog",
+          "desc": "Engineering deep dives and product updates."
+        },
+        "agents": {
+          "title": "Agents",
+          "desc": "Claude Code, Codex, Cursor, OpenCode and more."
+        }
+      }
+    },
+    "cta": {
+      "headlineLine1": "Your agent’s",
+      "headlineLine2": "computer.",
+      "subhead": "A workstation for your agent. Hand it the work. Close the lid. Come back to something shipped.",
+      "primary": "Get a workstation",
+      "secondary": "See pricing"
+    },
+    "softwareSchema": {
+      "description": "An always-on workstation for your AI agent. Runs overnight, keeps working while your laptop sleeps, coordinates multiple agents in parallel. No credential leaks. No chaos.",
+      "applicationSubCategory": "AI Agent Workstation",
+      "features": {
+        "alwaysOn": "Always-on cloud workstation per user",
+        "parallel": "Parallel multi-agent execution with read-only peering",
+        "passkey": "Passkey-gated privileged actions (git push, deploys, secrets, database writes)",
+        "byoa": "Bring your own agent: Claude Code, Codex, Cursor, OpenCode",
+        "namespace": "Per-user namespace isolation",
+        "encrypted": "Encrypted persistent storage",
+        "integrations": "GitHub, Vercel, Fly, Railway, Neon, Supabase integrations"
+      }
+    },
+    "faqSchema": {
+      "items": {
+        "agentWorkstation": {
+          "q": "What is an agent workstation?",
+          "a": "An agent workstation is a persistent, isolated computer that exists for an AI agent to work on. It is always on. It has its own filesystem, processes, and network. Privileged actions are gated at the boundary so they require a human passkey approval. The agent runs there, not on your laptop."
+        },
+        "vsCursor": {
+          "q": "How is Ellul different from Cursor or Claude Code?",
+          "a": "Cursor and Claude Code are agents. Ellul is the computer the agent runs on. You can keep using your existing agent. Ellul moves it off your laptop onto a workstation that never closes, supports multiple agents in parallel, and gates every privileged action behind a passkey."
+        },
+        "parallel": {
+          "q": "Can I run multiple AI agents in parallel?",
+          "a": "Yes. Each agent gets its own workstation. They run independently. Read-only peering lets one agent see another’s source code without being able to edit it, push it, or escalate it."
+        },
+        "passkey": {
+          "q": "How does passkey gating work in practice?",
+          "a": "Privileged actions (git push, deploy, database writes, secret access) pause mid-execution. You receive a notification. You tap your passkey to approve or decline. The agent only proceeds if you approve. Credentials never reach the agent process."
+        },
+        "duration": {
+          "q": "How long can an agent run unattended?",
+          "a": "Indefinitely. The workstation stays online whether you are at your laptop or not. Customer agents have run uninterrupted for multiple days through long refactors and migration scripts."
+        }
+      }
+    }
+  }
+}

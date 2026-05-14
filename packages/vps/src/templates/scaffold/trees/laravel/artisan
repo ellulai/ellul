@@ -1,0 +1,15 @@
+#!/usr/bin/env php
+<?php
+// Placeholder artisan — full artisan becomes available after
+// `composer install` pulls Laravel. This stub keeps
+// `php artisan serve` operational by delegating to PHP's built-in
+// server when Laravel isn't yet resolved.
+$cmd = $argv[1] ?? "";
+if ($cmd === "serve") {
+  $host = "0.0.0.0";
+  $port = getenv("PORT") ?: 8000;
+  passthru("php -S $host:$port -t public");
+  exit;
+}
+fwrite(STDERR, "Run `composer install` to enable full artisan commands.\n");
+exit(1);

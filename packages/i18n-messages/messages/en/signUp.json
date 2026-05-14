@@ -1,0 +1,12 @@
+{
+  "signUp": {
+    "heading": "Get started",
+    "headingShield": "Shield Gateway",
+    "subheadShieldFlow": "Secrets proxied. Nothing stored locally.",
+    "subheadHasTier": "Sign in to set up your server",
+    "subheadPickTier": "Pick a plan to start building",
+    "selectTierPrompt": "Select a plan above to continue",
+    "alreadyHaveAccount": "Already have an account?",
+    "changePlan": "Change plan"
+  }
+}

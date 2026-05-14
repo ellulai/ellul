@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Terminal - ellul</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #0B0B0F; }
+    iframe { width: 100%; height: 100%; border: none; display: none; }
+    .loading {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; color: rgba(245,239,230,0.45); font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .loading .spinner {
+      width: 32px; height: 32px; border: 3px solid rgba(245,239,230,0.08); border-top-color: #F0A65A;
+      border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error { color: #E5806B; }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div id="status">Authorizing...</div>
+  </div>
+  <iframe id="terminal"></iframe>
+
+  <script src="/_auth/static/session-pop.js"></script>
+  <script src="/_auth/static/terminal-init.js"></script>
+</body>
+</html>
