@@ -1,3 +1,0 @@
--keep class org.bouncycastle.pqc.crypto.mldsa.** { *; }
--keep class org.bouncycastle.pqc.crypto.crystals.dilithium.** { *; }
--dontwarn org.bouncycastle.**

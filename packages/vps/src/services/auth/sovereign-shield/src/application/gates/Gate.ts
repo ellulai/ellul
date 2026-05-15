@@ -63,8 +63,18 @@ const VOLUME_WAS_ENCRYPTED_BOOT = '/etc/ellul-bootstrap/volume-was-encrypted';
  *
  * Does NOT trust API state — checks actual LUKS mount state via findmnt.
  * Same sovereignty principle as ptrace_scope and iptables.
+ *
+ * Self-hosted (localhost) and container deployments have no LUKS volume —
+ * the vault is a plain directory, always mounted. Skip the check entirely.
  */
 function isVolumeEncryptionRequired(): boolean {
+  try {
+    const model = fs.readFileSync('/etc/ellul/deployment-model', 'utf8').trim();
+    if (model === 'localhost') return false;
+  } catch {}
+
+  if (fs.existsSync('/.dockerenv')) return false;
+
   // Volume was never encrypted — no gate needed
   if (!fs.existsSync(VOLUME_WAS_ENCRYPTED_MARKER) && !fs.existsSync(VOLUME_WAS_ENCRYPTED_BOOT)) return false;
 

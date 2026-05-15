@@ -18,7 +18,7 @@
 
 import fs from 'fs';
 import { Hono } from 'hono';
-
+import { setVaultKey } from './auth/secrets';
 import { serve } from '@hono/node-server';
 import { PORT, RP_NAME, DOMAIN_FILE, API_URL_FILE, SVC_HOME, INTERNAL_TOKEN_PATH } from './config';
 import { registerAllRoutes } from './routes';
@@ -63,6 +63,19 @@ import './application/credentials/CredentialReconciliation';
 import { initDebugLog, dbg } from './application/audit/DebugLog';
 
 initDebugLog();
+
+// On Android, the engine pipes the vault encryption key via stdin before
+// closing the write end. Read synchronously before any route handler
+// triggers loadAuthSecrets(). On VPS this is a no-op (stdin is /dev/null).
+if (process.env.ELLUL_PLATFORM === 'android') {
+  try {
+    const key = fs.readFileSync(0, 'utf8').trim();
+    if (/^[0-9a-f]{64}$/.test(key)) {
+      setVaultKey(key);
+      console.log('[shield] Vault encryption key loaded from engine');
+    }
+  } catch {}
+}
 
 // Read domain from file or use default
 let hostname = 'localhost';

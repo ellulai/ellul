@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Globe,
   Copy,
@@ -25,7 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { isMobileTauri } from "@/lib/utils";
+import { isAndroidApp } from "@/lib/utils";
 
 interface TunnelStatus {
   running: boolean;
@@ -47,8 +47,9 @@ interface TunnelConfig {
   autoExpose: boolean;
 }
 
-async function tauriInvoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  return (window as any).__TAURI_INTERNALS__.invoke(`plugin:proot|${cmd}`, args) as Promise<T>;
+async function androidInvoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  // TODO: wire proot commands through the Android bridge once available
+  return (window as any).androidShield.invokeAsync(`plugin:proot|${cmd}`, args) as Promise<T>;
 }
 
 function fmtBytes(n: number): string {
@@ -65,21 +66,29 @@ function fmtDuration(s: number): string {
 }
 
 export function TunnelCard() {
-  const isAndroid = isMobileTauri();
+  const isAndroid = isAndroidApp();
   const [status, setStatus] = useState<TunnelStatus | null>(null);
   const [config, setConfig] = useState<TunnelConfig | null>(null);
   const [subdomainInput, setSubdomainInput] = useState("");
   const [toggling, setToggling] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const autoStartAttempted = useRef(false);
 
   const pollStatus = useCallback(async () => {
     try {
-      const s = await tauriInvoke<TunnelStatus>("proot_tunnel_status");
+      const s = await androidInvoke<TunnelStatus>("proot_tunnel_status");
       setStatus(s);
+      if (s.error === "needs_token" && !autoStartAttempted.current) {
+        autoStartAttempted.current = true;
+        try {
+          await androidInvoke("proot_tunnel_start");
+        } catch {}
+        return;
+      }
       if (s.error === "auth_expired") {
         setError("Session expired. Please reconnect your account.");
-      } else if (s.error && s.error !== "status_stale") {
+      } else if (s.error && s.error !== "status_stale" && s.error !== "needs_token") {
         setError(s.error);
       } else {
         setError(null);
@@ -89,7 +98,7 @@ export function TunnelCard() {
 
   const loadConfig = useCallback(async () => {
     try {
-      const c = await tauriInvoke<TunnelConfig>("proot_tunnel_get_config");
+      const c = await androidInvoke<TunnelConfig>("proot_tunnel_get_config");
       setConfig(c);
       if (c.subdomain) setSubdomainInput(c.subdomain);
     } catch {}
@@ -111,10 +120,10 @@ export function TunnelCard() {
     setError(null);
     try {
       if (status?.running) {
-        await tauriInvoke("proot_tunnel_stop");
+        await androidInvoke("proot_tunnel_stop");
       } else {
         const sub = subdomainInput.trim() || undefined;
-        await tauriInvoke("proot_tunnel_start", sub ? { subdomain: sub } : {});
+        await androidInvoke("proot_tunnel_start", sub ? { subdomain: sub } : {});
       }
       await new Promise((r) => setTimeout(r, 1000));
       await pollStatus();
@@ -142,13 +151,13 @@ export function TunnelCard() {
   const handleSubdomainSave = async () => {
     const sub = subdomainInput.trim();
     try {
-      await tauriInvoke("proot_tunnel_set_subdomain", { subdomain: sub });
+      await androidInvoke("proot_tunnel_set_subdomain", { subdomain: sub });
     } catch {}
   };
 
   const handleAutoExposeToggle = async (enabled: boolean) => {
     try {
-      await tauriInvoke("proot_tunnel_set_auto_expose", { enabled });
+      await androidInvoke("proot_tunnel_set_auto_expose", { enabled });
       await loadConfig();
     } catch {}
   };

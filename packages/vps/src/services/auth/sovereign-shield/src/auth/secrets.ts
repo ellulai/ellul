@@ -11,6 +11,46 @@ import crypto from 'crypto';
 import fs from 'fs';
 import { AUTH_SECRETS_FILE, AUTH_SECRET_FILE } from '../config';
 
+// Vault-key encryption for Android proot (no UID separation).
+// Key is delivered via stdin from the engine, backed by Android Keystore.
+let vaultKey: Buffer | null = null;
+
+export function setVaultKey(key: string): void {
+  vaultKey = Buffer.from(key, 'hex');
+}
+
+function encryptSecretsData(plaintext: string): string {
+  if (!vaultKey) return plaintext;
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', vaultKey, iv);
+  const ct = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return JSON.stringify({
+    _enc: 1,
+    iv: iv.toString('hex'),
+    tag: tag.toString('hex'),
+    ct: ct.toString('hex'),
+  });
+}
+
+function decryptSecretsData(raw: string): string {
+  if (!vaultKey) return raw;
+  try {
+    const envelope = JSON.parse(raw);
+    if (!envelope._enc) return raw;
+    const decipher = crypto.createDecipheriv(
+      'aes-256-gcm', vaultKey, Buffer.from(envelope.iv, 'hex')
+    );
+    decipher.setAuthTag(Buffer.from(envelope.tag, 'hex'));
+    return Buffer.concat([
+      decipher.update(Buffer.from(envelope.ct, 'hex')),
+      decipher.final(),
+    ]).toString('utf8');
+  } catch {
+    return raw;
+  }
+}
+
 export interface SecretInfo {
   value: string;
   createdAt: number;
@@ -44,7 +84,8 @@ export function loadAuthSecrets(): AuthSecrets {
   if (cachedSecrets) return cachedSecrets;
   try {
     if (fs.existsSync(AUTH_SECRETS_FILE)) {
-      cachedSecrets = JSON.parse(fs.readFileSync(AUTH_SECRETS_FILE, 'utf8'));
+      const raw = fs.readFileSync(AUTH_SECRETS_FILE, 'utf8');
+      cachedSecrets = JSON.parse(decryptSecretsData(raw));
       return cachedSecrets!;
     }
   } catch (e) {
@@ -81,7 +122,7 @@ export function loadAuthSecrets(): AuthSecrets {
       }
     };
     try {
-      fs.writeFileSync(AUTH_SECRETS_FILE, JSON.stringify(cachedSecrets), { mode: 0o600 });
+      fs.writeFileSync(AUTH_SECRETS_FILE, encryptSecretsData(JSON.stringify(cachedSecrets)), { mode: 0o600 });
       console.log('[shield] Generated and persisted new auth secret');
     } catch (writeErr) {
       console.error('[shield] Failed to persist auth secret:', (writeErr as Error).message);

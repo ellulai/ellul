@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { Bell, BellOff } from "lucide-react";
-import { isTauriApp } from "@/lib/utils";
+import { isNativeApp } from "@/lib/utils";
 import { API_URL } from "@/lib/api";
 import {
   getNotificationPrefs,
@@ -58,7 +58,7 @@ export function NotificationSettings() {
   const [isNative, setIsNative] = useState(false);
 
   useEffect(() => {
-    setIsNative(isTauriApp());
+    setIsNative(isNativeApp());
   }, []);
 
   if (!isNative) return null;

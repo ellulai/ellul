@@ -15,7 +15,7 @@ import { startAuthentication, startRegistration } from "@simplewebauthn/browser"
 import type { PublicKeyCredentialCreationOptionsJSON, PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/types";
 import { MOCK_MODE, mockVpsBridgeResponses } from "@/lib/mock-data";
 import { onSessionStatus } from "@/lib/session-events";
-import { isTauriApp } from "@/lib/utils";
+import { isElectronApp, isAndroidApp } from "@/lib/utils";
 import type {
   BridgeMessageType,
   BridgeResponse,
@@ -64,7 +64,8 @@ interface VpsBridgeProviderProps {
 // a single component body.
 export function VpsBridgeProvider(props: VpsBridgeProviderProps) {
   if (MOCK_MODE) return <MockVpsBridgeProvider>{props.children}</MockVpsBridgeProvider>;
-  if (isTauriApp()) return <TauriVpsBridgeProvider hostname={props.hostname}>{props.children}</TauriVpsBridgeProvider>;
+  if (isElectronApp()) return <NativeVpsBridgeProvider hostname={props.hostname} invoke={electronInvoke}>{props.children}</NativeVpsBridgeProvider>;
+  if (isAndroidApp()) return <NativeVpsBridgeProvider hostname={props.hostname} invoke={androidInvoke}>{props.children}</NativeVpsBridgeProvider>;
   return <RealVpsBridgeProvider hostname={props.hostname}>{props.children}</RealVpsBridgeProvider>;
 }
 
@@ -104,9 +105,11 @@ function MockVpsBridgeProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ── Tauri native bridge: replaces iframe + SW with Rust plugin ──
+// ── Native bridge: Electron + Android share this provider, parameterized by invoke fn ──
 
-const TAURI_COMMAND_MAP: Record<string, string> = {
+type NativeInvokeFn = <T = unknown>(cmd: string, args?: Record<string, unknown>) => Promise<T>;
+
+const NATIVE_COMMAND_MAP: Record<string, string> = {
   check_session: "shield_check_session",
   session_keepalive: "shield_session_keepalive",
   get_code_session: "shield_get_code_session",
@@ -134,55 +137,57 @@ const TAURI_COMMAND_MAP: Record<string, string> = {
   intent_nonce: "shield_intent_nonce",
 };
 
-async function tauriInvoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  return (window as any).__TAURI_INTERNALS__.invoke(`plugin:shield|${cmd}`, args) as Promise<T>;
+function electronInvoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  return (window as any).electronShield.invoke(cmd, args) as Promise<T>;
 }
 
-function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
+function androidInvoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const cbId = `cb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const callbacks = ((window as any).__shieldCallbacks = (window as any).__shieldCallbacks || {});
+    callbacks[cbId] = {
+      resolve: (v: T) => { delete callbacks[cbId]; resolve(v); },
+      reject: (msg: string) => { delete callbacks[cbId]; reject(new Error(msg)); },
+    };
+    (window as any).androidShield.invokeAsync(cmd, JSON.stringify(args || {}), cbId);
+  });
+}
+
+function NativeVpsBridgeProvider({ hostname, invoke, children }: VpsBridgeProviderProps & { invoke: NativeInvokeFn }) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsVpsAuth, setNeedsVpsAuth] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
 
-  // Check session on mount
   useEffect(() => {
-    tauriInvoke<{ hasSession: boolean }>("shield_check_session")
+    invoke<{ hasSession: boolean }>("shield_check_session")
       .then((res) => {
         if (!res.hasSession) setNeedsVpsAuth(true);
         setReady(true);
       })
-      .catch((e) => {
-        setError(String(e));
+      .catch(() => {
         setNeedsVpsAuth(true);
         setReady(true);
       });
-  }, [hostname]);
+  }, [hostname, invoke]);
 
-  // Session keepalive: refresh 5 min before expiry
   useEffect(() => {
     if (!ready || needsVpsAuth) return;
     let timer: ReturnType<typeof setTimeout>;
 
     const schedule = () => {
-      tauriInvoke<{ active: boolean; expiresAt?: number }>("shield_session_info")
+      invoke<{ active: boolean; expiresAt?: number }>("shield_session_info")
         .then((info) => {
           if (!info.active || !info.expiresAt) return;
           const msUntilExpiry = info.expiresAt * 1000 - Date.now();
           const refreshIn = Math.max(msUntilExpiry - 5 * 60 * 1000, 10_000);
           timer = setTimeout(() => {
-            tauriInvoke<{ alive: boolean }>("shield_session_keepalive")
+            invoke<{ alive: boolean }>("shield_session_keepalive")
               .then((res) => {
-                if (!res.alive) {
-                  setNeedsVpsAuth(true);
-                  setSessionExpired(true);
-                } else {
-                  schedule();
-                }
+                if (!res.alive) { setNeedsVpsAuth(true); setSessionExpired(true); }
+                else schedule();
               })
-              .catch(() => {
-                setNeedsVpsAuth(true);
-                setSessionExpired(true);
-              });
+              .catch(() => { setNeedsVpsAuth(true); setSessionExpired(true); });
           }, refreshIn);
         })
         .catch(() => {});
@@ -190,35 +195,29 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
 
     schedule();
     return () => clearTimeout(timer);
-  }, [ready, needsVpsAuth]);
+  }, [ready, needsVpsAuth, invoke]);
 
-  // Re-check session when app returns to foreground
   useEffect(() => {
     const handler = () => {
       if (document.visibilityState === "visible" && ready && !needsVpsAuth) {
-        tauriInvoke<{ hasSession: boolean }>("shield_check_session").then((res) => {
-          if (!res.hasSession) {
-            setNeedsVpsAuth(true);
-            setSessionExpired(true);
-          }
+        invoke<{ hasSession: boolean }>("shield_check_session").then((res) => {
+          if (!res.hasSession) { setNeedsVpsAuth(true); setSessionExpired(true); }
         });
       }
     };
     document.addEventListener("visibilitychange", handler);
     return () => document.removeEventListener("visibilitychange", handler);
-  }, [ready, needsVpsAuth]);
+  }, [ready, needsVpsAuth, invoke]);
 
   const send = useCallback(<T = unknown,>(type: string, data: Record<string, unknown> = {}): Promise<T> => {
-    const cmd = TAURI_COMMAND_MAP[type];
+    const cmd = NATIVE_COMMAND_MAP[type];
     if (!cmd) return Promise.reject(new Error(`Unknown bridge message: ${type}`));
-    return tauriInvoke<T>(cmd, data).catch((e) => {
+    return invoke<T>(cmd, data).catch((e) => {
       const msg = String(e);
-      if (msg.includes("No active session") || msg.includes("NoSession")) {
-        setNeedsVpsAuth(true);
-      }
+      if (msg.includes("No active session") || msg.includes("NoSession")) setNeedsVpsAuth(true);
       throw e instanceof Error ? e : new Error(msg);
     });
-  }, []);
+  }, [invoke]);
 
   const dummyHandle: BridgeHandle = {
     contentWindow: typeof window !== "undefined" ? window : ({} as Window),
@@ -234,40 +233,35 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
         if (ready) { clearInterval(check); resolve(dummyHandle); }
         if (error) { clearInterval(check); reject(new Error(error)); }
       }, 50);
-      setTimeout(() => { clearInterval(check); reject(new Error("Tauri bridge timeout")); }, 30_000);
+      setTimeout(() => { clearInterval(check); reject(new Error("Native bridge timeout")); }, 30_000);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, error, hostname]);
 
   const authenticateNative = useCallback(async (): Promise<void> => {
-    // Get WebAuthn options via Rust (signed HTTP to VPS)
-    const options = await tauriInvoke<PublicKeyCredentialRequestOptionsJSON>(
+    const options = await invoke<PublicKeyCredentialRequestOptionsJSON>(
       "shield_login_options",
       { serverDomain: hostname },
     );
-    // Passkey ceremony in webview — presents native Touch ID / security key / QR sheet.
-    // Uses console.ellul.ai origin (already in VPS allowed origins), avoiding the
-    // AASA + code-signing requirement of ASAuthorizationController.
     const assertion = await startAuthentication({ optionsJSON: options });
-    // Verify via Rust → extracts session cookie → ML-KEM bind → PoP ready
-    await tauriInvoke("shield_login_verify", { serverDomain: hostname, assertion });
+    await invoke("shield_login_verify", { serverDomain: hostname, assertion });
     setNeedsVpsAuth(false);
     setSessionExpired(false);
-  }, [hostname]);
+  }, [hostname, invoke]);
 
   const registerNative = useCallback(async (name: string): Promise<unknown> => {
-    const regOptions = await tauriInvoke<{ options: PublicKeyCredentialCreationOptionsJSON }>(
+    const regOptions = await invoke<{ options: PublicKeyCredentialCreationOptionsJSON }>(
       "shield_register_options",
       { serverDomain: hostname, body: { name } },
     );
     const attestation = await startRegistration({ optionsJSON: regOptions.options ?? regOptions as unknown as PublicKeyCredentialCreationOptionsJSON });
     const extResults = attestation.clientExtensionResults as Record<string, unknown> | undefined;
     const prfEnabled = (extResults?.prf as { enabled?: boolean } | undefined)?.enabled === true;
-    return tauriInvoke("shield_register_verify", {
+    return invoke("shield_register_verify", {
       serverDomain: hostname,
       body: { attestation, name, prfEnabled },
     });
-  }, [hostname]);
+  }, [hostname, invoke]);
 
   const reauthenticate = useCallback(async (): Promise<void> => {
     await authenticateNative();
@@ -282,33 +276,21 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
     setError(null);
     setNeedsVpsAuth(false);
     setSessionExpired(false);
-    tauriInvoke("shield_clear_session")
+    invoke("shield_clear_session")
       .catch(() => {})
       .finally(() => {
-        tauriInvoke<{ hasSession: boolean }>("shield_check_session")
+        invoke<{ hasSession: boolean }>("shield_check_session")
           .then((res) => {
             if (!res.hasSession) setNeedsVpsAuth(true);
             setReady(true);
           })
           .catch((e) => setError(String(e)));
       });
-  }, []);
+  }, [invoke]);
 
   return (
     <VpsBridgeContext.Provider
-      value={{
-        ready,
-        error,
-        needsVpsAuth,
-        sessionExpired,
-        send,
-        waitForReady,
-        reauthenticate,
-        signalAuthNeeded,
-        reload,
-        authenticateNative,
-        registerNative,
-      }}
+      value={{ ready, error, needsVpsAuth, sessionExpired, send, waitForReady, reauthenticate, signalAuthNeeded, reload, authenticateNative, registerNative }}
     >
       {children}
     </VpsBridgeContext.Provider>

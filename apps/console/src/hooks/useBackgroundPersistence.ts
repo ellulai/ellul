@@ -2,78 +2,34 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { isTauriApp } from "@/lib/utils";
-
-type TauriWindowModule = {
-  getCurrentWindow: () => {
-    listen: (event: string, handler: () => void) => Promise<() => void>;
-    show: () => Promise<void>;
-    setFocus: () => Promise<void>;
-  };
-};
-
-// Module specifier extracted to bypass TypeScript's static import resolution.
-const TAURI_WINDOW_MODULE = "@tauri-apps/api/window";
-
-// desktop app, Tauri webviews don't throttle like browser tabs, so connections
+import { isElectronApp } from "@/lib/utils";
 
 export function useBackgroundPersistence() {
-  const tauriEventUnlisteners = useRef<Array<() => void>>([]);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
-  // Listen for Tauri focus events to trigger reconnect after sleep/wake
   useEffect(() => {
-    if (!isTauriApp()) return;
+    if (!isElectronApp()) return;
 
-    let mounted = true;
+    const electronShield = (window as any).electronShield;
+    if (!electronShield?.onSessionExpired) return;
 
-    const setupTauriListeners = async () => {
-      try {
-        const { getCurrentWindow } = await import(
-          /* webpackIgnore: true */ TAURI_WINDOW_MODULE
-        ) as TauriWindowModule;
-        const appWindow = getCurrentWindow();
+    const unsubscribe = electronShield.onSessionExpired(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
 
-        // On focus: dispatch a synthetic visibilitychange so existing reconnect
-        const focusUnlisten = await appWindow.listen("tauri://focus", () => {
-          if (document.visibilityState === "visible") {
-            document.dispatchEvent(new Event("visibilitychange"));
-          }
-        });
-
-        if (mounted) {
-          tauriEventUnlisteners.current.push(focusUnlisten);
-        } else {
-          focusUnlisten();
-        }
-      } catch (err) {
-        console.warn("[BackgroundPersistence] Failed to setup Tauri listeners:", err);
-      }
-    };
-
-    setupTauriListeners();
+    cleanupRef.current = unsubscribe;
 
     return () => {
-      mounted = false;
-      for (const unlisten of tauriEventUnlisteners.current) {
-        unlisten();
+      if (cleanupRef.current) {
+        cleanupRef.current();
+        cleanupRef.current = null;
       }
-      tauriEventUnlisteners.current = [];
     };
   }, []);
 
-  // Public API: allow showing the window (e.g., from a tray click handler)
   const showWindow = useCallback(async () => {
-    if (!isTauriApp()) return;
-    try {
-      const { getCurrentWindow } = await import(
-        /* webpackIgnore: true */ TAURI_WINDOW_MODULE
-      ) as TauriWindowModule;
-      const appWindow = getCurrentWindow();
-      await appWindow.show();
-      await appWindow.setFocus();
-    } catch (err) {
-      console.warn("[BackgroundPersistence] Failed to show window:", err);
-    }
+    // Electron windows are managed by the main process via tray/shortcuts.
+    // Android WebView is always visible. No-op from renderer.
   }, []);
 
   return { showWindow };

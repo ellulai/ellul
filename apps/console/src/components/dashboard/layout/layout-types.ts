@@ -55,6 +55,7 @@ export interface ServerInfo {
   runtimeTier?: "shared" | "dedicated";
   volumeSecurityMode?: "standard" | "enhanced" | "sovereign" | null;
   region?: string | null;
+  deploymentModel?: "cloudflare" | "gateway" | "direct" | "localhost" | string;
 }
 
 // Re-export so sub-components can import from a single layer.
