@@ -111,7 +111,7 @@ const NAMESPACE_WRAPPER_COMMAND = "sudo";
 const NAMESPACE_WRAPPER_ARGS = ["-n", "ellul-agent-namespace", "enter"] as const;
 const SPAWN_SCOPE_BIN = "/usr/local/bin/ellul-spawn-scope";
 
-const ADAPTER_ALLOWLIST = new Set(["claude", "opencode", "cursor", "codex"]);
+const ADAPTER_ALLOWLIST = new Set(["claude", "opencode", "cursor", "codex", "grok"]);
 const SANDBOX_ID_RE = /^sbx-[a-z0-9]{7}$/;
 const SCOPE_ID_RE = /^[a-zA-Z0-9_-]{1,32}$/;
 

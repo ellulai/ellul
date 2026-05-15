@@ -11,7 +11,7 @@
 
 import type { CodexReasoningEffort, ClaudeEffort } from './cli-options';
 
-export type ProviderKind = 'claude' | 'codex' | 'cursor' | 'opencode' | 'zeroclaw';
+export type ProviderKind = 'claude' | 'codex' | 'cursor' | 'opencode' | 'zeroclaw' | 'grokAgent';
 
 export type ModelBadge = 'new' | 'recommended' | 'preview' | 'deprecated';
 
@@ -164,6 +164,7 @@ export const MODELS_BY_PROVIDER: Record<ProviderKind, readonly ModelCapabilities
   cursor: CURSOR_MODELS,
   opencode: OPENCODE_MODELS,
   zeroclaw: ZEROCLAW_MODELS,
+  grokAgent: [],
 };
 
 /** Get the capability record for a given provider+modelId, or null. */

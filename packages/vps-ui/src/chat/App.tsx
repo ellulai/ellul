@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "use-intl";
 import { ChevronDown, ChevronRight, ChevronLeft, FileUp, Loader2, MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
-import { ClaudeLogo, OpenAILogo, CursorLogo, ZeroClawLogo, OpenCodeLogo } from "@shared/ui/ai-logos";
+import { ClaudeLogo, GrokLogo, OpenAILogo, CursorLogo, ZeroClawLogo, OpenCodeLogo } from "@shared/ui/ai-logos";
 import { cn, randomUUID } from "@shared/utils";
 import { useAgentAuth } from "./hooks/useAgentAuth";
 import { useIntegrations } from "./hooks/useIntegrations";
@@ -118,6 +118,8 @@ function providerForSession(session: string): ProviderKind | null {
       return "cursor";
     case "claw":
       return "zeroclaw";
+    case "grok":
+      return "grokAgent";
     case "opencode":
     case "main":
       return "opencode";
@@ -138,6 +140,7 @@ const SESSION_DISPLAY = [
   { id: "claude", label: "Claude", color: "#DE7356", icon: ClaudeLogo },
   { id: "codex", label: "Codex", color: "#38bdf8", icon: OpenAILogo },
   { id: "cursor", label: "Cursor", color: "#E5E5E5", icon: CursorLogo },
+  { id: "grok", label: "Grok", color: "#FFFFFF", icon: GrokLogo },
 ] as const;
 
 // New-thread picker — subset of SESSION_DISPLAY, excludes retired providers.

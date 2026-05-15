@@ -41,6 +41,8 @@ function commandForProvider(provider: ProviderKind): string | null {
       return null;
     case "zeroclaw":
       return null;
+    case "grokAgent":
+      return null;
   }
 }
 

@@ -30,7 +30,7 @@ export interface ServerStatus {
     size: string;
     terminalEnabled?: boolean;
     sshEnabled?: boolean;
-    preferredSession?: "main" | "claw" | "opencode" | "claude" | "codex" | "cursor";
+    preferredSession?: "main" | "claw" | "opencode" | "claude" | "codex" | "cursor" | "grok";
     preferredApp?: string | null;
     securityTier?: "standard" | "web_locked" | "private_locked";
     serverPlan?: "free" | "hobby" | "pro";

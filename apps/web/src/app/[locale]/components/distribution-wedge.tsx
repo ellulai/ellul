@@ -12,7 +12,7 @@ const FEATURE_KEYS = [
 ] as const;
 // Brand names per packages/i18n-messages/scripts/glossary.json — literal
 // English across every locale. Do NOT translate / katakanize.
-const AGENTS = ["Claude Code", "Codex", "Cursor", "OpenCode"];
+const AGENTS = ["Claude Code", "Codex", "Cursor", "OpenCode", "Grok"];
 
 export default async function DistributionWedge() {
   const t = await getTranslations("home.howItWorks");

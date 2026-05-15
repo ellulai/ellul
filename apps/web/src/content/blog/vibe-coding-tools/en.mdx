@@ -89,7 +89,7 @@ The honest line: when the project starts touching real credentials, real custome
 
 Graduating doesn't mean stopping the use of AI agents. It means moving the agent into a runtime that persists through your laptop being closed (so longer work is possible), gates privileged actions behind a [passkey approval](/glossary/passkey-approval) (so the agent can't move fast on something that matters), isolates the agent from your ambient credentials (so a confused agent can't reach your AWS profile), and audits every action so you have a record when something goes wrong.
 
-For people who liked the cloud-vibe flavor, the migration target is [an agent workstation](/concepts/agent-workstation): a persistent runtime that you control, with the agent of your choice (Claude Code, Codex, OpenCode, Cursor's CLI) running inside it. Same vibe, different boundary. For people who liked the laptop flavor, the same thing applies. Keep your editor as the client. Move the agent to the workstation.
+For people who liked the cloud-vibe flavor, the migration target is [an agent workstation](/concepts/agent-workstation): a persistent runtime that you control, with the agent of your choice (Claude Code, Codex, OpenCode, Cursor's CLI, Grok) running inside it. Same vibe, different boundary. For people who liked the laptop flavor, the same thing applies. Keep your editor as the client. Move the agent to the workstation.
 
 ## A practical decision tree
 
@@ -97,7 +97,7 @@ If your work is a throwaway prototype, a one-off demo, or a learning exercise: p
 
 If your work is exploratory but might go somewhere: stay in Flavor A, in an editor you can take with you. Cursor or Windsurf is the strongest experience. Build with a stack you know how to deploy yourself, even if you're not deploying yet.
 
-If your work is going into production, touches real customers, or holds credentials worth protecting: graduate. The agent stays; the laptop runtime goes. Run Cursor's CLI, Claude Code, Codex, or OpenCode on a persistent workstation. See our [run-claude-code-overnight walkthrough](/blog/run-claude-code-overnight) for what that looks like in practice.
+If your work is going into production, touches real customers, or holds credentials worth protecting: graduate. The agent stays; the laptop runtime goes. Run Cursor's CLI, Claude Code, Codex, OpenCode, or Grok on a persistent workstation. See our [run-claude-code-overnight walkthrough](/blog/run-claude-code-overnight) for what that looks like in practice.
 
 The decision isn't about whether to vibe. Vibing is fine. It's about which runtime supports the work you're actually doing.
 
@@ -118,7 +118,7 @@ The decision isn't about whether to vibe. Vibing is fine. It's about which runti
 
 <Cta
   eyebrow="Vibe with a runtime that scales"
-  body="Ellul gives you the cloud-vibe persistence with none of the lock-in. Bring your own agent (Claude Code, Codex, OpenCode, Cursor's CLI), your own model key, your own stack. Vibe in flow; ship behind a passkey gate."
+  body="Ellul gives you the cloud-vibe persistence with none of the lock-in. Bring your own agent (Claude Code, Codex, OpenCode, Cursor's CLI, Grok), your own model key, your own stack. Vibe in flow; ship behind a passkey gate."
   primary={{ href: "https://console.ellul.ai/sign-up", label: "Get a workstation" }}
   links={[
     { href: "/glossary/vibe-coding", label: "What is vibe coding? →" },

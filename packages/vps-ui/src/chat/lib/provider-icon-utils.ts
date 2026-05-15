@@ -7,6 +7,7 @@ import { PROVIDER_DISPLAY_NAMES, type ProviderKind } from "@ellul.ai/types";
 import {
   ClaudeLogo,
   CursorLogo,
+  GrokLogo,
   OpenAILogo,
   OpenCodeLogo,
   ZeroClawLogo,
@@ -21,6 +22,7 @@ export const PROVIDER_ICON_BY_PROVIDER: Record<ProviderKind, Icon> = {
   opencode: OpenCodeLogo,
   cursor: CursorLogo,
   zeroclaw: ZeroClawLogo,
+  grokAgent: GrokLogo,
 };
 
 function isAvailableProviderOption(option: (typeof PROVIDER_OPTIONS)[number]): option is {

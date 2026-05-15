@@ -23,7 +23,7 @@ The credential lives in a server-side vault. When Codex calls the OpenAI API, th
 This walkthrough assumes you already have an OpenAI API key. If you do not, generate one at [platform.openai.com](https://platform.openai.com) before starting.
 
 1. **Sign up** at console.ellul.ai. Hobby is $20/mo for up to two parallel workstations. Pro is $50/mo for up to five workstations and read-only peering.
-2. **Provision a workstation.** A persistent sandbox boots in roughly ninety seconds, pre-loaded with Codex, Claude Code, OpenCode, and Cursor's CLI.
+2. **Provision a workstation.** A persistent sandbox boots in roughly ninety seconds, pre-loaded with Codex, Claude Code, OpenCode, Cursor's CLI, and Grok.
 3. **Connect a passkey.** FIDO2 from your phone, laptop, or hardware key. The passkey gates `git push`, deploys, and any other privileged action the agent attempts.
 4. **Authenticate Codex.** Paste your OpenAI API key into Ellul's vault, or run `codex login` and complete the OAuth flow. Either way the credential is stored server-side and never sits in the agent's process namespace.
 5. **Open a session.** Use Ellul's chat surface in the browser, or SSH into the workstation and run `codex` directly.
@@ -75,7 +75,7 @@ Codex with MCP becomes more useful when the MCP servers themselves are long-live
 
 Production-touching automation is where the gate earns its keep. Anything that ends in `git push`, `vercel deploy`, or a write to a real database stops on a passkey approval. The agent decides what to attempt. The human approves the consequential bit.
 
-Mixed-model workflows are the unsexy but real reason teams keep coming back. Codex on the workstation alongside Claude Code, OpenCode, and Cursor's CLI. Use Codex for the focused multi-file edit. Swap to a different agent for the architecture pass. Hand back when it is time for the test loop. They share the workstation, the filesystem, and the gate. You do not have to commit to a vendor for a whole project.
+Mixed-model workflows are the unsexy but real reason teams keep coming back. Codex on the workstation alongside Claude Code, OpenCode, Cursor's CLI, and Grok. Use Codex for the focused multi-file edit. Swap to a different agent for the architecture pass. Hand back when it is time for the test loop. They share the workstation, the filesystem, and the gate. You do not have to commit to a vendor for a whole project.
 
 ## Honest limits
 

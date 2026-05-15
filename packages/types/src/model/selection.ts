@@ -47,12 +47,20 @@ export const ZeroClawModelSelection = Schema.Struct({
 });
 export type ZeroClawModelSelection = typeof ZeroClawModelSelection.Type;
 
+export const GrokModelSelection = Schema.Struct({
+  provider: Schema.Literal("grokAgent"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optionalKey(Schema.Struct({})),
+});
+export type GrokModelSelection = typeof GrokModelSelection.Type;
+
 export const ModelSelection = Schema.Union([
   CodexModelSelection,
   ClaudeModelSelection,
   CursorModelSelection,
   OpenCodeModelSelection,
   ZeroClawModelSelection,
+  GrokModelSelection,
 ]);
 export type ModelSelection = typeof ModelSelection.Type;
 
@@ -63,6 +71,7 @@ export const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderKind, string> = {
   // Must exist in opencode-zen's connected list; gpt-5 is paid-only.
   opencode: "opencode/minimax-m2.5-free",
   zeroclaw: "default",
+  grokAgent: "default",
 };
 
 export const DEFAULT_MODEL = DEFAULT_MODEL_BY_PROVIDER.codex;
@@ -73,6 +82,7 @@ export const DEFAULT_GIT_TEXT_GENERATION_MODEL_BY_PROVIDER: Record<ProviderKind,
   cursor: "composer-2",
   opencode: "opencode/minimax-m2.5-free",
   zeroclaw: "default",
+  grokAgent: "default",
 };
 
 export const MODEL_SLUG_ALIASES_BY_PROVIDER: Record<ProviderKind, Record<string, string>> = {
@@ -113,4 +123,5 @@ export const MODEL_SLUG_ALIASES_BY_PROVIDER: Record<ProviderKind, Record<string,
   },
   opencode: {},
   zeroclaw: {},
+  grokAgent: {},
 };

@@ -32,6 +32,14 @@ import {
   ZeroClawDaemonPoolLive,
   type ZeroClawDaemonPoolShape,
 } from "./zeroclaw";
+import {
+  GrokAdapter,
+  GrokAdapterLive,
+  GrokAcpServerPool,
+  GrokAcpServerPoolLive,
+  GrokAcpRuntimeFactoryLive,
+  type GrokAcpServerPoolShape,
+} from "./grok";
 import { makeProviderAdapterRegistry } from "./registry";
 import {
   makeProviderSessionDirectoryInMemory,
@@ -59,6 +67,7 @@ export interface AdapterRuntime {
   readonly opencodeWarmPool: WarmSessionPoolShape;
   readonly cursorAcpServerPool: CursorAcpServerPoolShape;
   readonly zeroclawDaemonPool: ZeroClawDaemonPoolShape;
+  readonly grokAcpServerPool: GrokAcpServerPoolShape;
 }
 
 let instance: AdapterRuntime | null = null;
@@ -71,7 +80,9 @@ type AdapterRuntimeServices =
   | CursorAdapter
   | CursorAcpServerPool
   | ZeroClawAdapter
-  | ZeroClawDaemonPool;
+  | ZeroClawDaemonPool
+  | GrokAdapter
+  | GrokAcpServerPool;
 let managedRuntime: ManagedRuntime.ManagedRuntime<AdapterRuntimeServices, never> | null = null;
 
 const AdapterPlatformLayer = Layer.mergeAll(
@@ -137,6 +148,13 @@ const ZeroClawAdapterRuntimeLayer = ZeroClawAdapterLive.pipe(
   Layer.provide(ZeroClawRuntimeLive),
   Layer.provide(AdapterPlatformLayer),
 );
+// Grok pool mirrors the cursor shape: per-project `grok agent stdio`
+// process, multiple ACP sessions multiplexed via session/new.
+const GrokAdapterRuntimeLayer = GrokAdapterLive.pipe(
+  Layer.provideMerge(GrokAcpServerPoolLive),
+  Layer.provide(GrokAcpRuntimeFactoryLive),
+  Layer.provide(AdapterPlatformLayer),
+);
 
 const AdapterCompositeLayer = Layer.mergeAll(
   ClaudeAdapterRuntimeLayer,
@@ -144,6 +162,7 @@ const AdapterCompositeLayer = Layer.mergeAll(
   OpenCodeAdapterRuntimeLayer,
   CursorAdapterRuntimeLayer,
   ZeroClawAdapterRuntimeLayer,
+  GrokAdapterRuntimeLayer,
 );
 
 /**
@@ -188,6 +207,17 @@ export async function sweepZeroClawIdleDaemons(
   return managedRuntime.runPromise(instance.zeroclawDaemonPool.sweepIdle(maxIdleMs));
 }
 
+/**
+ * Run the Grok ACP server pool's idle reaper. Same lifecycle hook as
+ * the cursor/opencode variants.
+ */
+export async function sweepGrokIdleAgents(
+  maxIdleMs: number,
+): Promise<{ readonly evicted: number; readonly retained: number }> {
+  if (!instance || !managedRuntime) return { evicted: 0, retained: 0 };
+  return managedRuntime.runPromise(instance.grokAcpServerPool.sweepIdle(maxIdleMs));
+}
+
 export interface PoolEntrySummary {
   readonly project: string;
   readonly refCount: number;
@@ -216,6 +246,18 @@ export async function listCursorAcpPoolEntries(): Promise<ReadonlyArray<PoolEntr
 export async function listZeroClawPoolEntries(): Promise<ReadonlyArray<PoolEntrySummary>> {
   if (!instance || !managedRuntime) return [];
   const entries = await managedRuntime.runPromise(instance.zeroclawDaemonPool.listEntries);
+  return entries.map((e) => ({
+    project: e.project,
+    refCount: e.refCount,
+    sessionCount: e.sessionCount,
+    idleSince: e.idleSince,
+    spawnedAt: e.spawnedAt,
+  }));
+}
+
+export async function listGrokAcpPoolEntries(): Promise<ReadonlyArray<PoolEntrySummary>> {
+  if (!instance || !managedRuntime) return [];
+  const entries = await managedRuntime.runPromise(instance.grokAcpServerPool.listEntries);
   return entries.map((e) => ({
     project: e.project,
     refCount: e.refCount,
@@ -371,12 +413,15 @@ export async function getAdapterRuntime(): Promise<AdapterRuntime> {
       const cursorAcpServerPool = yield* CursorAcpServerPool;
       const zeroclawAdapter = yield* ZeroClawAdapter;
       const zeroclawDaemonPool = yield* ZeroClawDaemonPool;
+      const grokAdapter = yield* GrokAdapter;
+      const grokAcpServerPool = yield* GrokAcpServerPool;
       const adapters = [
         claudeAdapter,
         codexAdapter,
         opencodeAdapter,
         cursorAdapter,
         zeroclawAdapter,
+        grokAdapter,
       ];
       const registry = makeProviderAdapterRegistry({ adapters });
       const service = yield* makeProviderService({ adapters, registry, directory }).pipe(
@@ -390,6 +435,7 @@ export async function getAdapterRuntime(): Promise<AdapterRuntime> {
         opencodeWarmPool,
         cursorAcpServerPool,
         zeroclawDaemonPool,
+        grokAcpServerPool,
       } satisfies AdapterRuntime;
     }),
   );

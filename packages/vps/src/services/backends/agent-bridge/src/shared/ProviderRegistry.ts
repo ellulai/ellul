@@ -16,6 +16,7 @@ import { OpenCodeProvider, OpenCodeProviderLive } from "../adapters/opencode/pro
 import { OpenCodeRuntimeLive } from "../adapters/opencode/runtime";
 import { ZeroClawProvider, ZeroClawProviderLive } from "../adapters/zeroclaw/provider";
 import { ZeroClawRuntimeLive } from "../adapters/zeroclaw/runtime";
+import { GrokProvider, GrokProviderLive } from "../adapters/grok/provider";
 
 export interface ProviderRegistryShape {
   readonly getProviders: Effect.Effect<ReadonlyArray<ServerProvider>>;
@@ -40,6 +41,7 @@ const PROVIDER_ORDER: ReadonlyArray<ProviderKind> = [
   "opencode",
   "cursor",
   "zeroclaw",
+  "grokAgent",
 ];
 
 const orderByProvider = (
@@ -62,6 +64,7 @@ const ProviderRegistryLiveBase = Layer.effect(
     const opencode = yield* OpenCodeProvider;
     const cursor = yield* CursorProvider;
     const zeroclaw = yield* ZeroClawProvider;
+    const grok = yield* GrokProvider;
 
     const sources: ReadonlyArray<ProviderSource> = [
       {
@@ -93,6 +96,12 @@ const ProviderRegistryLiveBase = Layer.effect(
         getSnapshot: zeroclaw.getSnapshot,
         refresh: zeroclaw.refresh,
         streamChanges: zeroclaw.streamChanges,
+      },
+      {
+        provider: "grokAgent",
+        getSnapshot: grok.getSnapshot,
+        refresh: grok.refresh,
+        streamChanges: grok.streamChanges,
       },
     ];
 
@@ -167,4 +176,5 @@ export const ProviderRegistryLive = ProviderRegistryLiveBase.pipe(
   Layer.provideMerge(OpenCodeRuntimeLive),
   Layer.provideMerge(ZeroClawProviderLive),
   Layer.provideMerge(ZeroClawRuntimeLive),
+  Layer.provideMerge(GrokProviderLive),
 );

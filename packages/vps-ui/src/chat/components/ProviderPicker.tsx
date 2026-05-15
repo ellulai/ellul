@@ -13,7 +13,7 @@ import {
 } from "@ellul.ai/types/model-catalog";
 import { type ThreadCliOptions } from "@ellul.ai/types";
 
-type Session = "claude" | "codex" | "cursor" | "opencode";
+type Session = "claude" | "codex" | "cursor" | "opencode" | "grokAgent";
 
 const BADGE_LABELS: Record<string, string> = {
   new: "NEW",

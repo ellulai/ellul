@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { rawSubtree } from "@ellul.ai/i18n";
-import { ClaudeLogo, OpenAILogo, CursorLogo, OpenCodeLogo } from "./ai-logos";
+import { ClaudeLogo, GrokLogo, OpenAILogo, CursorLogo, OpenCodeLogo } from "./ai-logos";
 
 const CONSOLE_URL = process.env.NEXT_PUBLIC_CONSOLE_URL!;
 
@@ -11,6 +11,7 @@ const AGENTS = [
   { Logo: OpenAILogo, label: "Codex" },
   { Logo: CursorLogo, label: "Cursor" },
   { Logo: OpenCodeLogo, label: "OpenCode" },
+  { Logo: GrokLogo, label: "Grok" },
 ];
 
 type NightLogRow = {

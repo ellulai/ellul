@@ -69,6 +69,7 @@ export const ProviderModelOptions = Schema.Struct({
   cursor: Schema.optional(CursorModelOptions),
   opencode: Schema.optional(OpenCodeModelOptions),
   zeroclaw: Schema.optional(ZeroClawModelOptions),
+  grokAgent: Schema.optional(Schema.Struct({})),
 });
 export type ProviderModelOptions = typeof ProviderModelOptions.Type;
 

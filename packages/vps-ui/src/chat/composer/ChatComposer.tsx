@@ -620,6 +620,8 @@ export const ChatComposer = memo(
         cursor: providerStatuses.find((provider) => provider.provider === "cursor")?.models ?? [],
         zeroclaw:
           providerStatuses.find((provider) => provider.provider === "zeroclaw")?.models ?? [],
+        grokAgent:
+          providerStatuses.find((provider) => provider.provider === "grokAgent")?.models ?? [],
       };
     }, [providerStatuses]);
     const selectedModelForPickerWithCustomFallback = useMemo(() => {

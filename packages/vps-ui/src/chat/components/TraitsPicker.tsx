@@ -17,7 +17,7 @@ import {
   type ClaudeEffort,
 } from "@ellul.ai/types/cli-options";
 
-type Session = "claude" | "codex" | "cursor" | "opencode";
+type Session = "claude" | "codex" | "cursor" | "opencode" | "grokAgent";
 
 function buildEffortLabels(t: (key: string) => string): Record<string, string> {
   return {

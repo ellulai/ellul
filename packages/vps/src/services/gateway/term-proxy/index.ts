@@ -160,7 +160,7 @@ async function getDynamicSessionPort(sessionId) {
  * Create a dynamic session via agent-bridge.
  * Returns the port if successful.
  * @param sessionId - Unique session identifier
- * @param type - Session type (main, opencode, claude, codex, cursor)
+ * @param type - Session type (main, opencode, claude, codex, cursor, grok)
  * @param project - Optional project/app scope
  */
 async function createDynamicSession(sessionId, type, project) {

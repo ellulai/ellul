@@ -169,6 +169,11 @@ export const BINARY_VERSIONS = {
    *  version embedded in the installer script). Distributed as a direct
    *  binary tarball from downloads.cursor.com, not npm. */
   cursorAgent: "2026.04.17-787b533",
+  /** Grok CLI (x.ai/cli). Standalone binary via curl installer from
+   *  storage.googleapis.com/grok-build-public-artifacts/. Installs to
+   *  ~/.grok/bin/grok. Not an npm package. Version TBD — update once
+   *  we capture the stable channel version string. */
+  grok: "0.1.0",
 } as const;
 
 /**

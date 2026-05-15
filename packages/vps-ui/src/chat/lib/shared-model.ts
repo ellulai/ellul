@@ -155,6 +155,7 @@ export function normalizeProviderModelOptionsWithCapabilities(
         modelOptions as OpenCodeModelOptions,
       );
     case "zeroclaw":
+    case "grokAgent":
       return undefined;
   }
 }
@@ -268,6 +269,7 @@ export function createModelSelection(
         ...(options ? { options: options as OpenCodeModelOptions } : {}),
       };
     case "zeroclaw":
+    case "grokAgent":
       return { provider, model };
   }
 }

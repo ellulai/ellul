@@ -16,6 +16,7 @@ export const PinnedModelByProvider = Schema.Struct({
   cursor: Schema.optionalKey(TrimmedNonEmptyString),
   opencode: Schema.optionalKey(TrimmedNonEmptyString),
   zeroclaw: Schema.optionalKey(TrimmedNonEmptyString),
+  grokAgent: Schema.optionalKey(TrimmedNonEmptyString),
 });
 export type PinnedModelByProvider = typeof PinnedModelByProvider.Type;
 

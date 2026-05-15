@@ -18,7 +18,7 @@ import { spawn, execSync, ChildProcess } from 'child_process';
 import * as os from 'os';
 
 // Session types that can be launched
-export type TerminalSessionType = 'main' | 'opencode' | 'claude' | 'codex' | 'cursor';
+export type TerminalSessionType = 'main' | 'opencode' | 'claude' | 'codex' | 'cursor' | 'grok';
 
 // Port range for dynamic allocation (7700-7799, avoiding 7700-7701 used by other services)
 const PORT_RANGE_START = 7710;
@@ -73,6 +73,7 @@ function getSessionCommand(type: TerminalSessionType): string {
     claude: 'claude',
     codex: 'codex',
     cursor: 'cursor-agent',
+    grok: 'grok',
   };
   return commands[type] || 'bash';
 }

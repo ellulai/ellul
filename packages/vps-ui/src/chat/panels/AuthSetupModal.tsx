@@ -37,6 +37,7 @@ const AUTH_TOOL_BY_PROVIDER: Record<ProviderKind, "claude" | "codex" | "cursor" 
   cursor: "cursor",
   opencode: null,
   zeroclaw: null,
+  grokAgent: null,
 };
 
 export interface AuthSetupModalProps {

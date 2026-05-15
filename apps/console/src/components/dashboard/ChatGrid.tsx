@@ -14,7 +14,7 @@ interface ChatGridProps {
   ipAddress: string;
   domain?: string;
   serverDomain: string;
-  preferredSession?: "main" | "claw" | "opencode" | "claude" | "codex" | "cursor";
+  preferredSession?: "main" | "claw" | "opencode" | "claude" | "codex" | "cursor" | "grok";
   app?: AppInfo | null;
   onUpgrade?: () => void;
 }

@@ -63,6 +63,15 @@ export function ZeroClawLogo(props: IconProps) {
   );
 }
 
+// xAI logotype — exact paths from Wikimedia Commons XAI-Logo.svg (via gilbarbara/logos normalized to 256×291)
+export function GrokLogo(props: IconProps) {
+  return (
+    <svg viewBox="0 0 256 291" fill="currentColor" {...props}>
+      <path d="M0.073 102.553L128.614 290.133H185.751L57.195 102.553H0.073ZM57.151 206.736L0 290.133H57.18L85.733 248.442L57.151 206.736ZM198.82 0L100.032 144.154L128.614 185.875L256 0H198.82ZM209.167 89.199V290.133H256V20.861L209.167 89.199Z" />
+    </svg>
+  );
+}
+
 // OpenCode geometric mark — exact paths from opencode.ai/favicon.svg (512×512)
 export function OpenCodeLogo(props: IconProps) {
   return (

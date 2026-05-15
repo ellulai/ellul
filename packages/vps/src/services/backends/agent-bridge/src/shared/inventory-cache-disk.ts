@@ -58,7 +58,7 @@ import * as path from "node:path";
 import { logEvent } from "./event-log";
 
 /** Adapters that own an inventory cache backed by this module. */
-export type InventoryCacheAdapter = "opencode" | "cursor" | "codex";
+export type InventoryCacheAdapter = "opencode" | "cursor" | "codex" | "grok";
 
 /** Schema version of the on-disk format. Bump on incompatible payload changes. */
 export const INVENTORY_CACHE_FORMAT_VERSION = 1;
@@ -70,6 +70,7 @@ const ADAPTER_ALLOWLIST: ReadonlySet<InventoryCacheAdapter> = new Set([
   "opencode",
   "cursor",
   "codex",
+  "grok",
 ]);
 
 const FILE_MODE = 0o640;

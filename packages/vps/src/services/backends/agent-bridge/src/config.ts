@@ -52,14 +52,14 @@ export const PROJECT_NAME_RE = /^sbx-[a-z0-9]{7}$/;
 export const CONTEXT_DIR = `${HOME}/.ellul/context`;
 export const CLI_ENV_FILE = `${HOME}/.ellul-cli-env`;
 
-export const VALID_SESSIONS = ['main', 'opencode', 'claude', 'codex', 'cursor', 'claw'] as const;
+export const VALID_SESSIONS = ['main', 'opencode', 'claude', 'codex', 'cursor', 'claw', 'grok'] as const;
 export type SessionType = (typeof VALID_SESSIONS)[number];
 
 // ── Timeout architecture ──────────────────────────────────────────────────────
 //
 // PRINCIPLE: The bridge NEVER auto-kills execution. Only the user can stop it.
 //
-// CLI tools (Claude, Codex, Cursor, OpenCode, ZeroClaw) run until natural
+// CLI tools (Claude, Codex, Cursor, OpenCode, ZeroClaw, Grok) run until natural
 // completion — just like on a laptop. The ONLY ways to stop execution early:
 //   1. User clicks abort → killProcessTree() / controller.abort()
 //   2. User sends a new message on the same thread → old process killed

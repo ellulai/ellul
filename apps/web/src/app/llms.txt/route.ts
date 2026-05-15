@@ -34,7 +34,7 @@ export async function GET() {
   lines.push("# Ellul");
   lines.push("");
   lines.push(
-    "> Ellul is the always-on workstation for your AI agent. It runs overnight, parallelizes multiple agents, and gates every privileged action behind a passkey. Cursor and Claude Code run on your laptop; Ellul runs them on a persistent computer that never closes.",
+    "> Ellul is the always-on workstation for your AI agent. It runs overnight, parallelizes multiple agents, and gates every privileged action behind a passkey. Cursor, Claude Code, and Grok run on your laptop; Ellul runs them on a persistent computer that never closes.",
   );
   lines.push("");
 

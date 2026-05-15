@@ -10,6 +10,7 @@ export const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderKind, string> = {
   cursor: "cursor-default",
   opencode: "anthropic/claude-sonnet-4-5",
   zeroclaw: "default",
+  grokAgent: "default",
 };
 
 // Provider arg kept for parity with upstream signature. We don't ship alias

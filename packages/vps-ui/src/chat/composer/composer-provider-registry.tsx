@@ -170,6 +170,9 @@ const composerProviderRegistry: Record<ProviderKind, ProviderRegistryEntry> = {
   zeroclaw: createProviderRegistryEntry("zeroclaw", {
     showInteractionModeToggle: false,
   }),
+  grokAgent: createProviderRegistryEntry("grokAgent", {
+    showInteractionModeToggle: false,
+  }),
 };
 
 export function getComposerProviderState(input: ComposerProviderStateInput): ComposerProviderState {

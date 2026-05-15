@@ -25,7 +25,7 @@ Your prompts, your `CLAUDE.md`, your tool config, and your MCP servers all trans
 This walkthrough assumes you already have an Anthropic account or a Claude Pro / Max plan. If you do not, set that up at [claude.ai](https://claude.ai) first.
 
 1. **Sign up** at console.ellul.ai. A Free tier exists for evaluation. Hobby is $20/mo for up to two parallel workstations. Pro is $50/mo for up to five workstations plus read-only peering. The trial does not ask for a card.
-2. **Provision a workstation.** A persistent sandbox boots in roughly ninety seconds, pre-loaded with Claude Code, Codex, OpenCode, and Cursor's CLI.
+2. **Provision a workstation.** A persistent sandbox boots in roughly ninety seconds, pre-loaded with Claude Code, Codex, OpenCode, Cursor's CLI, and Grok.
 3. **Connect a passkey.** FIDO2 from your phone, laptop, or hardware key. The passkey is what gates `git push`, deploys, secret reads, and any other privileged action the agent attempts.
 4. **Authenticate Claude Code.** Either paste an Anthropic API key into Ellul's vault, or run `claude login` and complete OAuth against your Claude Pro/Max account. The credential lives in a server-side vault that is unreachable from the agent process.
 5. **Open a session.** Click into the chat surface that wraps the workstation in your browser, or SSH in and run `claude` directly.
@@ -85,7 +85,7 @@ There is also the phone-driven approval pattern, which is more a UX habit than a
 <Callout type="warning" title="What moving to Ellul does not solve">
 - **Inline editor completions.** They assume the agent is co-located with your editor. Claude Code on Ellul lives on a server, so if you want inline completions in your editor, run Cursor on your laptop and use Claude Code on Ellul for the heavy work. They compose.
 - **Network-latency-sensitive interactivity.** A streaming session over a transatlantic link adds 50 to 100 milliseconds per token to the perceived latency. For long unattended runs that does not matter. For typing alongside the agent it can.
-- **Anthropic-managed cloud.** If you specifically want Anthropic to host the agent, that is their cloud, not ours. Ellul is model-agnostic and runs Codex, Cursor's CLI, and OpenCode on the same primitive.
+- **Anthropic-managed cloud.** If you specifically want Anthropic to host the agent, that is their cloud, not ours. Ellul is model-agnostic and runs Codex, Cursor's CLI, OpenCode, and Grok on the same primitive.
 </Callout>
 
 ## Common questions

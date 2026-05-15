@@ -21,7 +21,7 @@ interface TabEditorProps {
   ipAddress: string;
   domain?: string;
   // User's preferred session for Workbench (persisted in DB)
-  preferredSession?: "main" | "claw" | "opencode" | "claude" | "codex" | "cursor";
+  preferredSession?: "main" | "claw" | "opencode" | "claude" | "codex" | "cursor" | "grok";
   // Whether this tab is currently visible
   visible?: boolean;
   // App info from backend (props-based data flow)
@@ -36,7 +36,7 @@ interface TabEditorProps {
   onRegisterSendToChat?: (send: ((msg: Record<string, unknown>) => void) | null) => void;
 }
 
-type WorkbenchSessionId = "main" | "claw" | "opencode" | "claude" | "codex" | "cursor";
+type WorkbenchSessionId = "main" | "claw" | "opencode" | "claude" | "codex" | "cursor" | "grok";
 
 export function TabEditor({
   serverId,

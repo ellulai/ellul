@@ -9,6 +9,7 @@ export const ProviderKind = Schema.Literals([
   "cursor",
   "opencode",
   "zeroclaw",
+  "grokAgent",
 ]);
 export type ProviderKind = typeof ProviderKind.Type;
 
@@ -20,4 +21,5 @@ export const PROVIDER_DISPLAY_NAMES: Record<ProviderKind, string> = {
   cursor: "Cursor",
   opencode: "OpenCode",
   zeroclaw: "ZeroClaw",
+  grokAgent: "Grok",
 };

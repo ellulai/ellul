@@ -50,6 +50,12 @@ export interface ZeroClawAgentSettings {
   readonly customModels: ReadonlyArray<string>;
 }
 
+export interface GrokSettings {
+  readonly enabled: boolean;
+  readonly binaryPath: string;
+  readonly customModels: ReadonlyArray<string>;
+}
+
 export interface ServerSettings {
   readonly enableAssistantStreaming: boolean;
   readonly providers: {
@@ -58,6 +64,7 @@ export interface ServerSettings {
     readonly opencode: OpenCodeSettings;
     readonly cursor: CursorSettings;
     readonly zeroclaw: ZeroClawAgentSettings;
+    readonly grok: GrokSettings;
   };
 }
 
@@ -120,6 +127,8 @@ export const DEFAULT_CLAUDE_BINARY = "/home/dev/.node/bin/claude";
 // Resolved via PATH inside the project namespace.
 export const DEFAULT_ZEROCLAW_BINARY = "zeroclaw";
 
+export const DEFAULT_GROK_BINARY = "/home/dev/.grok/bin/grok";
+
 export const defaultServerSettings: ServerSettings = {
   enableAssistantStreaming: false,
   providers: {
@@ -153,6 +162,11 @@ export const defaultServerSettings: ServerSettings = {
     zeroclaw: {
       enabled: true,
       binaryPath: DEFAULT_ZEROCLAW_BINARY,
+      customModels: [],
+    },
+    grok: {
+      enabled: true,
+      binaryPath: DEFAULT_GROK_BINARY,
       customModels: [],
     },
   },

@@ -77,6 +77,13 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     placeholder: "",
     example: "",
   },
+  grokAgent: {
+    provider: "grokAgent",
+    title: "Grok",
+    description: "Save additional Grok model slugs for the picker and `/model` command.",
+    placeholder: "your-grok-model-slug",
+    example: "grok-3",
+  },
 };
 
 export const MODEL_PROVIDER_SETTINGS = Object.values(PROVIDER_CUSTOM_MODEL_CONFIG);
@@ -216,6 +223,12 @@ export function getCustomModelOptionsByProvider(
       providers,
       "zeroclaw",
       selectedProvider === "zeroclaw" ? selectedModel : undefined,
+    ),
+    grokAgent: getAppModelOptions(
+      settings,
+      providers,
+      "grokAgent",
+      selectedProvider === "grokAgent" ? selectedModel : undefined,
     ),
   };
 }
