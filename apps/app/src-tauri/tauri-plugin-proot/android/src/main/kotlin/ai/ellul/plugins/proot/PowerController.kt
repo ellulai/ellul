@@ -25,7 +25,7 @@ class PowerController {
         val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         @Suppress("DEPRECATION")
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
-            acquire()
+            acquire(24 * 60 * 60 * 1000L)
         }
         Log.i(TAG, "Wake lock acquired")
     }

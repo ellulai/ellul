@@ -365,6 +365,18 @@
           "type": "string",
           "const": "deny-proot-stop",
           "markdownDescription": "Denies the proot_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the proot_switch_to_local command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-proot-switch-to-local",
+          "markdownDescription": "Enables the proot_switch_to_local command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the proot_switch_to_local command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-proot-switch-to-local",
+          "markdownDescription": "Denies the proot_switch_to_local command without any pre-configured scope."
         }
       ]
     }

@@ -236,8 +236,17 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
   }, [ready, error, hostname]);
 
   const authenticateNative = useCallback(async (): Promise<void> => {
-    // Single native call: get options → Touch ID / security key → verify → session
-    await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
+    // Get WebAuthn options via Rust (signed HTTP to VPS)
+    const options = await tauriInvoke<PublicKeyCredentialRequestOptionsJSON>(
+      "shield_login_options",
+      { serverDomain: hostname },
+    );
+    // Passkey ceremony in webview — presents native Touch ID / security key / QR sheet.
+    // Uses console.ellul.ai origin (already in VPS allowed origins), avoiding the
+    // AASA + code-signing requirement of ASAuthorizationController.
+    const assertion = await startAuthentication({ optionsJSON: options });
+    // Verify via Rust → extracts session cookie → ML-KEM bind → PoP ready
+    await tauriInvoke("shield_login_verify", { serverDomain: hostname, assertion });
     setNeedsVpsAuth(false);
     setSessionExpired(false);
   }, [hostname]);

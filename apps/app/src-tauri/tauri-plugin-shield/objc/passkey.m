@@ -1,5 +1,10 @@
 #import <AuthenticationServices/AuthenticationServices.h>
+#import <TargetConditionals.h>
+#if TARGET_OS_IPHONE
+#import <UIKit/UIKit.h>
+#else
 #import <AppKit/AppKit.h>
+#endif
 #include "passkey.h"
 
 static NSData *b64url_decode(NSString *str) {
@@ -29,7 +34,19 @@ static NSString *b64url_encode(NSData *data) {
 
 - (ASPresentationAnchor)presentationAnchorForAuthorizationController:
     (ASAuthorizationController *)controller {
+#if TARGET_OS_IPHONE
+    for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+        if ([scene isKindOfClass:[UIWindowScene class]]) {
+            UIWindowScene *ws = (UIWindowScene *)scene;
+            for (UIWindow *w in ws.windows) {
+                if (w.isKeyWindow) return w;
+            }
+        }
+    }
+    return nil;
+#else
     return [NSApp keyWindow] ?: [NSApp mainWindow];
+#endif
 }
 
 - (void)authorizationController:(ASAuthorizationController *)controller

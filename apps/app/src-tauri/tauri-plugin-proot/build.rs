@@ -5,6 +5,7 @@ const COMMANDS: &[&str] = &[
     "proot_health",
     "proot_setup_status",
     "proot_setup_start",
+    "proot_switch_to_local",
 ];
 
 fn main() {

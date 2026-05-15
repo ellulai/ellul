@@ -10,6 +10,7 @@ import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URL
 import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
@@ -20,6 +21,8 @@ class ProotService : Service() {
         const val ACTION_START = "ai.ellul.plugins.proot.ACTION_START"
         const val ACTION_STOP = "ai.ellul.plugins.proot.ACTION_STOP"
         const val ACTION_RESTART = "ai.ellul.plugins.proot.ACTION_RESTART"
+        private const val MAX_RESTARTS = 5
+        private const val RESTART_WINDOW_MS = 5L * 60 * 1000
 
         @Volatile
         var isRunning = false
@@ -38,9 +41,13 @@ class ProotService : Service() {
 
     private val binder = LocalBinder()
     private var manager: ProotManager? = null
-    private val executor = Executors.newSingleThreadScheduledExecutor()
+    private val startupExecutor = Executors.newSingleThreadExecutor()
+    private val healthExecutor = Executors.newSingleThreadScheduledExecutor()
+    private var startupFuture: Future<*>? = null
     private var healthFuture: ScheduledFuture<*>? = null
     private var startTime: Long = 0
+    private var restartCount = 0
+    private var restartWindowStart: Long = 0
     private val powerController = PowerController()
 
     inner class LocalBinder : Binder() {
@@ -50,10 +57,16 @@ class ProotService : Service() {
     override fun onBind(intent: Intent?): IBinder = binder
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        ProotNotification.createChannel(this)
+        startForeground(
+            ProotNotification.NOTIFICATION_ID,
+            ProotNotification.build(this, "Initializing...")
+        )
+
         when (intent?.action) {
             ACTION_STOP -> stopWorkspace()
             ACTION_RESTART -> {
-                stopWorkspace()
+                stopWorkspaceInternal()
                 startWorkspace()
             }
             else -> startWorkspace()
@@ -65,27 +78,36 @@ class ProotService : Service() {
     private fun startWorkspace() {
         if (isRunning) return
 
-        ProotNotification.createChannel(this)
-        startForeground(
-            ProotNotification.NOTIFICATION_ID,
-            ProotNotification.build(this, "Starting workspace...")
-        )
+        val setupManager = SetupManager(this)
+        if (!setupManager.isSetupComplete()) {
+            Log.e(TAG, "Cannot start workspace: setup not complete")
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return
+        }
 
         powerController.acquireWakeLock(this)
         startTime = System.currentTimeMillis()
 
-        executor.submit {
+        startupFuture = startupExecutor.submit {
             try {
                 val mgr = ProotManager(this)
                 mgr.start()
-                manager = mgr
-                isRunning = true
+
+                synchronized(this@ProotService) {
+                    if (startupFuture?.isCancelled == true) {
+                        mgr.stop()
+                        return@submit
+                    }
+                    manager = mgr
+                    isRunning = true
+                }
 
                 var attempts = 0
                 val maxAttempts = 120
                 var allHealthy = false
 
-                while (attempts < maxAttempts && !allHealthy) {
+                while (attempts < maxAttempts && !allHealthy && !Thread.interrupted()) {
                     Thread.sleep(1000)
                     attempts++
 
@@ -104,7 +126,7 @@ class ProotService : Service() {
                 if (allHealthy) {
                     ProotNotification.update(this@ProotService, "Workspace running")
                     Log.i(TAG, "All services healthy after $attempts seconds")
-                } else {
+                } else if (!Thread.interrupted()) {
                     val unhealthy = serviceStatuses
                         .filter { !it.healthy }
                         .joinToString(", ") { it.name }
@@ -115,35 +137,76 @@ class ProotService : Service() {
                     Log.w(TAG, "Startup timed out — unhealthy: $unhealthy")
                 }
 
-                healthFuture = executor.scheduleAtFixedRate({
+                restartCount = 0
+                restartWindowStart = System.currentTimeMillis()
+
+                healthFuture = healthExecutor.scheduleAtFixedRate({
                     try {
                         uptimeSecs = (System.currentTimeMillis() - startTime) / 1000
                         serviceStatuses = checkHealthSync()
 
-                        if (!mgr.isRunning()) {
-                            Log.w(TAG, "proot process died — restarting")
+                        val mgr = manager
+                        if (mgr != null && !mgr.isRunning()) {
+                            val now = System.currentTimeMillis()
+                            if (now - restartWindowStart > RESTART_WINDOW_MS) {
+                                restartCount = 0
+                                restartWindowStart = now
+                            }
+
+                            if (restartCount >= MAX_RESTARTS) {
+                                Log.e(TAG, "proot exceeded $MAX_RESTARTS restarts in ${RESTART_WINDOW_MS / 1000}s — stopped")
+                                ProotNotification.update(
+                                    this@ProotService,
+                                    "Workspace crashed — tap to restart"
+                                )
+                                healthFuture?.cancel(false)
+                                return@scheduleAtFixedRate
+                            }
+
+                            restartCount++
+                            val backoffMs = minOf(1000L * (1L shl (restartCount - 1)), 30_000L)
+                            Log.w(TAG, "proot died — restart $restartCount/$MAX_RESTARTS (backoff ${backoffMs}ms)")
                             ProotNotification.update(
                                 this@ProotService,
-                                "Restarting workspace..."
+                                "Restarting workspace ($restartCount/$MAX_RESTARTS)..."
                             )
+                            Thread.sleep(backoffMs)
                             mgr.start()
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Health loop error", e)
                     }
                 }, 10, 10, TimeUnit.SECONDS)
+            } catch (_: InterruptedException) {
+                Log.i(TAG, "Startup interrupted")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to start workspace", e)
                 ProotNotification.update(
                     this@ProotService,
                     "Workspace failed: ${e.message}"
                 )
-                isRunning = false
+                synchronized(this@ProotService) {
+                    isRunning = false
+                    manager?.stop()
+                    manager = null
+                }
+                powerController.releaseWakeLock()
             }
         }
     }
 
-    private fun stopWorkspace() {
+    @Synchronized
+    fun stopWorkspace() {
+        stopWorkspaceInternal()
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
+    @Synchronized
+    private fun stopWorkspaceInternal() {
+        startupFuture?.cancel(true)
+        startupFuture = null
+
         healthFuture?.cancel(false)
         healthFuture = null
 
@@ -155,8 +218,6 @@ class ProotService : Service() {
         serviceStatuses = emptyList()
 
         powerController.releaseWakeLock()
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
     }
 
     private fun checkHealthSync(): List<ServiceStatusData> {
@@ -196,22 +257,25 @@ class ProotService : Service() {
     }
 
     private fun checkHttpHealth(port: Int, path: String): Boolean {
+        var conn: HttpURLConnection? = null
         return try {
-            val conn = URL("http://127.0.0.1:$port$path").openConnection() as HttpURLConnection
+            conn = URL("http://127.0.0.1:$port$path").openConnection() as HttpURLConnection
             conn.connectTimeout = 3000
             conn.readTimeout = 3000
             conn.requestMethod = "GET"
-            val code = conn.responseCode
-            conn.disconnect()
-            code == 200
+            conn.responseCode == 200
         } catch (_: Exception) {
             false
+        } finally {
+            try { conn?.errorStream?.close() } catch (_: Exception) {}
+            conn?.disconnect()
         }
     }
 
     override fun onDestroy() {
-        stopWorkspace()
-        executor.shutdownNow()
+        stopWorkspaceInternal()
+        startupExecutor.shutdownNow()
+        healthExecutor.shutdownNow()
         super.onDestroy()
     }
 }

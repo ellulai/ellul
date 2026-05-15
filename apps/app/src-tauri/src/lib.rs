@@ -8,6 +8,8 @@ use tauri::{
 };
 
 const CONSOLE_URL: &str = "https://console.ellul.ai/sign-up";
+#[cfg(target_os = "android")]
+const LOCAL_URL: &str = "https://localhost:8443";
 
 fn is_internal_navigation(url: &url::Url) -> bool {
     let host = url.host_str().unwrap_or("");
@@ -39,7 +41,7 @@ pub fn run() {
                     .state::<tauri_plugin_proot::ProotState>()
                     .is_byos_ready();
                 if byos {
-                    tauri::WebviewUrl::External("https://localhost:8443".parse().unwrap())
+                    tauri::WebviewUrl::External(LOCAL_URL.parse().unwrap())
                 } else {
                     tauri::WebviewUrl::External(CONSOLE_URL.parse().unwrap())
                 }

@@ -22,6 +22,8 @@ mod android {
         fn put(&self, key: &str, data_b64: &str) -> Result<(), Error>;
         fn get(&self, key: &str) -> Result<Option<String>, Error>;
         fn del(&self, key: &str) -> Result<(), Error>;
+        fn passkey_authenticate(&self, request_json: &str) -> Result<String, Error>;
+        fn passkey_register(&self, request_json: &str) -> Result<String, Error>;
     }
 
     struct Bridge<R: tauri::Runtime> {
@@ -62,6 +64,38 @@ mod android {
                 )
                 .map_err(|e| Error::KeychainError(format!("Android Keystore remove: {e}")))?;
             Ok(())
+        }
+
+        fn passkey_authenticate(&self, request_json: &str) -> Result<String, Error> {
+            #[derive(serde::Deserialize)]
+            struct Resp {
+                #[serde(rename = "responseJson")]
+                response_json: String,
+            }
+            let resp: Resp = self
+                .handle
+                .run_mobile_plugin(
+                    "passkeyAuthenticate",
+                    serde_json::json!({ "requestJson": request_json }),
+                )
+                .map_err(|e| Error::Other(format!("Android passkey auth: {e}")))?;
+            Ok(resp.response_json)
+        }
+
+        fn passkey_register(&self, request_json: &str) -> Result<String, Error> {
+            #[derive(serde::Deserialize)]
+            struct Resp {
+                #[serde(rename = "responseJson")]
+                response_json: String,
+            }
+            let resp: Resp = self
+                .handle
+                .run_mobile_plugin(
+                    "passkeyRegister",
+                    serde_json::json!({ "requestJson": request_json }),
+                )
+                .map_err(|e| Error::Other(format!("Android passkey register: {e}")))?;
+            Ok(resp.response_json)
         }
     }
 
@@ -143,6 +177,16 @@ pub fn remove(key: &str) -> Result<(), Error> {
     {
         android::backend()?.del(key)
     }
+}
+
+#[cfg(target_os = "android")]
+pub fn android_passkey_authenticate(request_json: &str) -> Result<String, Error> {
+    android::backend()?.passkey_authenticate(request_json)
+}
+
+#[cfg(target_os = "android")]
+pub fn android_passkey_register(request_json: &str) -> Result<String, Error> {
+    android::backend()?.passkey_register(request_json)
 }
 
 pub fn kek_key(server_domain: &str) -> String {

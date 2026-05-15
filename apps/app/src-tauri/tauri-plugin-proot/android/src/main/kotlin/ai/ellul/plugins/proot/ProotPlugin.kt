@@ -7,7 +7,6 @@ import app.tauri.annotation.TauriPlugin
 import app.tauri.plugin.Invoke
 import app.tauri.plugin.JSObject
 import app.tauri.plugin.Plugin
-import java.io.File
 
 @TauriPlugin
 class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity) {
@@ -15,6 +14,12 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
     @Command
     fun startWorkspace(invoke: Invoke) {
         try {
+            val setupManager = SetupManager(activity)
+            if (!setupManager.isSetupComplete()) {
+                invoke.reject("Setup not complete")
+                return
+            }
+
             val intent = Intent(activity, ProotService::class.java).apply {
                 action = ProotService.ACTION_START
             }
@@ -67,13 +72,12 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
     @Command
     fun isSetupComplete(invoke: Invoke) {
         try {
-            val rootfsDir = File(activity.filesDir, "rootfs")
-            val versionFile = File(rootfsDir, ".ellul-rootfs-version")
-
+            val setupManager = SetupManager(activity)
             val result = JSObject()
-            result.put("complete", rootfsDir.exists() && versionFile.exists())
-            if (versionFile.exists()) {
-                result.put("version", versionFile.readText().trim())
+            result.put("complete", setupManager.isSetupComplete())
+            val version = setupManager.getInstalledVersion()
+            if (version != null) {
+                result.put("version", version)
             } else {
                 result.put("version", JSObject.NULL)
             }
@@ -85,16 +89,29 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
 
     @Command
     fun setupRootfs(invoke: Invoke) {
-        try {
-            val rootfsDir = File(activity.filesDir, "rootfs")
-            if (rootfsDir.exists()) {
+        Thread {
+            try {
+                val setupManager = SetupManager(activity)
+                setupManager.setup { progress ->
+                    val payload = JSObject().apply {
+                        put("stage", progress.stage.name)
+                        put("percent", progress.percent)
+                        put("bytesProcessed", progress.bytesProcessed)
+                        put("bytesTotal", progress.bytesTotal)
+                    }
+                    trigger("setup-progress", payload)
+                }
                 invoke.resolve()
-                return
+            } catch (e: Exception) {
+                val payload = JSObject().apply {
+                    put("stage", SetupStage.FAILED.name)
+                    put("percent", 0)
+                    put("bytesProcessed", 0)
+                    put("bytesTotal", 0)
+                }
+                trigger("setup-progress", payload)
+                invoke.reject(e.message ?: "Setup failed")
             }
-            // Phase 3 implements download/verify/extract; for now report not set up
-            invoke.reject("Rootfs not present — download not yet implemented (Phase 3)")
-        } catch (e: Exception) {
-            invoke.reject("Setup failed: ${e.message}")
-        }
+        }.start()
     }
 }

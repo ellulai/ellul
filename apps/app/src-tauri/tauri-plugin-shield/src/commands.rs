@@ -172,12 +172,21 @@ pub async fn shield_passkey_login(
     let rp_id = options["rpId"].as_str().unwrap_or("ellul.ai");
 
     // 3. Native passkey ceremony (Touch ID / security key / cross-device QR)
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     let assertion = crate::passkey::authenticate(&challenge, rp_id)
         .await
         .map_err(Error::HttpError)?;
 
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "android")]
+    let assertion: serde_json::Value = {
+        let options_json = serde_json::to_string(&options)
+            .map_err(|e| Error::HttpError(format!("serialize options: {e}")))?;
+        let response_json = crate::storage::android_passkey_authenticate(&options_json)?;
+        serde_json::from_str(&response_json)
+            .map_err(|e| Error::HttpError(format!("parse assertion: {e}")))?
+    };
+
+    #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "android")))]
     return Err(Error::HttpError("Native passkey not available on this platform".into()));
 
     // 4. Verify assertion with VPS

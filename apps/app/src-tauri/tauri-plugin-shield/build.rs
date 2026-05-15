@@ -40,8 +40,8 @@ const COMMANDS: &[&str] = &[
 ];
 
 fn main() {
-    #[cfg(target_os = "macos")]
-    {
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    if target_os == "macos" || target_os == "ios" {
         cc::Build::new()
             .file("objc/passkey.m")
             .include("objc")
@@ -50,7 +50,11 @@ fn main() {
             .compile("ellul_passkey");
 
         println!("cargo:rustc-link-lib=framework=AuthenticationServices");
-        println!("cargo:rustc-link-lib=framework=AppKit");
+        if target_os == "macos" {
+            println!("cargo:rustc-link-lib=framework=AppKit");
+        } else {
+            println!("cargo:rustc-link-lib=framework=UIKit");
+        }
     }
 
     tauri_plugin::Builder::new(COMMANDS).build();

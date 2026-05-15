@@ -82,3 +82,27 @@ pub async fn proot_setup_start() -> Result<(), Error> {
     #[cfg(not(target_os = "android"))]
     Err(Error::NotAvailable)
 }
+
+#[command]
+pub async fn proot_switch_to_local<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+) -> Result<(), Error> {
+    #[cfg(target_os = "android")]
+    {
+        use tauri::Manager;
+        if let Some(window) = app.get_webview_window("main") {
+            let url: url::Url = "https://localhost:8443"
+                .parse()
+                .expect("valid localhost url");
+            window
+                .navigate(url)
+                .map_err(|e| Error::ProotFailed(e.to_string()))?;
+        }
+        return Ok(());
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = app;
+        Err(Error::NotAvailable)
+    }
+}

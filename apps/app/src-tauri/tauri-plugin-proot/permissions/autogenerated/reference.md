@@ -162,4 +162,30 @@ Denies the proot_stop command without any pre-configured scope.
 
 </td>
 </tr>
+
+<tr>
+<td>
+
+`proot:allow-proot-switch-to-local`
+
+</td>
+<td>
+
+Enables the proot_switch_to_local command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:deny-proot-switch-to-local`
+
+</td>
+<td>
+
+Denies the proot_switch_to_local command without any pre-configured scope.
+
+</td>
+</tr>
 </table>

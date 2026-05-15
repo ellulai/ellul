@@ -7,7 +7,7 @@ mod commands;
 mod error;
 mod http;
 mod operator;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 mod passkey;
 mod pop;
 mod session;

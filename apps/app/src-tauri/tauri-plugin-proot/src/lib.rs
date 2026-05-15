@@ -48,12 +48,12 @@ pub(crate) mod bridge {
 }
 
 pub struct ProotState {
-    rootfs_path: Option<PathBuf>,
+    version_marker: Option<PathBuf>,
 }
 
 impl ProotState {
     pub fn is_byos_ready(&self) -> bool {
-        self.rootfs_path
+        self.version_marker
             .as_ref()
             .map(|p| p.exists())
             .unwrap_or(false)
@@ -69,6 +69,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::proot_health,
             commands::proot_setup_status,
             commands::proot_setup_start,
+            commands::proot_switch_to_local,
         ])
         .setup(|app, api| {
             #[cfg(target_os = "android")]
@@ -77,20 +78,20 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
                     api.register_android_plugin("ai.ellul.plugins.proot", "ProotPlugin")?;
                 bridge::init(handle);
 
-                let rootfs_path = app
+                let version_marker = app
                     .path()
                     .app_data_dir()
-                    .map(|d| d.join("rootfs"))
+                    .map(|d| d.join("rootfs-version"))
                     .ok();
 
-                app.manage(ProotState { rootfs_path });
+                app.manage(ProotState { version_marker });
             }
 
             #[cfg(not(target_os = "android"))]
             {
                 let _ = api;
                 app.manage(ProotState {
-                    rootfs_path: None,
+                    version_marker: None,
                 });
             }
 

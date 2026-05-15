@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-proot-switch-to-local"
+description = "Enables the proot_switch_to_local command without any pre-configured scope."
+commands.allow = ["proot_switch_to_local"]
+
+[[permission]]
+identifier = "deny-proot-switch-to-local"
+description = "Denies the proot_switch_to_local command without any pre-configured scope."
+commands.deny = ["proot_switch_to_local"]

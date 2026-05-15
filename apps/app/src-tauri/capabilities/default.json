@@ -66,6 +66,13 @@
     "shield:allow-shield-operator-clear",
     "shield:allow-shield-intent-nonce",
     "shield:allow-shield-create-signed-ws-url",
-    "shield:allow-shield-fetch"
+    "shield:allow-shield-fetch",
+    "proot:allow-proot-start",
+    "proot:allow-proot-stop",
+    "proot:allow-proot-status",
+    "proot:allow-proot-health",
+    "proot:allow-proot-setup-status",
+    "proot:allow-proot-setup-start",
+    "proot:allow-proot-switch-to-local"
   ]
 }

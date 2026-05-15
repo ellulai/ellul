@@ -1,7 +1,10 @@
 package ai.ellul.plugins.proot
 
 import android.content.Context
+import android.os.StatFs
 import android.util.Log
+import java.io.BufferedReader
+import java.io.BufferedWriter
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -11,9 +14,13 @@ class ProotManager(private val context: Context) {
     companion object {
         const val TAG = "ProotManager"
         private const val MAX_LOG_BYTES = 10L * 1024 * 1024
+        private const val MIN_RUNTIME_SPACE_BYTES = 512L * 1024 * 1024
     }
 
+    @Volatile
     private var prootProcess: Process? = null
+    private var stdoutThread: Thread? = null
+    private var stderrThread: Thread? = null
     private val appDir: File = context.filesDir
     private val rootfsDir = File(appDir, "rootfs")
     private val vaultDir = File(appDir, "vault")
@@ -23,7 +30,13 @@ class ProotManager(private val context: Context) {
     private val logDir = File(appDir, "logs")
 
     fun extractProotBinary() {
-        if (prootBin.exists() && prootBin.canExecute()) return
+        val versionFile = File(appDir, "proot.version")
+        val currentVersion = getAppVersionCode()
+
+        if (prootBin.exists() && prootBin.canExecute() && versionFile.exists()) {
+            if (versionFile.readText().trim() == currentVersion) return
+            Log.i(TAG, "APK updated — re-extracting proot binary")
+        }
 
         try {
             context.assets.open("proot/arm64-v8a/proot").use { input ->
@@ -31,14 +44,29 @@ class ProotManager(private val context: Context) {
                     input.copyTo(output)
                 }
             }
-            prootBin.setExecutable(true, false)
-            Log.i(TAG, "Extracted proot binary to ${prootBin.absolutePath}")
+            prootBin.setExecutable(true, true)
+            versionFile.writeText(currentVersion)
+            Log.i(TAG, "Extracted proot binary (version $currentVersion)")
         } catch (e: IOException) {
             throw RuntimeException(
                 "proot binary not found in plugin assets — " +
                     "build with scripts/build-proot-arm64.sh first",
                 e
             )
+        }
+    }
+
+    private fun getAppVersionCode(): String {
+        return try {
+            val info = context.packageManager.getPackageInfo(context.packageName, 0)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                info.longVersionCode.toString()
+            } else {
+                @Suppress("DEPRECATION")
+                info.versionCode.toString()
+            }
+        } catch (_: Exception) {
+            "unknown"
         }
     }
 
@@ -57,6 +85,14 @@ class ProotManager(private val context: Context) {
             )
         }
 
+        val available = StatFs(appDir.path).availableBytes
+        if (available < MIN_RUNTIME_SPACE_BYTES) {
+            val availableMB = available / (1024 * 1024)
+            throw IllegalStateException(
+                "Not enough storage to start workspace. Need 512MB free, have ${availableMB}MB."
+            )
+        }
+
         vaultDir.mkdirs()
         projectsDir.mkdirs()
         logDir.mkdirs()
@@ -70,8 +106,9 @@ class ProotManager(private val context: Context) {
         pb.environment().putAll(env)
         pb.redirectErrorStream(false)
 
-        prootProcess = pb.start()
-        startLogStreaming(prootProcess!!)
+        val proc = pb.start()
+        prootProcess = proc
+        startLogStreaming(proc)
 
         Log.i(TAG, "proot process started (pid viewable in logcat)")
     }
@@ -93,6 +130,10 @@ class ProotManager(private val context: Context) {
             proc.destroyForcibly()
         }
 
+        stdoutThread?.interrupt()
+        stderrThread?.interrupt()
+        stdoutThread = null
+        stderrThread = null
         prootProcess = null
         Log.i(TAG, "proot stopped")
     }
@@ -127,42 +168,50 @@ class ProotManager(private val context: Context) {
         val stdoutLog = File(logDir, "proot-stdout.log")
         val stderrLog = File(logDir, "proot-stderr.log")
 
-        Thread({
-            try {
-                stdoutLog.bufferedWriter().use { writer ->
-                    process.inputStream.bufferedReader().forEachLine { line ->
-                        Log.d("proot-out", line)
-                        writer.write(line)
-                        writer.newLine()
-                        writer.flush()
-                        rotateIfNeeded(stdoutLog)
-                    }
-                }
-            } catch (_: IOException) {
+        stdoutThread = Thread({
+            streamToFile(process.inputStream.bufferedReader(), stdoutLog) { line ->
+                Log.d("proot-out", line)
             }
         }, "proot-stdout").apply { isDaemon = true; start() }
 
-        Thread({
-            try {
-                stderrLog.bufferedWriter().use { writer ->
-                    process.errorStream.bufferedReader().forEachLine { line ->
-                        Log.w("proot-err", line)
-                        writer.write(line)
-                        writer.newLine()
-                        writer.flush()
-                        rotateIfNeeded(stderrLog)
-                    }
-                }
-            } catch (_: IOException) {
+        stderrThread = Thread({
+            streamToFile(process.errorStream.bufferedReader(), stderrLog) { line ->
+                Log.w("proot-err", line)
             }
         }, "proot-stderr").apply { isDaemon = true; start() }
     }
 
-    private fun rotateIfNeeded(file: File) {
-        if (file.length() > MAX_LOG_BYTES) {
-            val backup = File(file.parentFile, "${file.name}.1")
-            backup.delete()
-            file.renameTo(backup)
+    private fun streamToFile(
+        reader: BufferedReader,
+        logFile: File,
+        logcat: (String) -> Unit
+    ) {
+        try {
+            var writer: BufferedWriter = logFile.bufferedWriter()
+            var bytesWritten: Long = logFile.length()
+            try {
+                reader.forEachLine { line ->
+                    if (Thread.interrupted()) throw InterruptedException()
+                    logcat(line)
+                    writer.write(line)
+                    writer.newLine()
+                    writer.flush()
+                    bytesWritten += line.toByteArray().size + 1
+
+                    if (bytesWritten > MAX_LOG_BYTES) {
+                        writer.close()
+                        val backup = File(logFile.parentFile, "${logFile.name}.1")
+                        backup.delete()
+                        logFile.renameTo(backup)
+                        writer = logFile.bufferedWriter()
+                        bytesWritten = 0
+                    }
+                }
+            } finally {
+                writer.close()
+            }
+        } catch (_: IOException) {
+        } catch (_: InterruptedException) {
         }
     }
 }
