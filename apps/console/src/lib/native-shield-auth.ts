@@ -48,35 +48,47 @@ const RETRY_BASE_MS = 2_000;
 const KEEPALIVE_PREEMPT_MS = 5 * 60 * 1000;
 const KEEPALIVE_FLOOR_MS = 10_000;
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.ellul.ai";
-const RELAY_POLL_MS = 1_500;
-const RELAY_TIMEOUT_MS = 120_000;
+const DEEPLINK_TIMEOUT_MS = 120_000;
+
+let pendingPasskeyResolve: ((assertion: unknown) => void) | null = null;
+let pendingPasskeyReject: ((err: Error) => void) | null = null;
+
+export function resolvePasskeyDeepLink(params: URLSearchParams): void {
+  const assertionB64 = params.get("assertion");
+  const error = params.get("error");
+  if (assertionB64 && pendingPasskeyResolve) {
+    pendingPasskeyResolve(JSON.parse(atob(assertionB64)));
+    pendingPasskeyResolve = null;
+    pendingPasskeyReject = null;
+  } else if (error && pendingPasskeyReject) {
+    pendingPasskeyReject(new Error(error));
+    pendingPasskeyResolve = null;
+    pendingPasskeyReject = null;
+  }
+}
 
 async function relayPasskeyViaBrowser(
   options: PublicKeyCredentialRequestOptionsJSON,
-  hostname: string,
 ): Promise<unknown> {
-  const flowId = crypto.randomUUID();
+  const optionsB64 = btoa(JSON.stringify(options));
+  const callback = "ellul://shield-auth";
+  const passkeyUrl =
+    `${window.location.origin}/auth/vps-passkey?options=${encodeURIComponent(optionsB64)}&callback=${encodeURIComponent(callback)}`;
 
-  await fetch(`${API_URL}/api/auth/native/vps-auth-data`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ flowId, type: "options", data: options }),
+  return new Promise<unknown>((resolve, reject) => {
+    pendingPasskeyResolve = resolve;
+    pendingPasskeyReject = reject;
+
+    window.open(passkeyUrl, "_blank");
+
+    setTimeout(() => {
+      if (pendingPasskeyResolve) {
+        pendingPasskeyResolve = null;
+        pendingPasskeyReject = null;
+        reject(new Error("Passkey authentication timed out. Please try again."));
+      }
+    }, DEEPLINK_TIMEOUT_MS);
   });
-
-  const passkeyUrl = `${window.location.origin}/auth/vps-passkey?flow_id=${encodeURIComponent(flowId)}`;
-  window.open(passkeyUrl, "_blank");
-
-  const deadline = Date.now() + RELAY_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, RELAY_POLL_MS));
-    const res = await fetch(
-      `${API_URL}/api/auth/native/vps-auth-data?flow_id=${encodeURIComponent(flowId)}&type=assertion`,
-    );
-    const body = await res.json() as { status: string; data?: unknown };
-    if (body.status === "complete" && body.data) return body.data;
-  }
-  throw new Error("Passkey authentication timed out. Please try again.");
 }
 
 export function useNativeShieldAuth(
@@ -127,7 +139,7 @@ export function useNativeShieldAuth(
       if (hasPlatform) {
         assertion = await startAuthentication({ optionsJSON: options });
       } else if (isElectronApp()) {
-        assertion = await relayPasskeyViaBrowser(options, hostname);
+        assertion = await relayPasskeyViaBrowser(options);
       } else {
         assertion = await startAuthentication({ optionsJSON: options });
       }
@@ -269,7 +281,7 @@ export function useNativeShieldAuth(
     return () => document.removeEventListener("visibilitychange", handler);
   }, [phase, invoke, set]);
 
-  // ── Electron session-expired + biometric events ────────────────
+  // ── Electron session-expired + biometric + deep link events ────
 
   useEffect(() => {
     if (!isElectronApp()) return;
@@ -287,6 +299,17 @@ export function useNativeShieldAuth(
     if (shield.onBiometricLocked) {
       cleanups.push(shield.onBiometricLocked(() => {
         if (phaseRef.current === "authenticated") set("unauthenticated");
+      }));
+    }
+
+    if (shield.onDeepLink) {
+      cleanups.push(shield.onDeepLink((url: string) => {
+        try {
+          const parsed = new URL(url);
+          if (parsed.hostname === "shield-auth") {
+            resolvePasskeyDeepLink(parsed.searchParams);
+          }
+        } catch {}
       }));
     }
 
