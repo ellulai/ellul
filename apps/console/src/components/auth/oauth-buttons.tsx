@@ -147,20 +147,8 @@ export function OAuthSignIn({
             return;
           }
 
-          const sessionRes = await fetch(`${API_URL}/api/auth/native/session`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ code: exchangeCode }),
-          });
-
-          if (!sessionRes.ok) {
-            setError("Session failed. Please try again.");
-            setIsSigningIn(false);
-            return;
-          }
-
-          router.replace(callbackPath);
+          const redirect = `${window.location.origin}${callbackPath}`;
+          window.location.href = `${API_URL}/api/auth/native/session/establish?code=${encodeURIComponent(exchangeCode)}&redirect=${encodeURIComponent(redirect)}`;
           return;
         }
       } catch (err) {

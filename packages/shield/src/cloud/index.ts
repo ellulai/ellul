@@ -10,7 +10,7 @@ import * as path from 'path';
 import { parseArgs, type ParsedArgs } from '../lib/flags';
 import { setJsonMode, fail, EXIT } from '../lib/output';
 import { showUnifiedHelp, showVersion } from '../lib/help';
-import { detectMode, type ShieldMode } from '../lib/mode';
+import { detectMode, isByosSystem, type ShieldMode } from '../lib/mode';
 
 // ── Re-exports for library consumers ──
 
@@ -24,7 +24,7 @@ export {
   readProjectJson, requireProjectJson, requireProxy, requireProxyPort,
   readProxyInfo, prompt, type ProjectJson,
 } from '../lib/context';
-export { detectMode, type ShieldMode } from '../lib/mode';
+export { detectMode, isByosSystem, type ShieldMode } from '../lib/mode';
 
 // ── Deprecation notice for legacy binary name ──
 
@@ -53,7 +53,12 @@ const CLOUD_ONLY = new Set([
 
 const LOCAL_ONLY = new Set([
   'start', 'stop', 'status', 'rebind', 'secrets', 'gates', 'rules', 'scan',
-  'doctor', 'upgrade', 'downgrade',
+  'doctor', 'downgrade',
+]);
+
+const BYOS_ONLY = new Set([
+  'up', 'down', 'ps', 'logs', 'config', 'uninstall',
+  'expose', 'connect', 'migrate', 'upgrade',
 ]);
 
 // ── Helpers ──
@@ -95,6 +100,11 @@ async function runLocal(args: string[]): Promise<void> {
   }
 }
 
+async function runByos(args: string[]): Promise<void> {
+  const { handleByosCommand } = await import('../byos/commands/index');
+  await handleByosCommand(args);
+}
+
 function isMissingDep(err: Error): boolean {
   const msg = err.message || '';
   return (
@@ -122,10 +132,11 @@ async function main(): Promise<void> {
     const mode = detectMode();
     const explicitMode = parsed.get('mode');
 
-    if (explicitMode === 'local' || (mode === 'local' && !explicitMode)) {
+    if (explicitMode === 'byos' || (isByosSystem() && explicitMode !== 'cloud' && explicitMode !== 'local')) {
+      await runByos(process.argv.slice(2));
+    } else if (explicitMode === 'local' || (mode === 'local' && !explicitMode)) {
       await runLocal(process.argv.slice(2));
     } else {
-      // Cloud init (default, or explicit --mode=cloud)
       const { initProject } = await import('./commands/init');
       await initProject(parsed);
     }
@@ -141,6 +152,16 @@ async function main(): Promise<void> {
   }
 
   const mode = detectMode();
+
+  // ── BYOS system commands ──
+
+  if (BYOS_ONLY.has(command!)) {
+    if (!isByosSystem() && mode !== 'byos') {
+      fail(EXIT.USAGE, command!, `'${command}' requires ellul desktop.`, 'Install: curl -fsSL https://ellul.ai/install | sh');
+    }
+    await runByos(process.argv.slice(2));
+    return;
+  }
 
   // ── Cloud-only commands ──
 
@@ -187,6 +208,10 @@ async function main(): Promise<void> {
   // ── Local-only commands ──
 
   if (LOCAL_ONLY.has(command!)) {
+    if (mode === 'byos') {
+      await runByos(process.argv.slice(2));
+      return;
+    }
     assertMode(mode, 'local', command!);
     await runLocal(process.argv.slice(2));
     return;
@@ -215,8 +240,17 @@ async function main(): Promise<void> {
 
   if (command === undefined || command === '') {
     if (mode === 'uninitialized') {
+      if (isByosSystem()) {
+        await runByos(['up']);
+        return;
+      }
       showUnifiedHelp(mode);
       process.exit(EXIT.USAGE);
+    }
+
+    if (mode === 'byos') {
+      await runByos(['up']);
+      return;
     }
 
     if (mode === 'cloud') {

@@ -145,6 +145,10 @@
         "upload": {
           "title": "デスクトップからアップロード",
           "description": "プロジェクトファイルを zip にしてアップロード"
+        },
+        "local": {
+          "title": "ローカルディレクトリを追加",
+          "description": "マシン上の既存プロジェクトフォルダーをリンク"
         }
       },
       "workspaceType": {
@@ -161,6 +165,8 @@
         "scaffoldHeadingFallback": "新規プロジェクト",
         "gitHeading": "Git からインポート",
         "uploadHeading": "プロジェクトをアップロード",
+        "localHeading": "ローカルプロジェクトを追加",
+        "localSubtitle": "サンドボックスに名前を付けて、プロジェクトのパスを入力",
         "scaffoldSubtitle": "サンドボックスに名前を付けてください。後から変更できます。",
         "gitSubtitle": "サンドボックスに名前を付けて、リポジトリを接続します",
         "uploadSubtitle": "サンドボックスに名前を付けて、プロジェクトの zip をアップロード",
@@ -183,6 +189,13 @@
         "dropzoneHint": "最大 500 MB。プロジェクトフォルダーを先に zip にしてください。",
         "zipOnly": ".zip ファイルのみ対応しています"
       },
+      "local": {
+        "title": "ローカルプロジェクトを追加",
+        "subtitle": "プロジェクトディレクトリの絶対パスを入力",
+        "pathLabel": "ディレクトリパス",
+        "pathPlaceholder": "/home/user/projects/my-app",
+        "pathHint": "既存ディレクトリへの絶対パスを指定してください"
+      },
       "importing": {
         "title": "サンドボックスをセットアップ中"
       },
@@ -193,6 +206,7 @@
         "createSandbox": "サンドボックスを作成",
         "upload": "アップロード＆作成",
         "uploading": "アップロード中…",
+        "addProject": "プロジェクトを追加",
         "cancel": "キャンセル",
         "tryAgain": "再試行"
       },

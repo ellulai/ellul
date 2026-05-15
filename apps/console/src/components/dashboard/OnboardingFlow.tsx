@@ -53,12 +53,14 @@ interface OnboardingFlowProps {
   onComplete: (targetDirectory: string) => void;
   isModal?: boolean;
   securityTier?: "standard" | "web_locked" | "private_locked";
+  product?: string;
   footerEl?: HTMLElement | null;
 }
 
-export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = false, securityTier = "standard", footerEl }: OnboardingFlowProps) {
+export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = false, securityTier = "standard", product, footerEl }: OnboardingFlowProps) {
   const t = useTranslations("console.onboarding");
-  const { createSandbox, uploadSandbox, deleteSandbox, isCreatingSandbox, sandboxes } = useAppsList();
+  const { createSandbox, uploadSandbox, registerLocalProject, deleteSandbox, isCreatingSandbox, sandboxes } = useAppsList();
+  const isLocal = product === "self_hosted";
   const queryClient = useQueryClient();
   const { send: vpsSend } = useVpsBridge();
 
@@ -80,6 +82,7 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
   >("workspace-type");
   const [flowType, setFlowType] = useState<"scaffold" | "git" | "upload">("scaffold");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [localPath, setLocalPath] = useState("");
   const [sandboxId, setSandboxId] = useState("");
   const [frameworkId, setFrameworkId] = useState<string>(DEFAULT_FRAMEWORK_ID);
   const [workspacePresetId, setWorkspacePresetId] = useState<string>(DEFAULT_PRESET_ID);
@@ -102,6 +105,7 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
         branch?: string;
       }
     | { kind: "upload"; name: string; file: File }
+    | { kind: "local"; name: string; localPath: string }
     | null
   >(null);
   const [linkError, setLinkError] = useState<string | null>(null);
@@ -321,6 +325,32 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
     [uploadSandbox, onComplete, saveWorkspacePreset],
   );
 
+  const runLocalRegister = useCallback(
+    async (payload: { name: string; localPath: string }) => {
+      setLastSubmission({ kind: "local", ...payload });
+      setStep("importing");
+      setError(null);
+      setImportStatus(progressFor("creating_sandbox"));
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const result = await registerLocalProject(payload.name, {
+        localPath: payload.localPath,
+        signal: controller.signal,
+        onProgress: (ev) => setImportStatus(progressFor(ev.stage)),
+      });
+      abortRef.current = null;
+      if (result.success && result.app) {
+        sessionStorage.removeItem(SESSION_KEY);
+        await saveWorkspacePreset(result.app.directory);
+        onComplete(result.app.directory);
+      } else {
+        setError(result.error || t("errors.createFailed"));
+        setStep("upload");
+      }
+    },
+    [registerLocalProject, onComplete, saveWorkspacePreset],
+  );
+
   const handleCreateScaffold = () => {
     if (isCreatingSandbox) return;
     if (!validateName()) return;
@@ -346,7 +376,7 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
     setError(null);
     setLinkError(null);
     // After the abort propagates, the promise settles with code: 'cancelled'
-    setStep(lastSubmission?.kind === "git" ? "git-connect" : lastSubmission?.kind === "upload" ? "upload" : "name");
+    setStep(lastSubmission?.kind === "git" ? "git-connect" : (lastSubmission?.kind === "upload" || lastSubmission?.kind === "local") ? "upload" : "name");
   };
 
   const handleRetry = () => {
@@ -356,6 +386,8 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
       void runScaffold({ name: last.name, framework: last.framework });
     } else if (last.kind === "upload") {
       void runUpload({ name: last.name, file: last.file });
+    } else if (last.kind === "local") {
+      void runLocalRegister({ name: last.name, localPath: last.localPath });
     } else {
       void runClone({
         provider: last.provider,
@@ -434,8 +466,8 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
                   <FolderUp className="h-6 w-6 text-green-500" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-cream mb-1">{t("choose.upload.title")}</h3>
-                  <p className="text-sm text-cream/60">{t("choose.upload.description")}</p>
+                  <h3 className="font-semibold text-cream mb-1">{isLocal ? t("choose.local.title") : t("choose.upload.title")}</h3>
+                  <p className="text-sm text-cream/60">{isLocal ? t("choose.local.description") : t("choose.upload.description")}</p>
                 </div>
               </button>
 
@@ -617,7 +649,7 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
                         const fw = FRAMEWORK_OPTIONS.find((f) => f.id === frameworkId) ?? MONOREPO_OPTIONS.find((f) => f.id === frameworkId);
                         return fw ? t("name.scaffoldHeading", { framework: fw.label }) : t("name.scaffoldHeadingFallback");
                       })()
-                    : flowType === "upload" ? t("name.uploadHeading")
+                    : flowType === "upload" ? (isLocal ? t("name.localHeading") : t("name.uploadHeading"))
                     : t("name.gitHeading")}
                 </h2>
               </div>
@@ -638,13 +670,13 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
                         const fw = FRAMEWORK_OPTIONS.find((f) => f.id === frameworkId) ?? MONOREPO_OPTIONS.find((f) => f.id === frameworkId);
                         return fw ? t("name.scaffoldHeading", { framework: fw.label }) : t("name.scaffoldHeadingFallback");
                       })()
-                    : flowType === "upload" ? t("name.uploadHeading")
+                    : flowType === "upload" ? (isLocal ? t("name.localHeading") : t("name.uploadHeading"))
                     : t("name.gitHeading")}
                 </h2>
                 <p className="text-sm text-cream/60">
                   {flowType === "scaffold"
                     ? t("name.scaffoldSubtitle")
-                    : flowType === "upload" ? t("name.uploadSubtitle")
+                    : flowType === "upload" ? (isLocal ? t("name.localSubtitle") : t("name.uploadSubtitle"))
                     : t("name.gitSubtitle")}
                 </p>
               </div>
@@ -890,13 +922,14 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
           </>
         )}
 
-        {/* Step: Upload */}
+        {/* Step: Upload / Local Path */}
         {step === "upload" && (
           <>
             <button
               onClick={() => {
                 setStep("name");
                 setUploadFile(null);
+                setLocalPath("");
               }}
               className="flex items-center gap-2 text-sm text-cream/60 hover:text-cream mb-6 transition-colors"
             >
@@ -908,8 +941,12 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
               <div className="w-16 h-16 rounded-2xl bg-green-500/10 flex items-center justify-center mx-auto mb-4">
                 <FolderUp className="h-8 w-8 text-green-500" />
               </div>
-              <h2 className="text-xl font-bold text-cream mb-1">{t("upload.title")}</h2>
-              <p className="text-sm text-cream/60">{t("upload.subtitle")}</p>
+              <h2 className="text-xl font-bold text-cream mb-1">
+                {isLocal ? t("local.title") : t("upload.title")}
+              </h2>
+              <p className="text-sm text-cream/60">
+                {isLocal ? t("local.subtitle") : t("upload.subtitle")}
+              </p>
             </div>
 
             {error && (
@@ -918,69 +955,122 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
               </div>
             )}
 
-            <div className="space-y-4">
-              <label
-                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const file = e.dataTransfer.files[0];
-                  if (file && file.name.endsWith(".zip")) {
-                    setUploadFile(file);
-                    setError(null);
-                  } else {
-                    setError(t("upload.zipOnly"));
-                  }
-                }}
-                className="flex flex-col items-center justify-center p-8 rounded-xl border-2 border-dashed border-border hover:border-green-500/50 cursor-pointer transition-colors"
-              >
-                <FolderUp className="h-10 w-10 text-cream/30 mb-3" />
-                <p className="text-sm text-cream/75 mb-1">
-                  {uploadFile ? uploadFile.name : t("upload.dropzone")}
-                </p>
-                <p className="text-xs text-cream/45">
-                  {uploadFile
-                    ? `${(uploadFile.size / 1024 / 1024).toFixed(1)} MB`
-                    : t("upload.dropzoneHint")}
-                </p>
-                <input
-                  type="file"
-                  accept=".zip"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
+            {isLocal ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-cream/75 mb-2">{t("local.pathLabel")}</label>
+                  <input
+                    type="text"
+                    value={localPath}
+                    onChange={(e) => { setLocalPath(e.target.value); setError(null); }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && localPath.trim()) {
+                        if (!localPath.trim().startsWith("/")) {
+                          setError(t("local.pathHint"));
+                          return;
+                        }
+                        void runLocalRegister({ name: sandboxId.trim(), localPath: localPath.trim() });
+                      }
+                    }}
+                    placeholder={t("local.pathPlaceholder")}
+                    className="w-full px-4 py-3 rounded-lg bg-card border border-border text-cream placeholder:text-cream/45 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500"
+                    autoFocus
+                  />
+                  <p className="mt-2 text-xs text-cream/45">{t("local.pathHint")}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <label
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const file = e.dataTransfer.files[0];
+                    if (file && file.name.endsWith(".zip")) {
                       setUploadFile(file);
                       setError(null);
+                    } else {
+                      setError(t("upload.zipOnly"));
                     }
                   }}
-                />
-              </label>
-            </div>
+                  className="flex flex-col items-center justify-center p-8 rounded-xl border-2 border-dashed border-border hover:border-green-500/50 cursor-pointer transition-colors"
+                >
+                  <FolderUp className="h-10 w-10 text-cream/30 mb-3" />
+                  <p className="text-sm text-cream/75 mb-1">
+                    {uploadFile ? uploadFile.name : t("upload.dropzone")}
+                  </p>
+                  <p className="text-xs text-cream/45">
+                    {uploadFile
+                      ? `${(uploadFile.size / 1024 / 1024).toFixed(1)} MB`
+                      : t("upload.dropzoneHint")}
+                  </p>
+                  <input
+                    type="file"
+                    accept=".zip"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setUploadFile(file);
+                        setError(null);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+            )}
 
             {(() => {
               const actions = (
                 <div className={footerEl ? "px-5 py-3 border-t border-border" : isModal ? "pt-4" : "mt-4"}>
-                  <button
-                    onClick={() => {
-                      if (!uploadFile) return;
-                      void runUpload({ name: sandboxId.trim(), file: uploadFile });
-                    }}
-                    disabled={!uploadFile || isCreatingSandbox}
-                    className="w-full py-3 rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-cream font-medium transition-colors flex items-center justify-center gap-2"
-                  >
-                    {isCreatingSandbox ? (
-                      <>
-                        <Spinner size="sm" />
-                        {t("buttons.uploading")}
-                      </>
-                    ) : (
-                      <>
-                        <FolderUp className="h-4 w-4" />
-                        {t("buttons.upload")}
-                      </>
-                    )}
-                  </button>
+                  {isLocal ? (
+                    <button
+                      onClick={() => {
+                        if (!localPath.trim()) return;
+                        if (!localPath.trim().startsWith("/")) {
+                          setError(t("local.pathHint"));
+                          return;
+                        }
+                        void runLocalRegister({ name: sandboxId.trim(), localPath: localPath.trim() });
+                      }}
+                      disabled={!localPath.trim() || !localPath.trim().startsWith("/") || isCreatingSandbox}
+                      className="w-full py-3 rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-cream font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      {isCreatingSandbox ? (
+                        <>
+                          <Spinner size="sm" />
+                          {t("buttons.creating")}
+                        </>
+                      ) : (
+                        <>
+                          <FolderUp className="h-4 w-4" />
+                          {t("buttons.addProject")}
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (!uploadFile) return;
+                        void runUpload({ name: sandboxId.trim(), file: uploadFile });
+                      }}
+                      disabled={!uploadFile || isCreatingSandbox}
+                      className="w-full py-3 rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-cream font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      {isCreatingSandbox ? (
+                        <>
+                          <Spinner size="sm" />
+                          {t("buttons.uploading")}
+                        </>
+                      ) : (
+                        <>
+                          <FolderUp className="h-4 w-4" />
+                          {t("buttons.upload")}
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               );
               return footerEl ? createPortal(actions, footerEl) : actions;

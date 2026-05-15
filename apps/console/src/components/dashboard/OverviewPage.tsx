@@ -76,6 +76,7 @@ interface OverviewPageProps {
   serverDomain: string;
   // Forwarded to the Create Sandbox modal so its git flow knows whether to
   securityTier?: "standard" | "web_locked" | "private_locked";
+  product?: string;
 }
 
 export function OverviewPage({
@@ -86,6 +87,7 @@ export function OverviewPage({
   serverId,
   serverDomain,
   securityTier,
+  product,
 }: OverviewPageProps) {
   const t = useTranslations("console.overview");
   const { deleteSandbox, isDeletingSandbox } = useAppsList();
@@ -460,6 +462,7 @@ export function OverviewPage({
                 serverId={serverId}
                 serverDomain={serverDomain}
                 securityTier={securityTier}
+                product={product}
                 onComplete={() => {
                   setShowCreateModal(false);
                 }}

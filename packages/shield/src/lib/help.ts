@@ -25,7 +25,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { isJsonMode, success } from './output';
-import type { ShieldMode } from './mode';
+import { isByosSystem, type ShieldMode } from './mode';
 
 export interface FlagDef {
   name: string;
@@ -71,6 +71,7 @@ export function showUnifiedHelp(mode?: ShieldMode): void {
 
   const showCloud = !mode || mode === 'cloud' || mode === 'uninitialized';
   const showLocal = !mode || mode === 'local' || mode === 'uninitialized';
+  const showByos = isByosSystem() && (!mode || mode === 'byos' || mode === 'uninitialized');
 
   if (showCloud && showLocal) {
     lines.push('Getting Started:');
@@ -116,6 +117,26 @@ export function showUnifiedHelp(mode?: ShieldMode): void {
       ['doctor', 'Run health diagnostics'],
       ['env', 'Print eval-able socket/proxy URL'],
       ['rebind', 'Rebind workspace after moving directory'],
+    ];
+    const maxLen = Math.max(...cmds.map(([n]) => n.length));
+    for (const [name, desc] of cmds) {
+      lines.push(`  ${name.padEnd(maxLen + 2)}${desc}`);
+    }
+    lines.push('');
+  }
+
+  if (showByos) {
+    lines.push(showCloud || showLocal ? 'Desktop Mode:' : 'Commands:');
+    const cmds: [string, string][] = [
+      ['up [--detach]', 'Start workspace (VM + engine)'],
+      ['down', 'Stop workspace (vault persists)'],
+      ['init [path]', 'Register project with engine'],
+      ['ps', 'Show running services and projects'],
+      ['logs [svc] [--follow]', 'Stream service logs'],
+      ['config [key] [val]', 'Get or set configuration'],
+      ['config --trust-cert', 'Trust Caddy root certificate'],
+      ['upgrade [--cli|--services|--vm]', 'Update components'],
+      ['uninstall [--purge]', 'Remove ellul desktop'],
     ];
     const maxLen = Math.max(...cmds.map(([n]) => n.length));
     for (const [name, desc] of cmds) {

@@ -15,7 +15,8 @@ export interface ProjectJson {
   projectId: string;
   projectSlug: string;
   projectName: string;
-  mode?: 'cloud' | 'local';
+  mode?: 'cloud' | 'local' | 'byos';
+  path?: string;
 }
 
 /**

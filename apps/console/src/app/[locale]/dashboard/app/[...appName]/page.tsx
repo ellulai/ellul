@@ -121,6 +121,7 @@ export default function DashboardAppPage({ params }: AppPageProps) {
             serverId={serverStatus.server.id}
             serverDomain={serverDomain}
             securityTier={serverStatus.server.securityTier}
+            product={serverStatus.server.product}
             onComplete={(targetDirectory) => {
               router.replace(
                 `/dashboard/app/${targetDirectory.split("/").map(encodeURIComponent).join("/")}`,

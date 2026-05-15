@@ -20,6 +20,11 @@ export function getAppPath(appDirectory: string): string {
 }
 
 // File paths
+export const DEPLOYMENT_MODEL = (() => {
+  try { return fs.readFileSync("/etc/ellul/deployment-model", "utf8").trim(); }
+  catch { return ""; }
+})();
+
 export const PATHS = {
   TIER: "/etc/ellul/security-tier",
   SERVER_ID: "/etc/ellul-bootstrap/server-id",

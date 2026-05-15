@@ -147,6 +147,22 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         };
     };
 } & {
+    "/session/establish": {
+        $get: {
+            input: {};
+            output: undefined;
+            outputFormat: "redirect";
+            status: 302;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        };
+    };
+} & {
     "/start": {
         $get: {
             input: {};

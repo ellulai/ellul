@@ -17,6 +17,7 @@
   ],
   "scripts": {
     "build": "tsup",
+    "build:native": "node ../../scripts/build-byos-cli.mjs",
     "postinstall": "bash scripts/install-guardrail.sh",
     "prepublishOnly": "npm run build",
     "typecheck": "tsc --noEmit",

@@ -13,7 +13,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-export type ShieldMode = 'cloud' | 'local' | 'uninitialized';
+export type ShieldMode = 'cloud' | 'local' | 'byos' | 'uninitialized';
 
 /**
  * Detect the governance mode from .ellul/project.json.
@@ -26,11 +26,22 @@ export function detectMode(cwd?: string): ShieldMode {
   try {
     const raw = fs.readFileSync(file, 'utf8');
     const data = JSON.parse(raw) as Record<string, unknown>;
-    if (data.mode === 'cloud' || data.mode === 'local') {
+    if (data.mode === 'cloud' || data.mode === 'local' || data.mode === 'byos') {
       return data.mode;
     }
     return 'uninitialized';
   } catch {
     return 'uninitialized';
   }
+}
+
+export function isByosSystem(): boolean {
+  const home = process.env.HOME || '';
+  const configPath = path.join(home, '.ellul', 'config.json');
+  if (fs.existsSync(configPath)) return true;
+  const sockPaths = [
+    '/var/run/ellul-engine.sock',
+    path.join(home, '.lima', 'ellul', 'sock', 'ellul-engine.sock'),
+  ];
+  return sockPaths.some((p) => fs.existsSync(p));
 }

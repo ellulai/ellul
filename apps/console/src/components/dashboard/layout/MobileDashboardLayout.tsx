@@ -697,6 +697,7 @@ function DashboardContent({
                 serverId={server.id}
                 serverDomain={serverDomain}
                 securityTier={server.securityTier}
+                product={server.product}
                 onComplete={async (targetDirectory) => {
                   await refreshApps();
                   if (targetDirectory) handleSelectApp(targetDirectory);
@@ -713,6 +714,7 @@ function DashboardContent({
             serverId={server.id}
             serverDomain={serverDomain}
             securityTier={server.securityTier}
+            product={server.product}
           />
         ) : (
           <div className="flex-1 flex flex-col min-h-0">

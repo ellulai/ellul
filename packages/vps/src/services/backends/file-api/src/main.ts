@@ -11,7 +11,7 @@ import * as crypto from 'crypto';
 
 import { SANDBOX_ID_RE, isSandboxId } from '@ellul.ai/types';
 import { ALL_LOCALES, DEFAULT_LOCALE } from '@ellul.ai/i18n-consts/locales';
-import { PORT, ROOT_DIR, HOME, PATHS } from './config';
+import { PORT, ROOT_DIR, HOME, PATHS, DEPLOYMENT_MODEL } from './config';
 
 const CONSOLE_ORIGIN = (() => {
   try { return fs.readFileSync('/etc/ellul/console-origin', 'utf8').trim(); }
@@ -1236,7 +1236,7 @@ const server = http.createServer(async (req, res) => {
 
         try {
           const MAX_UPLOAD_BYTES = 500 * 1024 * 1024;
-          let rawBody: Buffer;
+          let rawBody: Buffer | null;
           try {
             const chunks: Buffer[] = [];
             let totalBytes = 0;
@@ -1266,7 +1266,7 @@ const server = http.createServer(async (req, res) => {
 
           let parts: ReturnType<typeof parseMultipart>;
           try {
-            parts = parseMultipart(rawBody, reqContentType);
+            parts = parseMultipart(rawBody!, reqContentType);
           } catch {
             res.writeHead(400);
             res.end(JSON.stringify({ error: 'Invalid multipart body' }));
@@ -1287,6 +1287,15 @@ const server = http.createServer(async (req, res) => {
           if (!filePart.filename.toLowerCase().endsWith('.zip')) {
             res.writeHead(400);
             res.end(JSON.stringify({ error: 'Only .zip files are accepted' }));
+            return;
+          }
+
+          const ZIP_MAGIC = [0x50, 0x4B, 0x03, 0x04];
+          if (filePart.data.length < 4 ||
+              filePart.data[0] !== ZIP_MAGIC[0] || filePart.data[1] !== ZIP_MAGIC[1] ||
+              filePart.data[2] !== ZIP_MAGIC[2] || filePart.data[3] !== ZIP_MAGIC[3]) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'File is not a valid zip archive' }));
             return;
           }
 
@@ -1311,12 +1320,17 @@ const server = http.createServer(async (req, res) => {
           const zipPath = path.join(tempDir, 'upload.zip');
           fs.writeFileSync(zipPath, filePart.data);
           const compressedSize = filePart.data.length;
+          (filePart as { data: Buffer | null }).data = null;
+          rawBody = null;
 
-          const { execSync } = await import('child_process');
+          const { execFile: execFileAsync } = await import('child_process');
+          const { promisify } = await import('util');
+          const execFileP = promisify(execFileAsync);
 
           let listing: string;
           try {
-            listing = execSync(`unzip -l "${zipPath}"`, { timeout: 30_000 }).toString();
+            const { stdout } = await execFileP('unzip', ['-l', zipPath], { timeout: 30_000 });
+            listing = stdout;
           } catch {
             emit('error', { error: 'Invalid or corrupt zip file' });
             res.end();
@@ -1335,6 +1349,12 @@ const server = http.createServer(async (req, res) => {
             totalDecompressed += size;
           }
 
+          if (zipEntries.length > 50_000) {
+            console.warn(`[file-api] Upload rejected: ${zipEntries.length} entries`);
+            emit('error', { error: 'Zip rejected: too many files (limit 50,000)' });
+            res.end();
+            return;
+          }
           if (totalDecompressed > compressedSize * 10) {
             console.warn(`[file-api] Upload rejected: compression ratio ${(totalDecompressed / compressedSize).toFixed(1)}x`);
             emit('error', { error: 'Zip rejected: suspicious compression ratio' });
@@ -1353,8 +1373,10 @@ const server = http.createServer(async (req, res) => {
             /\.pem$/i,
             /\.key$/i,
             /\.p12$/i,
+            /\.pfx$/i,
             /(?:^|\/)id_rsa$/,
             /(?:^|\/)id_ed25519$/,
+            /(?:^|\/)id_ecdsa$/,
             /(?:^|\/)credentials\.json$/,
             /(?:^|\/)service-account.*\.json$/i,
             /(?:^|\/)\.npmrc$/,
@@ -1467,7 +1489,7 @@ const server = http.createServer(async (req, res) => {
             fs.mkdirSync(extractDir, { mode: 0o700 });
 
             try {
-              execSync(`unzip -o -d "${extractDir}" "${zipPath}"`, { timeout: 120_000 });
+              await execFileP('unzip', ['-o', '-d', extractDir, zipPath], { timeout: 120_000 });
             } catch {
               await cleanupUploadProject(uploadSandboxId);
               emit('error', { error: 'Failed to extract zip file' });
@@ -1476,8 +1498,8 @@ const server = http.createServer(async (req, res) => {
             }
 
             try {
-              const symlinkOut = execSync(`find "${extractDir}" -type l`, { timeout: 30_000 }).toString().trim();
-              for (const link of symlinkOut.split('\n').filter(Boolean)) {
+              const { stdout: symlinkOut } = await execFileP('find', [extractDir, '-type', 'l'], { timeout: 30_000 });
+              for (const link of symlinkOut.trim().split('\n').filter(Boolean)) {
                 const target = fs.readlinkSync(link);
                 const resolved = path.resolve(path.dirname(link), target);
                 if (!resolved.startsWith(extractDir)) {
@@ -1490,8 +1512,8 @@ const server = http.createServer(async (req, res) => {
             } catch {}
 
             try {
-              const duOut = execSync(`du -sb "${extractDir}"`, { timeout: 10_000 }).toString().trim();
-              const actualSize = parseInt(duOut.split('\t')[0]!, 10);
+              const { stdout: duOut } = await execFileP('du', ['-sb', extractDir], { timeout: 10_000 });
+              const actualSize = parseInt(duOut.trim().split('\t')[0]!, 10);
               if (actualSize > compressedSize * 10 || actualSize > 2 * 1024 * 1024 * 1024) {
                 await cleanupUploadProject(uploadSandboxId);
                 emit('error', { error: 'Extraction aborted: decompressed size exceeds limits' });
@@ -1524,7 +1546,7 @@ const server = http.createServer(async (req, res) => {
               return;
             }
 
-            execSync(`cp -a "${sourceDir}/." "${uploadTargetPath}/"`, { timeout: 60_000 });
+            await execFileP('cp', ['-a', '--', `${sourceDir}/.`, uploadTargetPath], { timeout: 60_000 });
 
             emit('progress', { stage: 'writing_metadata' });
             emit('progress', { stage: 'detecting' });
@@ -1596,7 +1618,7 @@ const server = http.createServer(async (req, res) => {
 
       // Happy-path contract: the user has made an explicit choice (scaffold or
       const body = await parseBody(req);
-      const { name, type } = body as { name: string; type: 'scaffold' | 'git' };
+      const { name, type } = body as { name: string; type: 'scaffold' | 'git' | 'local_path' };
 
       res.writeHead(200, {
         'Content-Type': 'text/event-stream',
@@ -1613,7 +1635,7 @@ const server = http.createServer(async (req, res) => {
         res.end();
         return;
       }
-      if (type !== 'scaffold' && type !== 'git') {
+      if (type !== 'scaffold' && type !== 'git' && type !== 'local_path') {
         emit('error', { error: `Invalid type: ${type}` });
         res.end();
         return;
@@ -1674,6 +1696,154 @@ const server = http.createServer(async (req, res) => {
       // spawn() EMFILE, etc.) must not leak the shield project. Wrap the
       try {
       writeSandboxMetadata(sandboxPath, { displayName: name });
+
+      if (type === 'local_path') {
+        if (DEPLOYMENT_MODEL !== 'localhost') {
+          await cleanupProject(sandboxId);
+          emit('error', { error: 'Local path registration is only available on self-hosted instances' });
+          res.end();
+          return;
+        }
+
+        const { localPath } = body as { localPath?: string };
+        if (!localPath || typeof localPath !== 'string') {
+          await cleanupProject(sandboxId);
+          emit('error', { error: 'Missing localPath' });
+          res.end();
+          return;
+        }
+        if (!path.isAbsolute(localPath)) {
+          await cleanupProject(sandboxId);
+          emit('error', { error: 'localPath must be an absolute path' });
+          res.end();
+          return;
+        }
+
+        const resolved = path.resolve(localPath);
+        const BLOCKED_PREFIXES = [
+          '/etc', '/root', '/proc', '/sys', '/dev', '/boot',
+          '/usr', '/sbin', '/bin', '/lib', '/lib64', '/snap',
+          '/run', '/var', '/lost+found',
+        ];
+        if (resolved === '/' || resolved === '/tmp' ||
+            BLOCKED_PREFIXES.some(p => resolved === p || resolved.startsWith(p + '/'))) {
+          await cleanupProject(sandboxId);
+          emit('error', { error: 'Cannot register a system directory as a project' });
+          res.end();
+          return;
+        }
+
+        let realResolved: string;
+        try {
+          realResolved = fs.realpathSync(resolved);
+        } catch {
+          await cleanupProject(sandboxId);
+          emit('error', { error: `Path not found: ${localPath}` });
+          res.end();
+          return;
+        }
+        if (realResolved === '/' || realResolved === '/tmp' ||
+            BLOCKED_PREFIXES.some(p => realResolved === p || realResolved.startsWith(p + '/'))) {
+          await cleanupProject(sandboxId);
+          emit('error', { error: 'Symlink resolves to a system directory' });
+          res.end();
+          return;
+        }
+        let stat: fs.Stats;
+        try {
+          stat = fs.statSync(realResolved);
+        } catch {
+          await cleanupProject(sandboxId);
+          emit('error', { error: `Path not found: ${localPath}` });
+          res.end();
+          return;
+        }
+        if (!stat.isDirectory()) {
+          await cleanupProject(sandboxId);
+          emit('error', { error: 'Path is not a directory' });
+          res.end();
+          return;
+        }
+
+        try {
+          fs.accessSync(realResolved, fs.constants.W_OK);
+        } catch {
+          await cleanupProject(sandboxId);
+          emit('error', { error: 'Directory is not writable' });
+          res.end();
+          return;
+        }
+
+        const dirName = path.basename(realResolved).toLowerCase()
+          .replace(/[^a-z0-9._-]/g, '-')
+          .replace(/^-+|-+$/g, '')
+          .slice(0, 63) || 'local-project';
+        const localAppRoot = `${sandboxId}/${dirName}`;
+        const symlinkPath = path.join(sandboxPath, dirName);
+
+        try {
+          fs.symlinkSync(realResolved, symlinkPath);
+        } catch (err: any) {
+          await cleanupProject(sandboxId);
+          emit('error', { error: `Failed to link directory: ${err.message}` });
+          res.end();
+          return;
+        }
+
+        emit('progress', { stage: 'writing_metadata' });
+        emit('progress', { stage: 'detecting' });
+        const detected = detectApps().find(a => a.kind === 'app' && a.directory === localAppRoot);
+        const inferredType: AppType = detected?.type ?? 'unknown';
+        const inferredFramework = detected?.framework || 'unknown';
+        const inferredPreviewable = detected?.previewable ?? false;
+
+        writeAppMetadata(symlinkPath, {
+          displayName: dirName,
+          type: inferredType,
+          previewable: inferredPreviewable,
+          origin: 'local',
+          framework: inferredFramework === 'unknown' ? null : inferredFramework,
+        });
+        writeZeroClawWorkspace(symlinkPath, dirName);
+        ensureAppGitignore(symlinkPath);
+        updateSandboxActiveApp(sandboxPath, dirName);
+        bootstrapGit(symlinkPath);
+
+        const pkgJsonPath = path.join(symlinkPath, 'package.json');
+        let installing = false;
+        if (fs.existsSync(pkgJsonPath)) {
+          emit('progress', { stage: 'installing_deps' });
+          const installStatus = requestInstall(symlinkPath);
+          if (installStatus.phase === 'queued' || installStatus.phase === 'running') {
+            installing = true;
+          }
+        }
+
+        console.log(`[file-api] Local project registered: user=${headers['x-auth-user'] || 'unknown'} name=${name} path=${realResolved} sandbox=${sandboxId}`);
+
+        emit('done', {
+          success: true,
+          installing,
+          app: {
+            kind: 'app' as const,
+            name: dirName,
+            directory: localAppRoot,
+            displayName: dirName,
+            path: symlinkPath,
+            sandboxId,
+            appRoot: localAppRoot,
+            framework: inferredFramework,
+            scripts: detected?.scripts || [],
+            type: inferredType,
+            previewable: inferredPreviewable,
+            isMonorepo: detected?.isMonorepo ?? false,
+            packages: detected?.packages,
+            hasPackageJson: detected?.hasPackageJson ?? fs.existsSync(pkgJsonPath),
+          },
+        });
+        res.end();
+        return;
+      }
 
       if (type === 'scaffold') {
         const { framework, project } = body as { framework?: string; project?: string };

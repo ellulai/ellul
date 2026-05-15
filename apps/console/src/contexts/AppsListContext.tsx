@@ -132,6 +132,12 @@ export interface UploadSandboxOptions {
   signal?: AbortSignal;
 }
 
+export interface LocalProjectOptions {
+  localPath: string;
+  onProgress?: (event: SandboxProgressEvent) => void;
+  signal?: AbortSignal;
+}
+
 export interface SandboxCreationResult {
   success: boolean;
   sandbox?: ApiSandbox;
@@ -151,6 +157,7 @@ interface AppsListContextValue {
 
   createSandbox: (name: string, options: CreateSandboxOptions) => Promise<SandboxCreationResult>;
   uploadSandbox: (name: string, options: UploadSandboxOptions) => Promise<SandboxCreationResult>;
+  registerLocalProject: (name: string, options: LocalProjectOptions) => Promise<SandboxCreationResult>;
   cloneSandbox: (
     provider: "github" | "gitlab" | "bitbucket",
     repoFullName: string,
@@ -227,6 +234,7 @@ function MockAppsListProvider({ children }: { children: ReactNode }) {
     codeApiUrl: "https://mock-code.ellul.ai",
     createSandbox: noop,
     uploadSandbox: noop,
+    registerLocalProject: noop,
     cloneSandbox: noop,
     isCreatingSandbox: false,
     deleteSandbox: noopDelete,
@@ -366,6 +374,44 @@ function RealAppsListProvider({ children, serverDomain, securityTier: _securityT
           fetcher: fetchWithCodeToken,
           name,
           file: options.file,
+          onProgress: options.onProgress,
+          signal: options.signal,
+        });
+        appsCache.delete(codeApiUrl);
+        const fresh = await fetchSandboxes(true);
+        const sandbox = fresh.find((s) => s.id === result.app.sandboxId);
+        return {
+          success: true,
+          sandbox,
+          app: result.app,
+          installing: result.installing,
+        };
+      } catch (e) {
+        if (e instanceof SandboxStreamError_) {
+          return { success: false, error: e.message, code: e.code };
+        }
+        if (e instanceof DOMException && e.name === "AbortError") {
+          return { success: false, error: t("cancelled"), code: "cancelled" };
+        }
+        return { success: false, error: e instanceof Error ? e.message : t("createFailed") };
+      } finally {
+        creatingRef.current = false;
+        setIsCreatingSandbox(false);
+      }
+    },
+    [codeApiUrl, fetchSandboxes, fetchWithCodeToken, t],
+  );
+
+  const registerLocalProject = useCallback(
+    async (name: string, options: LocalProjectOptions): Promise<SandboxCreationResult> => {
+      if (creatingRef.current) return { success: false, error: t("creationInProgress") };
+      creatingRef.current = true;
+      setIsCreatingSandbox(true);
+      try {
+        const result = await createSandboxStream({
+          endpoint: `${codeApiUrl}/api/apps/create`,
+          fetcher: fetchWithCodeToken,
+          payload: { name, type: "local_path", localPath: options.localPath },
           onProgress: options.onProgress,
           signal: options.signal,
         });
@@ -537,11 +583,12 @@ function RealAppsListProvider({ children, serverDomain, securityTier: _securityT
     codeApiUrl,
     createSandbox,
     uploadSandbox,
+    registerLocalProject,
     cloneSandbox,
     isCreatingSandbox,
     deleteSandbox,
     isDeletingSandbox,
-  }), [sandboxes, active, isLoading, error, refresh, codeApiUrl, createSandbox, uploadSandbox, cloneSandbox, isCreatingSandbox, deleteSandbox, isDeletingSandbox]);
+  }), [sandboxes, active, isLoading, error, refresh, codeApiUrl, createSandbox, uploadSandbox, registerLocalProject, cloneSandbox, isCreatingSandbox, deleteSandbox, isDeletingSandbox]);
 
   return (
     <AppsListContext.Provider value={value}>

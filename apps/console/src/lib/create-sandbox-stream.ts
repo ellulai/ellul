@@ -7,7 +7,8 @@ import type { ApiApp } from "@/contexts/AppsListContext";
 export type CreateSandboxPayload =
   | { name: string; type: "scaffold"; framework: string; project?: string }
   | { name: string; type: "git"; provider: "github" | "gitlab" | "bitbucket"; repoFullName: string; branch?: string }
-  | { name: string; type: "upload" };
+  | { name: string; type: "upload" }
+  | { name: string; type: "local_path"; localPath: string };
 
 export interface SandboxProgressEvent {
   stage:

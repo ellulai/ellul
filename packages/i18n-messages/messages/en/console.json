@@ -145,6 +145,10 @@
         "upload": {
           "title": "Upload from Desktop",
           "description": "Zip your project files and upload them to create a sandbox"
+        },
+        "local": {
+          "title": "Add Local Directory",
+          "description": "Link an existing project folder on your machine"
         }
       },
       "workspaceType": {
@@ -169,6 +173,8 @@
         "scaffoldHeadingFallback": "New project",
         "gitHeading": "Import from Git",
         "uploadHeading": "Upload Project",
+        "localHeading": "Add Local Project",
+        "localSubtitle": "Name your sandbox, then enter the path to your project",
         "scaffoldSubtitle": "Give your sandbox a name. You can rename it later.",
         "gitSubtitle": "Name your sandbox, then connect your repo",
         "uploadSubtitle": "Name your sandbox, then upload a zip of your project",
@@ -191,6 +197,13 @@
         "dropzoneHint": "Max 500 MB. Zip your project folder first.",
         "zipOnly": "Only .zip files are accepted"
       },
+      "local": {
+        "title": "Add Local Project",
+        "subtitle": "Enter the absolute path to your project directory",
+        "pathLabel": "Directory Path",
+        "pathPlaceholder": "/home/user/projects/my-app",
+        "pathHint": "Must be an absolute path to an existing directory"
+      },
       "importing": {
         "title": "Setting up your sandbox"
       },
@@ -201,6 +214,7 @@
         "createSandbox": "Create Sandbox",
         "upload": "Upload & Create",
         "uploading": "Uploading…",
+        "addProject": "Add Project",
         "cancel": "Cancel",
         "tryAgain": "Try again"
       }
