@@ -1,10 +1,11 @@
 {
-  "identifier": "default",
-  "description": "Default capabilities for ellul.ai",
+  "identifier": "android",
+  "description": "Android-only capabilities — proot BYOS workspace commands and localhost remote origin for shield/core when WebView loads from localhost:8443",
   "windows": ["main"],
   "remote": {
-    "urls": ["https://console.ellul.ai/*"]
+    "urls": ["https://localhost:*/*"]
   },
+  "platforms": ["android"],
   "permissions": [
     "core:default",
     "core:window:default",
@@ -66,6 +67,12 @@
     "shield:allow-shield-operator-clear",
     "shield:allow-shield-intent-nonce",
     "shield:allow-shield-create-signed-ws-url",
-    "shield:allow-shield-fetch"
+    "shield:allow-shield-fetch",
+    "proot:allow-proot-start",
+    "proot:allow-proot-stop",
+    "proot:allow-proot-status",
+    "proot:allow-proot-health",
+    "proot:allow-proot-setup-status",
+    "proot:allow-proot-setup-start"
   ]
 }

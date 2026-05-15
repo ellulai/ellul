@@ -25,7 +25,7 @@ enum CheckKind {
     Http(&'static str),
 }
 
-const SERVICES: &[ServiceDef] = &[
+const SERVICES: [ServiceDef; 5] = [
     ServiceDef {
         name: "sovereign-shield",
         port: 3005,
@@ -54,25 +54,31 @@ const SERVICES: &[ServiceDef] = &[
 ];
 
 pub async fn check_all() -> Vec<ServiceHealth> {
-    let mut results = Vec::with_capacity(SERVICES.len());
-    for svc in SERVICES {
-        let start = Instant::now();
-        let healthy = match &svc.check {
-            CheckKind::Tcp => check_tcp(svc.port).await,
-            CheckKind::Http(path) => check_http(svc.port, path).await,
-        };
-        let latency_ms = if healthy {
+    let (r0, r1, r2, r3, r4) = tokio::join!(
+        check_one(&SERVICES[0]),
+        check_one(&SERVICES[1]),
+        check_one(&SERVICES[2]),
+        check_one(&SERVICES[3]),
+        check_one(&SERVICES[4]),
+    );
+    vec![r0, r1, r2, r3, r4]
+}
+
+async fn check_one(svc: &ServiceDef) -> ServiceHealth {
+    let start = Instant::now();
+    let healthy = match &svc.check {
+        CheckKind::Tcp => check_tcp(svc.port).await,
+        CheckKind::Http(path) => check_http(svc.port, path).await,
+    };
+    ServiceHealth {
+        name: svc.name.to_string(),
+        healthy,
+        latency_ms: if healthy {
             Some(start.elapsed().as_millis() as u64)
         } else {
             None
-        };
-        results.push(ServiceHealth {
-            name: svc.name.to_string(),
-            healthy,
-            latency_ms,
-        });
+        },
     }
-    results
 }
 
 async fn check_tcp(port: u16) -> bool {
@@ -84,7 +90,9 @@ async fn check_tcp(port: u16) -> bool {
 async fn check_http(port: u16, path: &str) -> bool {
     let result = timeout(HEALTH_TIMEOUT, async {
         let mut stream = TcpStream::connect(("127.0.0.1", port)).await?;
-        let req = format!("GET {path} HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nConnection: close\r\n\r\n");
+        let req = format!(
+            "GET {path} HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nConnection: close\r\n\r\n"
+        );
         stream.write_all(req.as_bytes()).await?;
         let mut buf = [0u8; 256];
         let n = stream.read(&mut buf).await?;
