@@ -25,6 +25,8 @@ export interface CaddyfileOptions {
   originTag?: string;
   // false (Cloud Sandbox): omits sites-enabled + app-routes.d; dev preview still included.
   canDeploy?: boolean;
+  /** Use unprivileged high ports (8443/8080) instead of 443/80. Localhost model only. */
+  highPorts?: boolean;
 }
 
 interface TlsConfig {
@@ -153,11 +155,18 @@ export function generateCaddyfileContent(opts: CaddyfileOptions): string {
   const sites: SiteBlock[] = [];
 
   if (deploymentModel === "localhost") {
+    const httpsPort = opts.highPorts ? 8443 : 443;
     sites.push({
-      addresses: ["localhost:443", "127.0.0.1:443"],
+      addresses: [`localhost:${httpsPort}`, `127.0.0.1:${httpsPort}`],
       tls: "internal",
       handlers: configJs + "\n" + replace(generateCaddyHandlers("all", handlerOpts)),
     });
+    if (opts.highPorts) {
+      sites.push({
+        addresses: ["localhost:8080", "127.0.0.1:8080"],
+        handlers: `    redir https://localhost:8443{uri}`,
+      });
+    }
   } else if (deploymentModel === "direct") {
     const addresses = [mainDomain, codeDomain, devDomain];
     if (customDomain) addresses.push(customDomain);

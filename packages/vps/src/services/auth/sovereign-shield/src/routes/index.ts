@@ -27,6 +27,7 @@
  * - guardrail.routes.ts   - Guardrail policy discovery + agent proposals
  * - vault.routes.ts       - Scoped Knowledge Vault (browser: /_auth/vault/*)
  * - vault-internal.routes.ts - Vault IPC (agent: /api/internal/vault/*)
+ * - migration-internal.routes.ts - BYOS migration restore/export (enforcer: /api/internal/migration/*)
  */
 
 import type { Hono } from 'hono';
@@ -67,6 +68,7 @@ import { registerDowngradeRoutes } from './downgrade.routes';
 import { registerMigrationRoutes } from './migration.routes';
 import { registerVaultRoutes } from './vault.routes';
 import { registerVaultInternalRoutes } from './vault-internal.routes';
+import { registerMigrationInternalRoutes } from './migration-internal.routes';
 import {
   registerClaudeOatRoutes,
   type ClaudeOatModule,
@@ -223,6 +225,9 @@ export function registerAllRoutes(app: Hono, config: RouteConfig): void {
   // Vault Internal API (agent-bridge IPC for scoped vault access)
   registerVaultInternalRoutes(app);
 
+  // Migration Internal API (enforcer IPC for BYOS migration restore/export)
+  registerMigrationInternalRoutes(app);
+
   // Claude OAT credential subsystem — owns the Claude OAuth Access Token
   // canonically. Bridge talks to these routes via per-service IPC token;
   // launcher inherits bridge's group and calls /redeem to exchange a
@@ -272,5 +277,6 @@ export {
   registerSchemaRoutes,
   registerVaultRoutes,
   registerVaultInternalRoutes,
+  registerMigrationInternalRoutes,
   registerClaudeOatRoutes,
 };

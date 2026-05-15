@@ -205,6 +205,35 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
     };
+} & {
+    "/vps-auth-data": {
+        $post: {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {};
+            output: {
+                status: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/vps-auth-data": {
+        $get: {
+            input: {};
+            output: {
+                status: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
 }, "/api/auth/native">) & {
     "/api/auth/*": {
         $post: {
@@ -700,7 +729,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 commands: {
                     payload: any;
                     id: string;
-                    type: "mount-volume" | "flush-volume" | "force-unmount" | "grow-volume" | "update-identity" | "backup-identity" | "restore-identity" | "luks-close" | "luks-format" | "luks-rekey" | "luks-header-backup" | "maintenance-mode" | "wake-mount" | "read-public-key" | "stop-postgresql" | "ping" | "update-entitlements" | "agent-adapter-execute" | "agent-adapter-secret" | "block-migrate-upload" | "block-migrate-download" | "rotate-to-pqc" | "git-setup" | "re-attest" | "apply-pending-update" | "set-auto-update" | "reconfigure-caddy-domain" | "b2b-sandbox-destroy" | "update-signing-keyring";
+                    type: "mount-volume" | "flush-volume" | "force-unmount" | "grow-volume" | "update-identity" | "backup-identity" | "restore-identity" | "luks-close" | "luks-format" | "luks-rekey" | "luks-header-backup" | "maintenance-mode" | "wake-mount" | "read-public-key" | "stop-postgresql" | "ping" | "update-entitlements" | "agent-adapter-execute" | "agent-adapter-secret" | "block-migrate-upload" | "block-migrate-download" | "rotate-to-pqc" | "git-setup" | "re-attest" | "apply-pending-update" | "set-auto-update" | "reconfigure-caddy-domain" | "b2b-sandbox-destroy" | "update-signing-keyring" | "byos-migrate-restore" | "byos-migrate-export";
                     createdAt: string;
                     expiresAt: string;
                 }[];
@@ -2174,7 +2203,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                         preferredApp: string | null;
                         securityTier: "standard" | "web_locked" | "private_locked";
                         serverPlan: "free" | "hobby" | "pro";
-                        product: "byos" | "shield_proxy" | "cloud_platform";
+                        product: "byos" | "shield_proxy" | "cloud_platform" | "byos_managed";
                         platformVersion: string | null;
                         billingInterval: "monthly" | "annual";
                         billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
@@ -2267,7 +2296,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                         preferredApp: string | null;
                         securityTier: "standard" | "web_locked" | "private_locked";
                         serverPlan: "free" | "hobby" | "pro";
-                        product: "byos" | "shield_proxy" | "cloud_platform";
+                        product: "byos" | "shield_proxy" | "cloud_platform" | "byos_managed";
                         platformVersion: string | null;
                         billingInterval: "monthly" | "annual";
                         billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
@@ -2351,7 +2380,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     preferredApp: string | null;
                     securityTier: "standard" | "web_locked" | "private_locked";
                     serverPlan: "free" | "hobby" | "pro";
-                    product: "byos" | "shield_proxy" | "cloud_platform";
+                    product: "byos" | "shield_proxy" | "cloud_platform" | "byos_managed";
                     platformVersion: string | null;
                     billingInterval: "monthly" | "annual";
                     billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
@@ -2469,7 +2498,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     preferredApp: string | null;
                     securityTier: "standard" | "web_locked" | "private_locked";
                     serverPlan: "free" | "hobby" | "pro";
-                    product: "byos" | "shield_proxy" | "cloud_platform";
+                    product: "byos" | "shield_proxy" | "cloud_platform" | "byos_managed";
                     platformVersion: string | null;
                     billingInterval: "monthly" | "annual";
                     billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
@@ -6510,7 +6539,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         $post: {
             input: {
                 json: {
-                    product: "shield_proxy" | "cloud_platform";
+                    product: "shield_proxy" | "cloud_platform" | "byos_managed";
                     plan?: "hobby" | "pro" | undefined;
                     interval?: "monthly" | "annual" | undefined;
                 };
@@ -6523,7 +6552,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    product: "shield_proxy" | "cloud_platform";
+                    product: "shield_proxy" | "cloud_platform" | "byos_managed";
                     plan?: "hobby" | "pro" | undefined;
                     interval?: "monthly" | "annual" | undefined;
                 };
@@ -6536,7 +6565,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    product: "shield_proxy" | "cloud_platform";
+                    product: "shield_proxy" | "cloud_platform" | "byos_managed";
                     plan?: "hobby" | "pro" | undefined;
                     interval?: "monthly" | "annual" | undefined;
                 };
@@ -6549,7 +6578,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    product: "shield_proxy" | "cloud_platform";
+                    product: "shield_proxy" | "cloud_platform" | "byos_managed";
                     plan?: "hobby" | "pro" | undefined;
                     interval?: "monthly" | "annual" | undefined;
                 };
@@ -8045,6 +8074,722 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         };
     };
 }, "/api/push"> | import("hono/types").MergeSchemaPath<{
+    "/verify-token": {
+        $get: {
+            input: {};
+            output: {
+                valid: false;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                valid: true;
+                userId: string;
+                serverId: string;
+                product: "byos" | "shield_proxy" | "cloud_platform" | "byos_managed";
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+}, "/api/byos"> | import("hono/types").MergeSchemaPath<{
+    "/current": {
+        $get: {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {};
+            output: {
+                version: string;
+                publishedAt: string;
+                vm: import("hono/utils/types").JSONValue;
+                cli: import("hono/utils/types").JSONValue;
+                bundles: import("hono/utils/types").JSONValue;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/": {
+        $post: {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 409;
+        } | {
+            input: {};
+            output: {
+                id: string;
+                version: string;
+            };
+            outputFormat: "json";
+            status: 201;
+        };
+    };
+}, "/api/byos/manifest"> | import("hono/types").MergeSchemaPath<{
+    "/checkout": {
+        $post: {
+            input: {
+                json: {
+                    serverId: string;
+                    interval?: "monthly" | "annual" | undefined;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                json: {
+                    serverId: string;
+                    interval?: "monthly" | "annual" | undefined;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {
+                json: {
+                    serverId: string;
+                    interval?: "monthly" | "annual" | undefined;
+                };
+            };
+            output: {
+                checkoutUrl: string | null;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/cli-checkout": {
+        $post: {
+            input: {
+                json: {
+                    interval?: "monthly" | "annual" | undefined;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                json: {
+                    interval?: "monthly" | "annual" | undefined;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {
+                json: {
+                    interval?: "monthly" | "annual" | undefined;
+                };
+            };
+            output: {
+                checkoutUrl: string | null;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/activate": {
+        $post: {
+            input: {
+                json: {
+                    serverId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                json: {
+                    serverId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                json: {
+                    serverId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {
+                json: {
+                    serverId: string;
+                };
+            };
+            output: {
+                activated: true;
+                originTag: string;
+                aiHost: string;
+                appHost: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/deactivate": {
+        $post: {
+            input: {
+                json: {
+                    serverId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                json: {
+                    serverId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {
+                json: {
+                    serverId: string;
+                };
+            };
+            output: {
+                deactivated: true;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/ip-change": {
+        $post: {
+            input: {
+                json: {
+                    newIpAddress: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                json: {
+                    newIpAddress: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 403;
+        } | {
+            input: {
+                json: {
+                    newIpAddress: string;
+                };
+            };
+            output: {
+                updated: true;
+                originTag: string;
+                previousIp: string | null;
+                newIp: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+}, "/api/byos/managed"> | import("hono/types").MergeSchemaPath<{
+    "/upload-url": {
+        $post: {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 403;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 503;
+        } | {
+            input: {};
+            output: {
+                backupId: `${string}-${string}-${string}-${string}-${string}`;
+                uploadUrl: string;
+                r2Key: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/complete": {
+        $post: {
+            input: {
+                json: {
+                    sha256: string;
+                    version: string;
+                    sizeBytes: number;
+                    backupType?: "manual" | "daily" | "weekly" | undefined;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                json: {
+                    sha256: string;
+                    version: string;
+                    sizeBytes: number;
+                    backupType?: "manual" | "daily" | "weekly" | undefined;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 403;
+        } | {
+            input: {
+                json: {
+                    sha256: string;
+                    version: string;
+                    sizeBytes: number;
+                    backupType?: "manual" | "daily" | "weekly" | undefined;
+                };
+            };
+            output: {
+                backupId: `${string}-${string}-${string}-${string}-${string}`;
+                expiresAt: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/:serverId": {
+        $get: {
+            input: {
+                param: {
+                    serverId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    serverId: string;
+                };
+            };
+            output: {
+                backups: {
+                    id: string;
+                    version: string;
+                    sizeBytes: number;
+                    createdAt: string;
+                    expiresAt: string | null;
+                    backupType: string;
+                }[];
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/:serverId/restore": {
+        $post: {
+            input: {
+                json: {
+                    backupId: string;
+                };
+            } & {
+                param: {
+                    serverId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                json: {
+                    backupId: string;
+                };
+            } & {
+                param: {
+                    serverId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 503;
+        } | {
+            input: {
+                json: {
+                    backupId: string;
+                };
+            } & {
+                param: {
+                    serverId: string;
+                };
+            };
+            output: {
+                downloadUrl: string;
+                sha256: string;
+                version: string;
+                sizeBytes: number;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/trigger": {
+        $post: {
+            input: {
+                json: {
+                    serverId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                json: {
+                    serverId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 403;
+        } | {
+            input: {
+                json: {
+                    serverId: string;
+                };
+            };
+            output: {
+                triggered: true;
+                serverId: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+}, "/api/byos/backup"> | import("hono/types").MergeSchemaPath<{
+    "/init": {
+        $post: {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {};
+            output: {
+                migrationId: string;
+                serverId: string;
+                domain: string;
+                mlkemEk: string | null;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/upload-urls": {
+        $post: {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {};
+            output: {
+                urls: {
+                    [x: string]: string;
+                };
+                r2Prefix: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/download-urls": {
+        $post: {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {};
+            output: {
+                urls: {
+                    [x: string]: string;
+                };
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/:id/restore": {
+        $post: {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 500;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                status: string;
+                migrationId: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/:id/status": {
+        $get: {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                status: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/tunnel/reroute": {
+        $post: {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {};
+            output: {
+                ok: true;
+                serverId: string;
+                target: "cloud" | "tunnel";
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/:id/export": {
+        $post: {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 500;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                status: string;
+                migrationId: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/:id/cleanup": {
+        $post: {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                ok: true;
+                deleted: number;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: any;
+            };
+            outputFormat: "json";
+            status: 500;
+        };
+    };
+} & {
+    "/provision": {
+        $post: {
+            input: {};
+            output: {
+                serverId: string;
+                domain: string;
+                status: "running" | "error" | "creating" | "provisioning" | "hibernated" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 500;
+        };
+    };
+}, "/api/byos/migration"> | import("hono/types").MergeSchemaPath<{
     "/request": {
         $post: {
             input: {

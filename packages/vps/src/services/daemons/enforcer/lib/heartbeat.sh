@@ -649,6 +649,8 @@ get_command_endpoint() {
     reconfigure-caddy-domain)  echo "DIRECT reconfigure-caddy-domain" ;;
     b2b-sandbox-destroy)       echo "DIRECT b2b-sandbox-destroy" ;;
     update-signing-keyring)    echo "DIRECT update-signing-keyring" ;;
+    byos-migrate-restore)      echo "DIRECT byos-migrate-restore" ;;
+    byos-migrate-export)       echo "DIRECT byos-migrate-export" ;;
     *)                     echo "" ;;
   esac
 }
@@ -3272,6 +3274,50 @@ RABEOF
               EXEC_RESULT='{"ok":true,"status":"v3 keyring installed"}'
               log "update-signing-keyring: installed v3 key ring, restarted sovereign-shield"
             fi
+          fi
+          ;;
+
+        byos-migrate-restore)
+          log "byos-migrate-restore: starting (payload_len=${#CMD_PAYLOAD})"
+          local BMR_TOKEN
+          BMR_TOKEN=$(cat /run/shield/internal-enforcer.token 2>/dev/null)
+          if [ -z "$BMR_TOKEN" ]; then
+            EXEC_CODE="500"
+            EXEC_RESULT='{"error":"enforcer IPC token not available"}'
+          else
+            local BMR_RESPONSE
+            BMR_RESPONSE=$(curl -s -w "\n%{http_code}" --connect-timeout 10 --max-time 1800 \
+              -X POST \
+              -H "Authorization: Bearer $BMR_TOKEN" \
+              -H "x-service-name: enforcer" \
+              -H "Content-Type: application/json" \
+              -d "$CMD_PAYLOAD" \
+              "http://127.0.0.1:3005/api/internal/migration/restore" 2>/dev/null)
+            EXEC_CODE=$(echo "$BMR_RESPONSE" | tail -1)
+            EXEC_RESULT=$(echo "$BMR_RESPONSE" | sed '$d')
+            log "byos-migrate-restore: completed (HTTP $EXEC_CODE)"
+          fi
+          ;;
+
+        byos-migrate-export)
+          log "byos-migrate-export: starting (payload_len=${#CMD_PAYLOAD})"
+          local BME_TOKEN
+          BME_TOKEN=$(cat /run/shield/internal-enforcer.token 2>/dev/null)
+          if [ -z "$BME_TOKEN" ]; then
+            EXEC_CODE="500"
+            EXEC_RESULT='{"error":"enforcer IPC token not available"}'
+          else
+            local BME_RESPONSE
+            BME_RESPONSE=$(curl -s -w "\n%{http_code}" --connect-timeout 10 --max-time 1800 \
+              -X POST \
+              -H "Authorization: Bearer $BME_TOKEN" \
+              -H "x-service-name: enforcer" \
+              -H "Content-Type: application/json" \
+              -d "$CMD_PAYLOAD" \
+              "http://127.0.0.1:3005/api/internal/migration/export" 2>/dev/null)
+            EXEC_CODE=$(echo "$BME_RESPONSE" | tail -1)
+            EXEC_RESULT=$(echo "$BME_RESPONSE" | sed '$d')
+            log "byos-migrate-export: completed (HTTP $EXEC_CODE)"
           fi
           ;;
 
