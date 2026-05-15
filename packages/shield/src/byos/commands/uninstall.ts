@@ -2,12 +2,28 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { parseArgs } from '../../lib/flags';
 import { info, status, success } from '../../lib/output';
+import { registerCommand, showCommandHelp } from '../../lib/help';
 import { prompt } from '../../lib/context';
 import { isEngineReachable } from '../../lib/engine-client';
 import { detectPlatform } from '../vm/platform';
 
+registerCommand({
+  name: 'uninstall',
+  summary: 'Remove ellul desktop',
+  usage: 'ellul uninstall [--purge] [--yes]',
+  flags: [
+    { name: 'purge', description: 'Also remove vault data (irreversible)' },
+    { name: 'yes', description: 'Skip confirmation prompt' },
+  ],
+  examples: ['ellul uninstall', 'ellul uninstall --purge --yes'],
+});
+
 export async function handleUninstall(args: string[]): Promise<void> {
   const parsed = parseArgs(args);
+  if (parsed.has('help')) {
+    showCommandHelp('uninstall');
+    process.exit(0);
+  }
   const purge = parsed.has('purge');
   const yes = parsed.has('yes');
 
@@ -19,7 +35,8 @@ export async function handleUninstall(args: string[]): Promise<void> {
     const answer = await prompt(`${msg}\nContinue? [y/N] `);
     if (answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
       info('uninstall', 'Cancelled.');
-      process.exit(0);
+      success({ cancelled: true });
+      return;
     }
   }
 

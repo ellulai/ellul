@@ -1,30 +1,61 @@
+import * as crypto from 'crypto';
 import { execFileSync } from 'child_process';
-import { info, fail, status, success, EXIT, isJsonMode } from '../../lib/output';
+import { parseArgs } from '../../lib/flags';
+import { info, fail, status, success, EXIT } from '../../lib/output';
+import { registerCommand, showCommandHelp } from '../../lib/help';
 import { readConfig, writeConfig } from '../../lib/byos-config';
 
 const AUTH_URL = 'https://ellul.ai/cli/auth';
 
-export async function handleConnect(_args: string[]): Promise<void> {
+registerCommand({
+  name: 'connect',
+  summary: 'Link to ellul.ai cloud account',
+  usage: 'ellul connect',
+  examples: ['ellul connect'],
+});
+
+export async function handleConnect(args: string[]): Promise<void> {
+  const parsed = parseArgs(args);
+  if (parsed.has('help')) {
+    showCommandHelp('connect');
+    process.exit(0);
+  }
+
+  const existingConfig = readConfig();
+  if (existingConfig.auth?.token) {
+    try {
+      const verify = await fetch('https://api.ellul.ai/api/byos/verify-token', {
+        headers: { Authorization: `Bearer ${existingConfig.auth.token}` },
+      });
+      if (verify.ok) {
+        status('✓', `Already authenticated as ${existingConfig.auth.email}`);
+        success({ email: existingConfig.auth.email, authenticated: true });
+        return;
+      }
+    } catch {}
+  }
+
+  const sessionId = crypto.randomBytes(16).toString('hex');
+  const authUrlWithSession = `${AUTH_URL}?session=${sessionId}`;
+
   info('connect', 'Linking to ellul.ai cloud account...');
   info('connect', 'Opening browser for authentication...');
 
   try {
     if (process.platform === 'darwin') {
-      execFileSync('open', [AUTH_URL], { stdio: 'ignore' });
+      execFileSync('open', [authUrlWithSession], { stdio: 'ignore' });
     } else if (process.platform === 'win32') {
-      execFileSync('cmd', ['/c', 'start', AUTH_URL], { stdio: 'ignore' });
+      execFileSync('cmd', ['/c', 'start', authUrlWithSession], { stdio: 'ignore' });
     } else {
-      execFileSync('xdg-open', [AUTH_URL], { stdio: 'ignore' });
+      execFileSync('xdg-open', [authUrlWithSession], { stdio: 'ignore' });
     }
   } catch {
-    info('connect', `Open this URL in your browser: ${AUTH_URL}`);
+    info('connect', `Open this URL in your browser: ${authUrlWithSession}`);
   }
 
   info('connect', 'Waiting for authentication...');
 
-  const deadline = Date.now() + 300000; // 5 min
-  let token = '';
-  let email = '';
+  const deadline = Date.now() + 300_000;
 
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, 2000));
@@ -33,8 +64,10 @@ export async function handleConnect(_args: string[]): Promise<void> {
       const res = await fetch(`${AUTH_URL}/poll`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session: sessionId }),
       });
       if (!res.ok) continue;
+
       const data = (await res.json()) as {
         status: string;
         token?: string;
@@ -43,19 +76,16 @@ export async function handleConnect(_args: string[]): Promise<void> {
       };
 
       if (data.status === 'authenticated' && data.token) {
-        token = data.token;
-        email = data.email || '';
-
         const config = readConfig();
         config.auth = {
-          token,
-          email,
+          token: data.token,
+          email: data.email || '',
           expiresAt: data.expiresAt || new Date(Date.now() + 86400000 * 30).toISOString(),
         };
         writeConfig(config);
 
-        status('✓', `Authenticated as ${email}`);
-        success({ email, authenticated: true });
+        status('✓', `Authenticated as ${data.email}`);
+        success({ email: data.email, authenticated: true });
         return;
       }
     } catch {}

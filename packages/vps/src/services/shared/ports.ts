@@ -54,12 +54,6 @@ export const PORT_REGISTRY = {
     bind: '127.0.0.1',
     reachable: 'localhost only; agent blocked by warden OUTPUT DROP',
   },
-  IDE: {
-    port: 3003,
-    service: 'ellul-ide',
-    bind: '127.0.0.1',
-    reachable: 'localhost only; gateway DNATs /ide/* via caddy',
-  },
   SOVEREIGN_SHIELD: {
     port: 3005,
     service: 'ellul-sovereign-shield',

@@ -196,8 +196,8 @@ export function registerInternalRoutes(app: Hono, hostname: string): void {
     return c.json(summary);
   });
 
-  // ── IDE Terminal Env Injection (Zero-Possession) ───────────────────────
-  // ellul-code-terminal sources export lines inside the namespace, then deletes them.
+  // ── Namespace Env Injection (Zero-Possession) ──────────────────────────
+  // Callers source export lines inside the namespace, then delete them.
   // Secrets never touch disk inside the namespace.
   // Values are single-quote escaped; env names POSIX-validated (shell injection defense).
   app.get('/api/internal/env/:project', async (c) => {

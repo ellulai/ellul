@@ -66,7 +66,6 @@ export const CAPABILITIES = {
     'bridge-operations',
     'infra-confirm',
     'heartbeat-reset',
-    'ide',
   ] as const,
 };
 
@@ -90,5 +89,4 @@ export const FEATURE_DESCRIPTIONS: Record<(typeof CAPABILITIES.features)[number]
   'bridge-operations': 'VPS-driven kill-ports, git, deployment (passkey-only)',
   'infra-confirm': 'Passkey-gated confirmation tokens for dangerous daemon operations',
   'heartbeat-reset': 'Manual heartbeat key reset from dashboard',
-  'ide': 'VS Code IDE (code-server)',
 };

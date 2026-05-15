@@ -149,8 +149,6 @@ export const AI_CLI_HASHES: Record<string, string> = {
 // ══════════════════════════════════════════════════════════════════════
 
 export const BINARY_VERSIONS = {
-  /** code-server release tag */
-  codeServer: "4.96.4",
   /** ttyd release tag */
   ttyd: "1.7.7",
   /** NVM install script version */

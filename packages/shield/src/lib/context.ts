@@ -12,7 +12,7 @@ import * as readline from 'readline';
 import { EXIT, fail } from './output';
 
 export interface ProjectJson {
-  projectId: string;
+  projectId?: string;
   projectSlug: string;
   projectName: string;
   mode?: 'cloud' | 'local' | 'byos';

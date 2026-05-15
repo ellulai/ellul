@@ -37,11 +37,6 @@ export {
   getAgentBridgeSocketUnit,
 } from './backends/agent-bridge/bundle';
 
-export {
-  getIdeService,
-  getIdeShellWrapper,
-} from './backends/ide/bundle';
-
 // ── Daemons (background processes) ──
 export {
   getEnforcerScript,

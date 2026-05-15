@@ -25,7 +25,13 @@ export function getSocketPath(): string {
 }
 
 export function isEngineReachable(): boolean {
-  return getSocketPath() !== '';
+  const sock = getSocketPath();
+  if (!sock) return false;
+  try {
+    return fs.statSync(sock).isSocket();
+  } catch {
+    return false;
+  }
 }
 
 export function requireEngine(tag: string): string {
@@ -78,7 +84,70 @@ export async function engineCall(
 
     conn.on('error', (e) => {
       clearTimeout(timer);
+      conn.destroy();
       reject(new Error(`engine connection failed: ${e.message}`));
+    });
+  });
+}
+
+export async function engineCallStreaming(
+  method: string,
+  params: Record<string, unknown>,
+  onProgress: (msg: string) => void,
+  timeoutMs = 600000,
+): Promise<unknown> {
+  const sockPath = requireEngine(method);
+
+  return new Promise((resolve, reject) => {
+    const id = ++rpcId;
+    const conn = net.createConnection(sockPath);
+    let settled = false;
+    const timer = setTimeout(() => {
+      conn.destroy();
+      if (!settled) { settled = true; reject(new Error('engine request timed out')); }
+    }, timeoutMs);
+
+    conn.on('connect', () => {
+      conn.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n');
+    });
+
+    let buf = '';
+    conn.on('data', (chunk: Buffer) => {
+      buf += chunk.toString();
+      let idx: number;
+      while ((idx = buf.indexOf('\n')) !== -1) {
+        const line = buf.slice(0, idx);
+        buf = buf.slice(idx + 1);
+        if (!line.trim()) continue;
+        try {
+          const resp = JSON.parse(line);
+          if (resp.error) {
+            clearTimeout(timer);
+            conn.destroy();
+            if (!settled) { settled = true; reject(new Error(resp.error.message)); }
+            return;
+          }
+          if (resp.result?.done) {
+            clearTimeout(timer);
+            conn.destroy();
+            if (!settled) { settled = true; resolve(resp.result); }
+            return;
+          }
+          if (resp.result?.line != null) {
+            onProgress(String(resp.result.line));
+          }
+        } catch {}
+      }
+    });
+
+    conn.on('close', () => {
+      clearTimeout(timer);
+      if (!settled) { settled = true; reject(new Error('engine connection closed unexpectedly')); }
+    });
+    conn.on('error', (e) => {
+      clearTimeout(timer);
+      conn.destroy();
+      if (!settled) { settled = true; reject(new Error(`engine connection failed: ${e.message}`)); }
     });
   });
 }
@@ -119,7 +188,15 @@ export function streamEngineOutput(
     }
   });
 
-  conn.on('close', onEnd);
+  conn.on('close', () => {
+    if (buf.trim()) {
+      try {
+        const resp = JSON.parse(buf);
+        if (resp.result?.line != null) onLine(resp.result.line);
+      } catch {}
+    }
+    onEnd();
+  });
   conn.on('error', () => onEnd());
 
   return () => conn.destroy();

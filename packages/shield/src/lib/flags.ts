@@ -27,7 +27,7 @@ export interface ParsedArgs {
 /** Known boolean flags that never consume the next argument */
 const BOOLEAN_FLAGS = new Set([
   'help', 'json', 'version', 'force', 'yes', 'dry-run', 'auto', 'stdin', 'detach',
-  'follow', 'purge', 'cli', 'services', 'vm', 'trust-cert',
+  'follow', 'purge', 'cli', 'services', 'vm', 'trust-cert', 'export', 'import', 'resume',
 ]);
 
 export function parseArgs(argv: string[]): ParsedArgs {

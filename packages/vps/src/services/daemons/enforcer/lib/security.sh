@@ -375,18 +375,16 @@ check_security_invariants() {
     fi
   fi
 
-  # ── CHECK 5 [CRITICAL]: seccomp binary exists and is executable (Linux only) ──
-  if [ "$IS_MACOS" != true ]; then
-    if [ ! -x /usr/local/bin/ellul-seccomp-exec ]; then
-      log "SECURITY CRITICAL: seccomp binary missing — attempting recompilation"
-      VIOLATIONS=$((VIOLATIONS + 1))
-      CRITICAL=$((CRITICAL + 1))
-      _recompile_seccomp
-    fi
+  # ── CHECK 5 [CRITICAL]: seccomp binary exists and is executable ──
+  if [ ! -x /usr/local/bin/ellul-seccomp-exec ]; then
+    log "SECURITY CRITICAL: seccomp binary missing — attempting recompilation"
+    VIOLATIONS=$((VIOLATIONS + 1))
+    CRITICAL=$((CRITICAL + 1))
+    _recompile_seccomp
   fi
 
   # ── CHECK 6 [CRITICAL]: sovereign-shield bound to 127.0.0.1 only ──
-  if [ "$IS_MACOS" != true ] && command -v ss &>/dev/null; then
+  if command -v ss &>/dev/null; then
     local SHIELD_LISTEN
     SHIELD_LISTEN=$(ss -tlnH sport = :3005 2>/dev/null | grep -v '127\.0\.0\.1' | grep -v '::1' || true)
     if [ -n "$SHIELD_LISTEN" ]; then
@@ -420,7 +418,7 @@ check_security_invariants() {
   # ── CHECK 9 [WARNING]: File integrity monitoring ──
   # Compares SHA-256 checksums of critical files against baseline.
   # Baseline generated on first run; violations indicate tampering.
-  if [ "$IS_MACOS" != true ] && [ -x /usr/local/bin/ellul-file-integrity ]; then
+  if [ -x /usr/local/bin/ellul-file-integrity ]; then
     local FIM_RESULT
     FIM_RESULT=$(/usr/local/bin/ellul-file-integrity check 2>/dev/null || echo '{"violations":0,"status":"error"}')
     local FIM_VIOLATIONS

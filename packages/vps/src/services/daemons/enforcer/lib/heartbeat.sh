@@ -2308,7 +2308,7 @@ poll_and_execute_commands() {
             # PG writes to its data dir. Both must be quiescent before copy.
             touch /run/ellul-luks-format.lock
             systemctl stop ellul-agent-bridge ellul-file-api ellul-watchdog \
-              ellul-term-proxy ellul-ide ellul-preview ellul-perf-monitor 2>/dev/null || true
+              ellul-term-proxy ellul-preview ellul-perf-monitor 2>/dev/null || true
             systemctl stop ellul-sovereign-shield 2>/dev/null || true
             systemctl stop caddy 2>/dev/null || true
             if systemctl is-active --quiet postgresql 2>/dev/null; then
@@ -2849,7 +2849,7 @@ poll_and_execute_commands() {
 
           # Stop all services that use the volume
           systemctl stop ellul-agent-bridge ellul-file-api ellul-watchdog \
-            ellul-term-proxy ellul-ide ellul-preview ellul-perf-monitor 2>/dev/null || true
+            ellul-term-proxy ellul-preview ellul-perf-monitor 2>/dev/null || true
           systemctl stop ellul-sovereign-shield 2>/dev/null || true
           systemctl stop caddy 2>/dev/null || true
           if systemctl is-active --quiet postgresql 2>/dev/null; then

@@ -2,10 +2,22 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { parseArgs } from '../../lib/flags';
 import { info, fail, status, success, EXIT } from '../../lib/output';
+import { registerCommand, showCommandHelp } from '../../lib/help';
 import { engineCall, isEngineReachable } from '../../lib/engine-client';
+
+registerCommand({
+  name: 'init',
+  summary: 'Register project with engine',
+  usage: 'ellul init [path]',
+  examples: ['ellul init', 'ellul init ./my-app', 'ellul init --json'],
+});
 
 export async function handleInit(args: string[]): Promise<void> {
   const parsed = parseArgs(args);
+  if (parsed.has('help')) {
+    showCommandHelp('init');
+    process.exit(0);
+  }
   const targetPath = parsed.positional[0]
     ? path.resolve(parsed.positional[0])
     : process.cwd();

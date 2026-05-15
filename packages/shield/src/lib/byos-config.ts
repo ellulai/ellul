@@ -86,3 +86,43 @@ export function configExists(): boolean {
 export function ensureConfigDir(): void {
   fs.mkdirSync(CONFIG_DIR, { recursive: true });
 }
+
+export interface MigrationFileEntry {
+  name: string;
+  iv: string;
+  authTag: string;
+  sha256: string;
+  size: number;
+}
+
+export interface MigrationState {
+  migrationId: string;
+  direction: 'to_cloud' | 'to_local';
+  phase: number;
+  startedAt: string;
+  lastPhaseAt: string;
+  serverId?: string;
+  domain?: string;
+  mlkemCt?: string;
+  r2Prefix?: string;
+  encryptedFiles?: MigrationFileEntry[];
+}
+
+const MIGRATION_STATE_PATH = path.join(CONFIG_DIR, 'migration-state.json');
+
+export function readMigrationState(): MigrationState | null {
+  try {
+    return JSON.parse(fs.readFileSync(MIGRATION_STATE_PATH, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+export function writeMigrationState(state: MigrationState): void {
+  fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  fs.writeFileSync(MIGRATION_STATE_PATH, JSON.stringify(state, null, 2) + '\n', { mode: 0o600 });
+}
+
+export function clearMigrationState(): void {
+  try { fs.unlinkSync(MIGRATION_STATE_PATH); } catch {}
+}

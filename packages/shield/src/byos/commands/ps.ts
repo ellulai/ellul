@@ -1,5 +1,14 @@
+import { parseArgs } from '../../lib/flags';
 import { fail, success, EXIT, isJsonMode } from '../../lib/output';
+import { registerCommand, showCommandHelp } from '../../lib/help';
 import { engineCall } from '../../lib/engine-client';
+
+registerCommand({
+  name: 'ps',
+  summary: 'Show running services and projects',
+  usage: 'ellul ps',
+  examples: ['ellul ps', 'ellul ps --json'],
+});
 
 interface ServiceInfo {
   name: string;
@@ -9,7 +18,13 @@ interface ServiceInfo {
   memory: string;
 }
 
-export async function handlePs(_args: string[]): Promise<void> {
+export async function handlePs(args: string[]): Promise<void> {
+  const parsed = parseArgs(args);
+  if (parsed.has('help')) {
+    showCommandHelp('ps');
+    process.exit(0);
+  }
+
   let result: { uptime: number; services?: Record<string, { active: boolean; pid?: number; port?: number; memory?: string }> };
   try {
     result = (await engineCall('status')) as typeof result;

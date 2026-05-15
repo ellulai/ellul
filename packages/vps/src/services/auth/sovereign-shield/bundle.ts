@@ -195,7 +195,7 @@ export function getLuksBootService(): string {
 Description=ellul LUKS Volume Boot
 DefaultDependencies=no
 After=local-fs.target ellul-shield-prereq.service
-Before=caddy.service postgresql.service ellul-sovereign-shield.service ellul-enforcer.service ellul-file-api.service ellul-agent-bridge.service ellul-ide.service ellul-watchdog.service ellul-term-proxy.service ellul-perf-monitor.service
+Before=caddy.service postgresql.service ellul-sovereign-shield.service ellul-enforcer.service ellul-file-api.service ellul-agent-bridge.service ellul-watchdog.service ellul-term-proxy.service ellul-perf-monitor.service
 
 [Service]
 Type=oneshot

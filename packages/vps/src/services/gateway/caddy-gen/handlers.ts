@@ -14,8 +14,6 @@ const SHIELD_PORT = PORT_REGISTRY.SOVEREIGN_SHIELD.port;
 const TERM_PROXY_PORT = PORT_REGISTRY.TERM_PROXY.port;
 const FILE_API_PORT = PORT_REGISTRY.FILE_API.port;
 const AGENT_BRIDGE_PORT = PORT_REGISTRY.AGENT_BRIDGE.port;
-const IDE_PORT = PORT_REGISTRY.IDE.port;
-
 // 127.0.0.1 literal — `localhost` resolves IPv6-first via Go, internal services IPv4-only → 502.
 const UPSTREAM_HOST = "127.0.0.1";
 
@@ -76,13 +74,12 @@ interface AuthedRoute {
   cors?: { methods: string; headers: string };
   /** Enable streaming mode (flush_interval -1) for WebSocket/SSE backends */
   streaming?: boolean;
-  /** Use handle_path (strip prefix) instead of handle. Required when the backend
-   * doesn't understand the path prefix (e.g. code-server has no --base-path). */
+  /** Use handle_path (strip prefix) instead of handle. */
   stripPrefix?: boolean;
 }
 
 // Build route list based on which services are provisioned.
-// On governance tier, agent-bridge/term-proxy/ide don't exist — their routes are omitted.
+// On governance tier, agent-bridge/term-proxy don't exist — their routes are omitted.
 // Evaluated lazily (not at import time) because caddy-gen is bundled at provisioning
 // but also runs as a CLI on the VPS. The fs check only makes sense on the VPS.
 import { existsSync } from 'fs';
@@ -93,7 +90,6 @@ function getAuthedRoutes(): AuthedRoute[] {
   const isVps = existsSync('/etc/ellul-bootstrap/server-id');
   const hasTermProxy = !isVps || existsSync('/etc/systemd/system/ellul-term-proxy.service');
   const hasAgentBridge = !isVps || existsSync('/etc/systemd/system/ellul-agent-bridge.service');
-  const hasIde = !isVps || existsSync('/etc/systemd/system/ellul-ide.service');
   const hasFileApi = !isVps || existsSync('/etc/systemd/system/ellul-file-api.service');
 
   return [
@@ -105,9 +101,6 @@ function getAuthedRoutes(): AuthedRoute[] {
     ] as AuthedRoute[] : []),
     ...(hasAgentBridge ? [
       { path: "/ws", backend: AGENT_BRIDGE_PORT, streaming: true },
-    ] as AuthedRoute[] : []),
-    ...(hasIde ? [
-      { path: "/ide/*", backend: IDE_PORT, streaming: true, stripPrefix: true },
     ] as AuthedRoute[] : []),
     // Same-origin read-path for chat SPA: CF %2F normalization breaks PoP on -code paths.
     // forward_auth + resolveProjectDir enforce safety.

@@ -1,11 +1,26 @@
 import { parseArgs } from '../../lib/flags';
 import { info, fail, status, success, EXIT } from '../../lib/output';
+import { registerCommand, showCommandHelp } from '../../lib/help';
 import { isEngineReachable, engineCall, streamEngineOutput } from '../../lib/engine-client';
 import { readConfig, writeConfig, ensureConfigDir } from '../../lib/byos-config';
 import { detectPlatform } from '../vm/platform';
 
+registerCommand({
+  name: 'up',
+  summary: 'Start workspace (VM + engine)',
+  usage: 'ellul up [--detach]',
+  flags: [
+    { name: 'detach', description: 'Run in background (no log streaming)' },
+  ],
+  examples: ['ellul up', 'ellul up --detach'],
+});
+
 export async function handleUp(args: string[]): Promise<void> {
   const parsed = parseArgs(args);
+  if (parsed.has('help')) {
+    showCommandHelp('up');
+    process.exit(0);
+  }
   const detach = parsed.has('detach');
   const platform = detectPlatform();
 
@@ -71,10 +86,12 @@ export async function handleUp(args: string[]): Promise<void> {
     fail(EXIT.NETWORK, 'up', 'Engine did not start within 60 seconds.', 'Check logs with: ellul logs engine');
   }
 
-  const result = (await engineCall('status')) as {
-    uptime: number;
-    services?: Record<string, { active: boolean }>;
-  };
+  let result: { uptime: number; services?: Record<string, { active: boolean }> };
+  try {
+    result = (await engineCall('status')) as typeof result;
+  } catch (e: unknown) {
+    fail(EXIT.NETWORK, 'up', `Engine reachable but status call failed: ${e instanceof Error ? e.message : e}`);
+  }
   status('✓', `Engine running (uptime: ${result.uptime}s)`);
 
   if (result.services) {

@@ -64,6 +64,7 @@ import { registerStsRoutes } from './sts.routes';
 import { registerDeviceRoutes } from './device.routes';
 import { registerPromotionRoutes } from './promotion.routes';
 import { registerDowngradeRoutes } from './downgrade.routes';
+import { registerMigrationRoutes } from './migration.routes';
 import { registerVaultRoutes } from './vault.routes';
 import { registerVaultInternalRoutes } from './vault-internal.routes';
 import {
@@ -212,6 +213,9 @@ export function registerAllRoutes(app: Hono, config: RouteConfig): void {
 
   // Downgrade API (VPS → local state repatriation)
   registerDowngradeRoutes(app);
+
+  // Migration bridge (passkey re-enrollment during local↔cloud migration)
+  registerMigrationRoutes(app, config.hostname);
 
   // Vault API (Scoped Knowledge Vault — Obsidian-like knowledge layer)
   registerVaultRoutes(app);

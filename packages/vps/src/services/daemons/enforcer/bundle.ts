@@ -1103,44 +1103,6 @@ WantedBy=multi-user.target`;
 }
 
 /**
- * Get the launchd plist for macOS BYOS deployments.
- *
- * @param aiProxyToken - The server's AI proxy token for authentication
- */
-export function getEnforcerLaunchdPlist(aiProxyToken: string): string {
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>ai.ellul.enforcer</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/usr/local/bin/ellul-env</string>
-        <string>daemon</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>ThrottleInterval</key>
-    <integer>10</integer>
-    <key>EnvironmentVariables</key>
-    <dict>
-        <key>ELLUL_AI_TOKEN</key>
-        <string>${aiProxyToken}</string>
-        <key>PATH</key>
-        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
-    </dict>
-    <key>StandardOutPath</key>
-    <string>/var/log/ellul-enforcer.log</string>
-    <key>StandardErrorPath</key>
-    <string>/var/log/ellul-enforcer.log</string>
-</dict>
-</plist>`;
-}
-
-/**
  * Invalidate the script cache (useful for development).
  */
 export function invalidateScriptCache(): void {

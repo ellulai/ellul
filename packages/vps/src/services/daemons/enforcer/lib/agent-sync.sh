@@ -1075,10 +1075,6 @@ ensure_bin_symlink() {
       fi
       return 0
       ;;
-    ide)
-      bin=/usr/local/bin/ellul-ide
-      dst=/opt/ellul/releases/ide/current/ellul-ide
-      ;;
     *)
       return 0
       ;;
@@ -1482,7 +1478,7 @@ stage_component() {
   # Shape validation — refuse weird versions + unknown components
   [[ "$ver" =~ ^[A-Za-z0-9._+-]{1,64}$ ]] || { log "agent-sync: invalid version '$ver' for $name"; return 1; }
   case "$name" in
-    ellul-env|ellul-mount-volume|ellul-crypto|ellul-namespaced|core-runtime|ide) ;;
+    ellul-env|ellul-mount-volume|ellul-crypto|ellul-namespaced|core-runtime) ;;
     *) log "agent-sync: unknown component $name — rejecting"; return 1 ;;
   esac
 
@@ -1505,7 +1501,6 @@ stage_component() {
       ellul-crypto)                    primary_file="$target/ellul-crypto" ;;
       ellul-namespaced)                primary_file="$target/amd64/ellul-namespaced" ;; # tarball spot-check; cache verified via .agent-sha256
       core-runtime)                      primary_file="$target/file-api.js" ;; # spot-check
-      ide)                               primary_file="$target/ellul-ide" ;;
       *)                                 primary_file="" ;;
     esac
     if [ -n "$primary_file" ] && [ -f "$primary_file" ]; then
@@ -1685,7 +1680,7 @@ apply_component() {
   # Partition the unit list: restart the ones actually installed on this
   # host, warn-and-skip the ones that aren't. Pre-fix behaviour was a hard
   # cascade-bail when ANY listed unit was unknown to systemd — that turned
-  # a build-shipping-a-placeholder (ide without ellul-ide.service) into a
+  # a build-shipping-a-placeholder (component without matching .service) into a
   # permanently-bricked enforcer loop, because apply_manifest_components
   # returned 1 every heartbeat and the deferred ellul-env self-update never
   # ran. The component is already extracted and symlinked on disk; not
@@ -2353,24 +2348,14 @@ collect_systemd_health() {
   local out='{}'
   local u state
   for u in "${units[@]}"; do
-    if [ "$IS_MACOS" = "true" ]; then
-      # Parity on darwin dev boxes: just report "unknown" so the ping
-      # still lands. macOS dev isn't the fleet target, this keeps the
-      # path compilable for local testing.
-      state="unknown"
+    if systemctl list-unit-files --no-legend "$u.service" 2>/dev/null | grep -q "^$u.service"; then
+      state=$(systemctl is-active "$u" 2>/dev/null || echo "unknown")
+      case "$state" in
+        active|activating|inactive|failed) ;;
+        *) state="unknown" ;;
+      esac
     else
-      if systemctl list-unit-files --no-legend "$u.service" 2>/dev/null | grep -q "^$u.service"; then
-        state=$(systemctl is-active "$u" 2>/dev/null || echo "unknown")
-        case "$state" in
-          active|activating|inactive|failed) ;;
-          *) state="unknown" ;;
-        esac
-      else
-        # Unit not installed on this VPS (e.g. term-proxy before a
-        # specific provisioning step). Report as unknown rather than
-        # inactive — avoids false red badges.
-        state="unknown"
-      fi
+      state="unknown"
     fi
     out=$(jq -c --arg k "$u" --arg v "$state" '. + {($k): $v}' <<< "$out" 2>/dev/null || echo "$out")
   done

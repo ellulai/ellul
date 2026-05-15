@@ -519,12 +519,6 @@ check_critical_services() {
     svc_restart ellul-agent-bridge
   fi
 
-  # Ensure IDE (code-server) is running
-  if ! svc_is_active ellul-ide; then
-    log "CRITICAL: ellul-ide is down, restarting..."
-    svc_restart ellul-ide
-  fi
-
   # Clean up orphaned preview-* PM2 processes (project dir deleted while preview ran)
   check_preview_processes
 

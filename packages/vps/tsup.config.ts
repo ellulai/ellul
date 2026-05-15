@@ -16,7 +16,6 @@ export default defineConfig({
     "services/backends/file-api/bundle": "src/services/backends/file-api/bundle.ts",
     "services/backends/agent-bridge/bundle": "src/services/backends/agent-bridge/bundle.ts",
     "services/backends/claude-launcher/bundle": "src/services/backends/claude-launcher/bundle.ts",
-    "services/backends/ide/bundle": "src/services/backends/ide/bundle.ts",
     "services/auth/sovereign-shield/bundle": "src/services/auth/sovereign-shield/bundle.ts",
     "services/gateway/caddy-gen/bundle": "src/services/gateway/caddy-gen/bundle.ts",
     "services/gateway/term-proxy/index": "src/services/gateway/term-proxy/index.ts",

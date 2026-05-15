@@ -4,11 +4,28 @@ import * as os from 'os';
 import * as crypto from 'crypto';
 import { parseArgs } from '../../lib/flags';
 import { info, fail, status, success, EXIT } from '../../lib/output';
+import { registerCommand, showCommandHelp } from '../../lib/help';
 import { engineCall, isEngineReachable } from '../../lib/engine-client';
 import { detectPlatform } from '../vm/platform';
 
+registerCommand({
+  name: 'upgrade',
+  summary: 'Update CLI, services, or VM image',
+  usage: 'ellul upgrade [--cli] [--services] [--vm]',
+  flags: [
+    { name: 'cli', description: 'Update CLI binary only' },
+    { name: 'services', description: 'Update engine services only' },
+    { name: 'vm', description: 'Update VM image only' },
+  ],
+  examples: ['ellul upgrade', 'ellul upgrade --cli', 'ellul upgrade --services'],
+});
+
 export async function handleUpgrade(args: string[]): Promise<void> {
   const parsed = parseArgs(args);
+  if (parsed.has('help')) {
+    showCommandHelp('upgrade');
+    process.exit(0);
+  }
   const upgradeCli = parsed.has('cli');
   const upgradeServices = parsed.has('services');
   const upgradeVm = parsed.has('vm');
@@ -88,7 +105,8 @@ async function upgradeCLI(): Promise<void> {
 
   try {
     fs.chmodSync(tmpPath, 0o755);
-    fs.renameSync(tmpPath, binPath);
+    fs.copyFileSync(tmpPath, binPath);
+    fs.unlinkSync(tmpPath);
     status('✓', 'CLI updated');
   } catch (e: unknown) {
     try {
@@ -191,7 +209,8 @@ async function upgradeVMImage(): Promise<void> {
   await handleDown([]);
 
   fs.mkdirSync(localImageDir, { recursive: true });
-  fs.renameSync(tmpPath, localImagePath);
+  fs.copyFileSync(tmpPath, localImagePath);
+  fs.unlinkSync(tmpPath);
 
   if (platform === 'lima') {
     const { limaDelete, limaStartSync } = await import('../vm/lima');

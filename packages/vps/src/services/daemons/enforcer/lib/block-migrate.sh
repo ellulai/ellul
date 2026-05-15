@@ -390,7 +390,7 @@ block_migrate_upload() {
 
   # Stop services that write to the LUKS volume (bounded — 60s max)
   timeout 60 systemctl stop ellul-agent-bridge ellul-file-api ellul-sovereign-shield \
-    ellul-ide ellul-preview ellul-term-proxy ellul-perf-monitor \
+    ellul-preview ellul-term-proxy ellul-perf-monitor \
     ellul-watchdog caddy postgresql \
     "pm2-${SVC_USER}" 'ttyd@*' >/dev/null 2>&1 || true
 
@@ -1175,7 +1175,7 @@ block_migrate_download() {
     log "block-migrate-dl: PG checkpoint done"
   fi
   timeout 60 systemctl stop ellul-agent-bridge ellul-file-api ellul-sovereign-shield \
-    ellul-ide ellul-preview ellul-term-proxy ellul-perf-monitor \
+    ellul-preview ellul-term-proxy ellul-perf-monitor \
     ellul-watchdog caddy postgresql \
     "pm2-${SVC_USER}" 'ttyd@*' >/dev/null 2>&1 || true
   local PG_WAIT=0

@@ -4,12 +4,32 @@ import * as path from 'path';
 import { execFileSync } from 'child_process';
 import { parseArgs } from '../../lib/flags';
 import { info, fail, status, success, EXIT, isJsonMode } from '../../lib/output';
+import { registerCommand, showCommandHelp } from '../../lib/help';
 import { engineCall } from '../../lib/engine-client';
 import { readConfig, setConfigValue, getConfigValue } from '../../lib/byos-config';
 import { detectPlatform } from '../vm/platform';
 
+registerCommand({
+  name: 'config',
+  summary: 'Get or set configuration',
+  usage: 'ellul config [key] [value] [--trust-cert]',
+  flags: [
+    { name: 'trust-cert', description: 'Install Caddy root certificate in host keychain' },
+  ],
+  examples: [
+    'ellul config',
+    'ellul config vm.cpus 8',
+    'ellul config ai.provider openai',
+    'ellul config --trust-cert',
+  ],
+});
+
 export async function handleConfig(args: string[]): Promise<void> {
   const parsed = parseArgs(args);
+  if (parsed.has('help')) {
+    showCommandHelp('config');
+    process.exit(0);
+  }
 
   if (parsed.has('trust-cert')) {
     await trustCert();
@@ -74,7 +94,11 @@ async function trustCert(): Promise<void> {
     } else {
       certContent = fs.readFileSync('/etc/caddy/pki/authorities/local/root.crt', 'utf8');
     }
-  } catch {
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('EACCES') || msg.includes('Permission denied')) {
+      fail(EXIT.NETWORK, 'config', 'Permission denied reading certificate.', 'Try running with sudo.');
+    }
     fail(
       EXIT.NETWORK,
       'config',
@@ -121,7 +145,11 @@ async function trustCert(): Promise<void> {
     status('✓', 'Certificate trusted');
     success({ trusted: true });
   } catch (e: unknown) {
-    fail(EXIT.NETWORK, 'config', `Failed to install certificate: ${e instanceof Error ? e.message : e}`);
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('ENOENT') || msg.includes('not found')) {
+      fail(EXIT.USAGE, 'config', 'Required tool not found.', 'Install security tools for your platform.');
+    }
+    fail(EXIT.NETWORK, 'config', `Failed to install certificate: ${msg}`, 'You may need to run with elevated privileges.');
   } finally {
     try {
       fs.unlinkSync(tmpCert);

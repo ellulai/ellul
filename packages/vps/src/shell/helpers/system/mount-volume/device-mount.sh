@@ -76,7 +76,7 @@
         _map_sz=$(blockdev --getsize64 /dev/mapper/luks-home 2>/dev/null || echo 0)
         if [ "$_back_sz" -gt 0 ] && [ "$_map_sz" -gt 0 ] && [ "$((_back_sz - _map_sz))" -gt 67108864 ]; then
           echo "Stale LUKS mapping detected (backing=$_back_sz mapping=$_map_sz) — tearing down for fresh luksOpen" >&2
-          for _svc in ellul-agent-bridge ellul-file-api ellul-sovereign-shield caddy postgresql ellul-ide; do
+          for _svc in ellul-agent-bridge ellul-file-api ellul-sovereign-shield caddy postgresql; do
             systemctl stop "$_svc" 2>/dev/null || true
           done
           for _vbm in $(awk '/ellul-vault.*bind/ {print $2}' /etc/fstab 2>/dev/null); do

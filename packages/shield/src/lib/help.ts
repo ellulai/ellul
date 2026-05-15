@@ -135,6 +135,9 @@ export function showUnifiedHelp(mode?: ShieldMode): void {
       ['logs [svc] [--follow]', 'Stream service logs'],
       ['config [key] [val]', 'Get or set configuration'],
       ['config --trust-cert', 'Trust Caddy root certificate'],
+      ['expose [--subdomain=SUB]', 'Open relay tunnel to public URL'],
+      ['connect', 'Link to ellul.ai cloud account'],
+      ['migrate --to cloud|local', 'Migrate workspace between cloud and local'],
       ['upgrade [--cli|--services|--vm]', 'Update components'],
       ['uninstall [--purge]', 'Remove ellul desktop'],
     ];

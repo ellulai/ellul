@@ -1,3 +1,5 @@
+import { fail, EXIT } from '../../lib/output';
+
 export async function handleByosCommand(args: string[]): Promise<void> {
   const command = args[0] || '';
 
@@ -50,10 +52,25 @@ export async function handleByosCommand(args: string[]): Promise<void> {
       break;
     }
 
+    case 'expose': {
+      const { handleExpose } = await import('./expose');
+      await handleExpose(args.slice(1));
+      break;
+    }
+
+    case 'connect': {
+      const { handleConnect } = await import('./connect');
+      await handleConnect(args.slice(1));
+      break;
+    }
+
+    case 'migrate': {
+      const { handleMigrate } = await import('./migrate');
+      await handleMigrate(args.slice(1));
+      break;
+    }
+
     default:
-      process.stderr.write(
-        `Unknown command: ${command}\nRun 'ellul help' for usage.\n`,
-      );
-      process.exit(1);
+      fail(EXIT.USAGE, command || 'help', `Unknown command: ${command}`, "Run 'ellul help' for usage.");
   }
 }

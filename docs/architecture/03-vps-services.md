@@ -46,7 +46,6 @@ Sovereign Shield is the synchronous gate. If it fails its 3 startup retries, Cad
 | `ellul-preview@<name>` (template) | 4000–4099 (127.0.0.1) | `dev` : `dev` | — | `packages/vps/src/scripts/workflow/preview/instance-launcher.sh` |
 | `ttyd@<session>` (template) | 7710–7799 (127.0.0.1) | `dev` : `dev` | — | dynamically allocated by agent-bridge |
 | `postgresql` | 5432 (127.0.0.1) | `postgres:postgres` | — | system package |
-| `ellul-ide` (governance only) | 3003 (127.0.0.1) | `dev` : `dev` | `shield-ipc` | `packages/vps/src/services/backends/ide/bundle.ts` |
 | `ellul-gbrain` (opt-in, 8GB+) | 7704 (127.0.0.1) | `root` | — | `/opt/ellul/gbrain/` (by Garry Tan) |
 
 ## Port registry (canonical)

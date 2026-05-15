@@ -16,7 +16,7 @@ export default defineConfig({
   target: "node20",
   platform: "node",
   // Native module — must not be bundled. Resolved at runtime only in local mode.
-  external: ["better-sqlite3"],
+  external: ["better-sqlite3", "bufferutil", "utf-8-validate"],
   define: {
     __SHIELD_VERSION__: JSON.stringify(pkg.version),
   },
