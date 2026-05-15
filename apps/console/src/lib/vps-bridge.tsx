@@ -16,6 +16,7 @@ import type { PublicKeyCredentialCreationOptionsJSON, PublicKeyCredentialRequest
 import { MOCK_MODE, mockVpsBridgeResponses } from "@/lib/mock-data";
 import { onSessionStatus } from "@/lib/session-events";
 import { isElectronApp, isAndroidApp } from "@/lib/utils";
+import { useNativeShieldAuth, type NativeInvokeFn } from "@/lib/native-shield-auth";
 import type {
   BridgeMessageType,
   BridgeResponse,
@@ -107,8 +108,6 @@ function MockVpsBridgeProvider({ children }: { children: ReactNode }) {
 
 // ── Native bridge: Electron + Android share this provider, parameterized by invoke fn ──
 
-type NativeInvokeFn = <T = unknown>(cmd: string, args?: Record<string, unknown>) => Promise<T>;
-
 const NATIVE_COMMAND_MAP: Record<string, string> = {
   check_session: "shield_check_session",
   session_keepalive: "shield_session_keepalive",
@@ -154,70 +153,17 @@ function androidInvoke<T = unknown>(cmd: string, args?: Record<string, unknown>)
 }
 
 function NativeVpsBridgeProvider({ hostname, invoke, children }: VpsBridgeProviderProps & { invoke: NativeInvokeFn }) {
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [needsVpsAuth, setNeedsVpsAuth] = useState(false);
-  const [sessionExpired, setSessionExpired] = useState(false);
-
-  useEffect(() => {
-    invoke<{ hasSession: boolean }>("shield_check_session")
-      .then((res) => {
-        if (!res.hasSession) setNeedsVpsAuth(true);
-        setReady(true);
-      })
-      .catch(() => {
-        setNeedsVpsAuth(true);
-        setReady(true);
-      });
-  }, [hostname, invoke]);
-
-  useEffect(() => {
-    if (!ready || needsVpsAuth) return;
-    let timer: ReturnType<typeof setTimeout>;
-
-    const schedule = () => {
-      invoke<{ active: boolean; expiresAt?: number }>("shield_session_info")
-        .then((info) => {
-          if (!info.active || !info.expiresAt) return;
-          const msUntilExpiry = info.expiresAt * 1000 - Date.now();
-          const refreshIn = Math.max(msUntilExpiry - 5 * 60 * 1000, 10_000);
-          timer = setTimeout(() => {
-            invoke<{ alive: boolean }>("shield_session_keepalive")
-              .then((res) => {
-                if (!res.alive) { setNeedsVpsAuth(true); setSessionExpired(true); }
-                else schedule();
-              })
-              .catch(() => { setNeedsVpsAuth(true); setSessionExpired(true); });
-          }, refreshIn);
-        })
-        .catch(() => {});
-    };
-
-    schedule();
-    return () => clearTimeout(timer);
-  }, [ready, needsVpsAuth, invoke]);
-
-  useEffect(() => {
-    const handler = () => {
-      if (document.visibilityState === "visible" && ready && !needsVpsAuth) {
-        invoke<{ hasSession: boolean }>("shield_check_session").then((res) => {
-          if (!res.hasSession) { setNeedsVpsAuth(true); setSessionExpired(true); }
-        });
-      }
-    };
-    document.addEventListener("visibilitychange", handler);
-    return () => document.removeEventListener("visibilitychange", handler);
-  }, [ready, needsVpsAuth, invoke]);
+  const auth = useNativeShieldAuth(hostname, invoke);
 
   const send = useCallback(<T = unknown,>(type: string, data: Record<string, unknown> = {}): Promise<T> => {
     const cmd = NATIVE_COMMAND_MAP[type];
     if (!cmd) return Promise.reject(new Error(`Unknown bridge message: ${type}`));
     return invoke<T>(cmd, data).catch((e) => {
       const msg = String(e);
-      if (msg.includes("No active session") || msg.includes("NoSession")) setNeedsVpsAuth(true);
+      if (msg.includes("No active session") || msg.includes("NoSession")) auth.signalAuthNeeded();
       throw e instanceof Error ? e : new Error(msg);
     });
-  }, [invoke]);
+  }, [invoke, auth]);
 
   const dummyHandle: BridgeHandle = {
     contentWindow: typeof window !== "undefined" ? window : ({} as Window),
@@ -226,80 +172,33 @@ function NativeVpsBridgeProvider({ hostname, invoke, children }: VpsBridgeProvid
   };
 
   const waitForReady = useCallback((): Promise<BridgeHandle> => {
-    if (ready && !error) return Promise.resolve(dummyHandle);
-    if (error) return Promise.reject(new Error(error));
+    if (auth.ready && !auth.error) return Promise.resolve(dummyHandle);
+    if (auth.error) return Promise.reject(new Error(auth.error));
     return new Promise<BridgeHandle>((resolve, reject) => {
       const check = setInterval(() => {
-        if (ready) { clearInterval(check); resolve(dummyHandle); }
-        if (error) { clearInterval(check); reject(new Error(error)); }
+        if (auth.ready) { clearInterval(check); resolve(dummyHandle); }
+        if (auth.error) { clearInterval(check); reject(new Error(auth.error)); }
       }, 50);
       setTimeout(() => { clearInterval(check); reject(new Error("Native bridge timeout")); }, 30_000);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, error, hostname]);
-
-  const authenticateNative = useCallback(async (): Promise<void> => {
-    const options = await invoke<PublicKeyCredentialRequestOptionsJSON>(
-      "shield_login_options",
-      { serverDomain: hostname },
-    );
-    const assertion = await startAuthentication({ optionsJSON: options });
-    await invoke("shield_login_verify", { serverDomain: hostname, assertion });
-    setNeedsVpsAuth(false);
-    setSessionExpired(false);
-  }, [hostname, invoke]);
-
-  const registerNative = useCallback(async (name: string): Promise<unknown> => {
-    const regOptions = await invoke<{ options: PublicKeyCredentialCreationOptionsJSON }>(
-      "shield_register_options",
-      { serverDomain: hostname, body: { name } },
-    );
-    const attestation = await startRegistration({ optionsJSON: regOptions.options ?? regOptions as unknown as PublicKeyCredentialCreationOptionsJSON });
-    const extResults = attestation.clientExtensionResults as Record<string, unknown> | undefined;
-    const prfEnabled = (extResults?.prf as { enabled?: boolean } | undefined)?.enabled === true;
-    return invoke("shield_register_verify", {
-      serverDomain: hostname,
-      body: { attestation, name, prfEnabled },
-    });
-  }, [hostname, invoke]);
-
-  useEffect(() => {
-    if (!ready || !needsVpsAuth || !hostname) return;
-    let cancelled = false;
-    authenticateNative().catch((err) => {
-      if (!cancelled) console.warn("[NativeBridge] auto-auth failed:", err);
-    });
-    return () => { cancelled = true; };
-  }, [ready, needsVpsAuth, hostname, authenticateNative]);
-
-  const reauthenticate = useCallback(async (): Promise<void> => {
-    await authenticateNative();
-  }, [authenticateNative]);
-
-  const signalAuthNeeded = useCallback(() => {
-    setNeedsVpsAuth(true);
-  }, []);
-
-  const reload = useCallback(() => {
-    setReady(false);
-    setError(null);
-    setNeedsVpsAuth(false);
-    setSessionExpired(false);
-    invoke("shield_clear_session")
-      .catch(() => {})
-      .finally(() => {
-        invoke<{ hasSession: boolean }>("shield_check_session")
-          .then((res) => {
-            if (!res.hasSession) setNeedsVpsAuth(true);
-            setReady(true);
-          })
-          .catch((e) => setError(String(e)));
-      });
-  }, [invoke]);
+  }, [auth.ready, auth.error, hostname]);
 
   return (
     <VpsBridgeContext.Provider
-      value={{ ready, error, needsVpsAuth, sessionExpired, send, waitForReady, reauthenticate, signalAuthNeeded, reload, authenticateNative, registerNative }}
+      value={{
+        ready: auth.ready,
+        error: auth.error,
+        needsVpsAuth: auth.needsVpsAuth,
+        sessionExpired: auth.sessionExpired,
+        send,
+        waitForReady,
+        reauthenticate: auth.authenticate,
+        signalAuthNeeded: auth.signalAuthNeeded,
+        reload: auth.reload,
+        authenticateNative: auth.authenticate,
+        registerNative: auth.register,
+      }}
     >
       {children}
     </VpsBridgeContext.Provider>
