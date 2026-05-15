@@ -122,7 +122,7 @@ export function OAuthSignIn({
 
           await tauriInvoke("plugin:native-auth|open_oauth_browser", { url: oauthUrl });
 
-          const POLL_MS = 2_000;
+          const POLL_MS = 3_000;
           const TIMEOUT_MS = 300_000;
           const start = Date.now();
           let exchangeCode: string | null = null;

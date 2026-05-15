@@ -1,4 +1,4 @@
-declare const app: import("hono/hono-base").HonoBase<{}, ({
+declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/health": {
         $get: {
             input: {};
@@ -46,7 +46,150 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
             status: 200 | 503;
         };
     };
+}) | import("hono/types").MergeSchemaPath<{
+    "/apple": {
+        $post: {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                code: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
 } & {
+    "/google": {
+        $post: {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                code: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/github": {
+        $post: {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                code: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/session": {
+        $post: {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                success: true;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/start": {
+        $get: {
+            input: {};
+            output: undefined;
+            outputFormat: "redirect";
+            status: 302;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 500;
+        };
+    };
+} & {
+    "/callback": {
+        $get: {
+            input: {};
+            output: {};
+            outputFormat: string;
+            status: import("hono/utils/http-status").StatusCode;
+        };
+    };
+} & {
+    "/poll": {
+        $get: {
+            input: {};
+            output: {
+                status: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+}, "/api/auth/native">) & {
     "/api/auth/*": {
         $post: {
             input: {};
@@ -2015,7 +2158,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
                         preferredApp: string | null;
                         securityTier: "standard" | "web_locked" | "private_locked";
                         serverPlan: "free" | "hobby" | "pro";
-                        product: "shield_proxy" | "cloud_platform";
+                        product: "byos" | "shield_proxy" | "cloud_platform";
                         platformVersion: string | null;
                         billingInterval: "monthly" | "annual";
                         billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
@@ -2108,7 +2251,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
                         preferredApp: string | null;
                         securityTier: "standard" | "web_locked" | "private_locked";
                         serverPlan: "free" | "hobby" | "pro";
-                        product: "shield_proxy" | "cloud_platform";
+                        product: "byos" | "shield_proxy" | "cloud_platform";
                         platformVersion: string | null;
                         billingInterval: "monthly" | "annual";
                         billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
@@ -2192,7 +2335,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
                     preferredApp: string | null;
                     securityTier: "standard" | "web_locked" | "private_locked";
                     serverPlan: "free" | "hobby" | "pro";
-                    product: "shield_proxy" | "cloud_platform";
+                    product: "byos" | "shield_proxy" | "cloud_platform";
                     platformVersion: string | null;
                     billingInterval: "monthly" | "annual";
                     billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
@@ -2310,7 +2453,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
                     preferredApp: string | null;
                     securityTier: "standard" | "web_locked" | "private_locked";
                     serverPlan: "free" | "hobby" | "pro";
-                    product: "shield_proxy" | "cloud_platform";
+                    product: "byos" | "shield_proxy" | "cloud_platform";
                     platformVersion: string | null;
                     billingInterval: "monthly" | "annual";
                     billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
@@ -2877,7 +3020,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
                         description: string;
                         capacity: string;
                         features: string[];
-                        engine: "ephemeral" | "persistent" | null;
+                        engine: "byos" | "ephemeral" | "persistent" | null;
                     };
                     type: "upgrade" | "downgrade" | "same";
                     priceChange: number;
@@ -7615,129 +7758,6 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
         };
     };
 }, "/api/publish"> | import("hono/types").MergeSchemaPath<{
-    "/apple": {
-        $post: {
-            input: {};
-            output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 400;
-        } | {
-            input: {};
-            output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 401;
-        } | {
-            input: {};
-            output: {
-                code: string;
-            };
-            outputFormat: "json";
-            status: import("hono/utils/http-status").ContentfulStatusCode;
-        };
-    };
-} & {
-    "/google": {
-        $post: {
-            input: {};
-            output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 400;
-        } | {
-            input: {};
-            output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 401;
-        } | {
-            input: {};
-            output: {
-                code: string;
-            };
-            outputFormat: "json";
-            status: import("hono/utils/http-status").ContentfulStatusCode;
-        };
-    };
-} & {
-    "/github": {
-        $post: {
-            input: {};
-            output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 400;
-        } | {
-            input: {};
-            output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 401;
-        } | {
-            input: {};
-            output: {
-                code: string;
-            };
-            outputFormat: "json";
-            status: import("hono/utils/http-status").ContentfulStatusCode;
-        };
-    };
-} & {
-    "/session": {
-        $post: {
-            input: {};
-            output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 400;
-        } | {
-            input: {};
-            output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 401;
-        } | {
-            input: {};
-            output: {
-                success: true;
-            };
-            outputFormat: "json";
-            status: import("hono/utils/http-status").ContentfulStatusCode;
-        };
-    };
-} & {
-    "/callback": {
-        $get: {
-            input: {};
-            output: undefined;
-            outputFormat: "redirect";
-            status: 302;
-        } | {
-            input: {};
-            output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 400;
-        } | {
-            input: {};
-            output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 401;
-        };
-    };
-}, "/api/auth/native"> | import("hono/types").MergeSchemaPath<{
     "/device-flow/start": {
         $post: {
             input: {};
@@ -8009,178 +8029,6 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
         };
     };
 }, "/api/push"> | import("hono/types").MergeSchemaPath<{
-    "/install-script": {
-        $get: {
-            input: {};
-            output: {};
-            outputFormat: string;
-            status: import("hono/utils/http-status").StatusCode;
-        };
-    };
-} & {
-    "/enroll": {
-        $post: {
-            input: {};
-            output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 409;
-        } | {
-            input: {};
-            output: {
-                enrollmentId: `${string}-${string}-${string}-${string}-${string}`;
-                token: string;
-                expiresAt: string;
-                installCommand: string;
-            };
-            outputFormat: "json";
-            status: import("hono/utils/http-status").ContentfulStatusCode;
-        };
-    };
-} & {
-    "/register": {
-        $post: {
-            input: {
-                json: {
-                    arch: string;
-                    platform: "linux" | "macos";
-                    hostname: string;
-                    os: string;
-                    ram_mb: number;
-                    cpu_cores: number;
-                    disk_gb: number;
-                    public_ip: string;
-                };
-            };
-            output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 401;
-        } | {
-            input: {
-                json: {
-                    arch: string;
-                    platform: "linux" | "macos";
-                    hostname: string;
-                    os: string;
-                    ram_mb: number;
-                    cpu_cores: number;
-                    disk_gb: number;
-                    public_ip: string;
-                };
-            };
-            output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 409;
-        } | {
-            input: {
-                json: {
-                    arch: string;
-                    platform: "linux" | "macos";
-                    hostname: string;
-                    os: string;
-                    ram_mb: number;
-                    cpu_cores: number;
-                    disk_gb: number;
-                    public_ip: string;
-                };
-            };
-            output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 410;
-        } | {
-            input: {
-                json: {
-                    arch: string;
-                    platform: "linux" | "macos";
-                    hostname: string;
-                    os: string;
-                    ram_mb: number;
-                    cpu_cores: number;
-                    disk_gb: number;
-                    public_ip: string;
-                };
-            };
-            output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 400;
-        } | {
-            input: {
-                json: {
-                    arch: string;
-                    platform: "linux" | "macos";
-                    hostname: string;
-                    os: string;
-                    ram_mb: number;
-                    cpu_cores: number;
-                    disk_gb: number;
-                    public_ip: string;
-                };
-            };
-            output: {
-                serverId: `${string}-${string}-${string}-${string}-${string}`;
-                aiProxyToken: string;
-                registrationCode: string;
-                installUrl: string;
-                domain: string | undefined;
-            };
-            outputFormat: "json";
-            status: import("hono/utils/http-status").ContentfulStatusCode;
-        };
-    };
-} & {
-    "/status": {
-        $get: {
-            input: {};
-            output: {
-                enrollment: null;
-            };
-            outputFormat: "json";
-            status: import("hono/utils/http-status").ContentfulStatusCode;
-        } | {
-            input: {};
-            output: {
-                enrollment: {
-                    id: string;
-                    status: string;
-                    serverId: string;
-                    serverInfo: {
-                        os?: string | undefined;
-                        arch?: string | undefined;
-                        ram_mb?: number | undefined;
-                        cpu_cores?: number | undefined;
-                        disk_gb?: number | undefined;
-                        hostname?: string | undefined;
-                        platform?: "linux" | "macos" | undefined;
-                    } | null;
-                    registrationCode: string | null;
-                    serverStatus: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
-                };
-            };
-            outputFormat: "json";
-            status: import("hono/utils/http-status").ContentfulStatusCode;
-        } | {
-            input: {};
-            output: {
-                enrollment: {
-                    id: string;
-                    status: "pending" | "expired" | "used" | "claiming";
-                    expiresAt: string;
-                };
-            };
-            outputFormat: "json";
-            status: import("hono/utils/http-status").ContentfulStatusCode;
-        };
-    };
-}, "/api/byos"> | import("hono/types").MergeSchemaPath<{
     "/request": {
         $post: {
             input: {
@@ -8308,9 +8156,9 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
                         size: number;
                         path: string;
                         format: "bash" | "elf" | "tarball" | "nodejs-tarball";
+                        dependsOn: string[];
                         restartOrder: number;
                         restartUnit: string | null;
-                        dependsOn: string[];
                         subcomponents?: string[] | undefined;
                         livenessProbe?: {
                             url: string;
@@ -8342,9 +8190,9 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
                         size: number;
                         path: string;
                         format: "bash" | "elf" | "tarball" | "nodejs-tarball";
+                        dependsOn: string[];
                         restartOrder: number;
                         restartUnit: string | null;
-                        dependsOn: string[];
                         subcomponents?: string[] | undefined;
                         livenessProbe?: {
                             url: string;
@@ -8378,9 +8226,9 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
                         size: number;
                         path: string;
                         format: "bash" | "elf" | "tarball" | "nodejs-tarball";
+                        dependsOn: string[];
                         restartOrder: number;
                         restartUnit: string | null;
-                        dependsOn: string[];
                         subcomponents?: string[] | undefined;
                         livenessProbe?: {
                             url: string;
@@ -8673,7 +8521,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
                     version: string;
                     size: number;
                     format: "bash" | "elf" | "tarball" | "nodejs-tarball";
-                    component: "ellul-env" | "ellul-mount-volume" | "ellul-crypto" | "ellul-namespaced" | "core-runtime" | "ide";
+                    component: "ellul-namespaced" | "ellul-env" | "ellul-mount-volume" | "ellul-crypto" | "core-runtime" | "ide";
                 };
             };
             output: {
@@ -8689,7 +8537,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
                     version: string;
                     size: number;
                     format: "bash" | "elf" | "tarball" | "nodejs-tarball";
-                    component: "ellul-env" | "ellul-mount-volume" | "ellul-crypto" | "ellul-namespaced" | "core-runtime" | "ide";
+                    component: "ellul-namespaced" | "ellul-env" | "ellul-mount-volume" | "ellul-crypto" | "core-runtime" | "ide";
                 };
             };
             output: {
