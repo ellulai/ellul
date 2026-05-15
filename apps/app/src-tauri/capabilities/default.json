@@ -73,6 +73,14 @@
     "proot:allow-proot-health",
     "proot:allow-proot-setup-status",
     "proot:allow-proot-setup-start",
-    "proot:allow-proot-switch-to-local"
+    "proot:allow-proot-switch-to-local",
+    "proot:allow-proot-tunnel-start",
+    "proot:allow-proot-tunnel-stop",
+    "proot:allow-proot-tunnel-status",
+    "proot:allow-proot-update-check",
+    "proot:allow-proot-update-apply",
+    "proot:allow-proot-update-get-settings",
+    "proot:allow-proot-update-set-settings",
+    "proot:allow-proot-migration-export-file"
   ]
 }

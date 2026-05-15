@@ -70,6 +70,18 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::proot_setup_status,
             commands::proot_setup_start,
             commands::proot_switch_to_local,
+            commands::proot_tunnel_start,
+            commands::proot_tunnel_stop,
+            commands::proot_tunnel_status,
+            commands::proot_tunnel_set_auth,
+            commands::proot_tunnel_set_subdomain,
+            commands::proot_tunnel_get_config,
+            commands::proot_tunnel_set_auto_expose,
+            commands::proot_update_check,
+            commands::proot_update_apply,
+            commands::proot_update_get_settings,
+            commands::proot_update_set_settings,
+            commands::proot_migration_export_file,
         ])
         .setup(|app, api| {
             #[cfg(target_os = "android")]

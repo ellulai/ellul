@@ -36,6 +36,32 @@ Denies the proot_health command without any pre-configured scope.
 <tr>
 <td>
 
+`proot:allow-proot-migration-export-file`
+
+</td>
+<td>
+
+Enables the proot_migration_export_file command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:deny-proot-migration-export-file`
+
+</td>
+<td>
+
+Denies the proot_migration_export_file command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `proot:allow-proot-setup-start`
 
 </td>
@@ -185,6 +211,188 @@ Enables the proot_switch_to_local command without any pre-configured scope.
 <td>
 
 Denies the proot_switch_to_local command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:allow-proot-tunnel-start`
+
+</td>
+<td>
+
+Enables the proot_tunnel_start command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:deny-proot-tunnel-start`
+
+</td>
+<td>
+
+Denies the proot_tunnel_start command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:allow-proot-tunnel-status`
+
+</td>
+<td>
+
+Enables the proot_tunnel_status command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:deny-proot-tunnel-status`
+
+</td>
+<td>
+
+Denies the proot_tunnel_status command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:allow-proot-tunnel-stop`
+
+</td>
+<td>
+
+Enables the proot_tunnel_stop command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:deny-proot-tunnel-stop`
+
+</td>
+<td>
+
+Denies the proot_tunnel_stop command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:allow-proot-update-apply`
+
+</td>
+<td>
+
+Enables the proot_update_apply command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:deny-proot-update-apply`
+
+</td>
+<td>
+
+Denies the proot_update_apply command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:allow-proot-update-check`
+
+</td>
+<td>
+
+Enables the proot_update_check command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:deny-proot-update-check`
+
+</td>
+<td>
+
+Denies the proot_update_check command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:allow-proot-update-get-settings`
+
+</td>
+<td>
+
+Enables the proot_update_get_settings command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:deny-proot-update-get-settings`
+
+</td>
+<td>
+
+Denies the proot_update_get_settings command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:allow-proot-update-set-settings`
+
+</td>
+<td>
+
+Enables the proot_update_set_settings command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:deny-proot-update-set-settings`
+
+</td>
+<td>
+
+Denies the proot_update_set_settings command without any pre-configured scope.
 
 </td>
 </tr>

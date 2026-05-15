@@ -30,6 +30,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { WebLockCard } from "../WebLockCard";
+import { TunnelCard } from "../TunnelCard";
 import { getRegionDisplayName } from "@/lib/region-names";
 import { getRuntimeTierLabel, isDedicatedRuntime } from "@/lib/tier-utils";
 import { TierSelector } from "../TierSelector";
@@ -355,6 +356,13 @@ export function TabHome({
         {showServer && (
           <div id="settings-security">
             <WebLockCard serverId={server.id} serverDomain={serverDomain} serverIp={server.ipAddress} onUpgrade={onUpgrade} volumeSecurityMode={server.volumeSecurityMode} product={server.product} />
+          </div>
+        )}
+
+        {/* ─── Tunnel (Android BYOS only) ─── */}
+        {showServer && (
+          <div id="settings-tunnel">
+            <TunnelCard />
           </div>
         )}
 

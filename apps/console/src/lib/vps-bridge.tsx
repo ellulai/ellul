@@ -151,7 +151,11 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
         if (!res.hasSession) setNeedsVpsAuth(true);
         setReady(true);
       })
-      .catch((e) => setError(String(e)));
+      .catch((e) => {
+        setError(String(e));
+        setNeedsVpsAuth(true);
+        setReady(true);
+      });
   }, [hostname]);
 
   // Session keepalive: refresh 5 min before expiry

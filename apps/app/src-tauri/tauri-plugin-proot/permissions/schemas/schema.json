@@ -307,6 +307,18 @@
           "markdownDescription": "Denies the proot_health command without any pre-configured scope."
         },
         {
+          "description": "Enables the proot_migration_export_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-proot-migration-export-file",
+          "markdownDescription": "Enables the proot_migration_export_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the proot_migration_export_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-proot-migration-export-file",
+          "markdownDescription": "Denies the proot_migration_export_file command without any pre-configured scope."
+        },
+        {
           "description": "Enables the proot_setup_start command without any pre-configured scope.",
           "type": "string",
           "const": "allow-proot-setup-start",
@@ -377,6 +389,90 @@
           "type": "string",
           "const": "deny-proot-switch-to-local",
           "markdownDescription": "Denies the proot_switch_to_local command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the proot_tunnel_start command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-proot-tunnel-start",
+          "markdownDescription": "Enables the proot_tunnel_start command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the proot_tunnel_start command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-proot-tunnel-start",
+          "markdownDescription": "Denies the proot_tunnel_start command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the proot_tunnel_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-proot-tunnel-status",
+          "markdownDescription": "Enables the proot_tunnel_status command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the proot_tunnel_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-proot-tunnel-status",
+          "markdownDescription": "Denies the proot_tunnel_status command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the proot_tunnel_stop command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-proot-tunnel-stop",
+          "markdownDescription": "Enables the proot_tunnel_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the proot_tunnel_stop command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-proot-tunnel-stop",
+          "markdownDescription": "Denies the proot_tunnel_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the proot_update_apply command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-proot-update-apply",
+          "markdownDescription": "Enables the proot_update_apply command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the proot_update_apply command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-proot-update-apply",
+          "markdownDescription": "Denies the proot_update_apply command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the proot_update_check command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-proot-update-check",
+          "markdownDescription": "Enables the proot_update_check command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the proot_update_check command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-proot-update-check",
+          "markdownDescription": "Denies the proot_update_check command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the proot_update_get_settings command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-proot-update-get-settings",
+          "markdownDescription": "Enables the proot_update_get_settings command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the proot_update_get_settings command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-proot-update-get-settings",
+          "markdownDescription": "Denies the proot_update_get_settings command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the proot_update_set_settings command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-proot-update-set-settings",
+          "markdownDescription": "Enables the proot_update_set_settings command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the proot_update_set_settings command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-proot-update-set-settings",
+          "markdownDescription": "Denies the proot_update_set_settings command without any pre-configured scope."
         }
       ]
     }

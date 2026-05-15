@@ -35,7 +35,13 @@ class ProotService : Service() {
         @Volatile
         var serviceStatuses: List<ServiceStatusData> = emptyList()
             private set
+
+        @Volatile
+        var batteryState: BatteryState = BatteryState.NORMAL
+            private set
     }
+
+    enum class BatteryState { NORMAL, LOW_TUNNEL_STOPPED, CRITICAL_STOPPED }
 
     data class ServiceStatusData(val name: String, val healthy: Boolean)
 
@@ -49,6 +55,7 @@ class ProotService : Service() {
     private var restartCount = 0
     private var restartWindowStart: Long = 0
     private val powerController = PowerController()
+    private var networkReceiver: NetworkChangeReceiver? = null
 
     inner class LocalBinder : Binder() {
         fun getService(): ProotService = this@ProotService
@@ -74,6 +81,51 @@ class ProotService : Service() {
         return START_STICKY
     }
 
+    private val batteryCallback = object : PowerController.BatteryCallback {
+        override fun onCriticalBattery(level: Int) {
+            Log.w(TAG, "Critical battery ($level%) — stopping workspace")
+            batteryState = BatteryState.CRITICAL_STOPPED
+            ProotNotification.update(
+                this@ProotService,
+                "Workspace stopped — battery critical ($level%)"
+            )
+            stopWorkspaceInternal()
+        }
+
+        override fun onLowBattery(level: Int) {
+            Log.w(TAG, "Low battery ($level%) — stopping tunnel to save power")
+            batteryState = BatteryState.LOW_TUNNEL_STOPPED
+            stopTunnel("Battery low ($level%)")
+            ProotNotification.update(
+                this@ProotService,
+                "Tunnel stopped — battery low ($level%)"
+            )
+        }
+
+        override fun onBatteryOkay() {
+            if (batteryState == BatteryState.LOW_TUNNEL_STOPPED) {
+                batteryState = BatteryState.NORMAL
+                ProotNotification.update(this@ProotService, "Workspace running")
+            }
+        }
+
+        override fun onPowerConnected() {
+            if (powerController.wasStoppedForBattery && !isRunning) {
+                Log.i(TAG, "Power connected — auto-restarting workspace")
+                batteryState = BatteryState.NORMAL
+                powerController.clearBatteryFlags()
+                startWorkspace()
+            } else if (batteryState == BatteryState.LOW_TUNNEL_STOPPED) {
+                batteryState = BatteryState.NORMAL
+                ProotNotification.update(this@ProotService, "Workspace running")
+            }
+        }
+
+        override fun onPowerDisconnected() {
+            // No action — wait for actual low battery events
+        }
+    }
+
     @Synchronized
     private fun startWorkspace() {
         if (isRunning) return
@@ -87,6 +139,7 @@ class ProotService : Service() {
         }
 
         powerController.acquireWakeLock(this)
+        powerController.startBatteryMonitoring(this, batteryCallback)
         startTime = System.currentTimeMillis()
 
         startupFuture = startupExecutor.submit {
@@ -126,6 +179,7 @@ class ProotService : Service() {
                 if (allHealthy) {
                     ProotNotification.update(this@ProotService, "Workspace running")
                     Log.i(TAG, "All services healthy after $attempts seconds")
+                    registerNetworkCallback()
                 } else if (!Thread.interrupted()) {
                     val unhealthy = serviceStatuses
                         .filter { !it.healthy }
@@ -204,6 +258,9 @@ class ProotService : Service() {
 
     @Synchronized
     private fun stopWorkspaceInternal() {
+        unregisterNetworkCallback()
+        powerController.stopBatteryMonitoring(this)
+
         startupFuture?.cancel(true)
         startupFuture = null
 
@@ -218,6 +275,18 @@ class ProotService : Service() {
         serviceStatuses = emptyList()
 
         powerController.releaseWakeLock()
+    }
+
+    private fun stopTunnel(reason: String) {
+        val rootfsDir = java.io.File(filesDir, "rootfs")
+        val cmdFile = java.io.File(rootfsDir, "tmp/ellul-tunnel-cmd")
+        try {
+            cmdFile.parentFile?.mkdirs()
+            cmdFile.writeText("""{"cmd":"tunnel_stop"}""")
+            Log.i(TAG, "Stopped tunnel: $reason")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to stop tunnel: ${e.message}")
+        }
     }
 
     private fun checkHealthSync(): List<ServiceStatusData> {
@@ -269,6 +338,30 @@ class ProotService : Service() {
         } finally {
             try { conn?.errorStream?.close() } catch (_: Exception) {}
             conn?.disconnect()
+        }
+    }
+
+    private fun registerNetworkCallback() {
+        if (networkReceiver != null) return
+        val receiver = NetworkChangeReceiver(this)
+        receiver.register { reconnectTunnel() }
+        networkReceiver = receiver
+    }
+
+    private fun unregisterNetworkCallback() {
+        networkReceiver?.unregister()
+        networkReceiver = null
+    }
+
+    private fun reconnectTunnel() {
+        val rootfsDir = java.io.File(filesDir, "rootfs")
+        val cmdFile = java.io.File(rootfsDir, "tmp/ellul-tunnel-cmd")
+        try {
+            cmdFile.parentFile?.mkdirs()
+            cmdFile.writeText("""{"cmd":"tunnel_reconnect"}""")
+            Log.i(TAG, "Sent tunnel reconnect command")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to send tunnel reconnect: ${e.message}")
         }
     }
 

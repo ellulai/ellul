@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-proot-tunnel-start"
+description = "Enables the proot_tunnel_start command without any pre-configured scope."
+commands.allow = ["proot_tunnel_start"]
+
+[[permission]]
+identifier = "deny-proot-tunnel-start"
+description = "Denies the proot_tunnel_start command without any pre-configured scope."
+commands.deny = ["proot_tunnel_start"]
