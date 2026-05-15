@@ -1966,14 +1966,12 @@ _apply_manifest_components_inner() {
       continue
     fi
 
-    # Skip only when BOTH version AND sha256 match what's on disk.
-    # Closes the "same version, new binary" footgun — a manifest that
-    # reuses a semver with different bytes forces re-install here.
-    if agent_onDisk_matches "$name" "$wanted" "$wanted_sha" "$wanted_format"; then
-      continue
-    fi
+    # Always re-download and re-apply every component in a new manifest.
+    # The manifest version is monotonically increasing — if the API sent
+    # a new one, every component gets a fresh install regardless of
+    # whether the semver or sha256 matches what's already on disk.
     if [ "$cur" = "$wanted" ]; then
-      log "agent-sync: $name $wanted on-disk sha256 drift — re-installing"
+      log "agent-sync: $name $wanted (re-applying for manifest v$remote_mv)"
     else
       log "agent-sync: $name $cur → $wanted"
     fi

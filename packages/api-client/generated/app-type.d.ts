@@ -2598,14 +2598,14 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
                     ipAddress: null;
                     domain: null;
                     state: string;
-                    plan: "hobby" | "pro";
+                    plan: import("./engines").ServerPlan;
                     product: import("./engines").Product;
                     sshEnabled: false;
                     terminalEnabled: true;
                 };
                 upgrade: {
                     fromPlan: string;
-                    toPlan: "hobby" | "pro";
+                    toPlan: import("./engines").ServerPlan;
                     workspacePreserved: true;
                 };
             };

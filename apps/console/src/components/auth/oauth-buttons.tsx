@@ -137,26 +137,7 @@ export function OAuthSignIn({
             return;
           }
         } else {
-          const callbackBase = `${API_URL}/api/auth/native/callback`;
-          let oauthUrl: string;
-
-          if (provider === "github") {
-            const params = new URLSearchParams({
-              client_id: process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || "",
-              redirect_uri: `${callbackBase}?provider=github`,
-              scope: "read:user user:email",
-            });
-            oauthUrl = `https://github.com/login/oauth/authorize?${params}`;
-          } else {
-            const params = new URLSearchParams({
-              client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
-              redirect_uri: `${callbackBase}?provider=google`,
-              response_type: "code",
-              scope: "openid email profile",
-              access_type: "offline",
-            });
-            oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
-          }
+          const oauthUrl = `${API_URL}/api/auth/native/start?provider=${provider}`;
 
           let resolveCallback: ((url: string) => void) | undefined;
           const callbackPromise = new Promise<string>((resolve, reject) => {
