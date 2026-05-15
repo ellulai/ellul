@@ -31,13 +31,13 @@ import { useTranslations } from "use-intl";
 import { Button } from "../ui/button";
 import { cn } from "@shared/utils";
 
-const AUTH_TOOL_BY_PROVIDER: Record<ProviderKind, "claude" | "codex" | "cursor" | null> = {
+const AUTH_TOOL_BY_PROVIDER: Record<ProviderKind, "claude" | "codex" | "cursor" | "grok" | null> = {
   claudeAgent: "claude",
   codex: "codex",
   cursor: "cursor",
   opencode: null,
   zeroclaw: null,
-  grokAgent: null,
+  grokAgent: "grok",
 };
 
 export interface AuthSetupModalProps {

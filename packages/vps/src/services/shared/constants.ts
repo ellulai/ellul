@@ -57,11 +57,13 @@ export const TERMINAL_DISABLED_FILE = `${SHIELD_DATA_DIR}/.terminal-disabled`;
 // The API uses a three-value enum ("cloudflare" | "gateway" | "direct") for DNS routing.
 // On the VPS, "cloudflare" and "gateway" produce identical Caddy configs, so we collapse
 // them to "proxied" at the VPS boundary. metadata.json stores the API value; VPS normalizes on read.
-export type VpsDeploymentModel = 'proxied' | 'direct';
+export type VpsDeploymentModel = 'proxied' | 'direct' | 'localhost';
 
 /** Normalize API deployment model to VPS binary model. */
 export function normalizeDeploymentModel(apiModel: string): VpsDeploymentModel {
-  return apiModel === 'direct' ? 'direct' : 'proxied';
+  if (apiModel === 'direct') return 'direct';
+  if (apiModel === 'localhost') return 'localhost';
+  return 'proxied';
 }
 
 // Security tiers — progressive: standard → web_locked → private_locked

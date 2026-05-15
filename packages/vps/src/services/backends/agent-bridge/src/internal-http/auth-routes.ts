@@ -62,7 +62,7 @@ function dlog(event: string, data?: Record<string, unknown>): void {
   } catch {}
 }
 
-type AuthTool = "claude" | "codex" | "cursor" | "gh" | "npm";
+type AuthTool = "claude" | "codex" | "cursor" | "grok" | "gh" | "npm";
 
 // `script` spawns a fresh pty with its own winsize (default 80×24) and
 // ignores COLUMNS/LINES on the parent env. The OAuth URLs these CLIs
@@ -82,6 +82,7 @@ const AUTH_COMMANDS: Record<AuthTool, { readonly cmd: string; readonly label: st
   claude: { cmd: `${STTY_WIDE}; exec claude setup-token`, label: "Claude" },
   codex: { cmd: `${STTY_WIDE}; exec codex login --device-auth`, label: "Codex" },
   cursor: { cmd: `${STTY_WIDE}; exec cursor-agent login`, label: "Cursor" },
+  grok: { cmd: `${STTY_WIDE}; exec grok login --device-auth`, label: "Grok Build" },
   gh: { cmd: `${STTY_WIDE}; exec gh auth login --web`, label: "GitHub" },
   npm: { cmd: `${STTY_WIDE}; exec npm login`, label: "npm" },
 };
@@ -406,6 +407,10 @@ const AUTH_PROBES: Record<AuthTool, (session?: AuthSession) => boolean> = {
     // cursor-agent CLI writes JWT to ~/.config/cursor/auth.json.
     const home = process.env.HOME ?? "/home/dev";
     return fs.existsSync(path.join(home, ".config", "cursor", "auth.json"));
+  },
+  grok: () => {
+    const home = process.env.HOME ?? "/home/dev";
+    return fs.existsSync(path.join(home, ".grok", "auth.json"));
   },
   gh: () => {
     const home = process.env.HOME ?? "/home/dev";

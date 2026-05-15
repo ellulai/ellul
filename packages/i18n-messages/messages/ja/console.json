@@ -65,7 +65,6 @@
       "stepLabels": {
         "starting": "サーバーを起動中",
         "starting_dots": "サーバーを起動中...",
-        "byos_node_detected": "ノードに接続しました",
         "writing_files": "構成ファイルを書き込み中...",
         "packages": "システムパッケージをインストール中",
         "packages_dots": "システムパッケージをインストール中...",
@@ -114,6 +113,8 @@
         "creatingSandbox": "サンドボックスを作成中…",
         "scaffolding": "プロジェクトを生成中…",
         "cloning": "リポジトリをクローン中…",
+        "uploading": "プロジェクトをアップロード中…",
+        "extracting": "ファイルを展開中…",
         "writingMetadata": "セットアップを完了中…",
         "installingDeps": "依存関係をインストール中…",
         "detecting": "フレームワークを検出中…",
@@ -140,6 +141,10 @@
         "git": {
           "title": "Git からクローン",
           "description": "GitHub、GitLab、Bitbucket の既存リポジトリをインポート"
+        },
+        "upload": {
+          "title": "デスクトップからアップロード",
+          "description": "プロジェクトファイルを zip にしてアップロード"
         }
       },
       "workspaceType": {
@@ -155,8 +160,10 @@
         "scaffoldHeading": "新しい {framework} プロジェクト",
         "scaffoldHeadingFallback": "新規プロジェクト",
         "gitHeading": "Git からインポート",
+        "uploadHeading": "プロジェクトをアップロード",
         "scaffoldSubtitle": "サンドボックスに名前を付けてください。後から変更できます。",
         "gitSubtitle": "サンドボックスに名前を付けて、リポジトリを接続します",
+        "uploadSubtitle": "サンドボックスに名前を付けて、プロジェクトの zip をアップロード",
         "label": "サンドボックス名",
         "placeholder": "my-awesome-sandbox",
         "hint": "サンドボックス用のディレクトリが作成されます"
@@ -169,6 +176,13 @@
         "connectAnother": "別のプロバイダーを接続",
         "addProvider": "追加"
       },
+      "upload": {
+        "title": "プロジェクトをアップロード",
+        "subtitle": "ドラッグ＆ドロップまたは .zip ファイルを選択",
+        "dropzone": ".zip ファイルをここにドロップするか、クリックして選択",
+        "dropzoneHint": "最大 500 MB。プロジェクトフォルダーを先に zip にしてください。",
+        "zipOnly": ".zip ファイルのみ対応しています"
+      },
       "importing": {
         "title": "サンドボックスをセットアップ中"
       },
@@ -177,6 +191,8 @@
         "continue": "続ける",
         "creating": "作成中...",
         "createSandbox": "サンドボックスを作成",
+        "upload": "アップロード＆作成",
+        "uploading": "アップロード中…",
         "cancel": "キャンセル",
         "tryAgain": "再試行"
       },
@@ -594,49 +610,6 @@
       "confirmingSubscription": "サブスクリプションを確認しています...",
       "demoMode": "デモモード — モックデータを使用中。バックエンドには接続されていません"
     },
-    "byosEnroll": {
-      "title": "自分のサーバーを追加",
-      "subtitle": "Sovereign Stack をご自身のハードウェアで実行します。",
-      "introTitle": "自分のサーバーを持ち込む",
-      "introBody": "ワンタイムトークンを生成し、Mac または Linux サーバーで 1 つのコマンドを実行するだけで、Sovereign Stack をインストールできます。",
-      "supportedPlatforms": "対応プラットフォーム:",
-      "platformMac": "macOS 13 以降 (Apple Silicon または Intel)",
-      "platformLinux": "Debian / Ubuntu Linux",
-      "requirements": "必要要件:",
-      "reqRam": "2 GB 以上の RAM",
-      "reqDisk": "10 GB 以上の空きディスク",
-      "reqRoot": "Root / sudo アクセス",
-      "runOnYourServer": "サーバー側で次のコマンドを実行:",
-      "waitingForConnection": "接続を待機中...",
-      "expiresIn": "有効期限まで {time}",
-      "sudoNote": "このコマンドは <code>sudo</code> で実行する必要があります。macOS では Command Line Tools のインストールを促されることがありますが、許可してください。",
-      "nodeConnected": "ノードが接続されました",
-      "nodeConnectedSubtitle": "{os} ({hostname})",
-      "cpuLabel": "CPU",
-      "cpuValue": "{cores} コア",
-      "ramLabel": "RAM",
-      "ramValue": "{gb} GB",
-      "diskLabel": "ディスク",
-      "diskValue": "{gb} GB",
-      "confirmationCode": "確認コード",
-      "confirmationCodeNote": "ターミナルに表示されているコードと一致することをご確認ください。",
-      "macosDiskNote": "macOS でディスクアクセスを求めるポップアップが表示されたら、ヘッドレス動作のために「許可」をクリックしてください。",
-      "installingTitle": "Sovereign Stack をインストール中...",
-      "installingSubtitle": "数分かかる場合があります。このダイアログを閉じてもインストールはバックグラウンドで続行されます。",
-      "serverSummary": "{os} · {cores} CPU · {ram} GB RAM",
-      "readyTitle": "サーバーの準備が整いました!",
-      "readySummary": "{os} ({hostname}) · {cores} CPU · {ram} GB RAM",
-      "errorEnrollFailed": "エンロールメントトークンの作成に失敗しました",
-      "errorTokenFailed": "トークンの作成に失敗しました",
-      "errorFetchStatus": "ステータスの取得に失敗しました",
-      "errorTokenExpired": "エンロールメントトークンの有効期限が切れました。新しいトークンを生成してください。",
-      "errorTokenExpiredCountdown": "トークンの有効期限が切れました。新しいトークンを生成してください。",
-      "cancel": "キャンセル",
-      "close": "閉じる",
-      "generating": "生成中...",
-      "generateToken": "トークンを生成",
-      "openDashboard": "ダッシュボードを開く"
-    },
     "activeServerDialogs": {
       "tierNames": {
         "cloud_platform_hobby": "Hobby",
@@ -951,7 +924,9 @@
         "proLabel": "プロ",
         "proCapacity": "ワークスペース5つ",
         "shieldGatewayLabel": "Shield Gateway",
-        "shieldGatewayCapacity": "プロキシのみ"
+        "shieldGatewayCapacity": "プロキシのみ",
+        "byosLabel": "BYOS",
+        "byosCapacity": "無制限のワークスペース"
       }
     },
     "tabGit": {

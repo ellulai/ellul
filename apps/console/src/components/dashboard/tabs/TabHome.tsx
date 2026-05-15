@@ -40,11 +40,10 @@ import type { ServerStatus } from "@/contexts/DashboardContext";
 import { toast } from "sonner";
 
 const PLAN_DISPLAY: Record<string, { capacity: string; label: string }> = {
-  // Cloud Platform
   "cloud_platform:hobby": { capacity: "1 workspace", label: "Hobby" },
   "cloud_platform:pro": { capacity: "5 workspaces", label: "Pro" },
-  // Shield Gateway
   "shield_proxy:pro": { capacity: "Proxy only", label: "Shield Gateway" },
+  "byos:pro": { capacity: "Unlimited workspaces", label: "BYOS" },
 };
 
 interface TabHomeProps {
@@ -120,6 +119,7 @@ export function TabHome({
     if (key === "cloud_platform:pro") return { capacity: t("planDisplay.proCapacity"), label: t("planDisplay.proLabel") };
     if (key === "cloud_platform:hobby") return { capacity: t("planDisplay.hobbyCapacity"), label: t("planDisplay.hobbyLabel") };
     if (key === "shield_proxy:pro") return { capacity: t("planDisplay.shieldGatewayCapacity"), label: t("planDisplay.shieldGatewayLabel") };
+    if (key === "byos:pro") return { capacity: t("planDisplay.byosCapacity"), label: t("planDisplay.byosLabel") };
     return PLAN_DISPLAY[key] || { capacity: t("planDisplay.hobbyCapacity"), label: plan === "pro" ? t("planDisplay.proLabel") : t("planDisplay.hobbyLabel") };
   };
   const serverSpecs = localizedPlanFor(planKey);

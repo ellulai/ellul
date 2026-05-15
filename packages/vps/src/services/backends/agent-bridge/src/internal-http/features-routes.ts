@@ -133,6 +133,7 @@ function getConnectorStatus(): Record<string, ConnectorInfo> {
 
   const codexSignedIn = fs.existsSync(path.join(home, '.codex', 'auth.json'));
   const cursorSignedIn = fs.existsSync(path.join(home, '.config', 'cursor', 'auth.json'));
+  const grokSignedIn = fs.existsSync(path.join(home, '.grok', 'auth.json'));
 
   return {
     claude: {
@@ -151,9 +152,9 @@ function getConnectorStatus(): Record<string, ConnectorInfo> {
       hasSignIn: cursorSignedIn,
     },
     grok: {
-      connected: !!cliEnv['GROK_CODE_XAI_API_KEY'],
+      connected: !!(cliEnv['GROK_CODE_XAI_API_KEY'] || grokSignedIn),
       hasApiKey: !!cliEnv['GROK_CODE_XAI_API_KEY'],
-      hasSignIn: false,
+      hasSignIn: grokSignedIn,
     },
   };
 }

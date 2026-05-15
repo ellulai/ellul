@@ -6,8 +6,8 @@
 import { generateCaddyHandlers } from "./handlers";
 
 export interface CaddyfileOptions {
-  /** "proxied" = Cloudflare origin certs + AOP mTLS. "direct" = Let's Encrypt ACME. */
-  deploymentModel: "proxied" | "direct";
+  /** "proxied" = Cloudflare origin certs + AOP mTLS. "direct" = Let's Encrypt ACME. "localhost" = internal TLS for self-hosted. */
+  deploymentModel: "proxied" | "direct" | "localhost";
   mainDomain: string;
   codeDomain: string;
   devDomain: string;
@@ -143,12 +143,22 @@ export function generateCaddyfileContent(opts: CaddyfileOptions): string {
   // the code viewer + preview + main handlers so a page on the customer's domain
   // can iframe those resources. 'self' + console stay in the allowlist regardless.
   const extraFrameAncestors = customDomain ? [`https://${customDomain}`] : undefined;
-  const handlerOpts = { consoleOrigin, extraFrameAncestors };
+  const handlerOpts = {
+    consoleOrigin,
+    extraFrameAncestors,
+    forceXForwardedHostRewrite: deploymentModel === "localhost",
+  };
   const configJs = configJsHandler(platformZone, appZone, consoleOrigin);
 
   const sites: SiteBlock[] = [];
 
-  if (deploymentModel === "direct") {
+  if (deploymentModel === "localhost") {
+    sites.push({
+      addresses: ["localhost:443", "127.0.0.1:443"],
+      tls: "internal",
+      handlers: configJs + "\n" + replace(generateCaddyHandlers("all", handlerOpts)),
+    });
+  } else if (deploymentModel === "direct") {
     const addresses = [mainDomain, codeDomain, devDomain];
     if (customDomain) addresses.push(customDomain);
     sites.push({
@@ -205,9 +215,10 @@ export function generateCaddyfileContent(opts: CaddyfileOptions): string {
     }
   }
 
-  const canDeploy = opts.canDeploy !== false; // default true for backwards compat
+  const canDeploy = opts.canDeploy !== false;
+  const disableAutoHttps = deploymentModel === "direct" || deploymentModel === "localhost";
   const parts = [
-    renderGlobalOptions(deploymentModel === "direct", platform === "linux", platformZone),
+    renderGlobalOptions(disableAutoHttps, platform === "linux", platformZone),
     "",
     ...(canDeploy ? ["import /etc/caddy/sites-enabled/*.caddy", ""] : [""]),
     ...sites.map(renderSiteBlock),

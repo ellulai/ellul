@@ -248,7 +248,6 @@ export function registerProjectsRoutes(app: Hono): void {
       }
     }
 
-    // Entitlement cap: root-owned, ML-DSA-65 signed, default cap=1 on deletion.
     const entitlementCheck = await checkSandboxEntitlement();
     if (!entitlementCheck.allowed) {
       logAuditEvent({
@@ -260,6 +259,12 @@ export function registerProjectsRoutes(app: Hono): void {
           max: entitlementCheck.status.max,
         },
       });
+      if (entitlementCheck.reason === 'insufficient_resources') {
+        return c.json({
+          error: 'insufficient_resources',
+          message: 'Not enough system resources to create a new workspace. Free up RAM or disk space and try again.',
+        }, 503);
+      }
       return c.json({
         error: 'sandbox_limit_reached',
         message: `Sandbox limit reached (${entitlementCheck.status.current}/${entitlementCheck.status.max}). Purchase additional sandboxes at $5/each.`,
@@ -553,6 +558,12 @@ export function registerProjectsRoutes(app: Hono): void {
           source: 'internal',
         },
       });
+      if (entitlementCheck.reason === 'insufficient_resources') {
+        return c.json({
+          error: 'insufficient_resources',
+          message: 'Not enough system resources to create a new workspace. Free up RAM or disk space and try again.',
+        }, 503);
+      }
       return c.json({
         error: 'sandbox_limit_reached',
         message: `Sandbox limit reached (${entitlementCheck.status.current}/${entitlementCheck.status.max}). Purchase additional sandboxes at $5/each.`,

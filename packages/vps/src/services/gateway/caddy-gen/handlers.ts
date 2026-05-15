@@ -261,8 +261,8 @@ function authedRoute(route: AuthedRoute, consoleOrigin: string): Lines {
 
 export interface HandlerOptions {
   consoleOrigin: string;
-  // Customer custom-domain origins for iframe embedding. Console origin always included.
   extraFrameAncestors?: string[];
+  forceXForwardedHostRewrite?: boolean;
 }
 
 /** Build the `frame-ancestors` value: always 'self' + console + extras (dedup). */
@@ -296,7 +296,7 @@ export function generateCaddyHandlers(scope: "ai" | "app" | "all", opts: Handler
   // the site block addresses, but the internal @code/@main/@dev host matchers won't
   // match the rewritten Host. Restore the original hostname from X-Forwarded-Host
   // (set by the Worker) so the existing host matchers work unchanged.
-  if (scope !== "all") {
+  if (scope !== "all" || opts.forceXForwardedHostRewrite) {
     lines.push(...indent([
       `@has_xfh header X-Forwarded-Host *`,
       `request_header @has_xfh Host {http.request.header.X-Forwarded-Host}`,

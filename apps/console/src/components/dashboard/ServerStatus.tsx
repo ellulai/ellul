@@ -174,7 +174,6 @@ export function ServerStatus({ server, onRefresh }: ServerStatusProps) {
                   // fetch comes back baked in English from the API server.
                   const step = operation?.step;
                   if (step === "starting") return tStep("starting_dots");
-                  if (step === "byos_node_detected") return tStep("byos_node_detected");
                   if (step === "writing_files") return tStep("writing_files");
                   if (step === "packages") return tStep("packages_dots");
                   if (step === "nodejs") return tStep("nodejs_dots");

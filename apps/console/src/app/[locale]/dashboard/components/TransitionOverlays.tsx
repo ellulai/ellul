@@ -23,9 +23,8 @@ interface ProvisioningOverlayProps {
 // We re-derive the displayed label from the step id rather than trusting
 // serverStatus.operation.label, which on the initial /api/servers/status
 // fetch comes back baked in English from the API server.
-const STEP_LABEL_KEY: Record<string, "starting_dots" | "byos_node_detected" | "writing_files" | "packages_dots" | "nodejs_dots" | "devtools" | "opencode_dots" | "configuring_dots" | "services" | "ready" | "settingUp"> = {
+const STEP_LABEL_KEY: Record<string, "starting_dots" | "writing_files" | "packages_dots" | "nodejs_dots" | "devtools" | "opencode_dots" | "configuring_dots" | "services" | "ready" | "settingUp"> = {
   starting: "starting_dots",
-  byos_node_detected: "byos_node_detected",
   writing_files: "writing_files",
   packages: "packages_dots",
   nodejs: "nodejs_dots",

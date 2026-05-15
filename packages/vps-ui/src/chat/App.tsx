@@ -361,6 +361,7 @@ function providerToLegacySession(provider: string | null | undefined): string {
   if (!provider) return "opencode";
   if (provider === "claudeAgent") return "claude";
   if (provider === "zeroclaw") return "claw";
+  if (provider === "grokAgent") return "grok";
   return provider;
 }
 

@@ -294,6 +294,8 @@ const installingRuntimes = new Set<string>();
 // Concurrency guard for LUKS key rotation — prevents ambiguous keyslot state
 let luksRotationInProgress = false;
 
+const activeUploads = new Set<string>();
+
 // Create HTTP server
 const server = http.createServer(async (req, res) => {
   // CORS is handled by Caddy (edge proxy) - file-api only runs on localhost
@@ -1213,6 +1215,385 @@ const server = http.createServer(async (req, res) => {
 
     // entitlement enforcement. file-api NEVER calls mkdirSync for project dirs.
     if (req.method === 'POST' && pathname === '/api/apps/create') {
+      const reqContentType = req.headers['content-type'] || '';
+
+      // ── Upload from Desktop (multipart/form-data) ──────────────────────
+      if (reqContentType.startsWith('multipart/form-data')) {
+        const sessionId = extractAuthSession(headers['x-auth-session'])
+          || extractCodeSession(headers['cookie'])
+          || headers['x-auth-user']
+          || 'anonymous';
+
+        if (activeUploads.has(sessionId)) {
+          res.writeHead(429);
+          res.end(JSON.stringify({ error: 'Upload already in progress' }));
+          return;
+        }
+        activeUploads.add(sessionId);
+
+        let tempDir: string | null = null;
+        let cleanupTimer: ReturnType<typeof setTimeout> | null = null;
+
+        try {
+          const MAX_UPLOAD_BYTES = 500 * 1024 * 1024;
+          let rawBody: Buffer;
+          try {
+            const chunks: Buffer[] = [];
+            let totalBytes = 0;
+            rawBody = await new Promise<Buffer>((resolve, reject) => {
+              req.on('data', (chunk: Buffer) => {
+                totalBytes += chunk.length;
+                if (totalBytes > MAX_UPLOAD_BYTES) {
+                  req.destroy();
+                  reject(new Error('BODY_TOO_LARGE'));
+                  return;
+                }
+                chunks.push(chunk);
+              });
+              req.on('end', () => resolve(Buffer.concat(chunks)));
+              req.on('error', reject);
+            });
+          } catch (bodyErr: any) {
+            if (bodyErr.message === 'BODY_TOO_LARGE') {
+              res.writeHead(413);
+              res.end(JSON.stringify({ error: 'Upload exceeds 500MB limit' }));
+            } else {
+              res.writeHead(400);
+              res.end(JSON.stringify({ error: 'Failed to read upload body' }));
+            }
+            return;
+          }
+
+          let parts: ReturnType<typeof parseMultipart>;
+          try {
+            parts = parseMultipart(rawBody, reqContentType);
+          } catch {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'Invalid multipart body' }));
+            return;
+          }
+
+          const uploadName = typeof parts.name === 'string' ? parts.name.trim() : '';
+          const filePart = (parts.file && typeof parts.file === 'object' && 'data' in parts.file)
+            ? parts.file as UploadedFile
+            : null;
+
+          if (!uploadName || !filePart) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'Missing name or file field' }));
+            return;
+          }
+
+          if (!filePart.filename.toLowerCase().endsWith('.zip')) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'Only .zip files are accepted' }));
+            return;
+          }
+
+          res.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache, no-transform',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no',
+          });
+          const emit = (event: string, data: unknown): void => {
+            res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+          };
+
+          emit('progress', { stage: 'uploading' });
+
+          tempDir = `/tmp/ellul-upload-${crypto.randomUUID()}`;
+          fs.mkdirSync(tempDir, { mode: 0o700 });
+          cleanupTimer = setTimeout(() => {
+            if (tempDir) try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
+          }, 5 * 60_000);
+
+          const zipPath = path.join(tempDir, 'upload.zip');
+          fs.writeFileSync(zipPath, filePart.data);
+          const compressedSize = filePart.data.length;
+
+          const { execSync } = await import('child_process');
+
+          let listing: string;
+          try {
+            listing = execSync(`unzip -l "${zipPath}"`, { timeout: 30_000 }).toString();
+          } catch {
+            emit('error', { error: 'Invalid or corrupt zip file' });
+            res.end();
+            return;
+          }
+
+          const zipEntries: { size: number; name: string }[] = [];
+          let totalDecompressed = 0;
+          for (const line of listing.split('\n')) {
+            const m = line.match(/^\s*(\d+)\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}\s+(.+)$/);
+            if (!m) continue;
+            const size = parseInt(m[1]!, 10);
+            const entryName = m[2]!.trim();
+            if (!entryName || entryName.endsWith('/')) continue;
+            zipEntries.push({ size, name: entryName });
+            totalDecompressed += size;
+          }
+
+          if (totalDecompressed > compressedSize * 10) {
+            console.warn(`[file-api] Upload rejected: compression ratio ${(totalDecompressed / compressedSize).toFixed(1)}x`);
+            emit('error', { error: 'Zip rejected: suspicious compression ratio' });
+            res.end();
+            return;
+          }
+          if (totalDecompressed > 2 * 1024 * 1024 * 1024) {
+            emit('error', { error: 'Zip rejected: decompressed size exceeds 2GB' });
+            res.end();
+            return;
+          }
+
+          const DANGEROUS_FILE_RE = [
+            /(?:^|\/)\.env$/,
+            /(?:^|\/)\.env\..+$/,
+            /\.pem$/i,
+            /\.key$/i,
+            /\.p12$/i,
+            /(?:^|\/)id_rsa$/,
+            /(?:^|\/)id_ed25519$/,
+            /(?:^|\/)credentials\.json$/,
+            /(?:^|\/)service-account.*\.json$/i,
+            /(?:^|\/)\.npmrc$/,
+            /(?:^|\/)\.pypirc$/,
+            /(?:^|\/)\.netrc$/,
+            /(?:^|\/)\.htpasswd$/,
+            /(?:^|\/)\.pgpass$/,
+          ];
+          const rejectedFiles: string[] = [];
+
+          for (const entry of zipEntries) {
+            if (entry.name.includes('..') || path.isAbsolute(entry.name)) {
+              emit('error', { error: 'Zip rejected: path traversal detected' });
+              res.end();
+              return;
+            }
+            const basename = path.basename(entry.name);
+            if (basename.length > 255 || /[\x00-\x1f]/.test(basename)) {
+              emit('error', { error: 'Zip rejected: invalid filename' });
+              res.end();
+              return;
+            }
+            if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..+)?$/i.test(basename)) {
+              emit('error', { error: `Zip rejected: reserved filename "${basename}"` });
+              res.end();
+              return;
+            }
+            for (const re of DANGEROUS_FILE_RE) {
+              if (re.test(entry.name) || re.test(basename)) {
+                rejectedFiles.push(entry.name);
+                break;
+              }
+            }
+          }
+
+          if (rejectedFiles.length > 0) {
+            console.warn(`[file-api] Upload rejected sensitive files: ${rejectedFiles.join(', ')}`);
+            emit('error', {
+              error: `Zip contains sensitive files: ${rejectedFiles.map(f => path.basename(f)).join(', ')}`,
+            });
+            res.end();
+            return;
+          }
+
+          try {
+            const fsStat = fs.statfsSync(ROOT_DIR);
+            const availableBytes = Number(fsStat.bavail) * fsStat.bsize;
+            if (availableBytes - totalDecompressed < 1024 * 1024 * 1024) {
+              emit('error', { error: 'Insufficient disk space for extraction' });
+              res.end();
+              return;
+            }
+          } catch {}
+
+          emit('progress', { stage: 'creating_sandbox' });
+          const { callShieldInternal } = await import('@vps/shared/shield-client');
+
+          let uploadCreateResult: {
+            slug: string; id: string; displayName: string;
+            shielded: { workspace: string; cache: string; subnet: any } | null;
+            entitlement: { current: number; max: number; remaining: number };
+          };
+          try {
+            const createResp = await callShieldInternal('/api/internal/projects/create', {
+              method: 'POST',
+              body: { displayName: uploadName },
+            });
+            if (createResp.status === 402) {
+              const ent = await createResp.json() as any;
+              emit('error', {
+                error: ent.error || 'sandbox_limit_reached',
+                message: ent.message || 'Sandbox limit reached.',
+                current: ent.current, max: ent.max,
+              });
+              res.end();
+              return;
+            }
+            if (!createResp.ok) {
+              const errBody = await createResp.json().catch(() => ({ error: 'Unknown error' })) as any;
+              emit('error', { error: errBody.message || errBody.error || 'Failed to create project' });
+              res.end();
+              return;
+            }
+            uploadCreateResult = await createResp.json() as typeof uploadCreateResult;
+          } catch (err: any) {
+            emit('error', { error: 'Failed to reach sovereign-shield for project creation' });
+            res.end();
+            return;
+          }
+
+          const uploadSandboxId = uploadCreateResult.slug;
+          const uploadSandboxPath = path.join(ROOT_DIR, uploadSandboxId);
+
+          const cleanupUploadProject = async (slug: string): Promise<void> => {
+            for (const delay of [500, 1000, 2000]) {
+              try {
+                const resp = await callShieldInternal(`/api/internal/projects/${slug}`, { method: 'DELETE' });
+                if (resp.ok) return;
+              } catch {}
+              await new Promise(r => setTimeout(r, delay));
+            }
+            console.error(`[file-api] ORPHAN: Failed to cleanup project ${slug}`);
+          };
+
+          try {
+            writeSandboxMetadata(uploadSandboxPath, { displayName: uploadName });
+
+            emit('progress', { stage: 'extracting' });
+            const extractDir = path.join(tempDir, 'extracted');
+            fs.mkdirSync(extractDir, { mode: 0o700 });
+
+            try {
+              execSync(`unzip -o -d "${extractDir}" "${zipPath}"`, { timeout: 120_000 });
+            } catch {
+              await cleanupUploadProject(uploadSandboxId);
+              emit('error', { error: 'Failed to extract zip file' });
+              res.end();
+              return;
+            }
+
+            try {
+              const symlinkOut = execSync(`find "${extractDir}" -type l`, { timeout: 30_000 }).toString().trim();
+              for (const link of symlinkOut.split('\n').filter(Boolean)) {
+                const target = fs.readlinkSync(link);
+                const resolved = path.resolve(path.dirname(link), target);
+                if (!resolved.startsWith(extractDir)) {
+                  await cleanupUploadProject(uploadSandboxId);
+                  emit('error', { error: 'Zip rejected: symlink escapes extraction root' });
+                  res.end();
+                  return;
+                }
+              }
+            } catch {}
+
+            try {
+              const duOut = execSync(`du -sb "${extractDir}"`, { timeout: 10_000 }).toString().trim();
+              const actualSize = parseInt(duOut.split('\t')[0]!, 10);
+              if (actualSize > compressedSize * 10 || actualSize > 2 * 1024 * 1024 * 1024) {
+                await cleanupUploadProject(uploadSandboxId);
+                emit('error', { error: 'Extraction aborted: decompressed size exceeds limits' });
+                res.end();
+                return;
+              }
+            } catch {}
+
+            const topEntries = fs.readdirSync(extractDir);
+            let sourceDir = extractDir;
+            if (topEntries.length === 1) {
+              const single = path.join(extractDir, topEntries[0]!);
+              try { if (fs.statSync(single).isDirectory()) sourceDir = single; } catch {}
+            }
+
+            const appName = uploadName.toLowerCase()
+              .replace(/[^a-z0-9._-]/g, '-')
+              .replace(/^-+|-+$/g, '')
+              .slice(0, 63) || 'uploaded-project';
+            const uploadAppRoot = `${uploadSandboxId}/${appName}`;
+            const uploadTargetPath = path.join(uploadSandboxPath, appName);
+
+            fs.mkdirSync(uploadTargetPath, { recursive: true });
+
+            const resolvedTarget = path.resolve(uploadTargetPath);
+            if (!resolvedTarget.startsWith(path.resolve(uploadSandboxPath))) {
+              await cleanupUploadProject(uploadSandboxId);
+              emit('error', { error: 'Security violation: path escaped sandbox' });
+              res.end();
+              return;
+            }
+
+            execSync(`cp -a "${sourceDir}/." "${uploadTargetPath}/"`, { timeout: 60_000 });
+
+            emit('progress', { stage: 'writing_metadata' });
+            emit('progress', { stage: 'detecting' });
+            const detected = detectApps().find(a => a.kind === 'app' && a.directory === uploadAppRoot);
+            const inferredType: AppType = detected?.type ?? 'unknown';
+            const inferredFramework = detected?.framework || 'unknown';
+            const inferredPreviewable = detected?.previewable ?? false;
+
+            writeAppMetadata(uploadTargetPath, {
+              displayName: appName,
+              type: inferredType,
+              previewable: inferredPreviewable,
+              origin: 'upload',
+              framework: inferredFramework === 'unknown' ? null : inferredFramework,
+            });
+            writeZeroClawWorkspace(uploadTargetPath, appName);
+            ensureAppGitignore(uploadTargetPath);
+            updateSandboxActiveApp(uploadSandboxPath, appName);
+            bootstrapGit(uploadTargetPath);
+
+            const pkgJsonPath = path.join(uploadTargetPath, 'package.json');
+            let installing = false;
+            if (fs.existsSync(pkgJsonPath)) {
+              emit('progress', { stage: 'installing_deps' });
+              const installStatus = requestInstall(uploadTargetPath);
+              if (installStatus.phase === 'queued' || installStatus.phase === 'running') {
+                installing = true;
+              }
+            }
+
+            console.log(`[file-api] Upload complete: user=${headers['x-auth-user'] || 'unknown'} name=${uploadName} size=${compressedSize} entries=${zipEntries.length} sandbox=${uploadSandboxId}`);
+
+            emit('done', {
+              success: true,
+              installing,
+              app: {
+                kind: 'app' as const,
+                name: appName,
+                directory: uploadAppRoot,
+                displayName: appName,
+                path: uploadTargetPath,
+                sandboxId: uploadSandboxId,
+                appRoot: uploadAppRoot,
+                framework: inferredFramework,
+                scripts: detected?.scripts || [],
+                type: inferredType,
+                previewable: inferredPreviewable,
+                isMonorepo: detected?.isMonorepo ?? false,
+                packages: detected?.packages,
+                hasPackageJson: detected?.hasPackageJson ?? fs.existsSync(pkgJsonPath),
+              },
+            });
+            res.end();
+          } catch (err) {
+            await cleanupUploadProject(uploadSandboxId).catch(() => {});
+            emit('error', {
+              error: (err as Error).message || 'Unexpected failure during upload',
+              code: 'internal_error',
+            });
+            res.end();
+          }
+        } finally {
+          activeUploads.delete(sessionId);
+          if (cleanupTimer) clearTimeout(cleanupTimer);
+          if (tempDir) try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
+        }
+        return;
+      }
+
       // Happy-path contract: the user has made an explicit choice (scaffold or
       const body = await parseBody(req);
       const { name, type } = body as { name: string; type: 'scaffold' | 'git' };

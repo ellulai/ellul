@@ -2667,13 +2667,6 @@ sync_agent_bundle() {
       wanted_sha=$(jq -r '.value.sha256' <<< "$entry")
       wanted_format=$(jq -r '.value.format' <<< "$entry")
 
-      # Skip only when BOTH version AND on-disk sha256 match. A sha256
-      # drift with unchanged version forces a restage — same guardrail
-      # as the auto-mode loop above.
-      if agent_onDisk_matches "$name" "$wanted" "$wanted_sha" "$wanted_format"; then
-        continue
-      fi
-
       if ! stage_component "$entry"; then
         any_stage_failure=true
       fi

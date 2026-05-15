@@ -270,7 +270,7 @@ No `Dockerfile` structural changes required. The existing multi-stage build (`bu
 | Hetzner (paid fallback) | x86_64 | `x86_64-unknown-linux-musl` | Intel fallback servers |
 | DigitalOcean (free) | x86_64 | `x86_64-unknown-linux-musl` | Free tier only |
 | OVHcloud (fallback) | x86_64 | `x86_64-unknown-linux-musl` | Middle fallback |
-| BYOS (user-managed) | Either | Auto-detected via `uname -m` | User hardware varies |
+| BYOS (self-hosted) | Either | Auto-detected via `uname -m` | User hardware varies |
 
 The provisioning script auto-detects architecture via `uname -m` and downloads the correct binary. No provider-specific logic.
 

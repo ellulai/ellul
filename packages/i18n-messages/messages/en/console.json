@@ -65,7 +65,6 @@
       "stepLabels": {
         "starting": "Starting server",
         "starting_dots": "Starting server...",
-        "byos_node_detected": "Node connected",
         "writing_files": "Writing configuration files...",
         "packages": "Installing system packages",
         "packages_dots": "Installing system packages...",
@@ -114,6 +113,8 @@
         "creatingSandbox": "Creating sandbox…",
         "scaffolding": "Scaffolding project…",
         "cloning": "Cloning repository…",
+        "uploading": "Uploading project…",
+        "extracting": "Extracting files…",
         "writingMetadata": "Finishing setup…",
         "installingDeps": "Installing dependencies…",
         "detecting": "Detecting framework…",
@@ -140,6 +141,10 @@
         "git": {
           "title": "Clone from Git",
           "description": "Import an existing repo from GitHub, GitLab, or Bitbucket"
+        },
+        "upload": {
+          "title": "Upload from Desktop",
+          "description": "Zip your project files and upload them to create a sandbox"
         }
       },
       "workspaceType": {
@@ -163,8 +168,10 @@
         "scaffoldHeading": "New {framework} project",
         "scaffoldHeadingFallback": "New project",
         "gitHeading": "Import from Git",
+        "uploadHeading": "Upload Project",
         "scaffoldSubtitle": "Give your sandbox a name. You can rename it later.",
         "gitSubtitle": "Name your sandbox, then connect your repo",
+        "uploadSubtitle": "Name your sandbox, then upload a zip of your project",
         "label": "Sandbox Name",
         "placeholder": "my-awesome-sandbox",
         "hint": "This will create a directory for your sandbox"
@@ -177,6 +184,13 @@
         "connectAnother": "Connect another provider",
         "addProvider": "Add"
       },
+      "upload": {
+        "title": "Upload Project",
+        "subtitle": "Drag and drop or select a .zip file",
+        "dropzone": "Drop your .zip file here or click to browse",
+        "dropzoneHint": "Max 500 MB. Zip your project folder first.",
+        "zipOnly": "Only .zip files are accepted"
+      },
       "importing": {
         "title": "Setting up your sandbox"
       },
@@ -185,6 +199,8 @@
         "continue": "Continue",
         "creating": "Creating...",
         "createSandbox": "Create Sandbox",
+        "upload": "Upload & Create",
+        "uploading": "Uploading…",
         "cancel": "Cancel",
         "tryAgain": "Try again"
       }
@@ -594,49 +610,6 @@
       "confirmingSubscription": "Confirming your subscription...",
       "demoMode": "Demo Mode — using mock data, no backend connected"
     },
-    "byosEnroll": {
-      "title": "Add Your Own Server",
-      "subtitle": "Run the Sovereign Stack on your own hardware.",
-      "introTitle": "Bring Your Own Server",
-      "introBody": "Generate a one-time token, then run a single command on your Mac or Linux server to install the Sovereign Stack.",
-      "supportedPlatforms": "Supported platforms:",
-      "platformMac": "macOS 13+ (Apple Silicon or Intel)",
-      "platformLinux": "Debian / Ubuntu Linux",
-      "requirements": "Requirements:",
-      "reqRam": "2 GB RAM minimum",
-      "reqDisk": "10 GB free disk space",
-      "reqRoot": "Root / sudo access",
-      "runOnYourServer": "Run this on your server:",
-      "waitingForConnection": "Waiting for connection...",
-      "expiresIn": "Expires in {time}",
-      "sudoNote": "The command must be run with <code>sudo</code>. On macOS, you may see a prompt to install Command Line Tools — allow it.",
-      "nodeConnected": "Node Connected",
-      "nodeConnectedSubtitle": "{os} ({hostname})",
-      "cpuLabel": "CPU",
-      "cpuValue": "{cores} cores",
-      "ramLabel": "RAM",
-      "ramValue": "{gb} GB",
-      "diskLabel": "Disk",
-      "diskValue": "{gb} GB",
-      "confirmationCode": "Confirmation code",
-      "confirmationCodeNote": "Verify this matches the code shown in your terminal.",
-      "macosDiskNote": "If macOS shows a popup asking for disk access, click Allow for headless operation.",
-      "installingTitle": "Installing Sovereign Stack...",
-      "installingSubtitle": "This may take a few minutes. You can close this dialog — installation continues in the background.",
-      "serverSummary": "{os} · {cores} CPU · {ram} GB RAM",
-      "readyTitle": "Your server is ready!",
-      "readySummary": "{os} ({hostname}) · {cores} CPU · {ram} GB RAM",
-      "errorEnrollFailed": "Failed to create enrollment token",
-      "errorTokenFailed": "Failed to create token",
-      "errorFetchStatus": "Failed to fetch status",
-      "errorTokenExpired": "Enrollment token expired. Please generate a new one.",
-      "errorTokenExpiredCountdown": "Token expired. Please generate a new one.",
-      "cancel": "Cancel",
-      "close": "Close",
-      "generating": "Generating...",
-      "generateToken": "Generate Token",
-      "openDashboard": "Open Dashboard"
-    },
     "activeServerDialogs": {
       "tierNames": {
         "cloud_platform_hobby": "Hobby",
@@ -965,7 +938,9 @@
         "proLabel": "Pro",
         "proCapacity": "5 workspaces",
         "shieldGatewayLabel": "Shield Gateway",
-        "shieldGatewayCapacity": "Proxy only"
+        "shieldGatewayCapacity": "Proxy only",
+        "byosLabel": "BYOS",
+        "byosCapacity": "Unlimited workspaces"
       }
     },
     "tabGit": {

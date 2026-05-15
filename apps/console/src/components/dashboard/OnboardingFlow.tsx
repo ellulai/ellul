@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { GitBranch, ArrowLeft, Plus, Sparkles, Layers, FileCode } from "lucide-react";
+import { GitBranch, ArrowLeft, Plus, Sparkles, Layers, FileCode, FolderUp } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { useAppsList } from "@/contexts/AppsListContext";
 import { API_URL } from "@/lib/api";
@@ -29,6 +29,8 @@ const PROGRESS_KEY: Record<SandboxProgressEvent["stage"], string> = {
   creating_sandbox: "creatingSandbox",
   scaffolding: "scaffolding",
   cloning: "cloning",
+  uploading: "uploading",
+  extracting: "extracting",
   writing_metadata: "writingMetadata",
   installing_deps: "installingDeps",
   detecting: "detecting",
@@ -56,7 +58,7 @@ interface OnboardingFlowProps {
 
 export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = false, securityTier = "standard", footerEl }: OnboardingFlowProps) {
   const t = useTranslations("console.onboarding");
-  const { createSandbox, deleteSandbox, isCreatingSandbox, sandboxes } = useAppsList();
+  const { createSandbox, uploadSandbox, deleteSandbox, isCreatingSandbox, sandboxes } = useAppsList();
   const queryClient = useQueryClient();
   const { send: vpsSend } = useVpsBridge();
 
@@ -65,6 +67,8 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
     if (key === "creatingSandbox") return t("progress.creatingSandbox");
     if (key === "scaffolding") return t("progress.scaffolding");
     if (key === "cloning") return t("progress.cloning");
+    if (key === "uploading") return t("progress.uploading");
+    if (key === "extracting") return t("progress.extracting");
     if (key === "writingMetadata") return t("progress.writingMetadata");
     if (key === "installingDeps") return t("progress.installingDeps");
     if (key === "detecting") return t("progress.detecting");
@@ -72,9 +76,10 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
   };
 
   const [step, setStep] = useState<
-    "choose" | "workspace-type" | "project-type" | "framework" | "name" | "git-connect" | "importing"
+    "choose" | "workspace-type" | "project-type" | "framework" | "name" | "git-connect" | "upload" | "importing"
   >("workspace-type");
-  const [flowType, setFlowType] = useState<"scaffold" | "git">("scaffold");
+  const [flowType, setFlowType] = useState<"scaffold" | "git" | "upload">("scaffold");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [sandboxId, setSandboxId] = useState("");
   const [frameworkId, setFrameworkId] = useState<string>(DEFAULT_FRAMEWORK_ID);
   const [workspacePresetId, setWorkspacePresetId] = useState<string>(DEFAULT_PRESET_ID);
@@ -96,6 +101,7 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
         name: string;
         branch?: string;
       }
+    | { kind: "upload"; name: string; file: File }
     | null
   >(null);
   const [linkError, setLinkError] = useState<string | null>(null);
@@ -289,6 +295,32 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
     [cloneSandbox, onComplete, saveWorkspacePreset, securityTier, vpsSend],
   );
 
+  const runUpload = useCallback(
+    async (payload: { name: string; file: File }) => {
+      setLastSubmission({ kind: "upload", ...payload });
+      setStep("importing");
+      setError(null);
+      setImportStatus(progressFor("uploading"));
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const result = await uploadSandbox(payload.name, {
+        file: payload.file,
+        signal: controller.signal,
+        onProgress: (ev) => setImportStatus(progressFor(ev.stage)),
+      });
+      abortRef.current = null;
+      if (result.success && result.app) {
+        sessionStorage.removeItem(SESSION_KEY);
+        await saveWorkspacePreset(result.app.directory);
+        onComplete(result.app.directory);
+      } else {
+        setError(result.error || t("errors.createFailed"));
+        setStep("upload");
+      }
+    },
+    [uploadSandbox, onComplete, saveWorkspacePreset],
+  );
+
   const handleCreateScaffold = () => {
     if (isCreatingSandbox) return;
     if (!validateName()) return;
@@ -314,7 +346,7 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
     setError(null);
     setLinkError(null);
     // After the abort propagates, the promise settles with code: 'cancelled'
-    setStep(lastSubmission?.kind === "git" ? "git-connect" : "name");
+    setStep(lastSubmission?.kind === "git" ? "git-connect" : lastSubmission?.kind === "upload" ? "upload" : "name");
   };
 
   const handleRetry = () => {
@@ -322,6 +354,8 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
     if (!last) return;
     if (last.kind === "scaffold") {
       void runScaffold({ name: last.name, framework: last.framework });
+    } else if (last.kind === "upload") {
+      void runUpload({ name: last.name, file: last.file });
     } else {
       void runClone({
         provider: last.provider,
@@ -386,6 +420,22 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
                 <div>
                   <h3 className="font-semibold text-cream mb-1">{t("choose.git.title")}</h3>
                   <p className="text-sm text-cream/60">{t("choose.git.description")}</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setFlowType("upload");
+                  setStep("name");
+                }}
+                className="w-full flex items-start gap-4 p-4 rounded-xl bg-card border border-border hover:border-green-500/50 transition-colors text-left group"
+              >
+                <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0 group-hover:bg-green-500/20 transition-colors">
+                  <FolderUp className="h-6 w-6 text-green-500" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-cream mb-1">{t("choose.upload.title")}</h3>
+                  <p className="text-sm text-cream/60">{t("choose.upload.description")}</p>
                 </div>
               </button>
 
@@ -552,9 +602,11 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
           <>
             {isModal ? (
               <div className="mb-3 flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-lg ${flowType === "scaffold" ? "bg-sodium/10" : "bg-cyan-500/10"} flex items-center justify-center flex-none`}>
+                <div className={`w-9 h-9 rounded-lg ${flowType === "scaffold" ? "bg-sodium/10" : flowType === "upload" ? "bg-green-500/10" : "bg-cyan-500/10"} flex items-center justify-center flex-none`}>
                   {flowType === "scaffold" ? (
                     <Sparkles className="h-4 w-4 text-sodium" />
+                  ) : flowType === "upload" ? (
+                    <FolderUp className="h-4 w-4 text-green-500" />
                   ) : (
                     <GitBranch className="h-4 w-4 text-cyan-500" />
                   )}
@@ -565,14 +617,17 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
                         const fw = FRAMEWORK_OPTIONS.find((f) => f.id === frameworkId) ?? MONOREPO_OPTIONS.find((f) => f.id === frameworkId);
                         return fw ? t("name.scaffoldHeading", { framework: fw.label }) : t("name.scaffoldHeadingFallback");
                       })()
+                    : flowType === "upload" ? t("name.uploadHeading")
                     : t("name.gitHeading")}
                 </h2>
               </div>
             ) : (
               <div className="text-center mb-6">
-                <div className={`w-16 h-16 rounded-2xl ${flowType === "scaffold" ? "bg-sodium/10" : "bg-cyan-500/10"} flex items-center justify-center mx-auto mb-4`}>
+                <div className={`w-16 h-16 rounded-2xl ${flowType === "scaffold" ? "bg-sodium/10" : flowType === "upload" ? "bg-green-500/10" : "bg-cyan-500/10"} flex items-center justify-center mx-auto mb-4`}>
                   {flowType === "scaffold" ? (
                     <Sparkles className="h-8 w-8 text-sodium" />
+                  ) : flowType === "upload" ? (
+                    <FolderUp className="h-8 w-8 text-green-500" />
                   ) : (
                     <GitBranch className="h-8 w-8 text-cyan-500" />
                   )}
@@ -583,11 +638,13 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
                         const fw = FRAMEWORK_OPTIONS.find((f) => f.id === frameworkId) ?? MONOREPO_OPTIONS.find((f) => f.id === frameworkId);
                         return fw ? t("name.scaffoldHeading", { framework: fw.label }) : t("name.scaffoldHeadingFallback");
                       })()
+                    : flowType === "upload" ? t("name.uploadHeading")
                     : t("name.gitHeading")}
                 </h2>
                 <p className="text-sm text-cream/60">
                   {flowType === "scaffold"
                     ? t("name.scaffoldSubtitle")
+                    : flowType === "upload" ? t("name.uploadSubtitle")
                     : t("name.gitSubtitle")}
                 </p>
               </div>
@@ -606,6 +663,7 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       if (flowType === "scaffold") handleCreateScaffold();
+                      else if (flowType === "upload") { if (validateName()) setStep("upload"); }
                       else handleContinueToGit();
                     }
                   }}
@@ -613,6 +671,8 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
                   className={`w-full px-4 py-3 rounded-lg bg-card border border-border text-cream placeholder:text-cream/45 focus:outline-none focus:ring-2 ${
                     flowType === "scaffold"
                       ? "focus:ring-sodium/50 focus:border-sodium"
+                      : flowType === "upload"
+                      ? "focus:ring-green-500/50 focus:border-green-500"
                       : "focus:ring-cyan-500/50 focus:border-cyan-500"
                   }`}
                   autoFocus
@@ -646,6 +706,15 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
                           {t("buttons.createSandbox")}
                         </>
                       )}
+                    </button>
+                  ) : flowType === "upload" ? (
+                    <button
+                      onClick={() => { if (validateName()) setStep("upload"); }}
+                      disabled={!sandboxId.trim()}
+                      className="w-full py-3 rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-cream font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <FolderUp className="h-4 w-4" />
+                      {t("buttons.continue")}
                     </button>
                   ) : (
                     <button
@@ -818,6 +887,104 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
                 }}
               />
             )}
+          </>
+        )}
+
+        {/* Step: Upload */}
+        {step === "upload" && (
+          <>
+            <button
+              onClick={() => {
+                setStep("name");
+                setUploadFile(null);
+              }}
+              className="flex items-center gap-2 text-sm text-cream/60 hover:text-cream mb-6 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {t("buttons.back")}
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 rounded-2xl bg-green-500/10 flex items-center justify-center mx-auto mb-4">
+                <FolderUp className="h-8 w-8 text-green-500" />
+              </div>
+              <h2 className="text-xl font-bold text-cream mb-1">{t("upload.title")}</h2>
+              <p className="text-sm text-cream/60">{t("upload.subtitle")}</p>
+            </div>
+
+            {error && (
+              <div className="p-3 rounded-lg bg-terra/10 border border-terra/30 text-sm text-terra mb-4">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <label
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const file = e.dataTransfer.files[0];
+                  if (file && file.name.endsWith(".zip")) {
+                    setUploadFile(file);
+                    setError(null);
+                  } else {
+                    setError(t("upload.zipOnly"));
+                  }
+                }}
+                className="flex flex-col items-center justify-center p-8 rounded-xl border-2 border-dashed border-border hover:border-green-500/50 cursor-pointer transition-colors"
+              >
+                <FolderUp className="h-10 w-10 text-cream/30 mb-3" />
+                <p className="text-sm text-cream/75 mb-1">
+                  {uploadFile ? uploadFile.name : t("upload.dropzone")}
+                </p>
+                <p className="text-xs text-cream/45">
+                  {uploadFile
+                    ? `${(uploadFile.size / 1024 / 1024).toFixed(1)} MB`
+                    : t("upload.dropzoneHint")}
+                </p>
+                <input
+                  type="file"
+                  accept=".zip"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setUploadFile(file);
+                      setError(null);
+                    }
+                  }}
+                />
+              </label>
+            </div>
+
+            {(() => {
+              const actions = (
+                <div className={footerEl ? "px-5 py-3 border-t border-border" : isModal ? "pt-4" : "mt-4"}>
+                  <button
+                    onClick={() => {
+                      if (!uploadFile) return;
+                      void runUpload({ name: sandboxId.trim(), file: uploadFile });
+                    }}
+                    disabled={!uploadFile || isCreatingSandbox}
+                    className="w-full py-3 rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-cream font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isCreatingSandbox ? (
+                      <>
+                        <Spinner size="sm" />
+                        {t("buttons.uploading")}
+                      </>
+                    ) : (
+                      <>
+                        <FolderUp className="h-4 w-4" />
+                        {t("buttons.upload")}
+                      </>
+                    )}
+                  </button>
+                </div>
+              );
+              return footerEl ? createPortal(actions, footerEl) : actions;
+            })()}
           </>
         )}
 

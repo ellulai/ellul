@@ -168,7 +168,7 @@ const CONNECTORS: ConnectorDef[] = [
     subtitle: "xAI",
     provider: "xai",
     icon: <GrokLogo className="h-4 w-4" />,
-    hasSignIn: false,
+    hasSignIn: true,
     keyUrl: "https://console.x.ai/",
     keyPlaceholder: "xai-...",
   },

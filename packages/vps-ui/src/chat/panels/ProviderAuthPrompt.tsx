@@ -27,6 +27,7 @@ const AUTH_FLOW_PROVIDERS: ReadonlySet<ProviderKind> = new Set<ProviderKind>([
   "claudeAgent",
   "codex",
   "cursor",
+  "grokAgent",
 ]);
 
 function commandForProvider(provider: ProviderKind): string | null {
@@ -42,7 +43,7 @@ function commandForProvider(provider: ProviderKind): string | null {
     case "zeroclaw":
       return null;
     case "grokAgent":
-      return null;
+      return "grok login";
   }
 }
 

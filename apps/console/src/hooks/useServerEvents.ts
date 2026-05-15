@@ -86,7 +86,6 @@ export function useServerEvents({ enabled = true, serverId }: UseServerEventsOpt
               // Build / merge the nested operation object.
               const stepLabels: Record<string, string> = {
                 starting: t("starting_dots"),
-                byos_node_detected: t("byos_node_detected"),
                 writing_files: t("writing_files"),
                 packages: t("packages_dots"),
                 nodejs: t("nodejs_dots"),

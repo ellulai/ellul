@@ -16,26 +16,6 @@ function tauriInvoke(cmd: string, args?: Record<string, unknown>): Promise<unkno
   return (window as any).__TAURI_INTERNALS__.invoke(cmd, args);
 }
 
-function tauriOnOpenUrl(handler: (urls: string[]) => void): Promise<() => void> {
-  const internals = (window as any).__TAURI_INTERNALS__;
-  const callbackId = internals.transformCallback((event: { payload: string[] }) => {
-    handler(event.payload);
-  });
-  return internals
-    .invoke("plugin:event|listen", {
-      event: "deep-link://new-url",
-      target: { kind: "Any" },
-      handler: callbackId,
-    })
-    .then((eventId: number) => {
-      return () =>
-        internals.invoke("plugin:event|unlisten", {
-          event: "deep-link://new-url",
-          eventId,
-        });
-    });
-}
-
 function GitHubIcon() {
   return (
     <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -137,45 +117,50 @@ export function OAuthSignIn({
             return;
           }
         } else {
-          const oauthUrl = `${API_URL}/api/auth/native/start?provider=${provider}`;
+          const flowId = crypto.randomUUID();
+          const oauthUrl = `${API_URL}/api/auth/native/start?provider=${provider}&flow_id=${flowId}`;
 
-          let resolveCallback: ((url: string) => void) | undefined;
-          const callbackPromise = new Promise<string>((resolve, reject) => {
-            resolveCallback = resolve;
-            setTimeout(() => reject(new Error("OAuth timeout")), 300_000);
-          });
+          await tauriInvoke("plugin:native-auth|open_oauth_browser", { url: oauthUrl });
 
-          const cleanupDeepLink = await tauriOnOpenUrl((urls) => {
-            const authUrl = urls.find((u) => u.startsWith("ellul://auth/callback"));
-            if (authUrl && resolveCallback) resolveCallback(authUrl);
-          });
+          const POLL_MS = 2_000;
+          const TIMEOUT_MS = 300_000;
+          const start = Date.now();
+          let exchangeCode: string | null = null;
 
-          const result = (await tauriInvoke("plugin:native-auth|open_oauth_browser", {
-            url: oauthUrl,
-          })) as { callbackUrl?: string } | undefined;
-
-          let callbackUrl = result?.callbackUrl;
-          if (!callbackUrl) {
-            try { callbackUrl = await callbackPromise; } catch { /* timeout */ }
-          }
-          cleanupDeepLink();
-
-          if (callbackUrl) {
-            const url = new URL(callbackUrl);
-            const code = url.searchParams.get("code");
-            if (code) {
-              const sessionRes = await fetch(`${API_URL}/api/auth/native/session`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ code }),
-              });
-              if (sessionRes.ok) {
-                router.replace(callbackPath);
-                return;
+          while (Date.now() - start < TIMEOUT_MS) {
+            await new Promise((r) => setTimeout(r, POLL_MS));
+            try {
+              const res = await fetch(`${API_URL}/api/auth/native/poll?flow_id=${flowId}`);
+              if (res.ok) {
+                const data = await res.json();
+                if (data.status === "complete" && data.code) {
+                  exchangeCode = data.code;
+                  break;
+                }
               }
-            }
+            } catch { /* network hiccup, retry */ }
           }
+
+          if (!exchangeCode) {
+            setError("Sign in timed out. Please try again.");
+            setIsSigningIn(false);
+            return;
+          }
+
+          const sessionRes = await fetch(`${API_URL}/api/auth/native/session`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ code: exchangeCode }),
+          });
+
+          if (!sessionRes.ok) {
+            setError("Session failed. Please try again.");
+            setIsSigningIn(false);
+            return;
+          }
+
+          router.replace(callbackPath);
           return;
         }
       } catch (err) {

@@ -115,30 +115,61 @@ export interface EntitlementStatus {
 
 export type EntitlementCheckResult =
   | { allowed: true; status: EntitlementStatus }
-  | { allowed: false; status: EntitlementStatus; reason: 'sandbox_limit_reached' };
+  | { allowed: false; status: EntitlementStatus; reason: 'sandbox_limit_reached' | 'insufficient_resources' };
+
+// ── BYOS Detection ──
+
+function readProduct(): string | null {
+  try {
+    return fs.readFileSync('/etc/ellul/product', 'utf8').trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+function isByos(): boolean {
+  return readProduct() === 'byos';
+}
+
+// ── BYOS Resource Guard ──
+
+const MIN_FREE_RAM_BYTES = 512 * 1024 * 1024;
+const MIN_FREE_DISK_BYTES = 1024 * 1024 * 1024;
+
+function checkResourceGuard(): { ok: true } | { ok: false; detail: string } {
+  try {
+    const meminfo = fs.readFileSync('/proc/meminfo', 'utf8');
+    const match = meminfo.match(/MemAvailable:\s+(\d+)\s+kB/);
+    if (match) {
+      const availableBytes = parseInt(match[1]!, 10) * 1024;
+      if (availableBytes < MIN_FREE_RAM_BYTES) {
+        return { ok: false, detail: `${Math.floor(availableBytes / 1024 / 1024)}MB RAM free, need ${MIN_FREE_RAM_BYTES / 1024 / 1024}MB` };
+      }
+    }
+  } catch { /* /proc/meminfo unavailable — skip RAM check */ }
+
+  try {
+    const stat = fs.statfsSync(PROJECTS_DIR);
+    const freeBytes = Number(stat.bfree) * Number(stat.bsize);
+    if (freeBytes < MIN_FREE_DISK_BYTES) {
+      return { ok: false, detail: `${Math.floor(freeBytes / 1024 / 1024)}MB disk free, need ${MIN_FREE_DISK_BYTES / 1024 / 1024}MB` };
+    }
+  } catch { /* statfs unavailable — skip disk check */ }
+
+  return { ok: true };
+}
 
 // ── Default Caps (no entitlement file or invalid) ──
 
-/**
- * Safe fallback when entitlement JWS is missing or invalid.
- * Reads product from /etc/ellul/product to determine the right default.
- * - shield_proxy: 0 (proxy only, no workspaces)
- * - all others: 1 workspace (conservative — real cap comes from signed entitlement)
- *
- * Falls back to billing-tier for backward compat (VPSes without product file).
- */
 function getDefaultCap(): number {
-  try {
-    const product = fs.readFileSync('/etc/ellul/product', 'utf8').trim();
-    if (product === 'shield_proxy') return 0;
-  } catch {
-    // Product file missing — try billing tier for backward compat
+  const product = readProduct();
+  if (product === 'byos') return Number.MAX_SAFE_INTEGER;
+  if (product === 'shield_proxy') return 0;
+  if (!product) {
     try {
       const billingTier = fs.readFileSync('/etc/ellul/billing-tier', 'utf8').trim();
-      if (billingTier === 'governance') return 0; // shield_proxy
-    } catch {
-      // Both files missing — use conservative default
-    }
+      if (billingTier === 'governance') return 0;
+    } catch {}
   }
   return 1;
 }
@@ -439,8 +470,19 @@ function countProjects(): number {
  * Always returns a result — falls back to defaults if verification fails.
  */
 export async function getEntitlementStatus(): Promise<EntitlementStatus> {
-  const payload = await verifyEntitlementJws();
   const current = countProjects();
+
+  if (isByos()) {
+    return {
+      max: Number.MAX_SAFE_INTEGER,
+      current,
+      remaining: Number.MAX_SAFE_INTEGER,
+      baseCap: Number.MAX_SAFE_INTEGER,
+      extraPurchased: 0,
+    };
+  }
+
+  const payload = await verifyEntitlementJws();
 
   if (payload) {
     const max = payload.cap + payload.extra;
@@ -453,7 +495,6 @@ export async function getEntitlementStatus(): Promise<EntitlementStatus> {
     };
   }
 
-  // Default: conservative fallback (reads billing tier for product-aware default)
   const defaultCap = getDefaultCap();
   const max = defaultCap + DEFAULT_EXTRA;
   return {
@@ -470,6 +511,16 @@ export async function getEntitlementStatus(): Promise<EntitlementStatus> {
  * This is the enforcement point — called by POST /_auth/projects.
  */
 export async function checkSandboxEntitlement(): Promise<EntitlementCheckResult> {
+  if (isByos()) {
+    const resourceCheck = checkResourceGuard();
+    const status = await getEntitlementStatus();
+    if (!resourceCheck.ok) {
+      console.warn(`[entitlement] BYOS resource guard denied: ${resourceCheck.detail}`);
+      return { allowed: false, status, reason: 'insufficient_resources' };
+    }
+    return { allowed: true, status };
+  }
+
   const status = await getEntitlementStatus();
 
   if (status.current >= status.max) {

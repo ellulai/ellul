@@ -16,7 +16,7 @@ export interface AppEllulJson {
   displayName: string;
   type: AppType;
   previewable: boolean;
-  origin: 'blank' | 'git' | 'scaffold';
+  origin: 'blank' | 'git' | 'scaffold' | 'upload';
   createdAt: string;
   framework: string | null;
 }
@@ -34,7 +34,7 @@ export interface AppMetadataOpts {
   displayName: string;
   type: AppType;
   previewable: boolean;
-  origin: 'blank' | 'git' | 'scaffold';
+  origin: 'blank' | 'git' | 'scaffold' | 'upload';
   framework: string | null;
 }
 
