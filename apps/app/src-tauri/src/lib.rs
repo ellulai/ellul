@@ -15,6 +15,8 @@ fn is_internal_navigation(url: &url::Url) -> bool {
         || host == "ellul.ai"
         || host.ends_with(".ellul.app")
         || host == "ellul.app"
+        || host == "localhost"
+        || host == "127.0.0.1"
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -24,14 +26,24 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_native_auth::init())
-        .plugin(tauri_plugin_shield::init());
+        .plugin(tauri_plugin_shield::init())
+        .plugin(tauri_plugin_proot::init());
 
     #[cfg(desktop)]
     let builder = builder.plugin(tauri_plugin_global_shortcut::Builder::new().build());
 
     builder
         .setup(|app| {
-            let url = tauri::WebviewUrl::External(CONSOLE_URL.parse().unwrap());
+            let url = {
+                let byos = app
+                    .state::<tauri_plugin_proot::ProotState>()
+                    .is_byos_ready();
+                if byos {
+                    tauri::WebviewUrl::External("https://localhost:8443".parse().unwrap())
+                } else {
+                    tauri::WebviewUrl::External(CONSOLE_URL.parse().unwrap())
+                }
+            };
             let mut builder =
                 tauri::WebviewWindowBuilder::new(app, "main", url)
                     .title("ellul")

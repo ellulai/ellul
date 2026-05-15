@@ -3,7 +3,7 @@
   "description": "Default capabilities for ellul.ai",
   "windows": ["main"],
   "remote": {
-    "urls": ["https://console.ellul.ai/*"]
+    "urls": ["https://console.ellul.ai/*", "https://localhost:*/*"]
   },
   "permissions": [
     "core:default",
@@ -34,6 +34,7 @@
     "shield:allow-shield-clear-session",
     "shield:allow-shield-login-options",
     "shield:allow-shield-login-verify",
+    "shield:allow-shield-passkey-login",
     "shield:allow-shield-register-options",
     "shield:allow-shield-register-verify",
     "shield:allow-shield-session-info",
@@ -65,6 +66,12 @@
     "shield:allow-shield-operator-clear",
     "shield:allow-shield-intent-nonce",
     "shield:allow-shield-create-signed-ws-url",
-    "shield:allow-shield-fetch"
+    "shield:allow-shield-fetch",
+    "proot:allow-proot-start",
+    "proot:allow-proot-stop",
+    "proot:allow-proot-status",
+    "proot:allow-proot-health",
+    "proot:allow-proot-setup-status",
+    "proot:allow-proot-setup-start"
   ]
 }

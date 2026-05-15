@@ -199,6 +199,16 @@ export const BINARY_HASHES: Record<string, Record<string, string>> = {
     amd64: "942b2b583239497715f2390336eb8e2df3673703bd167bd59f7be33a27e15c5a",
     arm64: "985191ffc606da1317e1399f99306481f58643f345ed2252033b011504c780ce",
   },
+  caddy: {
+    // Fetched from https://github.com/caddyserver/caddy/releases/download/v<version>/caddy_<version>_linux_<arch>.tar.gz
+    amd64: "",
+    arm64: "",
+  },
+  ttyd: {
+    // Fetched from https://github.com/tsl0922/ttyd/releases/download/<version>/ttyd.<arch>
+    amd64: "",
+    arm64: "",
+  },
 };
 
 // ══════════════════════════════════════════════════════════════════════

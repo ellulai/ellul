@@ -4,6 +4,7 @@ const COMMANDS: &[&str] = &[
     "shield_clear_session",
     "shield_login_options",
     "shield_login_verify",
+    "shield_passkey_login",
     "shield_register_options",
     "shield_register_verify",
     "shield_session_info",
@@ -39,5 +40,18 @@ const COMMANDS: &[&str] = &[
 ];
 
 fn main() {
+    #[cfg(target_os = "macos")]
+    {
+        cc::Build::new()
+            .file("objc/passkey.m")
+            .include("objc")
+            .flag("-fobjc-arc")
+            .flag("-fmodules")
+            .compile("ellul_passkey");
+
+        println!("cargo:rustc-link-lib=framework=AuthenticationServices");
+        println!("cargo:rustc-link-lib=framework=AppKit");
+    }
+
     tauri_plugin::Builder::new(COMMANDS).build();
 }

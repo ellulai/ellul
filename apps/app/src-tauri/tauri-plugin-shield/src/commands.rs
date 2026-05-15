@@ -143,6 +143,73 @@ pub async fn shield_login_verify(
 }
 
 #[command(rename_all = "camelCase")]
+pub async fn shield_passkey_login(
+    session: State<'_, SessionState>,
+    http: State<'_, ShieldHttpClient>,
+    server_domain: String,
+) -> Result<serde_json::Value, Error> {
+    let base_url = format!("https://{server_domain}");
+
+    // 1. Get WebAuthn options from VPS
+    let res = http
+        .post_unauthed(&base_url, "/_auth/login/options", &serde_json::json!({}))
+        .await?;
+    let status = res.status();
+    let options: serde_json::Value = res.json().await.unwrap_or_default();
+    if !status.is_success() {
+        return Err(Error::HttpError(
+            options["error"].as_str().unwrap_or("options failed").to_string(),
+        ));
+    }
+
+    // 2. Extract challenge + RP ID
+    let challenge_b64 = options["challenge"]
+        .as_str()
+        .ok_or_else(|| Error::HttpError("No challenge in options".into()))?;
+    let challenge = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(challenge_b64)
+        .map_err(|e| Error::HttpError(format!("bad challenge: {e}")))?;
+    let rp_id = options["rpId"].as_str().unwrap_or("ellul.ai");
+
+    // 3. Native passkey ceremony (Touch ID / security key / cross-device QR)
+    #[cfg(target_os = "macos")]
+    let assertion = crate::passkey::authenticate(&challenge, rp_id)
+        .await
+        .map_err(Error::HttpError)?;
+
+    #[cfg(not(target_os = "macos"))]
+    return Err(Error::HttpError("Native passkey not available on this platform".into()));
+
+    // 4. Verify assertion with VPS
+    let res = http
+        .post_unauthed(
+            &base_url,
+            "/_auth/login/verify",
+            &serde_json::json!({ "assertion": assertion }),
+        )
+        .await?;
+    let status = res.status();
+    let cookie = extract_session_cookie(&res);
+    let body: serde_json::Value = res.json().await.unwrap_or_default();
+    if !status.is_success() {
+        return Err(Error::HttpError(
+            body["error"].as_str().unwrap_or("verify failed").to_string(),
+        ));
+    }
+
+    // 5. Establish session + ML-KEM bind
+    if let Some(cookie_header) = cookie {
+        session
+            .set(server_domain.clone(), cookie_header.clone())
+            .await;
+        let result = pop::perform_mlkem_bind(http.raw(), &base_url, &cookie_header).await?;
+        session.set_k_pop(result.k_pop).await;
+    }
+
+    Ok(body)
+}
+
+#[command(rename_all = "camelCase")]
 pub async fn shield_register_options(
     http: State<'_, ShieldHttpClient>,
     server_domain: String,

@@ -236,58 +236,8 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
   }, [ready, error, hostname]);
 
   const authenticateNative = useCallback(async (): Promise<void> => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-    const flowId = crypto.randomUUID();
-
-    // Step 1: Get WebAuthn options from VPS via Rust
-    const options = await tauriInvoke<Record<string, unknown>>(
-      "shield_login_options",
-      { serverDomain: hostname },
-    );
-
-    // Step 2: Store options for the browser passkey page to fetch
-    await fetch(`${API_URL}/api/auth/native/vps-auth-data`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ flowId, type: "options", data: options }),
-    });
-
-    // Step 3: Open system browser — Safari has full passkey support
-    const locale = window.location.pathname.split("/")[1] || "en";
-    await (window as any).__TAURI_INTERNALS__.invoke(
-      "plugin:native-auth|open_oauth_browser",
-      { url: `${window.location.origin}/${locale}/auth/vps-passkey?flow_id=${flowId}` },
-    );
-
-    // Step 4: Poll for assertion from the browser page
-    const POLL_MS = 2_000;
-    const TIMEOUT_MS = 300_000;
-    const start = Date.now();
-    let assertion: Record<string, unknown> | null = null;
-
-    while (Date.now() - start < TIMEOUT_MS) {
-      await new Promise((r) => setTimeout(r, POLL_MS));
-      try {
-        const res = await fetch(
-          `${API_URL}/api/auth/native/vps-auth-data?flow_id=${encodeURIComponent(flowId)}&type=assertion`,
-        );
-        if (res.ok) {
-          const data = await res.json();
-          if (data.status === "complete" && data.data) {
-            assertion = data.data;
-            break;
-          }
-        }
-      } catch { /* retry */ }
-    }
-
-    if (!assertion) throw new Error("Passkey authentication timed out");
-
-    // Step 5: Verify assertion with VPS via Rust → creates session + ML-KEM bind
-    await tauriInvoke(
-      "shield_login_verify",
-      { serverDomain: hostname, assertion },
-    );
+    // Single native call: get options → Touch ID / security key → verify → session
+    await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
     setNeedsVpsAuth(false);
     setSessionExpired(false);
   }, [hostname]);

@@ -686,6 +686,32 @@ Denies the shield_operator_status command without any pre-configured scope.
 <tr>
 <td>
 
+`shield:allow-shield-passkey-login`
+
+</td>
+<td>
+
+Enables the shield_passkey_login command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`shield:deny-shield-passkey-login`
+
+</td>
+<td>
+
+Denies the shield_passkey_login command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `shield:allow-shield-permission-get`
 
 </td>

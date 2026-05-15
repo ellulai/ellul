@@ -77,10 +77,6 @@
       "types": "./dist/services/gateway/caddy-gen/bundle.d.ts",
       "default": "./dist/services/gateway/caddy-gen/bundle.js"
     },
-    "./services/gateway/caddy-gen/caddyfile": {
-      "types": "./dist/services/gateway/caddy-gen/caddyfile.d.ts",
-      "default": "./dist/services/gateway/caddy-gen/caddyfile.js"
-    },
     "./services/gateway/term-proxy": {
       "types": "./dist/services/gateway/term-proxy/index.d.ts",
       "default": "./dist/services/gateway/term-proxy/index.js"

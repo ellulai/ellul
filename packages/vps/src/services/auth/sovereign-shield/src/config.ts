@@ -209,6 +209,9 @@ export function readAllowedOrigins(): string[] {
   // written by boot-config at provisioning — required, no silent fallback.
   origins.push(`https://${readDevDomain()}`);
 
+  // Native app passkey: ASAuthorizationController sets origin to https://{rpId}
+  origins.push(`https://${SHARED_RP_ID}`);
+
   return origins;
 }
 
