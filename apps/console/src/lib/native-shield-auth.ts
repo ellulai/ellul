@@ -48,6 +48,37 @@ const RETRY_BASE_MS = 2_000;
 const KEEPALIVE_PREEMPT_MS = 5 * 60 * 1000;
 const KEEPALIVE_FLOOR_MS = 10_000;
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.ellul.ai";
+const RELAY_POLL_MS = 1_500;
+const RELAY_TIMEOUT_MS = 120_000;
+
+async function relayPasskeyViaBrowser(
+  options: PublicKeyCredentialRequestOptionsJSON,
+  hostname: string,
+): Promise<unknown> {
+  const flowId = crypto.randomUUID();
+
+  await fetch(`${API_URL}/api/auth/native/vps-auth-data`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ flowId, type: "options", data: options }),
+  });
+
+  const passkeyUrl = `${window.location.origin}/auth/vps-passkey?flow_id=${encodeURIComponent(flowId)}`;
+  window.open(passkeyUrl, "_blank");
+
+  const deadline = Date.now() + RELAY_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, RELAY_POLL_MS));
+    const res = await fetch(
+      `${API_URL}/api/auth/native/vps-auth-data?flow_id=${encodeURIComponent(flowId)}&type=assertion`,
+    );
+    const body = await res.json() as { status: string; data?: unknown };
+    if (body.status === "complete" && body.data) return body.data;
+  }
+  throw new Error("Passkey authentication timed out. Please try again.");
+}
+
 export function useNativeShieldAuth(
   hostname: string,
   invoke: NativeInvokeFn,
@@ -87,7 +118,20 @@ export function useNativeShieldAuth(
         "shield_login_options",
         { serverDomain: hostname },
       );
-      const assertion = await startAuthentication({ optionsJSON: options });
+
+      let assertion: unknown;
+      const hasPlatform =
+        typeof PublicKeyCredential !== "undefined" &&
+        (await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable());
+
+      if (hasPlatform) {
+        assertion = await startAuthentication({ optionsJSON: options });
+      } else if (isElectronApp()) {
+        assertion = await relayPasskeyViaBrowser(options, hostname);
+      } else {
+        assertion = await startAuthentication({ optionsJSON: options });
+      }
+
       await invoke("shield_login_verify", { serverDomain: hostname, assertion });
       autoRetryCount.current = 0;
       set("authenticated");
