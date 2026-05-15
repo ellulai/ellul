@@ -263,6 +263,15 @@ function NativeVpsBridgeProvider({ hostname, invoke, children }: VpsBridgeProvid
     });
   }, [hostname, invoke]);
 
+  useEffect(() => {
+    if (!ready || !needsVpsAuth || !hostname) return;
+    let cancelled = false;
+    authenticateNative().catch((err) => {
+      if (!cancelled) console.warn("[NativeBridge] auto-auth failed:", err);
+    });
+    return () => { cancelled = true; };
+  }, [ready, needsVpsAuth, hostname, authenticateNative]);
+
   const reauthenticate = useCallback(async (): Promise<void> => {
     await authenticateNative();
   }, [authenticateNative]);
