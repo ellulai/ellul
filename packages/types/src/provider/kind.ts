@@ -21,5 +21,5 @@ export const PROVIDER_DISPLAY_NAMES: Record<ProviderKind, string> = {
   cursor: "Cursor",
   opencode: "OpenCode",
   zeroclaw: "ZeroClaw",
-  grokAgent: "Grok",
+  grokAgent: "Grok Build",
 };

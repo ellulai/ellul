@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-shield-gate-list-active"
+description = "Enables the shield_gate_list_active command without any pre-configured scope."
+commands.allow = ["shield_gate_list_active"]
+
+[[permission]]
+identifier = "deny-shield-gate-list-active"
+description = "Denies the shield_gate_list_active command without any pre-configured scope."
+commands.deny = ["shield_gate_list_active"]

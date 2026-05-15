@@ -11,7 +11,7 @@ const AGENTS = [
   { Logo: OpenAILogo, label: "Codex" },
   { Logo: CursorLogo, label: "Cursor" },
   { Logo: OpenCodeLogo, label: "OpenCode" },
-  { Logo: GrokLogo, label: "Grok" },
+  { Logo: GrokLogo, label: "Grok Build" },
 ];
 
 type NightLogRow = {

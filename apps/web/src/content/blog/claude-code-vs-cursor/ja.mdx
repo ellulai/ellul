@@ -42,7 +42,7 @@
 
 ステップ2は、誰も同じ土俵で議論していない論点です。AnthropicはClaude Codeに「Remote Control」を出荷しています。これはリレーで、スマートフォンからメッセージを送り、ノートPC上に残るセッションへ届く仕組みです。ノートPCは依然として開けておく必要があります。CursorはCloud Agents(ホスト型のランタイム)とCLIにSDKを出荷しているので、エージェントはノートPCから離れて走れますが、Cursorが管理するインフラ上で、Cursorが管理する認証情報を使うことになります。GitHub Codespacesは人間向けのクラウド開発環境で、エージェント向けのゲートはありません。E2BやDaytona、Spritesは、ビルダー向けのサンドボックスのプリミティブを提供しているのであって、エンジニア向けの製品ではありません。
 
-私たちが[Ellul](/)を作ったのは、ステップ2が欠落していたからです。Ellulはあなたのエージェント用のコンピュータです。あなたはClaude Code、Codex、CursorのCLI、OpenCode、あるいはGrokを持ち込みます。私たちは、決して閉じないワークステーションと、独立したサンドボックス上の複数の並列セッション、そしてpasskeyゲートを提供します。passkeyゲートは、git push、デプロイ、データベース書き込みといった特権アクションのたびに停止し、あなたがタップして承認するまで先に進みません。
+私たちが[Ellul](/)を作ったのは、ステップ2が欠落していたからです。Ellulはあなたのエージェント用のコンピュータです。あなたはClaude Code、Codex、CursorのCLI、OpenCode、あるいはGrok Buildを持ち込みます。私たちは、決して閉じないワークステーションと、独立したサンドボックス上の複数の並列セッション、そしてpasskeyゲートを提供します。passkeyゲートは、git push、デプロイ、データベース書き込みといった特権アクションのたびに停止し、あなたがタップして承認するまで先に進みません。
 
 ## エージェントが別の場所に住むと、何が変わるか
 
@@ -84,7 +84,7 @@
 
 <Cta
   eyebrow="第3の選択肢を試す"
-  body="Ellulはスリープしないワークステーション上で、Claude Code、Codex、CursorのCLI、OpenCode、Grokを動かします。個人は月$20、プロは月$50。"
+  body="Ellulはスリープしないワークステーション上で、Claude Code、Codex、CursorのCLI、OpenCode、Grok Buildを動かします。個人は月$20、プロは月$50。"
   primary={{ href: "https://console.ellul.ai/sign-up", label: "ワークステーションを取得" }}
   links={[
     { href: "/vs/cursor", label: "vs Cursor →" },

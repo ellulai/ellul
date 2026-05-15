@@ -7,7 +7,7 @@ set -euo pipefail
 BINARY="${1:-}"
 if [ -z "$BINARY" ]; then
   echo "Usage: sudo ellul-update-binary <name>"
-  echo "Allowed: zeroclaw, opencode, cursor-agent"
+  echo "Allowed: zeroclaw, opencode, cursor-agent, grok"
   exit 1
 fi
 
@@ -47,9 +47,23 @@ case "$BINARY" in
     IS_TARBALL=true
     IS_CURSOR=true
     ;;
+  grok)
+    # Grok uses a user-local installer — runs as the service user, not root.
+    SVC_USER="${SUDO_USER:-dev}"
+    GROK_BIN="/home/${SVC_USER}/.grok/bin/grok"
+    CURRENT_VER=""
+    if [ -x "$GROK_BIN" ]; then
+      CURRENT_VER=$(runuser -l "$SVC_USER" -c "$GROK_BIN --version 2>/dev/null" | head -1 || echo "unknown")
+    fi
+    echo "Updating grok via official installer..."
+    runuser -l "$SVC_USER" -c "curl -fsSL https://x.ai/cli/install.sh | bash" 2>&1
+    NEW_VER=$(runuser -l "$SVC_USER" -c "$GROK_BIN --version 2>/dev/null" | head -1 || echo "unknown")
+    echo "grok: $CURRENT_VER -> $NEW_VER"
+    exit 0
+    ;;
   *)
     echo "Unknown binary: $BINARY"
-    echo "Allowed: zeroclaw, opencode, cursor-agent"
+    echo "Allowed: zeroclaw, opencode, cursor-agent, grok"
     exit 1
     ;;
 esac

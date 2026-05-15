@@ -10,12 +10,31 @@ import { isLoginProviderEnabled } from "@/lib/feature-flags";
 
 type Provider = "github" | "google" | "apple";
 
-type TauriCoreModule = {
-  invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
-};
-
-const TAURI_CORE_MODULE = "@tauri-apps/api/core";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+function tauriInvoke(cmd: string, args?: Record<string, unknown>): Promise<unknown> {
+  return (window as any).__TAURI_INTERNALS__.invoke(cmd, args);
+}
+
+function tauriOnOpenUrl(handler: (urls: string[]) => void): Promise<() => void> {
+  const internals = (window as any).__TAURI_INTERNALS__;
+  const callbackId = internals.transformCallback((event: { payload: string[] }) => {
+    handler(event.payload);
+  });
+  return internals
+    .invoke("plugin:event|listen", {
+      event: "deep-link://new-url",
+      target: { kind: "Any" },
+      handler: callbackId,
+    })
+    .then((eventId: number) => {
+      return () =>
+        internals.invoke("plugin:event|unlisten", {
+          event: "deep-link://new-url",
+          eventId,
+        });
+    });
+}
 
 function GitHubIcon() {
   return (
@@ -86,8 +105,7 @@ export function OAuthSignIn({
     if (isTauriApp()) {
       try {
         if (provider === "apple") {
-          const { invoke } = (await import(/* webpackIgnore: true */ TAURI_CORE_MODULE)) as TauriCoreModule;
-          const result = (await invoke("plugin:native-auth|sign_in_apple")) as {
+          const result = (await tauriInvoke("plugin:native-auth|sign_in_apple")) as {
             identity_token: string;
             given_name: string | null;
             family_name: string | null;
@@ -140,13 +158,29 @@ export function OAuthSignIn({
             oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
           }
 
-          const { invoke } = (await import(/* webpackIgnore: true */ TAURI_CORE_MODULE)) as TauriCoreModule;
-          const result = (await invoke("plugin:native-auth|open_oauth_browser", {
+          let resolveCallback: ((url: string) => void) | undefined;
+          const callbackPromise = new Promise<string>((resolve, reject) => {
+            resolveCallback = resolve;
+            setTimeout(() => reject(new Error("OAuth timeout")), 300_000);
+          });
+
+          const cleanupDeepLink = await tauriOnOpenUrl((urls) => {
+            const authUrl = urls.find((u) => u.startsWith("ellul://auth/callback"));
+            if (authUrl && resolveCallback) resolveCallback(authUrl);
+          });
+
+          const result = (await tauriInvoke("plugin:native-auth|open_oauth_browser", {
             url: oauthUrl,
           })) as { callbackUrl?: string } | undefined;
 
-          if (result?.callbackUrl) {
-            const url = new URL(result.callbackUrl);
+          let callbackUrl = result?.callbackUrl;
+          if (!callbackUrl) {
+            try { callbackUrl = await callbackPromise; } catch { /* timeout */ }
+          }
+          cleanupDeepLink();
+
+          if (callbackUrl) {
+            const url = new URL(callbackUrl);
             const code = url.searchParams.get("code");
             if (code) {
               const sessionRes = await fetch(`${API_URL}/api/auth/native/session`, {
@@ -164,8 +198,10 @@ export function OAuthSignIn({
           return;
         }
       } catch (err) {
-        console.error("Native auth failed, falling back to web:", err);
+        console.error("Native auth failed:", err);
+        setError("Sign in failed. Please try again.");
         setIsSigningIn(false);
+        return;
       }
     }
 

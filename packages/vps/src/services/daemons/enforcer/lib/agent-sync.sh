@@ -1240,6 +1240,31 @@ self_heal_cursor_agent_binary() {
   fi
 }
 
+self_heal_grok_binary() {
+  local target="/home/${SVC_USER:-dev}/.grok/bin/grok"
+
+  if [ ! -x "$target" ]; then
+    local throttle_file=/run/ellul-grok-heal-throttle
+    local now
+    now=$(date +%s)
+    if [ -f "$throttle_file" ]; then
+      local last
+      last=$(cat "$throttle_file" 2>/dev/null || echo 0)
+      if [ "$((now - last))" -lt 300 ]; then
+        return 0
+      fi
+    fi
+    echo "$now" > "$throttle_file"
+
+    log "agent-sync: grok binary missing — running ellul-update-binary"
+    if /usr/local/bin/ellul-update-binary grok >/dev/null 2>&1; then
+      log "agent-sync: grok installed"
+    else
+      log "agent-sync: ellul-update-binary grok FAILED — will retry after throttle"
+    fi
+  fi
+}
+
 self_heal_namespaced() {
   [ -d "$AGENT_RELEASES_ROOT/ellul-namespaced/current" ] || return 0
 
@@ -2552,6 +2577,7 @@ sync_agent_bundle() {
   self_heal_namespaced
   self_heal_opencode_binary_version
   self_heal_cursor_agent_binary
+  self_heal_grok_binary
 
   # Conditional GET
   local resp_file http_code

@@ -15,6 +15,7 @@ import { startAuthentication, startRegistration } from "@simplewebauthn/browser"
 import type { PublicKeyCredentialCreationOptionsJSON, PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/types";
 import { MOCK_MODE, mockVpsBridgeResponses } from "@/lib/mock-data";
 import { onSessionStatus } from "@/lib/session-events";
+import { isTauriApp } from "@/lib/utils";
 import type {
   BridgeMessageType,
   BridgeResponse,
@@ -62,9 +63,9 @@ interface VpsBridgeProviderProps {
 // graph. Rules of Hooks holds because no hook is called conditionally inside
 // a single component body.
 export function VpsBridgeProvider(props: VpsBridgeProviderProps) {
-  return MOCK_MODE
-    ? <MockVpsBridgeProvider>{props.children}</MockVpsBridgeProvider>
-    : <RealVpsBridgeProvider hostname={props.hostname}>{props.children}</RealVpsBridgeProvider>;
+  if (MOCK_MODE) return <MockVpsBridgeProvider>{props.children}</MockVpsBridgeProvider>;
+  if (isTauriApp()) return <TauriVpsBridgeProvider hostname={props.hostname}>{props.children}</TauriVpsBridgeProvider>;
+  return <RealVpsBridgeProvider hostname={props.hostname}>{props.children}</RealVpsBridgeProvider>;
 }
 
 function MockVpsBridgeProvider({ children }: { children: ReactNode }) {
@@ -102,6 +103,217 @@ function MockVpsBridgeProvider({ children }: { children: ReactNode }) {
     </VpsBridgeContext.Provider>
   );
 }
+
+// ── Tauri native bridge: replaces iframe + SW with Rust plugin ──
+
+const TAURI_COMMAND_MAP: Record<string, string> = {
+  check_session: "shield_check_session",
+  session_keepalive: "shield_session_keepalive",
+  get_code_session: "shield_get_code_session",
+  get_code_token: "shield_get_code_token",
+  get_agent_token: "shield_get_agent_token",
+  get_terminal_token: "shield_get_terminal_token",
+  get_preview_token: "shield_get_preview_token",
+  get_exchange_code: "shield_get_exchange_code",
+  permission_list_pending: "shield_permission_list_pending",
+  permission_get: "shield_permission_get",
+  permission_history: "shield_permission_history",
+  permission_mark_seen: "shield_permission_mark_seen",
+  gate_list_active: "shield_gate_list_active",
+  gate_request: "shield_gate_request",
+  gate_respond: "shield_gate_respond",
+  gate_revoke: "shield_gate_revoke",
+  gate_set_permission: "shield_gate_set_permission",
+  context_mode_get: "shield_context_mode_get",
+  context_mode_set: "shield_context_mode_set",
+  tool_permission_set: "shield_tool_permission_set",
+  tool_permission_reset: "shield_tool_permission_reset",
+  gate_operator_status: "shield_operator_status",
+  gate_bind_nonce: "shield_operator_bind",
+  gate_bind_operator: "shield_operator_bind",
+  intent_nonce: "shield_intent_nonce",
+};
+
+async function tauriInvoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  return (window as any).__TAURI_INTERNALS__.invoke(`plugin:shield|${cmd}`, args) as Promise<T>;
+}
+
+function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [needsVpsAuth, setNeedsVpsAuth] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  // Check session on mount
+  useEffect(() => {
+    tauriInvoke<{ hasSession: boolean }>("shield_check_session")
+      .then((res) => {
+        if (!res.hasSession) setNeedsVpsAuth(true);
+        setReady(true);
+      })
+      .catch((e) => setError(String(e)));
+  }, [hostname]);
+
+  // Session keepalive: refresh 5 min before expiry
+  useEffect(() => {
+    if (!ready || needsVpsAuth) return;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const schedule = () => {
+      tauriInvoke<{ active: boolean; expiresAt?: number }>("shield_session_info")
+        .then((info) => {
+          if (!info.active || !info.expiresAt) return;
+          const msUntilExpiry = info.expiresAt * 1000 - Date.now();
+          const refreshIn = Math.max(msUntilExpiry - 5 * 60 * 1000, 10_000);
+          timer = setTimeout(() => {
+            tauriInvoke<{ alive: boolean }>("shield_session_keepalive")
+              .then((res) => {
+                if (!res.alive) {
+                  setNeedsVpsAuth(true);
+                  setSessionExpired(true);
+                } else {
+                  schedule();
+                }
+              })
+              .catch(() => {
+                setNeedsVpsAuth(true);
+                setSessionExpired(true);
+              });
+          }, refreshIn);
+        })
+        .catch(() => {});
+    };
+
+    schedule();
+    return () => clearTimeout(timer);
+  }, [ready, needsVpsAuth]);
+
+  // Re-check session when app returns to foreground
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === "visible" && ready && !needsVpsAuth) {
+        tauriInvoke<{ hasSession: boolean }>("shield_check_session").then((res) => {
+          if (!res.hasSession) {
+            setNeedsVpsAuth(true);
+            setSessionExpired(true);
+          }
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
+  }, [ready, needsVpsAuth]);
+
+  const send = useCallback(<T = unknown,>(type: string, data: Record<string, unknown> = {}): Promise<T> => {
+    const cmd = TAURI_COMMAND_MAP[type];
+    if (!cmd) return Promise.reject(new Error(`Unknown bridge message: ${type}`));
+    return tauriInvoke<T>(cmd, data).catch((e) => {
+      const msg = String(e);
+      if (msg.includes("No active session") || msg.includes("NoSession")) {
+        setNeedsVpsAuth(true);
+      }
+      throw e instanceof Error ? e : new Error(msg);
+    });
+  }, []);
+
+  const dummyHandle: BridgeHandle = {
+    contentWindow: typeof window !== "undefined" ? window : ({} as Window),
+    hostname,
+    generation: 0,
+  };
+
+  const waitForReady = useCallback((): Promise<BridgeHandle> => {
+    if (ready && !error) return Promise.resolve(dummyHandle);
+    if (error) return Promise.reject(new Error(error));
+    return new Promise<BridgeHandle>((resolve, reject) => {
+      const check = setInterval(() => {
+        if (ready) { clearInterval(check); resolve(dummyHandle); }
+        if (error) { clearInterval(check); reject(new Error(error)); }
+      }, 50);
+      setTimeout(() => { clearInterval(check); reject(new Error("Tauri bridge timeout")); }, 30_000);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, error, hostname]);
+
+  const authenticateNative = useCallback(async (): Promise<void> => {
+    // Step 1: Get WebAuthn options from VPS (unauthenticated)
+    const options = await tauriInvoke<PublicKeyCredentialRequestOptionsJSON>(
+      "shield_login_options",
+      { serverDomain: hostname },
+    );
+    // Step 2: Browser WebAuthn ceremony (Touch ID / Face ID / security key)
+    const assertion = await startAuthentication({ optionsJSON: options });
+    // Step 3: Rust verifies assertion, captures HttpOnly Set-Cookie, stores
+    // session, and performs ML-KEM PoP bind — all server-side in one call
+    await tauriInvoke(
+      "shield_login_verify",
+      { serverDomain: hostname, assertion },
+    );
+    setNeedsVpsAuth(false);
+    setSessionExpired(false);
+  }, [hostname]);
+
+  const registerNative = useCallback(async (name: string): Promise<unknown> => {
+    const regOptions = await tauriInvoke<{ options: PublicKeyCredentialCreationOptionsJSON }>(
+      "shield_register_options",
+      { serverDomain: hostname, body: { name } },
+    );
+    const attestation = await startRegistration({ optionsJSON: regOptions.options ?? regOptions as unknown as PublicKeyCredentialCreationOptionsJSON });
+    const extResults = attestation.clientExtensionResults as Record<string, unknown> | undefined;
+    const prfEnabled = (extResults?.prf as { enabled?: boolean } | undefined)?.enabled === true;
+    return tauriInvoke("shield_register_verify", {
+      serverDomain: hostname,
+      body: { attestation, name, prfEnabled },
+    });
+  }, [hostname]);
+
+  const reauthenticate = useCallback(async (): Promise<void> => {
+    await authenticateNative();
+  }, [authenticateNative]);
+
+  const signalAuthNeeded = useCallback(() => {
+    setNeedsVpsAuth(true);
+  }, []);
+
+  const reload = useCallback(() => {
+    setReady(false);
+    setError(null);
+    setNeedsVpsAuth(false);
+    setSessionExpired(false);
+    tauriInvoke("shield_clear_session")
+      .catch(() => {})
+      .finally(() => {
+        tauriInvoke<{ hasSession: boolean }>("shield_check_session")
+          .then((res) => {
+            if (!res.hasSession) setNeedsVpsAuth(true);
+            setReady(true);
+          })
+          .catch((e) => setError(String(e)));
+      });
+  }, []);
+
+  return (
+    <VpsBridgeContext.Provider
+      value={{
+        ready,
+        error,
+        needsVpsAuth,
+        sessionExpired,
+        send,
+        waitForReady,
+        reauthenticate,
+        signalAuthNeeded,
+        reload,
+        authenticateNative,
+        registerNative,
+      }}
+    >
+      {children}
+    </VpsBridgeContext.Provider>
+  );
+}
+
+// ── Real iframe bridge (web) ──
 
 function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
   const queryClient = useQueryClient();

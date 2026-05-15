@@ -79,8 +79,8 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
   },
   grokAgent: {
     provider: "grokAgent",
-    title: "Grok",
-    description: "Save additional Grok model slugs for the picker and `/model` command.",
+    title: "Grok Build",
+    description: "Save additional Grok Build model slugs for the picker and `/model` command.",
     placeholder: "your-grok-model-slug",
     example: "grok-3",
   },

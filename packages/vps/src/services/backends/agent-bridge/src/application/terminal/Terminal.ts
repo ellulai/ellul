@@ -193,7 +193,7 @@ async function startTtyd(
     stdio: 'ignore',
     env: {
       ...process.env,
-      PATH: `${os.homedir()}/.node/bin:${os.homedir()}/.opencode/bin:${os.homedir()}/.local/bin:${process.env.PATH || ''}`,
+      PATH: `${os.homedir()}/.grok/bin:${os.homedir()}/.node/bin:${os.homedir()}/.opencode/bin:${os.homedir()}/.local/bin:${process.env.PATH || ''}`,
     },
   });
 

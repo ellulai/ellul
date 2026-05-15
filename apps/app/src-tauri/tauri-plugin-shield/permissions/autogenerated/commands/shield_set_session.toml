@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-shield-set-session"
+description = "Enables the shield_set_session command without any pre-configured scope."
+commands.allow = ["shield_set_session"]
+
+[[permission]]
+identifier = "deny-shield-set-session"
+description = "Denies the shield_set_session command without any pre-configured scope."
+commands.deny = ["shield_set_session"]

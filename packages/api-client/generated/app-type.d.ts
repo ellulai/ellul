@@ -3393,7 +3393,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
             input: {
                 json: {
                     preferredView?: "terminal" | "workbench" | undefined;
-                    preferredSession?: "opencode" | "main" | "claude" | "codex" | "cursor" | "claw" | undefined;
+                    preferredSession?: "opencode" | "main" | "claude" | "codex" | "cursor" | "claw" | "grok" | undefined;
                     preferredApp?: string | null | undefined;
                     snapshotDisabled?: boolean | undefined;
                 };
@@ -3421,7 +3421,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
             input: {
                 json: {
                     preferredView?: "terminal" | "workbench" | undefined;
-                    preferredSession?: "opencode" | "main" | "claude" | "codex" | "cursor" | "claw" | undefined;
+                    preferredSession?: "opencode" | "main" | "claude" | "codex" | "cursor" | "claw" | "grok" | undefined;
                     preferredApp?: string | null | undefined;
                 };
             } & {
@@ -3438,7 +3438,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
             input: {
                 json: {
                     preferredView?: "terminal" | "workbench" | undefined;
-                    preferredSession?: "opencode" | "main" | "claude" | "codex" | "cursor" | "claw" | undefined;
+                    preferredSession?: "opencode" | "main" | "claude" | "codex" | "cursor" | "claw" | "grok" | undefined;
                     preferredApp?: string | null | undefined;
                 };
             } & {
@@ -3455,7 +3455,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ({
             input: {
                 json: {
                     preferredView?: "terminal" | "workbench" | undefined;
-                    preferredSession?: "opencode" | "main" | "claude" | "codex" | "cursor" | "claw" | undefined;
+                    preferredSession?: "opencode" | "main" | "claude" | "codex" | "cursor" | "claw" | "grok" | undefined;
                     preferredApp?: string | null | undefined;
                 };
             } & {

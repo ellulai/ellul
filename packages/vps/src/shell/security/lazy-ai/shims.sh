@@ -24,5 +24,6 @@ codex() { _ai_shim codex "$@"; }
 # cursor-agent is the real binary name; `cursor` is the user-friendly alias.
 cursor() { _ai_shim cursor-agent "$@"; }
 cursor-agent() { _ai_shim cursor-agent "$@"; }
+grok() { _ai_shim grok "$@"; }
 
-export -f opencode claude codex cursor cursor-agent _ai_shim _reload_secrets 2>/dev/null || true
+export -f opencode claude codex cursor cursor-agent grok _ai_shim _reload_secrets 2>/dev/null || true

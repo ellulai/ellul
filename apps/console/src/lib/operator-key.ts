@@ -4,6 +4,7 @@ import { ml_dsa44 } from "@noble/post-quantum/ml-dsa.js";
 import { slh_dsa_sha2_128s } from "@noble/post-quantum/slh-dsa.js";
 import { getRequiredSignatureType, type IntentSignatureType } from "@ellul.ai/pqc-types";
 import { derivePrfKey } from "./passy-prf";
+import { isTauriApp } from "./utils";
 import type { BridgeSender } from "./gate-client";
 
 const PRF_SALT_LABEL = "ellul-browser-signing-keys-v1";
@@ -61,6 +62,7 @@ export function operatorKeyFor(
   serverDomain: string,
   bridgeSend: BridgeSender,
 ): OperatorKeyApi {
+  if (isTauriApp()) return tauriOperatorKeyFor(serverDomain);
   // Latest call wins. There is one VpsBridgeProvider per dashboard session,
   // so the same bridge instance is passed in for every operatorKeyFor() call.
   bridgeSendRef = bridgeSend;
@@ -68,6 +70,32 @@ export function operatorKeyFor(
     sign: (payload) => signOperation(serverDomain, payload),
     signIntent: (action, resource) => signIntent(serverDomain, action, resource ?? null),
     clear: () => clearOperation(serverDomain),
+  };
+}
+
+async function tauriInvoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  return (window as any).__TAURI_INTERNALS__.invoke(`plugin:shield|${cmd}`, args) as Promise<T>;
+}
+
+function tauriOperatorKeyFor(serverDomain: string): OperatorKeyApi {
+  return {
+    async sign(payload: Uint8Array): Promise<{ signature: string; timestamp: string }> {
+      let binary = "";
+      for (let i = 0; i < payload.byteLength; i++) {
+        binary += String.fromCharCode(payload[i]!);
+      }
+      const payloadB64 = btoa(binary);
+      return tauriInvoke("shield_operator_sign", { payloadB64: payloadB64 });
+    },
+    async signIntent(action: string, resource?: string | null): Promise<IntentSignature> {
+      return tauriInvoke("shield_operator_sign_intent", {
+        action,
+        resource: resource ?? undefined,
+      });
+    },
+    async clear(): Promise<void> {
+      await tauriInvoke("shield_operator_clear");
+    },
   };
 }
 
@@ -83,6 +111,10 @@ function requireBridge(): BridgeSender {
 // Zero all in-memory state and drop every wrapped blob from IDB. Called on
 // logout — the wrapped key must not outlive its shield session.
 export async function clearAllOperatorKeys(): Promise<void> {
+  if (isTauriApp()) {
+    await tauriInvoke("shield_operator_clear");
+    return;
+  }
   zeroizeState();
   await idbClearAll();
 }

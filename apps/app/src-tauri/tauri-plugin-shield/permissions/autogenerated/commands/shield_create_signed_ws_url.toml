@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-shield-create-signed-ws-url"
+description = "Enables the shield_create_signed_ws_url command without any pre-configured scope."
+commands.allow = ["shield_create_signed_ws_url"]
+
+[[permission]]
+identifier = "deny-shield-create-signed-ws-url"
+description = "Denies the shield_create_signed_ws_url command without any pre-configured scope."
+commands.deny = ["shield_create_signed_ws_url"]

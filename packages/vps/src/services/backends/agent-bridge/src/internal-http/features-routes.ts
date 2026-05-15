@@ -36,7 +36,7 @@ const VALID_FEATURES = new Set(['gbrain', 'gstack']);
 const PLAN_FILE = '/etc/ellul/plan';
 const GBRAIN_ELIGIBLE_PLANS = new Set(['pro']);
 
-const VALID_PROVIDERS = ['anthropic', 'openai', 'google', 'openrouter'] as const;
+const VALID_PROVIDERS = ['anthropic', 'openai', 'google', 'openrouter', 'xai'] as const;
 type ProviderId = typeof VALID_PROVIDERS[number];
 
 const PROVIDER_ENV_KEYS: Record<ProviderId, string> = {
@@ -44,6 +44,7 @@ const PROVIDER_ENV_KEYS: Record<ProviderId, string> = {
   openai: 'OPENAI_API_KEY',
   google: 'GOOGLE_GENERATIVE_AI_API_KEY',
   openrouter: 'OPENROUTER_API_KEY',
+  xai: 'GROK_CODE_XAI_API_KEY',
 };
 
 const ZEROCLAW_ENV_KEYS: Record<string, string> = {
@@ -51,6 +52,7 @@ const ZEROCLAW_ENV_KEYS: Record<string, string> = {
   openai: 'OPENAI_API_KEY',
   google: 'GOOGLE_API_KEY',
   openrouter: 'OPENROUTER_API_KEY',
+  xai: 'XAI_API_KEY',
 };
 
 interface FeaturesState {
@@ -147,6 +149,11 @@ function getConnectorStatus(): Record<string, ConnectorInfo> {
       connected: cursorSignedIn,
       hasApiKey: false,
       hasSignIn: cursorSignedIn,
+    },
+    grok: {
+      connected: !!cliEnv['GROK_CODE_XAI_API_KEY'],
+      hasApiKey: !!cliEnv['GROK_CODE_XAI_API_KEY'],
+      hasSignIn: false,
     },
   };
 }

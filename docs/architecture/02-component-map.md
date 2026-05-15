@@ -12,7 +12,7 @@ The repo is a pnpm monorepo with `apps/` (deployable surfaces) and `packages/` (
 | `apps/docs` | Public documentation site (this v2 tree may eventually feed it). | Next.js |
 | `apps/games` | Standalone game studio surface. | Cloudflare Pages |
 | `apps/ide` | Tauri-based desktop IDE (legacy). | Tauri build |
-| `apps/desktop` | Desktop wrapper (legacy). | Tauri build |
+| `apps/app` | Native app (desktop, iOS, Android). | Tauri build |
 | `apps/android` | Android wrapper (legacy). | Tauri build |
 | `apps/vscode-extension` | VS Code extension for ellul.ai integration. | VS Code Marketplace |
 

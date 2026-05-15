@@ -140,7 +140,7 @@ const SESSION_DISPLAY = [
   { id: "claude", label: "Claude", color: "#DE7356", icon: ClaudeLogo },
   { id: "codex", label: "Codex", color: "#38bdf8", icon: OpenAILogo },
   { id: "cursor", label: "Cursor", color: "#E5E5E5", icon: CursorLogo },
-  { id: "grok", label: "Grok", color: "#FFFFFF", icon: GrokLogo },
+  { id: "grok", label: "Grok Build", color: "#FFFFFF", icon: GrokLogo },
 ] as const;
 
 // New-thread picker — subset of SESSION_DISPLAY, excludes retired providers.

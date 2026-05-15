@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ClaudeLogo, OpenAILogo, CursorLogo, GeminiLogo, OpenRouterLogo, OpenCodeLogo } from "@/components/ui/ai-logos";
+import { ClaudeLogo, OpenAILogo, CursorLogo, GeminiLogo, OpenRouterLogo, OpenCodeLogo, GrokLogo } from "@/components/ui/ai-logos";
 import { useVpsBridge } from "@/lib/vps-bridge";
 
 // ANSI renderer ported from AuthSetupModal. Translates cursor moves to
@@ -160,6 +160,17 @@ const CONNECTORS: ConnectorDef[] = [
     hasSignIn: false,
     keyUrl: "https://openrouter.ai/settings/keys",
     keyPlaceholder: "sk-or-...",
+  },
+  {
+    id: "grok",
+    tool: "grok",
+    label: "Grok Build",
+    subtitle: "xAI",
+    provider: "xai",
+    icon: <GrokLogo className="h-4 w-4" />,
+    hasSignIn: false,
+    keyUrl: "https://console.x.ai/",
+    keyPlaceholder: "xai-...",
   },
 ];
 

@@ -33,6 +33,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   openai: "OpenAI",
   google: "Google",
   openrouter: "OpenRouter",
+  xai: "xAI",
 };
 
 interface AIToolsCardProps {

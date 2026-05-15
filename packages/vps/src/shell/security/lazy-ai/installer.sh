@@ -43,8 +43,32 @@ install_npm_tool() {
 
 mkdir -p "$FLAG_DIR"
 
+grok_exists() {
+  [ -x "/home/${SVC_USER}/.grok/bin/grok" ]
+}
+
+install_grok() {
+  if grok_exists; then
+    log "grok: already installed — skipping"
+    return 0
+  fi
+  local attempt=1
+  while [ $attempt -le 3 ]; do
+    log "grok: attempt $attempt/3"
+    if runuser -l $SVC_USER -c "curl -fsSL https://x.ai/cli/install.sh | bash" >> "$LOG" 2>&1; then
+      log "grok: OK"
+      return 0
+    fi
+    log "grok: attempt $attempt failed"
+    attempt=$((attempt + 1))
+    [ $attempt -le 3 ] && sleep 30
+  done
+  log "!grok (all attempts failed)"
+  return 1
+}
+
 # Fast path: if all tools exist (snapshot boot), skip the 15s settle delay entirely
-if tool_exists claude && tool_exists codex; then
+if tool_exists claude && tool_exists codex && grok_exists; then
   log "All AI tools already installed — nothing to do"
   touch "$FLAG_FILE"
   exit 0
@@ -57,6 +81,7 @@ sleep 15
 fail=0
 install_npm_tool "claude" "__NPM_CLAUDE_CODE__" || fail=1
 install_npm_tool "codex"  "__NPM_CODEX__"       || fail=1
+install_grok                                    || fail=1
 
 # Only mark "ready" when every tool is actually installed. Leaving the
 # flag unset on partial failure lets a later wake/boot retry the missing

@@ -42,6 +42,14 @@ get_binary_version() {
   fi
 }
 
+get_grok_version() {
+  if [ -x "$HOME/.grok/bin/grok" ]; then
+    "$HOME/.grok/bin/grok" --version 2>/dev/null | head -1
+  else
+    echo "not installed"
+  fi
+}
+
 list_versions() {
   echo "AI CLI tools:"
   echo "  claude       $(get_version @anthropic-ai/claude-code)"
@@ -49,6 +57,7 @@ list_versions() {
   echo "  cursor-agent $(get_binary_version cursor-agent)"
   echo "  zeroclaw     $(get_binary_version zeroclaw)"
   echo "  opencode     $(get_binary_version opencode)"
+  echo "  grok         $(get_grok_version)"
 }
 
 update_npm_tool() {
@@ -99,6 +108,7 @@ case "$TARGET" in
   cursor|cursor-agent) update_binary "cursor-agent" ;;
   zeroclaw)      update_binary "zeroclaw" ;;
   opencode)      update_binary "opencode" ;;
+  grok)          update_binary "grok" ;;
   list)          list_versions ;;
   all)
     update_npm_tool "Claude Code" "@anthropic-ai/claude-code"
@@ -106,10 +116,11 @@ case "$TARGET" in
     update_binary "cursor-agent"
     update_binary "zeroclaw"
     update_binary "opencode"
+    update_binary "grok"
     ;;
   *)
     echo "Unknown tool: $TARGET"
-    echo "Available: claude, codex, cursor, zeroclaw, opencode, list, all"
+    echo "Available: claude, codex, cursor, zeroclaw, opencode, grok, list, all"
     exit 1
     ;;
 esac
