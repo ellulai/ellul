@@ -18,7 +18,6 @@ import {
 } from "@/contexts/DashboardContext";
 import type { Session } from "@/lib/auth-client";
 import type { useServerMutations } from "./useServerMutations";
-import { DebugOverlay } from "./DebugOverlay";
 
 interface DashboardProvidersProps {
   children: React.ReactNode;
@@ -86,7 +85,7 @@ export function DashboardProviders({
 
   return (
     <DashboardContext.Provider value={dashboardContext}>
-      <VpsBridgeProvider hostname={serverDomain}>
+      <VpsBridgeProvider hostname={serverDomain} securityTier={server.securityTier}>
         <CodeTokenProvider
           securityTier={server.securityTier}
           codeApiUrl={getCodeApiUrl(serverDomain)}
@@ -107,7 +106,6 @@ export function DashboardProviders({
                 <OperatorKeyProvider serverDomain={serverDomain} securityTier={server.securityTier}>
                   <PermissionInboxProvider serverDomain={serverDomain}>
                     {children}
-                    <DebugOverlay />
                   </PermissionInboxProvider>
                 </OperatorKeyProvider>
               </AppsListProvider>

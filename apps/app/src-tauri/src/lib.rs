@@ -39,11 +39,6 @@ fn resolve_start_url(cfg: &config::AppConfig) -> tauri::WebviewUrl {
 }
 
 #[tauri::command]
-fn __dbg(msg: String) {
-    eprintln!("[ellul-webview] {}", msg);
-}
-
-#[tauri::command]
 fn open_external(url: String) -> Result<(), String> {
     eprintln!("[ellul] open_external: {}", url);
     open::that(&url).map_err(|e| e.to_string())
@@ -157,7 +152,6 @@ pub fn run() {
         .plugin(tauri_plugin_shield::init())
         .plugin(tauri_plugin_proot::init())
         .invoke_handler(tauri::generate_handler![
-            __dbg,
             open_external,
             get_app_mode,
             set_app_mode,
@@ -199,87 +193,7 @@ pub fn run() {
                 });
             }
 
-            let win = builder.build()?;
-
-            let win_clone = win.clone();
-            eprintln!("[ellul] starting diagnostic injection thread");
-            std::thread::spawn(move || {
-                for delay in [3, 6, 10, 15, 20, 30] {
-                    std::thread::sleep(std::time::Duration::from_secs(delay));
-                    // Use window.name as persistent signal (not overwritten by React)
-                    let probe = format!(r#"
-                        window.name = 'PROBE|t={}|tauri=' + (typeof window.__TAURI_INTERNALS__ !== 'undefined') + '|url=' + window.location.pathname;
-                    "#, delay);
-                    let _ = win_clone.eval(&probe);
-                    std::thread::sleep(std::time::Duration::from_millis(100));
-                    // Read window.name back via JS eval that assigns to title briefly
-                    let readback = r#"document.title = window.name || 'NO_PROBE';"#;
-                    let _ = win_clone.eval(readback);
-                    std::thread::sleep(std::time::Duration::from_millis(100));
-
-                    if let Ok(url) = win_clone.url() {
-                        eprintln!("[ellul] url t+{}s: {}", delay, url);
-                    }
-                    let js = format!(r#"
-                        (function() {{
-                            var hasTauri = typeof window.__TAURI_INTERNALS__ !== 'undefined';
-                            var dbg = hasTauri
-                                ? function(msg) {{ window.__TAURI_INTERNALS__.invoke('__dbg', {{ msg: '[t+{d}s] ' + msg }}); }}
-                                : function(msg) {{ console.log('[ellul-diag][t+{d}s] ' + msg); }};
-                            try {{
-                                dbg('url=' + window.location.href);
-                                dbg('hasTauri=' + hasTauri);
-                                dbg('cookies=' + document.cookie.split(';').map(function(c) {{ return c.trim().split('=')[0]; }}).filter(Boolean).join(','));
-                                var bodyText = (document.body && document.body.innerText) || '';
-                                dbg('body_len=' + bodyText.length);
-                                dbg('body_preview=' + bodyText.substring(0, 400).replace(/\n/g, ' | '));
-
-                                if (hasTauri) {{
-                                    // Monkey-patch WebSocket once
-                                    if (!window.__WS_PATCHED__) {{
-                                        window.__WS_PATCHED__ = true;
-                                        window.__WS_LOG__ = [];
-                                        var OrigWS = window.WebSocket;
-                                        window.WebSocket = function(url, protocols) {{
-                                            window.__WS_LOG__.push({{ url: url, t: Date.now(), s: 'new' }});
-                                            window.__TAURI_INTERNALS__.invoke('__dbg', {{ msg: 'WS_NEW: ' + url }});
-                                            var ws = protocols ? new OrigWS(url, protocols) : new OrigWS(url);
-                                            ws.addEventListener('open', function() {{
-                                                window.__TAURI_INTERNALS__.invoke('__dbg', {{ msg: 'WS_OPEN: ' + url }});
-                                            }});
-                                            ws.addEventListener('error', function() {{
-                                                window.__TAURI_INTERNALS__.invoke('__dbg', {{ msg: 'WS_ERROR: ' + url }});
-                                            }});
-                                            ws.addEventListener('close', function(e) {{
-                                                window.__TAURI_INTERNALS__.invoke('__dbg', {{ msg: 'WS_CLOSE: ' + url + ' code=' + e.code + ' reason=' + e.reason }});
-                                            }});
-                                            return ws;
-                                        }};
-                                        window.WebSocket.CONNECTING = OrigWS.CONNECTING;
-                                        window.WebSocket.OPEN = OrigWS.OPEN;
-                                        window.WebSocket.CLOSING = OrigWS.CLOSING;
-                                        window.WebSocket.CLOSED = OrigWS.CLOSED;
-                                    }}
-
-                                    if (window.__WS_LOG__ && window.__WS_LOG__.length > 0) {{
-                                        dbg('WS_LOG=' + JSON.stringify(window.__WS_LOG__));
-                                    }}
-
-                                    window.__TAURI_INTERNALS__.invoke('plugin:shield|shield_check_session')
-                                        .then(function(r) {{ dbg('shield_check=' + JSON.stringify(r)); }})
-                                        .catch(function(e) {{ dbg('shield_check_ERR=' + String(e)); }});
-                                }}
-                            }} catch(e) {{
-                                if (hasTauri) {{
-                                    window.__TAURI_INTERNALS__.invoke('__dbg', {{ msg: '[t+{d}s] ERR: ' + e.message }});
-                                }}
-                            }}
-                        }})();
-                    "#, d=delay);
-                    let _ = win_clone.eval(&js);
-                }
-            });
-
+            let _win = builder.build()?;
 
             #[cfg(desktop)]
             setup_desktop(app)?;

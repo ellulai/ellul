@@ -57,6 +57,7 @@ const VpsBridgeContext = createContext<VpsBridgeState | null>(null);
 interface VpsBridgeProviderProps {
   hostname: string;
   children: ReactNode;
+  securityTier?: "standard" | "web_locked" | "private_locked";
 }
 
 // Top-level dispatch: each branch is a sibling component with its own hook
@@ -64,7 +65,11 @@ interface VpsBridgeProviderProps {
 // a single component body.
 export function VpsBridgeProvider(props: VpsBridgeProviderProps) {
   if (MOCK_MODE) return <MockVpsBridgeProvider>{props.children}</MockVpsBridgeProvider>;
-  if (isTauriApp()) return <TauriVpsBridgeProvider hostname={props.hostname}>{props.children}</TauriVpsBridgeProvider>;
+  // Tauri native bridge for non-standard tiers (passkey + PoP in Rust).
+  // Standard tier uses the iframe bridge with JWT injection — the Tauri
+  // plugin doesn't carry JWT auth, and the iframe bridge works identically
+  // in both browser and native WebView contexts.
+  if (isTauriApp() && props.securityTier !== "standard") return <TauriVpsBridgeProvider hostname={props.hostname}>{props.children}</TauriVpsBridgeProvider>;
   return <RealVpsBridgeProvider hostname={props.hostname}>{props.children}</RealVpsBridgeProvider>;
 }
 

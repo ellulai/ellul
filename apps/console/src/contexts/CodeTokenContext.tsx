@@ -97,13 +97,12 @@ function RealCodeTokenProvider({
   const sessionExpiresRef = useRef<number>(0);
   const lastEstablishTimeRef = useRef<number>(0);
   const ESTABLISH_COOLDOWN_MS = 30_000;
+  const jwtRef = useRef<string | null>(null);
 
   const establishCookie = useCallback(async (): Promise<void> => {
-    console.log("[ellul-debug][CodeToken] establishCookie called", { codeApiUrl, securityTier, serverId, srvUrl });
-    if (!codeApiUrl) { console.log("[ellul-debug][CodeToken] BAIL: no codeApiUrl"); return; }
+    if (!codeApiUrl) return;
 
     if (establishingRef.current) {
-      console.log("[ellul-debug][CodeToken] already establishing, awaiting");
       await establishingRef.current;
       return;
     }
@@ -114,33 +113,28 @@ function RealCodeTokenProvider({
         let expiresAt: number;
 
         if (securityTier !== "standard") {
-          console.log("[ellul-debug][CodeToken] non-standard tier, using bridge");
           await waitForReady();
           const result = await send("get_code_session");
           codeSessionId = result.codeSessionId;
           expiresAt = result.expiresAt;
-          console.log("[ellul-debug][CodeToken] bridge get_code_session OK", { codeSessionId: codeSessionId.slice(0, 8), expiresAt });
         } else {
-          if (!serverId || !srvUrl) { console.log("[ellul-debug][CodeToken] BAIL: no serverId or srvUrl", { serverId, srvUrl }); return; }
+          if (!serverId || !srvUrl) return;
 
-          console.log("[ellul-debug][CodeToken] standard tier: fetching terminal token from API", { url: `${API_URL}/api/servers/${serverId}/terminal/token` });
           const tokenRes = await fetch(`${API_URL}/api/servers/${serverId}/terminal/token`, {
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
           });
-          console.log("[ellul-debug][CodeToken] terminal token response", { status: tokenRes.status, ok: tokenRes.ok });
-          if (!tokenRes.ok) {
-            const errBody = await tokenRes.text().catch(() => "");
-            console.error("[ellul-debug][CodeToken] terminal token FAILED", { status: tokenRes.status, body: errBody.slice(0, 200) });
-            throw new Error(t("platformTokenFailed"));
-          }
+          if (!tokenRes.ok) throw new Error(t("platformTokenFailed"));
           const tokenData = await tokenRes.json() as { terminal?: { token?: string } };
           const jwt = tokenData.terminal?.token;
-          console.log("[ellul-debug][CodeToken] JWT received:", { hasJwt: !!jwt, jwtLen: jwt?.length });
           if (!jwt) throw new Error(t("noPlatformJwt"));
 
-          console.log("[ellul-debug][CodeToken] creating code session on VPS", { url: `${srvUrl}/_auth/code/session` });
+          // Inject JWT into the bridge iframe so it can authorize
+          // standard-tier requests (native apps lack cross-origin cookies).
+          jwtRef.current = jwt;
+          send("inject_token", { jwt }).catch(() => {});
+
           const sessionRes = await fetchWithRetry(`${srvUrl}/_auth/code/session`, {
             method: "POST",
             credentials: "include",
@@ -149,33 +143,19 @@ function RealCodeTokenProvider({
               "Authorization": `Bearer ${jwt}`,
             },
           });
-          console.log("[ellul-debug][CodeToken] VPS code session response", { status: sessionRes.status, ok: sessionRes.ok });
-          if (!sessionRes.ok) {
-            const errBody = await sessionRes.text().catch(() => "");
-            console.error("[ellul-debug][CodeToken] VPS code session FAILED", { status: sessionRes.status, body: errBody.slice(0, 200) });
-            throw new Error(t("createSessionFailed"));
-          }
+          if (!sessionRes.ok) throw new Error(t("createSessionFailed"));
           const sessionData = await sessionRes.json() as { codeSessionId: string; expiresAt: number };
           codeSessionId = sessionData.codeSessionId;
           expiresAt = sessionData.expiresAt;
-          console.log("[ellul-debug][CodeToken] code session created", { codeSessionId: codeSessionId.slice(0, 8), expiresAt });
         }
 
-        console.log("[ellul-debug][CodeToken] establishing cookie", { url: `${codeApiUrl}/_auth/code/establish?_code_session=${codeSessionId.slice(0, 8)}...` });
         const res = await fetch(
           `${codeApiUrl}/_auth/code/establish?_code_session=${codeSessionId}`,
           { credentials: "include" },
         );
-        console.log("[ellul-debug][CodeToken] establish response", { status: res.status, ok: res.ok });
-
-        if (!res.ok) {
-          const errBody = await res.text().catch(() => "");
-          console.error("[ellul-debug][CodeToken] establish cookie FAILED", { status: res.status, body: errBody.slice(0, 200) });
-          throw new Error(t("establishCookieFailed"));
-        }
+        if (!res.ok) throw new Error(t("establishCookieFailed"));
 
         const data = await res.json() as { established: boolean; expiresAt: number };
-        console.log("[ellul-debug][CodeToken] establish result", data);
         if (data.established) {
           cookieEstablishedRef.current = true;
           lastEstablishTimeRef.current = Date.now();
@@ -184,11 +164,9 @@ function RealCodeTokenProvider({
           setActiveSessionExpiresAt(data.expiresAt || expiresAt);
           setToken("cookie-session");
           setError(null);
-          console.log("[ellul-debug][CodeToken] SUCCESS — codeSessionId set", { codeSessionId: codeSessionId.slice(0, 8) });
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : t("establishSessionFailed");
-        console.error("[ellul-debug][CodeToken] establishCookie ERROR", { message: msg, err });
         if (msg.includes("pop_not_bound")) {
           await new Promise(r => setTimeout(r, 1000));
           establishingRef.current = null;

@@ -15,6 +15,11 @@ let pendingSessionCheck = null;
 let popReady = false;
 let pendingPoP = null;
 
+// JWT injected by the console for standard-tier native apps where the
+// terminal_token cookie isn't available in this iframe's cookie jar.
+// When set, all fetch helpers include it as an Authorization header.
+let injectedJwt = null;
+
 // SECURITY: Capture the exact parent origin when iframe loads
 let PARENT_ORIGIN = null;
 try {
@@ -106,11 +111,19 @@ async function attemptSessionRecovery() {
   }
 }
 
+// Build Authorization header object when JWT is injected (standard tier native apps).
+function authHeaders() {
+  if (injectedJwt && SECURITY_TIER === 'standard') {
+    return { 'Authorization': 'Bearer ' + injectedJwt };
+  }
+  return {};
+}
+
 // Shared token fetch with PoP error recovery AND 401 session recovery
 async function fetchTokenWithPopRecovery(endpoint, label) {
   await requireSession();
   for (let attempt = 1; attempt <= 3; attempt++) {
-    const res = await fetch(endpoint, { method: 'POST', credentials: 'include' });
+    const res = await fetch(endpoint, { method: 'POST', credentials: 'include', headers: authHeaders() });
     if (res.ok) return await res.json();
     const err = await res.json().catch(() => ({}));
 
@@ -142,7 +155,7 @@ async function fetchTokenWithPopRecovery(endpoint, label) {
 // extraHeaders is for X-STS-Token and similar — Content-Type / Accept are
 // set automatically and should not be passed in.
 async function fetchJson(url, extraHeaders) {
-  var headers = { Accept: 'application/json' };
+  var headers = Object.assign({ Accept: 'application/json' }, authHeaders());
   if (extraHeaders) {
     for (var k in extraHeaders) {
       if (Object.prototype.hasOwnProperty.call(extraHeaders, k)) headers[k] = extraHeaders[k];
@@ -164,7 +177,7 @@ async function fetchJson(url, extraHeaders) {
 }
 
 async function postJson(url, body, extraHeaders) {
-  var headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
+  var headers = Object.assign({ 'Content-Type': 'application/json', Accept: 'application/json' }, authHeaders());
   if (extraHeaders) {
     for (var k in extraHeaders) {
       if (Object.prototype.hasOwnProperty.call(extraHeaders, k)) headers[k] = extraHeaders[k];
@@ -191,7 +204,7 @@ async function postJson(url, body, extraHeaders) {
 }
 
 async function deleteJson(url) {
-  var opts = { method: 'DELETE', credentials: 'include' };
+  var opts = { method: 'DELETE', credentials: 'include', headers: authHeaders() };
   var res = await fetch(url, opts);
   if (res.status === 401) {
     var recovered = await attemptSessionRecovery();
@@ -210,7 +223,7 @@ async function patchJson(url, body) {
   var opts = {
     method: 'PATCH',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
     body: JSON.stringify(body),
   };
   var res = await fetch(url, opts);
@@ -229,6 +242,14 @@ async function patchJson(url, body) {
 
 async function handleMessage(type, data) {
   switch (type) {
+    case 'inject_token':
+      // Console injects a JWT for standard tier when cookies aren't available
+      // (native app WebViews with cross-origin cookie isolation).
+      if (SECURITY_TIER === 'standard' && data.jwt && typeof data.jwt === 'string') {
+        injectedJwt = data.jwt;
+      }
+      return { ok: true };
+
     case 'check_session':
       return { hasSession: await checkSession() };
 
@@ -547,7 +568,7 @@ async function handleMessage(type, data) {
       var deleteRes = await fetch('/_auth/cross-project-access', {
         method: 'DELETE',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
         body: JSON.stringify({ sandboxId: data.sandboxId, sharedSandboxId: data.sharedSandboxId }),
       });
       if (!deleteRes.ok) {
@@ -573,7 +594,7 @@ async function handleMessage(type, data) {
       var classifyRes = await fetch('/_auth/secrets/classify', {
         method: 'PUT',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
         body: JSON.stringify({ keyName: data.name, kind: data.kind, sandboxId: data.sandboxId }),
       });
       if (!classifyRes.ok) {
@@ -928,7 +949,7 @@ async function requireSession() {
 }
 
 async function fetchKeys() {
-  const res = await fetch('/_auth/bridge/keys', { credentials: 'include' });
+  const res = await fetch('/_auth/bridge/keys', { credentials: 'include', headers: authHeaders() });
   if (!res.ok) throw new Error('Failed to fetch keys');
   return res.json();
 }
@@ -937,7 +958,7 @@ async function addKey(name, publicKey) {
   const res = await fetch('/_auth/keys', {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
     body: JSON.stringify({ name, publicKey }),
   });
   if (!res.ok) {
@@ -951,6 +972,7 @@ async function removeKey(fingerprint) {
   const res = await fetch('/_auth/keys/' + encodeURIComponent(fingerprint), {
     method: 'DELETE',
     credentials: 'include',
+    headers: authHeaders(),
   });
   if (!res.ok) {
     const error = await res.json();
@@ -960,7 +982,7 @@ async function removeKey(fingerprint) {
 }
 
 async function fetchPasskeys() {
-  const res = await fetch('/_auth/bridge/passkeys', { credentials: 'include' });
+  const res = await fetch('/_auth/bridge/passkeys', { credentials: 'include', headers: authHeaders() });
   if (!res.ok) throw new Error('Failed to fetch passkeys');
   return res.json();
 }
@@ -969,7 +991,7 @@ async function switchTier(targetTier) {
   const res = await fetch('/_auth/bridge/switch-tier', {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
     body: JSON.stringify({ targetTier }),
   });
   if (!res.ok) {
@@ -995,6 +1017,7 @@ async function removePasskey(credentialId) {
   const res = await fetch('/_auth/bridge/passkey/' + encodeURIComponent(credentialId), {
     method: 'DELETE',
     credentials: 'include',
+    headers: authHeaders(),
   });
   if (!res.ok) {
     const error = await res.json();
@@ -1019,6 +1042,7 @@ async function downgradeToStandard() {
     const res = await fetch('/_auth/bridge/downgrade-to-standard', {
       method: 'POST',
       credentials: 'include',
+      headers: authHeaders(),
     });
     if (res.ok) return res.json();
     const error = await res.json().catch(() => ({}));
@@ -1044,7 +1068,7 @@ async function switchToWebLocked(name) {
   const res = await fetch('/_auth/bridge/switch-tier', {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
     body: JSON.stringify({ targetTier: 'web_locked' }),
   });
   if (!res.ok) {
@@ -1055,7 +1079,7 @@ async function switchToWebLocked(name) {
 }
 
 async function getCurrentTierInfo() {
-  const res = await fetch('/_auth/bridge/tier', { credentials: 'include' });
+  const res = await fetch('/_auth/bridge/tier', { credentials: 'include', headers: authHeaders() });
   if (!res.ok) throw new Error('Failed to get tier info');
   return res.json();
 }
@@ -1072,7 +1096,7 @@ async function confirmOperation(operation) {
     const res = await fetch('/_auth/confirm-operation', {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
       body: JSON.stringify({ operation }),
     });
     if (res.ok) {
@@ -1174,7 +1198,7 @@ async function authorizeGitLink(repoFullName, provider) {
   const res = await fetch('/_auth/git/authorize-link', {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
     body: JSON.stringify({ repoFullName, provider }),
   });
   if (!res.ok) {
@@ -1191,7 +1215,7 @@ async function authorizeGitUnlink() {
   const res = await fetch('/_auth/git/authorize-unlink', {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
     body: JSON.stringify({}),
   });
   if (!res.ok) {
@@ -1213,7 +1237,7 @@ async function setSecretViaApi(data) {
   const res = await fetch('/_auth/secrets', {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -1229,6 +1253,7 @@ async function deleteSecretViaApi(name, sandboxId) {
   const res = await fetch('/_auth/secrets/' + encodeURIComponent(name) + query, {
     method: 'DELETE',
     credentials: 'include',
+    headers: authHeaders(),
   });
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
@@ -1242,7 +1267,7 @@ async function listSecretsViaApi(sandboxId, env) {
   if (sandboxId) params.set('sandboxId', sandboxId);
   if (env) params.set('env', env);
   const query = params.toString() ? '?' + params.toString() : '';
-  const res = await fetch('/_auth/secrets' + query, { credentials: 'include' });
+  const res = await fetch('/_auth/secrets' + query, { credentials: 'include', headers: authHeaders() });
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
     throw new Error(error.error || 'Failed to list secrets');
@@ -1255,7 +1280,7 @@ async function readSecretValuesViaApi(sandboxId, env) {
   if (sandboxId) params.set('sandboxId', sandboxId);
   if (env) params.set('env', env);
   const query = params.toString() ? '?' + params.toString() : '';
-  const res = await fetch('/_auth/secrets/values' + query, { credentials: 'include' });
+  const res = await fetch('/_auth/secrets/values' + query, { credentials: 'include', headers: authHeaders() });
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
     throw new Error(error.error || 'Failed to read secret values');
@@ -1272,7 +1297,7 @@ async function setSecretsBulkViaApi(secrets, sandboxId) {
   const res = await fetch('/_auth/secrets/bulk', {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
     body: JSON.stringify(body),
   });
   if (!res.ok) {

@@ -153,15 +153,9 @@ export function RealtimeProvider({
 
   // For standard tier, wait for CodeTokenContext to have a code session.
   const codeTokenReady = !needsAuth ? !!ctxCodeSessionId : true;
-  console.log("[ellul-debug][Realtime] render", { needsAuth, codeTokenReady, ctxCodeSessionId: ctxCodeSessionId?.slice(0, 8) ?? null, enabled, wsUrl });
 
-  // Single lifecycle owner. Effect re-runs only when the *server identity*
-  // changes (enabled / wsUrl / needsAuth). Bridge state flaps are absorbed
-  // inside the loop via separate budgets — they never reset the WS budget.
   useEffect(() => {
-    console.log("[ellul-debug][Realtime] effect run", { enabled, codeTokenReady, needsAuth });
     if (!enabled || !codeTokenReady) {
-      console.log("[ellul-debug][Realtime] effect GATED — not starting WS loop", { enabled, codeTokenReady });
       setStatus("disconnected");
       return;
     }
@@ -182,7 +176,6 @@ export function RealtimeProvider({
     const acquireSession = async (): Promise<string | null> => {
       const now = Date.now();
       if (sessionCache.id && now < sessionCache.expiresAt - SESSION_REFRESH_BUFFER_MS) {
-        console.log("[ellul-debug][Realtime] acquireSession: using cache", { id: sessionCache.id.slice(0, 8) });
         return sessionCache.id;
       }
 
@@ -191,7 +184,6 @@ export function RealtimeProvider({
       if (!needsAuth) {
         const id = ctxCodeSessionIdRef.current;
         const exp = ctxSessionExpiresRef.current;
-        console.log("[ellul-debug][Realtime] acquireSession: standard tier", { id: id?.slice(0, 8) ?? null, exp, now, valid: !!(id && exp > now) });
         if (id && exp > now) {
           sessionCache.id = id;
           sessionCache.expiresAt = exp;
@@ -200,21 +192,17 @@ export function RealtimeProvider({
         return null;
       }
 
-      // Non-standard: use bridge (passkey+PoP session).
-      console.log("[ellul-debug][Realtime] acquireSession: using bridge");
       await bridgeWaitForReadyRef.current();
       if (controller.signal.aborted) throw new Error("aborted");
       try {
         const result = await bridgeSendRef.current<{ codeSessionId: string; expiresAt: number }>(
           "get_code_session",
         );
-        console.log("[ellul-debug][Realtime] acquireSession: bridge OK", { id: result.codeSessionId.slice(0, 8) });
         sessionCache.id = result.codeSessionId;
         sessionCache.expiresAt = result.expiresAt;
         return result.codeSessionId;
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        console.error("[ellul-debug][Realtime] acquireSession: bridge FAILED", { msg });
         if (msg === "Authentication required") return null;
         throw e;
       }
@@ -268,39 +256,30 @@ export function RealtimeProvider({
       | { kind: "aborted" };
 
     const runOnce = async (): Promise<Outcome> => {
-      console.log("[ellul-debug][Realtime] runOnce: starting");
       setStatus("connecting");
       let codeSessionId: string | null;
       try {
         codeSessionId = await acquireSession();
       } catch (e) {
         if (controller.signal.aborted) return { kind: "aborted" };
-        const msg = e instanceof Error ? e.message : String(e);
-        console.error("[ellul-debug][Realtime] runOnce: acquireSession THREW", { msg });
         return { kind: "bridge_failed" };
       }
 
       if (controller.signal.aborted) return { kind: "aborted" };
 
-      console.log("[ellul-debug][Realtime] runOnce: acquireSession returned", { codeSessionId: codeSessionId?.slice(0, 8) ?? null, needsAuth });
-
       if (needsAuth && codeSessionId === null) {
-        console.log("[ellul-debug][Realtime] runOnce: needs_user_auth (non-standard, no session)");
         return { kind: "needs_user_auth" };
       }
 
       if (!needsAuth && codeSessionId === null) {
-        console.log("[ellul-debug][Realtime] runOnce: standard tier but no codeSessionId from context — treating as bridge_failed to retry");
         return { kind: "bridge_failed" };
       }
 
       const url = codeSessionId ? `${wsUrl}?_code_session=${codeSessionId}` : wsUrl;
-      console.log("[ellul-debug][Realtime] runOnce: connecting WS", { url: url.replace(/=[^&]+/, "=<redacted>") });
       let ws: WebSocket;
       try {
         ws = new WebSocket(url);
-      } catch (e) {
-        console.error("[ellul-debug][Realtime] runOnce: WebSocket constructor FAILED", e);
+      } catch {
         return { kind: "ws_construct_failed" };
       }
 
@@ -312,13 +291,10 @@ export function RealtimeProvider({
       const closePromise = new Promise<void>((resolve) => {
         ws.onopen = () => {
           opened = true;
-          console.log("[ellul-debug][Realtime] WS OPEN");
           setStatus("connected");
         };
-        ws.onerror = (ev) => {
-          console.error("[ellul-debug][Realtime] WS ERROR", ev);
-        };
-        ws.onclose = (ev) => { console.log("[ellul-debug][Realtime] WS CLOSE", { code: ev.code, reason: ev.reason, wasClean: ev.wasClean }); resolve(); };
+        ws.onerror = () => {};
+        ws.onclose = () => { resolve(); };
         controller.signal.addEventListener(
           "abort",
           () => { try { ws.close(); } catch { /* ignore */ } resolve(); },
@@ -348,11 +324,9 @@ export function RealtimeProvider({
       let wsAttempts = 0;
       let quickFails = 0;
       let bridgeBackoff = BRIDGE_BACKOFF_INITIAL_MS;
-      console.log("[ellul-debug][Realtime] loop started");
 
       while (!controller.signal.aborted) {
         const outcome = await runOnce();
-        console.log("[ellul-debug][Realtime] loop outcome", outcome);
         if (outcome.kind === "aborted") return;
 
         if (outcome.kind === "bridge_failed") {

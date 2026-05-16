@@ -180,10 +180,12 @@ export function registerBridgeRoutes(app: Hono, hostname: string): void {
       code = createSessionExchangeCode(auth.sessionId);
       logAuditEvent({ type: 'exchange_code_created', ip, sessionId: auth.sessionId });
     } else if (auth.tier === 'standard') {
-      // Standard: exchange code maps to the JWT from the request cookie.
-      // The forward_auth handler will set this JWT as a cookie on the target domain.
+      // Standard: exchange code maps to the JWT string.
+      // Accept from cookie (browser) or Authorization header (native app bridge).
       const cookies = parseCookies(c.req.header('cookie'));
-      const jwt = cookies['terminal_token'] || cookies['term_session'];
+      const authHeader = c.req.header('authorization');
+      const jwt = cookies['terminal_token'] || cookies['term_session'] ||
+        (authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined);
       if (!jwt) {
         return c.json({ error: 'No JWT' }, 401);
       }
