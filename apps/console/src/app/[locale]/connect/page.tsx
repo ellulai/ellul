@@ -15,40 +15,53 @@ function ConnectContent() {
   const [error, setError] = useState<string | null>(null);
   const [needsAuth, setNeedsAuth] = useState(false);
   const [done, setDone] = useState(false);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+
+  const dbg = (msg: string) => {
+    console.log(`[connect-debug] ${msg}`);
+    setDebugLog((prev) => [...prev, `${new Date().toISOString().slice(11, 23)} ${msg}`]);
+  };
 
   const params =
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search)
       : new URLSearchParams();
   const urlConnectId = params.get("connect_id");
-
-  // Persist connectId in sessionStorage to survive OAuth redirects —
-  // better-auth's callbackURL may strip query parameters.
-  const connectId = urlConnectId
-    || (typeof window !== "undefined" ? sessionStorage.getItem("ellul_connect_id") : null);
+  const storedConnectId = typeof window !== "undefined" ? sessionStorage.getItem("ellul_connect_id") : null;
+  const connectId = urlConnectId || storedConnectId;
 
   useEffect(() => {
+    dbg(`url_connect_id=${urlConnectId || "null"} stored=${storedConnectId || "null"} effective=${connectId || "null"}`);
+    dbg(`full_url=${typeof window !== "undefined" ? window.location.href : "ssr"}`);
+    dbg(`API_URL=${API_URL}`);
     if (urlConnectId) {
       sessionStorage.setItem("ellul_connect_id", urlConnectId);
+      dbg("persisted connect_id to sessionStorage");
     }
-  }, [urlConnectId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
     const init = async () => {
+      dbg("init: calling getSession()...");
       try {
         const { data } = await getSession();
+        dbg(`init: getSession returned data=${!!data} user=${data?.user?.email || "null"}`);
         if (!data) {
+          dbg("init: no session → showing auth buttons");
           setNeedsAuth(true);
           return;
         }
 
         if (!connectId) {
+          dbg("init: NO connectId after auth → setDone(true) WITHOUT calling connect-complete");
           setDone(true);
           return;
         }
 
+        dbg(`init: calling connect-complete with connectId=${connectId.slice(0, 8)}...`);
         const res = await fetch(`${API_URL}/api/auth/native/connect-complete`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -56,17 +69,24 @@ function ConnectContent() {
           body: JSON.stringify({ connectId }),
         });
 
+        const body = await res.text();
+        dbg(`init: connect-complete status=${res.status} body=${body}`);
+
         if (!cancelled) {
           if (res.ok) {
             sessionStorage.removeItem("ellul_connect_id");
+            dbg("init: SUCCESS — connect-complete returned ok, showing done screen");
             setDone(true);
           } else {
-            setError(t("genericError"));
+            dbg(`init: FAIL — connect-complete returned ${res.status}: ${body}`);
+            setError(`connect-complete failed: ${res.status} ${body}`);
           }
         }
       } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        dbg(`init: EXCEPTION — ${msg}`);
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : t("genericError"));
+          setError(msg);
         }
       }
     };
@@ -98,9 +118,16 @@ function ConnectContent() {
             <OAuthSignIn callbackPath={callbackPath} />
           </CardContent>
         </Card>
+        {debugPanel}
       </Shell>
     );
   }
+
+  const debugPanel = debugLog.length > 0 && (
+    <div className="w-full max-w-lg mt-4 p-3 rounded-lg bg-black/60 border border-cream/10 font-mono text-[10px] leading-relaxed text-cream/70 max-h-48 overflow-y-auto">
+      {debugLog.map((line, i) => <div key={i}>{line}</div>)}
+    </div>
+  );
 
   if (done) {
     return (
@@ -120,6 +147,7 @@ function ConnectContent() {
             </div>
           </CardContent>
         </Card>
+        {debugPanel}
       </Shell>
     );
   }
@@ -141,11 +169,17 @@ function ConnectContent() {
             <p className="text-xs text-cream/40">{t("errorHint")}</p>
           </CardContent>
         </Card>
+        {debugPanel}
       </Shell>
     );
   }
 
-  return <LoadingScreen message={t("connectingMessage")} />;
+  return (
+    <Shell>
+      <LoadingScreen message={t("connectingMessage")} />
+      {debugPanel}
+    </Shell>
+  );
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
