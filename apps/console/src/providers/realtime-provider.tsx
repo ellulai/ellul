@@ -137,15 +137,22 @@ export function RealtimeProvider({
   const needsAuth = securityTier !== "standard";
 
   const { send: bridgeSend, waitForReady: bridgeWaitForReady } = useVpsBridge();
-  const { token: codeToken } = useCodeToken();
+  const { codeSessionId: ctxCodeSessionId, sessionExpiresAt: ctxSessionExpires } = useCodeToken();
   const bridgeSendRef = useRef(bridgeSend);
   const bridgeWaitForReadyRef = useRef(bridgeWaitForReady);
   bridgeSendRef.current = bridgeSend;
   bridgeWaitForReadyRef.current = bridgeWaitForReady;
 
-  // Standard tier: bridge's get_code_session relies on terminal_token cookie
-  // which CodeTokenContext sets. Wait for it before starting the WS loop.
-  const codeTokenReady = !needsAuth ? !!codeToken : true;
+  // Standard tier: use the code session from CodeTokenContext directly.
+  // The bridge's get_code_session relies on terminal_token cookie sharing
+  // which fails in Tauri WebView. CodeTokenContext uses Authorization header.
+  const ctxCodeSessionIdRef = useRef(ctxCodeSessionId);
+  const ctxSessionExpiresRef = useRef(ctxSessionExpires);
+  ctxCodeSessionIdRef.current = ctxCodeSessionId;
+  ctxSessionExpiresRef.current = ctxSessionExpires;
+
+  // For standard tier, wait for CodeTokenContext to have a code session.
+  const codeTokenReady = !needsAuth ? !!ctxCodeSessionId : true;
 
   // Single lifecycle owner. Effect re-runs only when the *server identity*
   // changes (enabled / wsUrl / needsAuth). Bridge state flaps are absorbed
@@ -174,8 +181,21 @@ export function RealtimeProvider({
       if (sessionCache.id && now < sessionCache.expiresAt - SESSION_REFRESH_BUFFER_MS) {
         return sessionCache.id;
       }
-      // BridgeError: thrown if bridge is in terminal error or unmounted.
-      // Caller treats this as a transient bridge failure (separate budget).
+
+      // Standard tier: use code session from CodeTokenContext (acquired via
+      // Authorization header, not cookies — works in Tauri WebView).
+      if (!needsAuth) {
+        const id = ctxCodeSessionIdRef.current;
+        const exp = ctxSessionExpiresRef.current;
+        if (id && exp > now) {
+          sessionCache.id = id;
+          sessionCache.expiresAt = exp;
+          return id;
+        }
+        return null;
+      }
+
+      // Non-standard: use bridge (passkey+PoP session).
       await bridgeWaitForReadyRef.current();
       if (controller.signal.aborted) throw new Error("aborted");
       try {
@@ -186,8 +206,6 @@ export function RealtimeProvider({
         sessionCache.expiresAt = result.expiresAt;
         return result.codeSessionId;
       } catch (e) {
-        // "Authentication required" means the user must reauth before we
-        // can connect. Treat as a bridge-tier wait, not a WS failure.
         const msg = e instanceof Error ? e.message : String(e);
         if (msg === "Authentication required") return null;
         throw e;

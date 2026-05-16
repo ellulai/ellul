@@ -20,6 +20,8 @@ interface CodeTokenContextValue {
   token: string | null;
   loading: boolean;
   error: string | null;
+  codeSessionId: string | null;
+  sessionExpiresAt: number;
   refresh: () => Promise<string | null>;
   fetchWithCodeToken: (url: string, options?: RequestInit) => Promise<Response>;
   reauthenticate: () => Promise<void>;
@@ -61,6 +63,8 @@ function MockCodeTokenProvider({ children }: { children: ReactNode }) {
     token: null,
     loading: false,
     error: null,
+    codeSessionId: null,
+    sessionExpiresAt: 0,
     refresh: async () => null,
     fetchWithCodeToken,
     reauthenticate: async () => {},
@@ -85,6 +89,8 @@ function RealCodeTokenProvider({
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeCodeSessionId, setActiveCodeSessionId] = useState<string | null>(null);
+  const [activeSessionExpiresAt, setActiveSessionExpiresAt] = useState<number>(0);
 
   const cookieEstablishedRef = useRef(false);
   const establishingRef = useRef<Promise<void> | null>(null);
@@ -151,6 +157,8 @@ function RealCodeTokenProvider({
           cookieEstablishedRef.current = true;
           lastEstablishTimeRef.current = Date.now();
           sessionExpiresRef.current = data.expiresAt || expiresAt;
+          setActiveCodeSessionId(codeSessionId);
+          setActiveSessionExpiresAt(data.expiresAt || expiresAt);
           setToken("cookie-session");
           setError(null);
         }
@@ -265,6 +273,8 @@ function RealCodeTokenProvider({
   const reauthenticate = useCallback(async (): Promise<void> => {
     setError(null);
     setToken(null);
+    setActiveCodeSessionId(null);
+    setActiveSessionExpiresAt(0);
     cookieEstablishedRef.current = false;
     lastEstablishTimeRef.current = 0;
     if (securityTier !== "standard") {
@@ -279,6 +289,8 @@ function RealCodeTokenProvider({
         token,
         loading,
         error,
+        codeSessionId: activeCodeSessionId,
+        sessionExpiresAt: activeSessionExpiresAt,
         refresh,
         fetchWithCodeToken,
         reauthenticate,
