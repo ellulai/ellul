@@ -3,11 +3,15 @@
 
 import { useCodeToken } from "@/contexts/CodeTokenContext";
 import { useRealtime } from "@/providers/realtime-provider";
+import { useVpsBridge } from "@/lib/vps-bridge";
 import { useState, useEffect, useRef } from "react";
 
 export function DebugOverlay() {
   const { token, loading, error, codeSessionId, sessionExpiresAt } = useCodeToken();
   const { status, isConnected } = useRealtime();
+  const bridge = useVpsBridge();
+  const bridgeReady = bridge.ready;
+  const needsVpsAuth = bridge.needsVpsAuth;
   const [logs, setLogs] = useState<string[]>([]);
   const logsRef = useRef(logs);
   logsRef.current = logs;
@@ -56,6 +60,9 @@ export function DebugOverlay() {
       </div>
       <div style={{ marginBottom: "4px", color: "#0ff" }}>
         <b>Realtime:</b> status={status} | connected={String(isConnected)}
+      </div>
+      <div style={{ marginBottom: "4px", color: "#f0f" }}>
+        <b>Bridge:</b> ready={String(bridgeReady)} | needsVpsAuth={String(needsVpsAuth ?? "undefined")}
       </div>
       <div style={{ borderTop: "1px solid #333", paddingTop: "4px" }}>
         {logs.map((l, i) => (

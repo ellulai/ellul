@@ -95,6 +95,7 @@ export function TabEditor({
   const exchangeCodeFetchedRef = useRef(false);
 
   useEffect(() => {
+    console.log("[ellul-debug][TabEditor] exchange code effect", { ready, exchangeCodeFetched: exchangeCodeFetchedRef.current });
     if (!ready) {
       // Bridge went down (e.g. tier upgrade reload) — reset so we
       exchangeCodeFetchedRef.current = false;
@@ -104,17 +105,19 @@ export function TabEditor({
     if (exchangeCodeFetchedRef.current) return;
     exchangeCodeFetchedRef.current = true;
 
+    console.log("[ellul-debug][TabEditor] calling bridge get_exchange_code");
     send<{ code: string }>("get_exchange_code")
       .then((result) => {
+        console.log("[ellul-debug][TabEditor] get_exchange_code result", { hasCode: !!result.code, code: result.code?.slice(0, 8) });
         if (!result.code) {
-          console.error("[TabEditor] Exchange code response missing code");
+          console.error("[ellul-debug][TabEditor] Exchange code response missing code");
           setChatExchangeCode("error");
           return;
         }
         setChatExchangeCode(result.code);
       })
       .catch((err) => {
-        console.error("[TabEditor] Failed to get exchange code:", err);
+        console.error("[ellul-debug][TabEditor] get_exchange_code FAILED:", err?.message || err);
         setChatExchangeCode("error");
       });
   }, [ready, send]);
