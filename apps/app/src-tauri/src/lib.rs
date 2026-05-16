@@ -31,12 +31,6 @@ fn is_internal_navigation(url: &url::Url) -> bool {
 fn resolve_start_url(cfg: &config::AppConfig) -> tauri::WebviewUrl {
     match cfg.mode {
         config::AppMode::Cloud => {
-            if let Some(ref domain) = cfg.cloud_domain {
-                if config::is_domain_allowed(domain) {
-                    let url = format!("https://{domain}");
-                    return tauri::WebviewUrl::External(url.parse().unwrap());
-                }
-            }
             let dashboard = format!("{}/dashboard", config::console_url());
             tauri::WebviewUrl::External(dashboard.parse().unwrap())
         }
@@ -208,33 +202,95 @@ pub fn run() {
             let win = builder.build()?;
 
             let win_clone = win.clone();
-            let log_path = app.path().app_data_dir().expect("no data dir").join("debug.log");
-            let log_path_str = log_path.to_string_lossy().to_string();
-            eprintln!("[ellul] debug log path: {}", log_path_str);
+            eprintln!("[ellul] starting diagnostic injection thread");
             std::thread::spawn(move || {
-                for delay in [1, 3, 5] {
+                for delay in [3, 6, 10, 15, 20, 30] {
                     std::thread::sleep(std::time::Duration::from_secs(delay));
+                    // Probe via multiple methods to determine what works
+                    let probe = format!(r#"
+                        try {{
+                            var r = {{
+                                tauri: typeof window.__TAURI_INTERNALS__ !== 'undefined',
+                                tauri2: typeof window.__TAURI__ !== 'undefined',
+                                url: window.location.href,
+                                body: (document.body ? document.body.innerText.substring(0, 200) : 'NOBODY').replace(/\n/g, '|')
+                            }};
+                            localStorage.setItem('__ellul_probe_{}', JSON.stringify(r));
+                        }} catch(e) {{
+                            localStorage.setItem('__ellul_probe_{}', 'ERROR:' + e.message);
+                        }}
+                    "#, delay, delay);
+                    let eval_res = win_clone.eval(&probe);
+                    eprintln!("[ellul] eval t+{}s: {:?}", delay, eval_res);
+
+                    // Read back via another eval that uses a known IPC pattern
+                    std::thread::sleep(std::time::Duration::from_millis(300));
+                    let read_back = format!(r#"
+                        window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke('__dbg', {{
+                            msg: 'PROBE_READ: ' + (localStorage.getItem('__ellul_probe_{}') || 'NONE')
+                        }});
+                    "#, delay);
+                    let _ = win_clone.eval(&read_back);
+
+                    if let Ok(url) = win_clone.url() {
+                        eprintln!("[ellul] url t+{}s: {}", delay, url);
+                    }
                     let js = format!(r#"
                         (function() {{
+                            var hasTauri = typeof window.__TAURI_INTERNALS__ !== 'undefined';
+                            var dbg = hasTauri
+                                ? function(msg) {{ window.__TAURI_INTERNALS__.invoke('__dbg', {{ msg: '[t+{d}s] ' + msg }}); }}
+                                : function(msg) {{ console.log('[ellul-diag][t+{d}s] ' + msg); }};
                             try {{
-                                var info = JSON.stringify({{
-                                    url: window.location.href,
-                                    title: document.title,
-                                    bodyLen: document.body ? document.body.innerHTML.length : -1,
-                                    bodyText: document.body ? document.body.innerText.substring(0, 200) : 'NO BODY',
-                                    headLen: document.head ? document.head.innerHTML.length : -1,
-                                    scriptCount: document.querySelectorAll('script').length,
-                                    hasTauri: typeof window.__TAURI_INTERNALS__ !== 'undefined',
-                                    docReady: document.readyState,
-                                    allErrors: window.__ellul_errors || [],
-                                    delay: {},
-                                }});
-                                window.__TAURI_INTERNALS__.invoke('__dbg', {{ msg: info }});
+                                dbg('url=' + window.location.href);
+                                dbg('hasTauri=' + hasTauri);
+                                dbg('cookies=' + document.cookie.split(';').map(function(c) {{ return c.trim().split('=')[0]; }}).filter(Boolean).join(','));
+                                var bodyText = (document.body && document.body.innerText) || '';
+                                dbg('body_len=' + bodyText.length);
+                                dbg('body_preview=' + bodyText.substring(0, 400).replace(/\n/g, ' | '));
+
+                                if (hasTauri) {{
+                                    // Monkey-patch WebSocket once
+                                    if (!window.__WS_PATCHED__) {{
+                                        window.__WS_PATCHED__ = true;
+                                        window.__WS_LOG__ = [];
+                                        var OrigWS = window.WebSocket;
+                                        window.WebSocket = function(url, protocols) {{
+                                            window.__WS_LOG__.push({{ url: url, t: Date.now(), s: 'new' }});
+                                            window.__TAURI_INTERNALS__.invoke('__dbg', {{ msg: 'WS_NEW: ' + url }});
+                                            var ws = protocols ? new OrigWS(url, protocols) : new OrigWS(url);
+                                            ws.addEventListener('open', function() {{
+                                                window.__TAURI_INTERNALS__.invoke('__dbg', {{ msg: 'WS_OPEN: ' + url }});
+                                            }});
+                                            ws.addEventListener('error', function() {{
+                                                window.__TAURI_INTERNALS__.invoke('__dbg', {{ msg: 'WS_ERROR: ' + url }});
+                                            }});
+                                            ws.addEventListener('close', function(e) {{
+                                                window.__TAURI_INTERNALS__.invoke('__dbg', {{ msg: 'WS_CLOSE: ' + url + ' code=' + e.code + ' reason=' + e.reason }});
+                                            }});
+                                            return ws;
+                                        }};
+                                        window.WebSocket.CONNECTING = OrigWS.CONNECTING;
+                                        window.WebSocket.OPEN = OrigWS.OPEN;
+                                        window.WebSocket.CLOSING = OrigWS.CLOSING;
+                                        window.WebSocket.CLOSED = OrigWS.CLOSED;
+                                    }}
+
+                                    if (window.__WS_LOG__ && window.__WS_LOG__.length > 0) {{
+                                        dbg('WS_LOG=' + JSON.stringify(window.__WS_LOG__));
+                                    }}
+
+                                    window.__TAURI_INTERNALS__.invoke('plugin:shield|shield_check_session')
+                                        .then(function(r) {{ dbg('shield_check=' + JSON.stringify(r)); }})
+                                        .catch(function(e) {{ dbg('shield_check_ERR=' + String(e)); }});
+                                }}
                             }} catch(e) {{
-                                window.__TAURI_INTERNALS__.invoke('__dbg', {{ msg: 'JS_ERROR: ' + e.message }});
+                                if (hasTauri) {{
+                                    window.__TAURI_INTERNALS__.invoke('__dbg', {{ msg: '[t+{d}s] ERR: ' + e.message }});
+                                }}
                             }}
                         }})();
-                    "#, delay);
+                    "#, d=delay);
                     let _ = win_clone.eval(&js);
                 }
             });

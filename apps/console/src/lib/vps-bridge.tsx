@@ -517,6 +517,20 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
     });
   }, []);
 
+  // Auto-trigger passkey auth when bridge is ready but has no session
+  const autoAuthAttempted = useRef(false);
+  useEffect(() => {
+    if (ready && needsVpsAuth && !autoAuthAttempted.current) {
+      autoAuthAttempted.current = true;
+      authenticateNative().catch(() => {
+        setNeedsVpsAuth(true);
+      });
+    }
+    if (!needsVpsAuth) {
+      autoAuthAttempted.current = false;
+    }
+  }, [ready, needsVpsAuth, authenticateNative]);
+
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       if (event.origin !== `https://${hostname}`) return;

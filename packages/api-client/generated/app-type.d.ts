@@ -375,7 +375,44 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                publicKey: string;
+                fingerprint: string | null;
+                secretsMode: "self_managed" | "platform_managed";
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -388,7 +425,39 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                secrets: {
+                    id: string;
+                    name: string;
+                    maskedValue: string;
+                    createdAt: string;
+                    updatedAt: string;
+                }[];
+                secretsMode: "self_managed" | "platform_managed";
+                hasPublicKey: boolean;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -399,9 +468,9 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     name: string;
-                    iv: string;
                     maskedValue: string;
                     encryptedKey: string;
+                    iv: string;
                     encryptedData: string;
                     x25519EphPub?: string | undefined;
                     allowedDestinations?: string | null | undefined;
@@ -420,9 +489,9 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     name: string;
-                    iv: string;
                     maskedValue: string;
                     encryptedKey: string;
+                    iv: string;
                     encryptedData: string;
                     x25519EphPub?: string | undefined;
                     allowedDestinations?: string | null | undefined;
@@ -441,9 +510,9 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     name: string;
-                    iv: string;
                     maskedValue: string;
                     encryptedKey: string;
+                    iv: string;
                     encryptedData: string;
                     x25519EphPub?: string | undefined;
                     allowedDestinations?: string | null | undefined;
@@ -469,9 +538,9 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     name: string;
-                    iv: string;
                     maskedValue: string;
                     encryptedKey: string;
+                    iv: string;
                     encryptedData: string;
                     x25519EphPub?: string | undefined;
                     allowedDestinations?: string | null | undefined;
@@ -483,7 +552,58 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     name: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {
+                json: {
+                    name: string;
+                    maskedValue: string;
+                    encryptedKey: string;
+                    iv: string;
+                    encryptedData: string;
+                    x25519EphPub?: string | undefined;
+                    allowedDestinations?: string | null | undefined;
+                };
+            } & {
+                param: {
+                    id: string;
+                } & {
+                    name: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                json: {
+                    name: string;
+                    maskedValue: string;
+                    encryptedKey: string;
+                    iv: string;
+                    encryptedData: string;
+                    x25519EphPub?: string | undefined;
+                    allowedDestinations?: string | null | undefined;
+                };
+            } & {
+                param: {
+                    id: string;
+                } & {
+                    name: string;
+                };
+            };
+            output: {
+                id: string;
+                name: string;
+                maskedValue: string;
+                updatedAt: string;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -523,7 +643,22 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/secrets/sync": {
         $get: {
             input: {};
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                secrets: {
+                    name: string;
+                    encryptedKey: string;
+                    x25519EphPub: string | null;
+                    iv: string;
+                    encryptedData: string;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -532,9 +667,35 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/git-token": {
         $get: {
             input: {};
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                noToken: true;
+                reason: string;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
+        } | {
+            input: {};
+            output: {
+                encryptedKey: string;
+                iv: string;
+                encryptedData: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 500;
         };
     };
 } & {
@@ -542,7 +703,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         $put: {
             input: {
                 json: {
-                    mode: "platform_managed" | "self_managed";
+                    mode: "self_managed" | "platform_managed";
                 };
             } & {
                 param: {
@@ -557,7 +718,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    mode: "platform_managed" | "self_managed";
+                    mode: "self_managed" | "platform_managed";
                 };
             } & {
                 param: {
@@ -566,7 +727,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             };
             output: {
                 success: true;
-                mode: "platform_managed" | "self_managed";
+                mode: "self_managed" | "platform_managed";
                 message: string;
             };
             outputFormat: "json";
@@ -581,7 +742,10 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                success: true;
+                deleted: number;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -590,7 +754,22 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/commands": {
         $get: {
             input: {};
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                commands: {
+                    payload: any;
+                    id: string;
+                    type: "mount-volume" | "flush-volume" | "force-unmount" | "grow-volume" | "update-identity" | "backup-identity" | "restore-identity" | "luks-close" | "luks-format" | "luks-rekey" | "luks-header-backup" | "maintenance-mode" | "wake-mount" | "read-public-key" | "stop-postgresql" | "ping" | "update-entitlements" | "agent-adapter-execute" | "agent-adapter-secret" | "block-migrate-upload" | "block-migrate-download" | "rotate-to-pqc" | "git-setup" | "re-attest" | "apply-pending-update" | "set-auto-update" | "reconfigure-caddy-domain" | "b2b-sandbox-destroy" | "update-signing-keyring" | "byos-migrate-restore" | "byos-migrate-export";
+                    createdAt: string;
+                    expiresAt: string;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -733,15 +912,6 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
-            outputFormat: "json";
-            status: import("hono/utils/http-status").ContentfulStatusCode;
-        } | {
-            input: {
-                param: {
-                    id: string;
-                };
-            };
             output: null;
             outputFormat: "body";
             status: 204;
@@ -754,6 +924,41 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             output: null;
             outputFormat: "body";
             status: 304;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                version: number;
+                jws: string;
+                rolloutState: "pending" | "canary" | "early" | "stable" | "late" | "rolled_back";
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
         };
     };
 } & {
@@ -839,21 +1044,87 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     appliedVersion: number;
-                    autoUpdateEffective: boolean;
                     installedVersions: Record<string, string>;
-                    lastInstallOutcome: "success" | "failed" | "partial" | "rolled_back" | "pending_approval";
+                    lastInstallOutcome: "rolled_back" | "failed" | "success" | "partial" | "pending_approval";
+                    autoUpdateEffective: boolean;
                     health?: unknown;
-                    pendingUpdateVersion?: number | null | undefined;
                     lastInstallError?: string | null | undefined;
+                    pendingUpdateVersion?: number | null | undefined;
                 };
             } & {
                 param: {
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                json: {
+                    appliedVersion: number;
+                    installedVersions: Record<string, string>;
+                    lastInstallOutcome: "rolled_back" | "failed" | "success" | "partial" | "pending_approval";
+                    autoUpdateEffective: boolean;
+                    health?: unknown;
+                    lastInstallError?: string | null | undefined;
+                    pendingUpdateVersion?: number | null | undefined;
+                };
+            } & {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                json: {
+                    appliedVersion: number;
+                    installedVersions: Record<string, string>;
+                    lastInstallOutcome: "rolled_back" | "failed" | "success" | "partial" | "pending_approval";
+                    autoUpdateEffective: boolean;
+                    health?: unknown;
+                    lastInstallError?: string | null | undefined;
+                    pendingUpdateVersion?: number | null | undefined;
+                };
+            } & {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                desiredVersion: number | null;
+                rolloutState: "pending" | "canary" | "early" | "stable" | "late" | "rolled_back" | null;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
+        } | {
+            input: {
+                json: {
+                    appliedVersion: number;
+                    installedVersions: Record<string, string>;
+                    lastInstallOutcome: "rolled_back" | "failed" | "success" | "partial" | "pending_approval";
+                    autoUpdateEffective: boolean;
+                    health?: unknown;
+                    lastInstallError?: string | null | undefined;
+                    pendingUpdateVersion?: number | null | undefined;
+                };
+            } & {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 500;
         };
     };
 } & {
@@ -861,11 +1132,11 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         $post: {
             input: {
                 json: {
+                    installedVersions: Record<string, string>;
                     autoUpdateEffective: boolean;
                     agentVersion: string;
                     manifestVersion: number;
-                    installedVersions: Record<string, string>;
-                    systemdHealth: Record<string, "unknown" | "active" | "failed" | "activating" | "inactive">;
+                    systemdHealth: Record<string, "failed" | "active" | "unknown" | "activating" | "inactive">;
                     capabilities: string[];
                 };
             } & {
@@ -881,11 +1152,11 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
+                    installedVersions: Record<string, string>;
                     autoUpdateEffective: boolean;
                     agentVersion: string;
                     manifestVersion: number;
-                    installedVersions: Record<string, string>;
-                    systemdHealth: Record<string, "unknown" | "active" | "failed" | "activating" | "inactive">;
+                    systemdHealth: Record<string, "failed" | "active" | "unknown" | "activating" | "inactive">;
                     capabilities: string[];
                 };
             } & {
@@ -901,11 +1172,11 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
+                    installedVersions: Record<string, string>;
                     autoUpdateEffective: boolean;
                     agentVersion: string;
                     manifestVersion: number;
-                    installedVersions: Record<string, string>;
-                    systemdHealth: Record<string, "unknown" | "active" | "failed" | "activating" | "inactive">;
+                    systemdHealth: Record<string, "failed" | "active" | "unknown" | "activating" | "inactive">;
                     capabilities: string[];
                 };
             } & {
@@ -922,11 +1193,11 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
+                    installedVersions: Record<string, string>;
                     autoUpdateEffective: boolean;
                     agentVersion: string;
                     manifestVersion: number;
-                    installedVersions: Record<string, string>;
-                    systemdHealth: Record<string, "unknown" | "active" | "failed" | "activating" | "inactive">;
+                    systemdHealth: Record<string, "failed" | "active" | "unknown" | "activating" | "inactive">;
                     capabilities: string[];
                 };
             } & {
@@ -960,7 +1231,12 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                status: string;
+                commandId: string;
+                expiresAt: string;
+                pendingUpdateVersion: number;
+            };
             outputFormat: "json";
             status: 202;
         } | {
@@ -1570,8 +1846,45 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 };
             };
             output: {
+                active: false;
+                migration: null;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
                 active: boolean;
-                migration: any;
+                migration: {
+                    snapshotId: string;
+                    snapshotVersion: number;
+                    status: "preparing" | "snapshot_created" | "sealed" | "uploading" | "uploaded" | "downloading" | "restoring" | "verified" | "completed" | "failed" | "expired" | "retained";
+                    snapshotMode: string | null;
+                    volumeSizeBytes: string;
+                    chunkSizeBytes: number;
+                    chunkCount: number;
+                    chunksUploaded: number;
+                    chunksDownloaded: number;
+                    merkleRootHash: string | null;
+                    sourceRegion: string;
+                    targetRegion: string | null;
+                    createdAt: string | null;
+                    sealedAt: string | null;
+                    completedAt: string | null;
+                    failedReason: string | null;
+                    metrics: {
+                        [x: string]: import("hono/utils/types").JSONValue;
+                    } | null;
+                    uploadProgressPercent: number;
+                    downloadProgressPercent: number;
+                    uploadedBytes: number;
+                    downloadedBytes: number;
+                    totalBytes: number;
+                };
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
@@ -1585,7 +1898,32 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                migrations: {
+                    snapshotId: string;
+                    snapshotVersion: number;
+                    status: "preparing" | "snapshot_created" | "sealed" | "uploading" | "uploaded" | "downloading" | "restoring" | "verified" | "completed" | "failed" | "expired" | "retained";
+                    volumeSizeBytes: string;
+                    chunkCount: number;
+                    snapshotMode: string | null;
+                    createdAt: string | null;
+                    completedAt: string | null;
+                    failedReason: string | null;
+                    durationMs: number | null;
+                    merkleVerified: boolean;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -1598,7 +1936,49 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                migrations: {
+                    snapshotId: string;
+                    snapshotVersion: number;
+                    status: "preparing" | "snapshot_created" | "sealed" | "uploading" | "uploaded" | "downloading" | "restoring" | "verified" | "completed" | "failed" | "expired" | "retained";
+                    snapshotMode: string | null;
+                    volumeSizeBytes: string;
+                    chunkSizeBytes: number;
+                    chunkCount: number;
+                    chunksUploaded: number;
+                    chunksDownloaded: number;
+                    merkleRootHash: string | null;
+                    sourceEncryptionMode: string | null;
+                    targetServerId: string | null;
+                    createdAt: string | null;
+                    sealedAt: string | null;
+                    completedAt: string | null;
+                    failedReason: string | null;
+                    durationMs: number | null;
+                }[];
+                total: number;
+                limit: number;
+                offset: number;
+                server: {
+                    provider: {
+                        name: string;
+                        abbrev: string;
+                    };
+                    region: string;
+                    datacenter: string;
+                };
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -1613,7 +1993,69 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    snapshotId: string;
+                } & {
+                    id: string;
+                };
+            };
+            output: {
+                migration: {
+                    snapshotId: string;
+                    snapshotVersion: number;
+                    status: "preparing" | "snapshot_created" | "sealed" | "uploading" | "uploaded" | "downloading" | "restoring" | "verified" | "completed" | "failed" | "expired" | "retained";
+                    snapshotMode: string | null;
+                    volumeSizeBytes: string;
+                    chunkSizeBytes: number;
+                    chunkCount: number;
+                    chunksUploaded: number;
+                    chunksDownloaded: number;
+                    merkleRootHash: string | null;
+                    manifestSignature: string | null;
+                    signingKeyFingerprint: string | null;
+                    bootstrapIntegrityHash: string | null;
+                    sourceEncryptionMode: string | null;
+                    createdAt: string | null;
+                    sealedAt: string | null;
+                    completedAt: string | null;
+                    failedReason: string | null;
+                    metrics: any;
+                };
+                source: {
+                    serverId: string;
+                    region: string;
+                    datacenter: string;
+                    provider: {
+                        name: string;
+                        abbrev: string;
+                    };
+                };
+                target: {
+                    region: string;
+                    datacenter: string;
+                    provider: {
+                        name: string;
+                        abbrev: string;
+                    };
+                    ipAddress: string | null;
+                } | null;
+                chunks: {
+                    chunkIndex: number;
+                    sha256Hash: string;
+                    sizeBytes: number;
+                    uploadStatus: "pending" | "uploaded" | "verified" | "downloaded";
+                    downloadStatus: "pending" | "uploaded" | "verified" | "downloaded";
+                    uploadedAt: string | null;
+                    downloadedAt: string | null;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -1628,7 +2070,31 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    snapshotId: string;
+                } & {
+                    id: string;
+                };
+            };
+            output: {
+                events: {
+                    id: string;
+                    eventType: string;
+                    fromStatus: string | null;
+                    toStatus: string | null;
+                    details: {
+                        [x: string]: import("hono/utils/types").JSONValue;
+                    } | null;
+                    createdAt: string;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -1697,9 +2163,37 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 };
             };
             output: {
-                estimate: any;
-                source: any;
-                target: any;
+                estimate: {
+                    strategyType: string;
+                    volumeSizeGb: number;
+                    volumeSizeBytes: string;
+                    chunkCount: number;
+                    chunkSizeBytes: number;
+                    encrypted: true;
+                    estUploadMinutes: number;
+                    estDownloadMinutes: number;
+                    estTotalMinutes: number;
+                    estDowntimeSeconds: number;
+                    snapshotModeAvailable: true;
+                    parallelWorkers: number;
+                };
+                source: {
+                    region: string;
+                    datacenter: string;
+                    provider: {
+                        name: string;
+                        abbrev: string;
+                    };
+                    serverPlan: "free" | "hobby" | "pro";
+                };
+                target: {
+                    region: string;
+                    datacenter: string;
+                    provider: {
+                        name: string;
+                        abbrev: string;
+                    };
+                };
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
@@ -1709,7 +2203,276 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/status": {
         $get: {
             input: {};
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                state: "none";
+                servers: {
+                    aiQuota?: {
+                        used: number;
+                        limit: number;
+                        remaining: number;
+                        percentUsed: number;
+                        resetsIn: string;
+                        resetAt: string;
+                    } | undefined;
+                    state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                    plan: "free" | "hobby" | "pro";
+                    frozenReason: string | null;
+                    server: {
+                        id: string;
+                        ipAddress: string | null;
+                        domain: string | null;
+                        createdAt: string;
+                        performanceStatus: "good" | "struggling";
+                        healthFlags: string[] | null;
+                        size: string;
+                        sshEnabled: boolean;
+                        terminalEnabled: boolean;
+                        preferredView: string;
+                        preferredSession: string;
+                        preferredApp: string | null;
+                        securityTier: "standard" | "web_locked" | "private_locked";
+                        serverPlan: "free" | "hobby" | "pro";
+                        product: "byos" | "shield_proxy" | "cloud_platform" | "byos_managed";
+                        platformVersion: string | null;
+                        billingInterval: "monthly" | "annual";
+                        billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
+                        state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                        subscriptionEndsAt: string | null;
+                        pendingDowngrade: {
+                            targetPlan: string | null;
+                            interval: string | null;
+                            effectiveDate: string | null;
+                        } | null;
+                        pendingUpgrade: {
+                            targetPlan: string;
+                            interval: string | null;
+                        } | null;
+                        tierTransitionTarget: string | null;
+                        tierTransitionLockedAt: string | null;
+                        volumeSecurityMode: "standard" | "enhanced" | "sovereign";
+                        region: string | null;
+                        setupToken: string | null;
+                    };
+                    snapshot: {
+                        available: boolean;
+                        createdAt: string | null;
+                        expiresAt: string | null;
+                    } | {
+                        available: boolean;
+                    };
+                    operation: {
+                        type: "update" | "destroy" | "provision" | "wake" | "hibernate" | "upgrade" | "downgrade" | "rebuild" | null;
+                        step: string | null;
+                        startedAt: string | null;
+                        label: string;
+                        isReady: boolean;
+                    };
+                    errorReason: string | null;
+                    agentUpdate: {
+                        appliedManifestVersion: number | null;
+                        latestManifestVersion: number | null;
+                        installedEnforcerVersion: string | null;
+                        latestEnforcerVersion: string | null;
+                        pendingUpdateVersion: number | null;
+                        pendingUpdateStagedAt: string | null;
+                        autoUpdateEffective: boolean;
+                        healthStatus: "ok" | "degraded" | "failing" | "unknown";
+                        lastInstallOutcome: "success" | "partial" | "failed" | "rolled_back" | "pending_approval" | null;
+                        lastInstallError: string | null;
+                        lastReportAt: string | null;
+                        lastPingAt: string | null;
+                        liveness: "online" | "stale" | "offline" | "unknown";
+                        applyInProgress: boolean;
+                        applyInProgressVersion: number | null;
+                        capabilities: string[];
+                        pingedAgentVersion: string | null;
+                        lacksCapabilities: string[];
+                    };
+                }[];
+                server: null;
+                plan: string;
+                hasActiveSubscription: boolean;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        } | {
+            input: {};
+            output: {
+                servers: {
+                    aiQuota?: {
+                        used: number;
+                        limit: number;
+                        remaining: number;
+                        percentUsed: number;
+                        resetsIn: string;
+                        resetAt: string;
+                    } | undefined;
+                    state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                    plan: "free" | "hobby" | "pro";
+                    frozenReason: string | null;
+                    server: {
+                        id: string;
+                        ipAddress: string | null;
+                        domain: string | null;
+                        createdAt: string;
+                        performanceStatus: "good" | "struggling";
+                        healthFlags: string[] | null;
+                        size: string;
+                        sshEnabled: boolean;
+                        terminalEnabled: boolean;
+                        preferredView: string;
+                        preferredSession: string;
+                        preferredApp: string | null;
+                        securityTier: "standard" | "web_locked" | "private_locked";
+                        serverPlan: "free" | "hobby" | "pro";
+                        product: "byos" | "shield_proxy" | "cloud_platform" | "byos_managed";
+                        platformVersion: string | null;
+                        billingInterval: "monthly" | "annual";
+                        billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
+                        state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                        subscriptionEndsAt: string | null;
+                        pendingDowngrade: {
+                            targetPlan: string | null;
+                            interval: string | null;
+                            effectiveDate: string | null;
+                        } | null;
+                        pendingUpgrade: {
+                            targetPlan: string;
+                            interval: string | null;
+                        } | null;
+                        tierTransitionTarget: string | null;
+                        tierTransitionLockedAt: string | null;
+                        volumeSecurityMode: "standard" | "enhanced" | "sovereign";
+                        region: string | null;
+                        setupToken: string | null;
+                    };
+                    snapshot: {
+                        available: boolean;
+                        createdAt: string | null;
+                        expiresAt: string | null;
+                    } | {
+                        available: boolean;
+                    };
+                    operation: {
+                        type: "update" | "destroy" | "provision" | "wake" | "hibernate" | "upgrade" | "downgrade" | "rebuild" | null;
+                        step: string | null;
+                        startedAt: string | null;
+                        label: string;
+                        isReady: boolean;
+                    };
+                    errorReason: string | null;
+                    agentUpdate: {
+                        appliedManifestVersion: number | null;
+                        latestManifestVersion: number | null;
+                        installedEnforcerVersion: string | null;
+                        latestEnforcerVersion: string | null;
+                        pendingUpdateVersion: number | null;
+                        pendingUpdateStagedAt: string | null;
+                        autoUpdateEffective: boolean;
+                        healthStatus: "ok" | "degraded" | "failing" | "unknown";
+                        lastInstallOutcome: "success" | "partial" | "failed" | "rolled_back" | "pending_approval" | null;
+                        lastInstallError: string | null;
+                        lastReportAt: string | null;
+                        lastPingAt: string | null;
+                        liveness: "online" | "stale" | "offline" | "unknown";
+                        applyInProgress: boolean;
+                        applyInProgressVersion: number | null;
+                        capabilities: string[];
+                        pingedAgentVersion: string | null;
+                        lacksCapabilities: string[];
+                    };
+                }[];
+                hasActiveSubscription: boolean;
+                aiQuota?: {
+                    used: number;
+                    limit: number;
+                    remaining: number;
+                    percentUsed: number;
+                    resetsIn: string;
+                    resetAt: string;
+                } | undefined;
+                state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                plan: "free" | "hobby" | "pro";
+                frozenReason: string | null;
+                server: {
+                    id: string;
+                    ipAddress: string | null;
+                    domain: string | null;
+                    createdAt: string;
+                    performanceStatus: "good" | "struggling";
+                    healthFlags: string[] | null;
+                    size: string;
+                    sshEnabled: boolean;
+                    terminalEnabled: boolean;
+                    preferredView: string;
+                    preferredSession: string;
+                    preferredApp: string | null;
+                    securityTier: "standard" | "web_locked" | "private_locked";
+                    serverPlan: "free" | "hobby" | "pro";
+                    product: "byos" | "shield_proxy" | "cloud_platform" | "byos_managed";
+                    platformVersion: string | null;
+                    billingInterval: "monthly" | "annual";
+                    billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
+                    state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                    subscriptionEndsAt: string | null;
+                    pendingDowngrade: {
+                        targetPlan: string | null;
+                        interval: string | null;
+                        effectiveDate: string | null;
+                    } | null;
+                    pendingUpgrade: {
+                        targetPlan: string;
+                        interval: string | null;
+                    } | null;
+                    tierTransitionTarget: string | null;
+                    tierTransitionLockedAt: string | null;
+                    volumeSecurityMode: "standard" | "enhanced" | "sovereign";
+                    region: string | null;
+                    setupToken: string | null;
+                };
+                snapshot: {
+                    available: boolean;
+                    createdAt: string | null;
+                    expiresAt: string | null;
+                } | {
+                    available: boolean;
+                };
+                operation: {
+                    type: "update" | "destroy" | "provision" | "wake" | "hibernate" | "upgrade" | "downgrade" | "rebuild" | null;
+                    step: string | null;
+                    startedAt: string | null;
+                    label: string;
+                    isReady: boolean;
+                };
+                errorReason: string | null;
+                agentUpdate: {
+                    appliedManifestVersion: number | null;
+                    latestManifestVersion: number | null;
+                    installedEnforcerVersion: string | null;
+                    latestEnforcerVersion: string | null;
+                    pendingUpdateVersion: number | null;
+                    pendingUpdateStagedAt: string | null;
+                    autoUpdateEffective: boolean;
+                    healthStatus: "ok" | "degraded" | "failing" | "unknown";
+                    lastInstallOutcome: "success" | "partial" | "failed" | "rolled_back" | "pending_approval" | null;
+                    lastInstallError: string | null;
+                    lastReportAt: string | null;
+                    lastPingAt: string | null;
+                    liveness: "online" | "stale" | "offline" | "unknown";
+                    applyInProgress: boolean;
+                    applyInProgressVersion: number | null;
+                    capabilities: string[];
+                    pingedAgentVersion: string | null;
+                    lacksCapabilities: string[];
+                };
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -1722,7 +2485,112 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     serverId: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                param: {
+                    serverId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    serverId: string;
+                };
+            };
+            output: {
+                aiQuota?: {
+                    used: number;
+                    limit: number;
+                    remaining: number;
+                    percentUsed: number;
+                    resetsIn: string;
+                    resetAt: string;
+                } | undefined;
+                state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                plan: "free" | "hobby" | "pro";
+                frozenReason: string | null;
+                server: {
+                    id: string;
+                    ipAddress: string | null;
+                    domain: string | null;
+                    createdAt: string;
+                    performanceStatus: "good" | "struggling";
+                    healthFlags: string[] | null;
+                    size: string;
+                    sshEnabled: boolean;
+                    terminalEnabled: boolean;
+                    preferredView: string;
+                    preferredSession: string;
+                    preferredApp: string | null;
+                    securityTier: "standard" | "web_locked" | "private_locked";
+                    serverPlan: "free" | "hobby" | "pro";
+                    product: "byos" | "shield_proxy" | "cloud_platform" | "byos_managed";
+                    platformVersion: string | null;
+                    billingInterval: "monthly" | "annual";
+                    billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
+                    state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                    subscriptionEndsAt: string | null;
+                    pendingDowngrade: {
+                        targetPlan: string | null;
+                        interval: string | null;
+                        effectiveDate: string | null;
+                    } | null;
+                    pendingUpgrade: {
+                        targetPlan: string;
+                        interval: string | null;
+                    } | null;
+                    tierTransitionTarget: string | null;
+                    tierTransitionLockedAt: string | null;
+                    volumeSecurityMode: "standard" | "enhanced" | "sovereign";
+                    region: string | null;
+                    setupToken: string | null;
+                };
+                snapshot: {
+                    available: boolean;
+                    createdAt: string | null;
+                    expiresAt: string | null;
+                } | {
+                    available: boolean;
+                };
+                operation: {
+                    type: "update" | "destroy" | "provision" | "wake" | "hibernate" | "upgrade" | "downgrade" | "rebuild" | null;
+                    step: string | null;
+                    startedAt: string | null;
+                    label: string;
+                    isReady: boolean;
+                };
+                errorReason: string | null;
+                agentUpdate: {
+                    appliedManifestVersion: number | null;
+                    latestManifestVersion: number | null;
+                    installedEnforcerVersion: string | null;
+                    latestEnforcerVersion: string | null;
+                    pendingUpdateVersion: number | null;
+                    pendingUpdateStagedAt: string | null;
+                    autoUpdateEffective: boolean;
+                    healthStatus: "ok" | "degraded" | "failing" | "unknown";
+                    lastInstallOutcome: "success" | "partial" | "failed" | "rolled_back" | "pending_approval" | null;
+                    lastInstallError: string | null;
+                    lastReportAt: string | null;
+                    lastPingAt: string | null;
+                    liveness: "online" | "stale" | "offline" | "unknown";
+                    applyInProgress: boolean;
+                    applyInProgressVersion: number | null;
+                    capabilities: string[];
+                    pingedAgentVersion: string | null;
+                    lacksCapabilities: string[];
+                };
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -1845,7 +2713,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     name?: string | undefined;
-                    product?: "cloud_platform" | "shield_proxy" | undefined;
+                    product?: "shield_proxy" | "cloud_platform" | undefined;
                     plan?: "free" | "hobby" | "pro" | undefined;
                 };
             };
@@ -1858,7 +2726,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     name?: string | undefined;
-                    product?: "cloud_platform" | "shield_proxy" | undefined;
+                    product?: "shield_proxy" | "cloud_platform" | undefined;
                     plan?: "free" | "hobby" | "pro" | undefined;
                 };
             };
@@ -1884,7 +2752,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     name?: string | undefined;
-                    product?: "cloud_platform" | "shield_proxy" | undefined;
+                    product?: "shield_proxy" | "cloud_platform" | undefined;
                     plan?: "free" | "hobby" | "pro" | undefined;
                 };
             };
@@ -1897,7 +2765,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     name?: string | undefined;
-                    product?: "cloud_platform" | "shield_proxy" | undefined;
+                    product?: "shield_proxy" | "cloud_platform" | undefined;
                     plan?: "free" | "hobby" | "pro" | undefined;
                 };
             };
@@ -1907,7 +2775,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                     ipAddress: string;
                     domain: string;
-                    state: "error" | "creating" | "provisioning" | "running" | "pool_ready" | "pending_deletion" | "destroying" | "hibernated" | "upgrading" | "downgrading" | "frozen" | "pool_assigned";
+                    state: "running" | "error" | "creating" | "provisioning" | "hibernated" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
                     serverPlan: string;
                     sshEnabled: false;
                     terminalEnabled: true;
@@ -1930,7 +2798,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     name?: string | undefined;
-                    product?: "cloud_platform" | "shield_proxy" | undefined;
+                    product?: "shield_proxy" | "cloud_platform" | undefined;
                     plan?: "free" | "hobby" | "pro" | undefined;
                 };
             };
@@ -1943,13 +2811,22 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     name?: string | undefined;
-                    product?: "cloud_platform" | "shield_proxy" | undefined;
+                    product?: "shield_proxy" | "cloud_platform" | undefined;
                     plan?: "free" | "hobby" | "pro" | undefined;
                 };
             };
             output: {
                 message: string;
-                server: any;
+                server: {
+                    id: string;
+                    ipAddress: null;
+                    domain: null;
+                    state: string;
+                    plan: import("./engines").ServerPlan;
+                    product: import("./engines").Product;
+                    sshEnabled: false;
+                    terminalEnabled: true;
+                };
                 upgrade: {
                     fromPlan: string;
                     toPlan: import("./engines").ServerPlan;
@@ -1962,7 +2839,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     name?: string | undefined;
-                    product?: "cloud_platform" | "shield_proxy" | undefined;
+                    product?: "shield_proxy" | "cloud_platform" | undefined;
                     plan?: "free" | "hobby" | "pro" | undefined;
                 };
             };
@@ -1991,7 +2868,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     name?: string | undefined;
-                    product?: "cloud_platform" | "shield_proxy" | undefined;
+                    product?: "shield_proxy" | "cloud_platform" | undefined;
                     plan?: "free" | "hobby" | "pro" | undefined;
                 };
             };
@@ -2002,7 +2879,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     cloudServerId: string;
                     ipAddress: string;
                     domain: string;
-                    status: "error" | "creating" | "provisioning" | "running" | "pool_ready" | "pending_deletion" | "destroying" | "hibernated" | "upgrading" | "downgrading" | "frozen" | "pool_assigned";
+                    status: "running" | "error" | "creating" | "provisioning" | "hibernated" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
                     sshEnabled: false;
                     terminalEnabled: true;
                     name: string;
@@ -2038,7 +2915,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     name?: string | undefined;
-                    product?: "cloud_platform" | "shield_proxy" | undefined;
+                    product?: "shield_proxy" | "cloud_platform" | undefined;
                     plan?: "free" | "hobby" | "pro" | undefined;
                 };
             };
@@ -2057,7 +2934,36 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                id: string;
+                state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                ipAddress: string | null;
+                domain: string | null;
+                deploymentModel: "cloudflare" | "direct" | "gateway";
+                createdAt: string;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -2176,8 +3082,15 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 currentInterval: string;
                 currentRegion: import("./engines").UnifiedRegion;
                 currentProvider: import("./providers").CloudProviderType;
-                pendingDowngrade: any;
-                pendingUpgrade: any;
+                pendingDowngrade: {
+                    targetPlan: string | null;
+                    interval: string | null;
+                    effectiveDate: string | null;
+                } | null;
+                pendingUpgrade: {
+                    targetPlan: string;
+                    interval: string | null;
+                } | null;
                 options: {
                     tier: {
                         id: string;
@@ -2715,7 +3628,12 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             };
             output: {
                 message: string;
-                settings: any;
+                settings: {
+                    preferredView: string;
+                    preferredSession: string;
+                    preferredApp: string | null;
+                    snapshotDisabled: boolean;
+                };
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
@@ -2771,7 +3689,11 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             };
             output: {
                 message: string;
-                preferences: any;
+                preferences: {
+                    preferredView: string;
+                    preferredSession: string;
+                    preferredApp: string | null;
+                };
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
@@ -2787,7 +3709,48 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     sandboxId: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                } & {
+                    sandboxId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                } & {
+                    sandboxId: string;
+                };
+            };
+            output: {
+                config: {
+                    version: 1;
+                    revision: number;
+                    basedOnPresetId: string | null;
+                    contexts: {
+                        [x: string]: {
+                            orderedTabs: {
+                                extensionId: string;
+                                tabId: string;
+                                enabled: boolean;
+                            }[];
+                        };
+                    };
+                };
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -2891,7 +3854,41 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                templates: {
+                    id: string;
+                    userId: string;
+                    name: string;
+                    description: string | null;
+                    config: {
+                        version: 1;
+                        revision: number;
+                        basedOnPresetId: string | null;
+                        contexts: {
+                            [x: string]: {
+                                orderedTabs: {
+                                    extensionId: string;
+                                    tabId: string;
+                                    enabled: boolean;
+                                }[];
+                            };
+                        };
+                    };
+                    createdAt: string;
+                    updatedAt: string;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -2963,7 +3960,6 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     name?: string | undefined;
-                    description?: string | null | undefined;
                     config?: {
                         version: 1;
                         revision: number;
@@ -2976,6 +3972,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                             }[];
                         }>;
                     } | undefined;
+                    description?: string | null | undefined;
                 };
             } & {
                 param: {
@@ -2993,7 +3990,6 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     name?: string | undefined;
-                    description?: string | null | undefined;
                     config?: {
                         version: 1;
                         revision: number;
@@ -3006,6 +4002,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                             }[];
                         }>;
                     } | undefined;
+                    description?: string | null | undefined;
                 };
             } & {
                 param: {
@@ -3023,7 +4020,6 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     name?: string | undefined;
-                    description?: string | null | undefined;
                     config?: {
                         version: 1;
                         revision: number;
@@ -3036,6 +4032,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                             }[];
                         }>;
                     } | undefined;
+                    description?: string | null | undefined;
                 };
             } & {
                 param: {
@@ -3102,7 +4099,79 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                groups: {
+                    connections: {
+                        id: string;
+                        createdAt: string;
+                        updatedAt: string;
+                        groupId: string;
+                        providerKind: string;
+                        adapterType: string;
+                        displayName: string;
+                        mcpUrl: string | null;
+                        mcpTransport: string | null;
+                        mcpAuthTokenEncrypted: string | null;
+                        oauthProvider: string | null;
+                        oauthConnectionRef: string | null;
+                        agentExposure: string;
+                        isDefaultRoute: boolean;
+                        connectionStatus: string;
+                        lastHealthCheck: string | null;
+                        lastDiscoveryAt: string | null;
+                        lastSuccessfulDiscoveryAt: string | null;
+                        lastErrorCode: string | null;
+                        lastErrorMessage: string | null;
+                        metadataJson: import("hono/utils/types").JSONValue;
+                    }[];
+                    id: string;
+                    serverId: string;
+                    sandboxId: string;
+                    name: string;
+                    iconKey: string;
+                    routeRole: string | null;
+                    position: number;
+                    isSystemDefined: boolean;
+                    archivedAt: string | null;
+                    archivedBy: string | null;
+                    archiveReason: string | null;
+                    createdAt: string;
+                    updatedAt: string;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -3324,13 +4393,13 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         $post: {
             input: {
                 json: {
-                    displayName: string;
+                    providerKind: "github" | "gitlab" | "bitbucket" | "vercel" | "custom" | "cloudflare_workers" | "supabase" | "neon" | "planetscale" | "stripe" | "turso";
                     adapterType: "mcp" | "http" | "oauth" | "native_api";
-                    providerKind: "github" | "gitlab" | "vercel" | "custom" | "cloudflare_workers" | "supabase" | "neon" | "planetscale" | "stripe" | "turso" | "bitbucket";
-                    oauthConnectionRef?: string | undefined;
+                    displayName: string;
                     mcpUrl?: string | undefined;
                     mcpTransport?: "stdio" | "sse" | "streamable-http" | undefined;
                     oauthProvider?: string | undefined;
+                    oauthConnectionRef?: string | undefined;
                 };
             } & {
                 param: {
@@ -3347,13 +4416,13 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    displayName: string;
+                    providerKind: "github" | "gitlab" | "bitbucket" | "vercel" | "custom" | "cloudflare_workers" | "supabase" | "neon" | "planetscale" | "stripe" | "turso";
                     adapterType: "mcp" | "http" | "oauth" | "native_api";
-                    providerKind: "github" | "gitlab" | "vercel" | "custom" | "cloudflare_workers" | "supabase" | "neon" | "planetscale" | "stripe" | "turso" | "bitbucket";
-                    oauthConnectionRef?: string | undefined;
+                    displayName: string;
                     mcpUrl?: string | undefined;
                     mcpTransport?: "stdio" | "sse" | "streamable-http" | undefined;
                     oauthProvider?: string | undefined;
+                    oauthConnectionRef?: string | undefined;
                 };
             } & {
                 param: {
@@ -3370,13 +4439,13 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    displayName: string;
+                    providerKind: "github" | "gitlab" | "bitbucket" | "vercel" | "custom" | "cloudflare_workers" | "supabase" | "neon" | "planetscale" | "stripe" | "turso";
                     adapterType: "mcp" | "http" | "oauth" | "native_api";
-                    providerKind: "github" | "gitlab" | "vercel" | "custom" | "cloudflare_workers" | "supabase" | "neon" | "planetscale" | "stripe" | "turso" | "bitbucket";
-                    oauthConnectionRef?: string | undefined;
+                    displayName: string;
                     mcpUrl?: string | undefined;
                     mcpTransport?: "stdio" | "sse" | "streamable-http" | undefined;
                     oauthProvider?: string | undefined;
+                    oauthConnectionRef?: string | undefined;
                 };
             } & {
                 param: {
@@ -3616,7 +4685,25 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     cid: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                } & {
+                    gid: string;
+                } & {
+                    cid: string;
+                };
+            };
+            output: {
+                tools: never[];
+                message: string;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -3679,7 +4766,39 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 403;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                connections: {
+                    connectionId: string;
+                    groupId: string;
+                    providerKind: string;
+                    url: string;
+                    transport: "sse" | "streamable-http";
+                    authToken: string | undefined;
+                    displayName: string;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -3788,7 +4907,52 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     cid: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                } & {
+                    gid: string;
+                } & {
+                    cid: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                } & {
+                    gid: string;
+                } & {
+                    cid: string;
+                };
+            };
+            output: {
+                permissions: {
+                    id: string;
+                    serverId: string;
+                    sandboxId: string;
+                    connectionId: string;
+                    toolName: string;
+                    capability: string;
+                    permission: string;
+                    allowedEnvironments: string[] | null;
+                    setBy: string;
+                    setAt: string;
+                    createdAt: string;
+                    updatedAt: string;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -3798,8 +4962,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         $put: {
             input: {
                 json: {
-                    permission: "never" | "ask" | "allow_session" | "allow_always";
                     capability: string;
+                    permission: "never" | "ask" | "allow_session" | "allow_always";
                     allowedEnvironments?: string[] | null | undefined;
                 };
             } & {
@@ -3813,7 +4977,33 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     tool: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                json: {
+                    capability: string;
+                    permission: "never" | "ask" | "allow_session" | "allow_always";
+                    allowedEnvironments?: string[] | null | undefined;
+                };
+            } & {
+                param: {
+                    id: string;
+                } & {
+                    gid: string;
+                } & {
+                    cid: string;
+                } & {
+                    tool: string;
+                };
+            };
+            output: {
+                id: string;
+                message: string;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -3917,7 +5107,27 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+                message: string;
+            };
+            outputFormat: "json";
+            status: 409;
+        } | {
+            input: {
+                json: {
+                    hostname: string;
+                    termsAccepted: true;
+                };
+            } & {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+                current: string;
+            };
             outputFormat: "json";
             status: 409;
         } | {
@@ -3970,7 +5180,51 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                hostname: null;
+                status: null;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                hostname: string;
+                status: "pending_validation" | "validating" | "issuing_cert" | "active" | "validation_failed" | "cert_failed" | "suspended" | null;
+                verifiedAt: string | null;
+                lastError: string | null;
+                verification: {
+                    type: string;
+                    name: string;
+                    value: string;
+                } | null;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -4017,7 +5271,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 };
             };
             output: {
-                status: "active" | "pending_validation" | "validating" | "issuing_cert" | "validation_failed" | "cert_failed" | "suspended";
+                status: "pending_validation" | "validating" | "issuing_cert" | "active" | "validation_failed" | "cert_failed" | "suspended";
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
@@ -4292,7 +5546,63 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                host: string;
+                domain: string;
+                accessMethods: {
+                    terminal: {
+                        enabled: true;
+                        url: string;
+                        description: string;
+                    } | {
+                        enabled: false;
+                        description: string;
+                    };
+                    ssh: {
+                        enabled: true;
+                        username: string;
+                        port: number;
+                        command: string;
+                        description: string;
+                    } | {
+                        enabled: false;
+                        description: string;
+                    };
+                };
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -4305,7 +5615,41 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                serverId: string;
+                cloudInitYaml: string | null;
+                cloudInitHash: string | null;
+                publicKey: string | null;
+                publicKeyFingerprint: string | null;
+                createdAt: string;
+                verification: {
+                    instructions: string[];
+                    command: string;
+                    note: string;
+                };
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -4462,8 +5806,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         $post: {
             input: {
                 json: {
-                    nonce: string;
                     signature: string;
+                    nonce: string;
                     viewport?: {
                         width: number;
                         height: number;
@@ -4483,8 +5827,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    nonce: string;
                     signature: string;
+                    nonce: string;
                     viewport?: {
                         width: number;
                         height: number;
@@ -4504,8 +5848,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    nonce: string;
                     signature: string;
+                    nonce: string;
                     viewport?: {
                         width: number;
                         height: number;
@@ -4525,8 +5869,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    nonce: string;
                     signature: string;
+                    nonce: string;
                     viewport?: {
                         width: number;
                         height: number;
@@ -4549,8 +5893,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    nonce: string;
                     signature: string;
+                    nonce: string;
                     viewport?: {
                         width: number;
                         height: number;
@@ -4581,8 +5925,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         $post: {
             input: {
                 json: {
-                    nonce: string;
                     signature: string;
+                    nonce: string;
                 };
             } & {
                 param: {
@@ -4597,8 +5941,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    nonce: string;
                     signature: string;
+                    nonce: string;
                 };
             } & {
                 param: {
@@ -4613,8 +5957,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    nonce: string;
                     signature: string;
+                    nonce: string;
                 };
             } & {
                 param: {
@@ -4629,8 +5973,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    nonce: string;
                     signature: string;
+                    nonce: string;
                 };
             } & {
                 param: {
@@ -4647,8 +5991,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    nonce: string;
                     signature: string;
+                    nonce: string;
                 };
             } & {
                 param: {
@@ -4675,7 +6019,43 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 403;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                status: string;
+                serverState: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -4747,7 +6127,42 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                tier: "standard" | "web_locked" | "private_locked";
+                label: string;
+                description: string;
+                breachSafe: boolean;
+                userMessage: string;
+                webTerminal: "enabled" | "disabled" | "passkey_required";
+                sshAccess: "enabled" | "dynamic" | "disabled";
+                availableTransitions: ("standard" | "web_locked" | "private_locked")[];
+                sshKeys: {
+                    id: string;
+                    fingerprint: string;
+                    name: string;
+                    addedAt: string;
+                    addedVia: string;
+                }[];
+                passkeys: {
+                    id: string;
+                    name: string;
+                    registeredAt: string;
+                    lastUsedAt: string | null;
+                }[];
+                tierLockedAt: string | null;
+                pendingAction: string | null;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -4886,8 +6301,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         $post: {
             input: {
                 json: {
-                    data: Record<string, unknown>;
                     event: "ssh_key_added" | "ssh_key_removed" | "volume_encrypted" | "volume_unlocked" | "settings_changed" | "tier_changed" | "passkey_registered" | "passkey_removed" | "heartbeat_key_reset";
+                    data: Record<string, unknown>;
                     timestamp: number;
                     nonce: string;
                 };
@@ -4904,8 +6319,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    data: Record<string, unknown>;
                     event: "ssh_key_added" | "ssh_key_removed" | "volume_encrypted" | "volume_unlocked" | "settings_changed" | "tier_changed" | "passkey_registered" | "passkey_removed" | "heartbeat_key_reset";
+                    data: Record<string, unknown>;
                     timestamp: number;
                     nonce: string;
                 };
@@ -4922,8 +6337,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    data: Record<string, unknown>;
                     event: "ssh_key_added" | "ssh_key_removed" | "volume_encrypted" | "volume_unlocked" | "settings_changed" | "tier_changed" | "passkey_registered" | "passkey_removed" | "heartbeat_key_reset";
+                    data: Record<string, unknown>;
                     timestamp: number;
                     nonce: string;
                 };
@@ -4932,14 +6347,18 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+                expectedTier: string;
+                reportedTier: "standard" | "web_locked" | "private_locked";
+            };
             outputFormat: "json";
             status: 409;
         } | {
             input: {
                 json: {
-                    data: Record<string, unknown>;
                     event: "ssh_key_added" | "ssh_key_removed" | "volume_encrypted" | "volume_unlocked" | "settings_changed" | "tier_changed" | "passkey_registered" | "passkey_removed" | "heartbeat_key_reset";
+                    data: Record<string, unknown>;
                     timestamp: number;
                     nonce: string;
                 };
@@ -4973,7 +6392,10 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             status: 404;
         } | {
             input: {};
-            output: any;
+            output: {
+                error: string;
+                deletionDate: string;
+            };
             outputFormat: "json";
             status: 400;
         } | {
@@ -5024,7 +6446,27 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/status": {
         $get: {
             input: {};
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {};
+            output: {
+                id: string;
+                email: string;
+                pendingDeletion: boolean;
+                deletionDate: string | null;
+                hasSubscription: boolean;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -5033,7 +6475,40 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/nuke-user": {
         $post: {
             input: {};
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 500;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {};
+            output: {
+                success: true;
+                userId: string;
+                email: string;
+                results: string[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -5042,7 +6517,23 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/preferences": {
         $get: {
             input: {};
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {};
+            output: {
+                preferredLocale: string;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -5051,7 +6542,30 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/preferences": {
         $patch: {
             input: {};
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {};
+            output: {
+                preferredLocale: string;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -5061,7 +6575,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         $post: {
             input: {
                 json: {
-                    product: "cloud_platform" | "shield_proxy" | "byos_managed";
+                    product: "shield_proxy" | "cloud_platform" | "byos_managed";
                     plan?: "hobby" | "pro" | undefined;
                     interval?: "monthly" | "annual" | undefined;
                 };
@@ -5074,7 +6588,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    product: "cloud_platform" | "shield_proxy" | "byos_managed";
+                    product: "shield_proxy" | "cloud_platform" | "byos_managed";
                     plan?: "hobby" | "pro" | undefined;
                     interval?: "monthly" | "annual" | undefined;
                 };
@@ -5087,7 +6601,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    product: "cloud_platform" | "shield_proxy" | "byos_managed";
+                    product: "shield_proxy" | "cloud_platform" | "byos_managed";
                     plan?: "hobby" | "pro" | undefined;
                     interval?: "monthly" | "annual" | undefined;
                 };
@@ -5100,7 +6614,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    product: "cloud_platform" | "shield_proxy" | "byos_managed";
+                    product: "shield_proxy" | "cloud_platform" | "byos_managed";
                     plan?: "hobby" | "pro" | undefined;
                     interval?: "monthly" | "annual" | undefined;
                 };
@@ -5261,9 +6775,34 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/sandbox-addon": {
         $post: {
             input: {};
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {};
+            output: {
+                added: number;
+                extraSandboxes: number;
+                costPerMonth: number;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 500;
         };
     };
 } & {
@@ -5302,7 +6841,11 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 architecture: string;
                 hasOpenCodeKey: boolean;
                 hasDeepSeekKey: boolean;
-                waterfallModels: any;
+                waterfallModels: {
+                    id: string;
+                    name: string;
+                    isPaid: boolean;
+                }[];
                 discoveredFreeModels: number;
                 lastDiscovery: string | null;
                 timestamp: string;
@@ -5326,7 +6869,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     limit: number;
                 };
                 waterfall: {
-                    models: any;
+                    models: string[];
                     strategy: string;
                     discoveredCount: number;
                 };
@@ -5409,7 +6952,15 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             output: {
                 object: string;
                 architecture: string;
-                data: any;
+                data: {
+                    id: string;
+                    object: string;
+                    owned_by: "opencode" | "deepseek" | "openrouter" | "anthropic" | "openai";
+                    name: string;
+                    description: string;
+                    is_paid: boolean;
+                    priority: number;
+                }[];
                 strategy: string;
                 autoDiscovered: boolean;
             };
@@ -5495,7 +7046,17 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/connections": {
         $get: {
             input: {};
-            output: any;
+            output: {
+                connections: {
+                    id: string;
+                    provider: "github" | "gitlab" | "bitbucket";
+                    providerUsername: string | null;
+                    providerAvatarUrl: string | null;
+                    scope: string | null;
+                    connectedAt: string;
+                }[];
+                availableProviders: ("github" | "gitlab" | "bitbucket")[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -5633,7 +7194,38 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     app: string;
                 };
             };
-            output: any;
+            output: {
+                linked: false;
+                sandboxId: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            } & {
+                query: {
+                    app: string;
+                };
+            };
+            output: {
+                linked: true;
+                sandboxId: string;
+                repo: {
+                    id: string;
+                    provider: "github" | "gitlab" | "bitbucket";
+                    repoFullName: string;
+                    repoUrl: string;
+                    defaultBranch: string;
+                    isPrivate: boolean;
+                    credentialsSynced: boolean;
+                    linkedAt: string;
+                    lastPushAt: string | null;
+                };
+                sharedWithApps: string[] | undefined;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -5644,11 +7236,11 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     provider: "github" | "gitlab" | "bitbucket";
-                    repoFullName: string;
                     sandboxId: string;
+                    repoFullName: string;
                     repoUrl: string;
-                    isPrivate?: boolean | undefined;
                     defaultBranch?: string | undefined;
+                    isPrivate?: boolean | undefined;
                     skipSetup?: boolean | undefined;
                 };
             } & {
@@ -5663,8 +7255,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 repoFullName: string;
                 repoUrl: string;
                 defaultBranch: string;
-                provider: any;
-                providerUsername: any;
+                provider: "github" | "gitlab" | "bitbucket";
+                providerUsername: string | null;
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
@@ -5694,7 +7286,12 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                queued: true;
+                action: string;
+                repoFullName: string;
+                sandboxId: string;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -5707,7 +7304,12 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                queued: true;
+                action: string;
+                repoFullName: string;
+                sandboxId: string;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -5720,7 +7322,12 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                queued: true;
+                action: string;
+                repoFullName: string;
+                sandboxId: string;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -5745,7 +7352,21 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/connections": {
         $get: {
             input: {};
-            output: any;
+            output: {
+                connections: {
+                    id: string;
+                    provider: string;
+                    providerUsername: string | null;
+                    providerAvatarUrl: string | null;
+                    providerAccountId: string | null;
+                    scope: string | null;
+                    providerMetadata: {
+                        [x: string]: import("hono/utils/types").JSONValue;
+                    } | null;
+                    connectedAt: string;
+                }[];
+                availableProviders: ("vercel" | "supabase" | "neon" | "planetscale" | "stripe")[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -5824,7 +7445,17 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                databases: {
+                    sandboxId: string;
+                    supabaseProjectId: string;
+                    supabaseProjectName: string | null;
+                    supabaseRegion: string | null;
+                    supabaseProjectUrl: string | null;
+                    credentialsSynced: boolean;
+                    createdAt: string;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -5909,10 +7540,10 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     gitRepo: string;
                     gitRef: string;
                     commitSha: string;
-                    environment?: string | undefined;
-                    projectName?: string | undefined;
                     framework?: string | undefined;
+                    environment?: string | undefined;
                     gateTokenId?: string | undefined;
+                    projectName?: string | undefined;
                 };
             } & {
                 param: {
@@ -5947,7 +7578,48 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     sandboxId: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                query: {
+                    limit?: string | string[] | undefined;
+                    offset?: string | string[] | undefined;
+                };
+            } & {
+                param: {
+                    serverId: string;
+                } & {
+                    sandboxId: string;
+                };
+            };
+            output: {
+                deployments: {
+                    id: string;
+                    sandboxId: string;
+                    environment: string | null;
+                    provider: string;
+                    providerProjectName: string | null;
+                    providerDeploymentId: string | null;
+                    status: string;
+                    url: string | null;
+                    providerDashboardUrl: string | null;
+                    errorCode: string | null;
+                    errorMessage: string | null;
+                    gitOrg: string | null;
+                    gitRepo: string | null;
+                    gitRef: string | null;
+                    commitSha: string | null;
+                    framework: string | null;
+                    requestedAt: string;
+                    providerAcceptedAt: string | null;
+                    readyAt: string | null;
+                    failedAt: string | null;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -5976,7 +7648,29 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 };
             };
             output: {
-                config: any;
+                config: null;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        } | {
+            input: {
+                param: {
+                    serverId: string;
+                } & {
+                    sandboxId: string;
+                };
+            };
+            output: {
+                config: {
+                    id: string;
+                    provider: string;
+                    connectionId: string;
+                    providerProjectId: string | null;
+                    branch: string | null;
+                    framework: string | null;
+                    createdAt: string;
+                    updatedAt: string;
+                };
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
@@ -5989,9 +7683,9 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 json: {
                     provider: string;
                     connectionId: string;
+                    providerProjectId?: string | undefined;
                     branch?: string | undefined;
                     framework?: string | undefined;
-                    providerProjectId?: string | undefined;
                 };
             } & {
                 param: {
@@ -6010,9 +7704,9 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 json: {
                     provider: string;
                     connectionId: string;
+                    providerProjectId?: string | undefined;
                     branch?: string | undefined;
                     framework?: string | undefined;
-                    providerProjectId?: string | undefined;
                 };
             } & {
                 param: {
@@ -6022,7 +7716,15 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 };
             };
             output: {
-                config: any;
+                config: {
+                    id: string;
+                    provider: string;
+                    connectionId: string;
+                    providerProjectId: string | null;
+                    branch: string | null;
+                    framework: string | null;
+                    updatedAt: string;
+                };
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
@@ -6097,7 +7799,41 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                id: string;
+                serverId: string;
+                sandboxId: string;
+                environment: string | null;
+                actorType: string;
+                provider: string;
+                providerProjectName: string | null;
+                providerDeploymentId: string | null;
+                status: import("./services/publish/types").DeploymentStatus;
+                url: string | null;
+                providerDashboardUrl: string | null;
+                errorCode: string | null;
+                errorMessage: string | null;
+                gitOrg: string | null;
+                gitRepo: string | null;
+                gitRef: string | null;
+                commitSha: string | null;
+                framework: string | null;
+                requestedAt: string;
+                providerAcceptedAt: string | null;
+                readyAt: string | null;
+                failedAt: string | null;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -6227,7 +7963,22 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                status: "failed" | "queued" | "building" | "success";
+                message: string | null;
+                apk_url: string | null;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -6236,7 +7987,27 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/register": {
         $post: {
             input: {};
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {};
+            output: {
+                success: true;
+                id: string;
+                updated: true;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        } | {
+            input: {};
+            output: {
+                success: true;
+                id: `${string}-${string}-${string}-${string}-${string}`;
+                updated: false;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -6263,7 +8034,18 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/tokens": {
         $get: {
             input: {};
-            output: any;
+            output: {
+                tokens: {
+                    id: string;
+                    platform: "web" | "macos" | "ios" | "android";
+                    deviceName: string | null;
+                    preferences: {
+                        [x: string]: boolean;
+                    } | null;
+                    createdAt: string;
+                    updatedAt: string;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -6331,7 +8113,19 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/verify-token": {
         $get: {
             input: {};
-            output: any;
+            output: {
+                valid: false;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                valid: true;
+                userId: string;
+                serverId: string;
+                product: "byos" | "shield_proxy" | "cloud_platform" | "byos_managed";
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -6340,7 +8134,20 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/current": {
         $get: {
             input: {};
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {};
+            output: {
+                version: string;
+                publishedAt: string;
+                vm: import("hono/utils/types").JSONValue;
+                cli: import("hono/utils/types").JSONValue;
+                bundles: import("hono/utils/types").JSONValue;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -6370,7 +8177,10 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             status: 409;
         } | {
             input: {};
-            output: any;
+            output: {
+                id: string;
+                version: string;
+            };
             outputFormat: "json";
             status: 201;
         };
@@ -6548,7 +8358,34 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     newIpAddress: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                json: {
+                    newIpAddress: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 403;
+        } | {
+            input: {
+                json: {
+                    newIpAddress: string;
+                };
+            };
+            output: {
+                updated: true;
+                originTag: string;
+                previousIp: string | null;
+                newIp: string;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -6642,7 +8479,27 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     serverId: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    serverId: string;
+                };
+            };
+            output: {
+                backups: {
+                    id: string;
+                    version: string;
+                    sizeBytes: number;
+                    createdAt: string;
+                    expiresAt: string | null;
+                    backupType: string;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -6659,7 +8516,42 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     serverId: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                json: {
+                    backupId: string;
+                };
+            } & {
+                param: {
+                    serverId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 503;
+        } | {
+            input: {
+                json: {
+                    backupId: string;
+                };
+            } & {
+                param: {
+                    serverId: string;
+                };
+            };
+            output: {
+                downloadUrl: string;
+                sha256: string;
+                version: string;
+                sizeBytes: number;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -6706,7 +8598,19 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/init": {
         $post: {
             input: {};
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {};
+            output: {
+                migrationId: string;
+                serverId: string;
+                domain: string;
+                mlkemEk: string | null;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -6798,7 +8702,20 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                status: string;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -6807,7 +8724,18 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/tunnel/reroute": {
         $post: {
             input: {};
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {};
+            output: {
+                ok: true;
+                serverId: string;
+                target: "cloud" | "tunnel";
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -6884,7 +8812,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             output: {
                 serverId: string;
                 domain: string;
-                status: "error" | "creating" | "provisioning" | "running" | "pool_ready" | "pending_deletion" | "destroying" | "hibernated" | "upgrading" | "downgrading" | "frozen" | "pool_assigned";
+                status: "running" | "error" | "creating" | "provisioning" | "hibernated" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
@@ -6983,7 +8911,33 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     serverId: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    serverId: string;
+                };
+            };
+            output: {
+                approvals: {
+                    id: string;
+                    serverId: string;
+                    requestedBy: string;
+                    approvedBy: string | null;
+                    operation: string;
+                    justification: string;
+                    status: string;
+                    receiptChainHash: string | null;
+                    ttlSeconds: number;
+                    expiresAt: string;
+                    executedAt: string | null;
+                    createdAt: string;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -6995,9 +8949,9 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 json: {
                     components: Record<string, {
                         sha256: string;
-                        path: string;
-                        size: number;
                         version: string;
+                        size: number;
+                        path: string;
                         format: "bash" | "elf" | "tarball" | "nodejs-tarball";
                         dependsOn: string[];
                         restartOrder: number;
@@ -7009,12 +8963,12 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                         } | undefined;
                         requiredFeatureFlags?: string[] | undefined;
                     }>;
-                    publishedBy?: string | null | undefined;
                     minQuorum?: number | undefined;
+                    publishedBy?: string | null | undefined;
                     chainOverride?: {
+                        approvedBy: string;
                         reason: string;
                         previousVersion: number | null;
-                        approvedBy: string;
                         incidentId: string;
                     } | undefined;
                 };
@@ -7029,9 +8983,9 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 json: {
                     components: Record<string, {
                         sha256: string;
-                        path: string;
-                        size: number;
                         version: string;
+                        size: number;
+                        path: string;
                         format: "bash" | "elf" | "tarball" | "nodejs-tarball";
                         dependsOn: string[];
                         restartOrder: number;
@@ -7043,12 +8997,12 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                         } | undefined;
                         requiredFeatureFlags?: string[] | undefined;
                     }>;
-                    publishedBy?: string | null | undefined;
                     minQuorum?: number | undefined;
+                    publishedBy?: string | null | undefined;
                     chainOverride?: {
+                        approvedBy: string;
                         reason: string;
                         previousVersion: number | null;
-                        approvedBy: string;
                         incidentId: string;
                     } | undefined;
                 };
@@ -7065,9 +9019,9 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 json: {
                     components: Record<string, {
                         sha256: string;
-                        path: string;
-                        size: number;
                         version: string;
+                        size: number;
+                        path: string;
                         format: "bash" | "elf" | "tarball" | "nodejs-tarball";
                         dependsOn: string[];
                         restartOrder: number;
@@ -7079,12 +9033,12 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                         } | undefined;
                         requiredFeatureFlags?: string[] | undefined;
                     }>;
-                    publishedBy?: string | null | undefined;
                     minQuorum?: number | undefined;
+                    publishedBy?: string | null | undefined;
                     chainOverride?: {
+                        approvedBy: string;
                         reason: string;
                         previousVersion: number | null;
-                        approvedBy: string;
                         incidentId: string;
                     } | undefined;
                 };
@@ -7104,7 +9058,61 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                id: string;
+                createdAt: string;
+                updatedAt: string;
+                version: number;
+                payload: {
+                    version: number;
+                    previousVersion: number | null;
+                    publishedAt: string;
+                    rolloutState: "pending" | "canary" | "early" | "stable" | "late" | "rolled_back";
+                    components: {
+                        [x: string]: {
+                            version: string;
+                            sha256: string;
+                            size: number;
+                            path: string;
+                            format: "bash" | "elf" | "tarball" | "nodejs-tarball";
+                            restartOrder: number;
+                            restartUnit: string | null;
+                            subcomponents?: string[] | undefined;
+                            dependsOn: string[];
+                            livenessProbe?: {
+                                url: string;
+                                timeoutMs: number;
+                            } | undefined;
+                            requiredCapabilities: string[];
+                            requiredFeatureFlags?: string[] | undefined;
+                        };
+                    };
+                };
+                jws: string;
+                rolloutState: "pending" | "canary" | "early" | "stable" | "late" | "rolled_back";
+                minQuorum: number;
+                canaryEnteredAt: string | null;
+                earlyEnteredAt: string | null;
+                stableEnteredAt: string | null;
+                lateEnteredAt: string | null;
+                rolledBackAt: string | null;
+                rollbackReason: string | null;
+                lastPromotedBy: string | null;
+                publishedBy: string | null;
+                publishedAt: string;
+                supersededAt: string | null;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -7117,7 +9125,80 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                 };
             };
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                manifest: {
+                    id: string;
+                    version: number;
+                    payload: {
+                        version: number;
+                        previousVersion: number | null;
+                        publishedAt: string;
+                        rolloutState: "pending" | "canary" | "early" | "stable" | "late" | "rolled_back";
+                        components: {
+                            [x: string]: {
+                                version: string;
+                                sha256: string;
+                                size: number;
+                                path: string;
+                                format: "bash" | "elf" | "tarball" | "nodejs-tarball";
+                                restartOrder: number;
+                                restartUnit: string | null;
+                                subcomponents?: string[] | undefined;
+                                dependsOn: string[];
+                                livenessProbe?: {
+                                    url: string;
+                                    timeoutMs: number;
+                                } | undefined;
+                                requiredCapabilities: string[];
+                                requiredFeatureFlags?: string[] | undefined;
+                            };
+                        };
+                    };
+                    jws: string;
+                    rolloutState: "pending" | "canary" | "early" | "stable" | "late" | "rolled_back";
+                    minQuorum: number;
+                    canaryEnteredAt: string | null;
+                    earlyEnteredAt: string | null;
+                    stableEnteredAt: string | null;
+                    lateEnteredAt: string | null;
+                    rolledBackAt: string | null;
+                    rollbackReason: string | null;
+                    lastPromotedBy: string | null;
+                    publishedBy: string | null;
+                    publishedAt: string;
+                    supersededAt: string | null;
+                    createdAt: string;
+                    updatedAt: string;
+                };
+                reports: {
+                    serverId: string;
+                    cohortBucket: number;
+                    cohortPin: "canary" | "early" | "stable" | "late" | null;
+                    appliedVersion: number | null;
+                    desiredVersion: number | null;
+                    lastDesiredVersion: number | null;
+                    installedVersions: {
+                        [x: string]: string;
+                    } | null;
+                    healthStatus: "unknown" | "ok" | "degraded" | "failing";
+                    lastReportAt: string | null;
+                    lastInstallOutcome: "rolled_back" | "failed" | "success" | "partial" | "pending_approval" | null;
+                    lastInstallError: string | null;
+                    autoUpdateEffective: boolean;
+                    pendingUpdateVersion: number | null;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -7234,8 +9315,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     sha256: string;
-                    size: number;
                     version: string;
+                    size: number;
                     format: "bash" | "elf" | "tarball" | "nodejs-tarball";
                     component: "ellul-namespaced" | "ellul-env" | "ellul-mount-volume" | "ellul-crypto" | "core-runtime" | "ide";
                 };
@@ -7250,8 +9331,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {
                 json: {
                     sha256: string;
-                    size: number;
                     version: string;
+                    size: number;
                     format: "bash" | "elf" | "tarball" | "nodejs-tarball";
                     component: "ellul-namespaced" | "ellul-env" | "ellul-mount-volume" | "ellul-crypto" | "core-runtime" | "ide";
                 };
@@ -7300,10 +9381,10 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         $post: {
             input: {
                 json: {
-                    cacheVersion: string;
-                    arch: string;
                     snapshotId: string;
                     provider: string;
+                    arch: string;
+                    cacheVersion: string;
                     cacheHash: string;
                     writtenBy: string;
                 };
@@ -7316,10 +9397,10 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {
                 json: {
-                    cacheVersion: string;
-                    arch: string;
                     snapshotId: string;
                     provider: string;
+                    arch: string;
+                    cacheVersion: string;
                     cacheHash: string;
                     writtenBy: string;
                 };
@@ -7335,9 +9416,27 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/releases": {
         $get: {
             input: {};
-            output: any;
+            output: {
+                releases: {
+                    id: string;
+                    version: string;
+                    commitSha: string;
+                    manifestId: string | null;
+                    components: import("hono/utils/types").JSONValue;
+                    builtAt: string;
+                    builtBy: string;
+                    cloudBuildId: string | null;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 500;
         };
     };
 } & {
@@ -7347,8 +9446,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 json: {
                     version: string;
                     commitSha: string;
-                    components?: string[] | Record<string, unknown> | undefined;
                     manifestId?: string | null | undefined;
+                    components?: string[] | Record<string, unknown> | undefined;
                     builtBy?: string | undefined;
                     cloudBuildId?: string | null | undefined;
                 };
@@ -7364,8 +9463,8 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 json: {
                     version: string;
                     commitSha: string;
-                    components?: string[] | Record<string, unknown> | undefined;
                     manifestId?: string | null | undefined;
+                    components?: string[] | Record<string, unknown> | undefined;
                     builtBy?: string | undefined;
                     cloudBuildId?: string | null | undefined;
                 };
@@ -7381,7 +9480,28 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/custom-domains": {
         $get: {
             input: {};
-            output: any;
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 403;
+        } | {
+            input: {};
+            output: {
+                domains: {
+                    serverId: string;
+                    userId: string | null;
+                    hostname: string | null;
+                    status: "pending_validation" | "validating" | "issuing_cert" | "active" | "validation_failed" | "cert_failed" | "suspended" | null;
+                    hostnameId: string | null;
+                    verifiedAt: string | null;
+                    lastError: string | null;
+                    termsAcceptedAt: string | null;
+                    createdAt: string;
+                }[];
+                limit: number;
+                offset: number;
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -7575,7 +9695,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {};
             output: {
                 ok: true;
-                status: "active" | "pending_validation" | "validating" | "issuing_cert" | "validation_failed" | "cert_failed" | "suspended";
+                status: "pending_validation" | "validating" | "issuing_cert" | "active" | "validation_failed" | "cert_failed" | "suspended";
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
