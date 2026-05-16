@@ -122,7 +122,7 @@ importers:
         version: 1.7.0(next@15.5.18(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))
       hono:
         specifier: ^4.6.14
-        version: 4.12.18
+        version: 4.12.19
       lucide-react:
         specifier: ^0.469.0
         version: 0.469.0(react@19.2.6)
@@ -389,7 +389,7 @@ importers:
         version: link:../ts-config
       hono:
         specifier: ^4.6.14
-        version: 4.12.18
+        version: 4.12.19
       tsx:
         specifier: ^4.19.2
         version: 4.22.0
@@ -650,7 +650,7 @@ importers:
         version: link:../vps-ui
       '@hono/node-server':
         specifier: ^1.13.7
-        version: 1.19.14(hono@4.12.18)
+        version: 1.19.14(hono@4.12.19)
       '@noble/curves':
         specifier: ~2.0.1
         version: 2.0.1
@@ -680,7 +680,7 @@ importers:
         version: 0.24.2
       hono:
         specifier: ^4.6.14
-        version: 4.12.18
+        version: 4.12.19
       pg:
         specifier: ^8.16.3
         version: 8.20.0
@@ -5238,8 +5238,8 @@ packages:
   hast-util-whitespace@3.0.0:
     resolution: {integrity: sha512-88JUN06ipLwsnv+dVn+OIYOvAuvBMy/Qoi6O7mQHxdPXpjy+Cd6xRkWwux7DKO+4sYILtLBRIKgsdpS2gQc7qw==}
 
-  hono@4.12.18:
-    resolution: {integrity: sha512-RWzP96k/yv0PQfyXnWjs6zot20TqfpfsNXhOnev8d1InAxubW93L11/oNUc3tQqn2G0bSdAOBpX+2uDFHV7kdQ==}
+  hono@4.12.19:
+    resolution: {integrity: sha512-xa3eYXYXx68XTT4hZ7dRzsXBhaq85ToSrlUJNoR0gwz/1Ap/CNwX47wfvV7pc/xWhjKVVkLT7zBJy8chhNguqQ==}
     engines: {node: '>=16.9.0'}
 
   html-encoding-sniffer@4.0.0:
@@ -9033,9 +9033,9 @@ snapshots:
 
   '@hexagon/base64@1.1.28': {}
 
-  '@hono/node-server@1.19.14(hono@4.12.18)':
+  '@hono/node-server@1.19.14(hono@4.12.19)':
     dependencies:
-      hono: 4.12.18
+      hono: 4.12.19
 
   '@img/colour@1.1.0': {}
 
@@ -9416,7 +9416,7 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.29.0(zod@3.25.76)':
     dependencies:
-      '@hono/node-server': 1.19.14(hono@4.12.18)
+      '@hono/node-server': 1.19.14(hono@4.12.19)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
@@ -9426,7 +9426,7 @@ snapshots:
       eventsource-parser: 3.0.8
       express: 5.2.1
       express-rate-limit: 8.5.2(express@5.2.1)
-      hono: 4.12.18
+      hono: 4.12.19
       jose: 6.2.3
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
@@ -12244,7 +12244,7 @@ snapshots:
     dependencies:
       '@types/hast': 3.0.4
 
-  hono@4.12.18: {}
+  hono@4.12.19: {}
 
   html-encoding-sniffer@4.0.0:
     dependencies:

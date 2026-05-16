@@ -235,19 +235,39 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         };
     };
 } & {
-    "/app-redirect": {
-        $get: {
-            input: {};
-            output: undefined;
-            outputFormat: "redirect";
-            status: 302;
-        } | {
+    "/connect-complete": {
+        $post: {
             input: {};
             output: {
                 error: string;
             };
             outputFormat: "json";
             status: 400;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {};
+            output: {
+                ok: true;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/connect-poll": {
+        $get: {
+            input: {};
+            output: {
+                status: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
         };
     };
 }, "/api/auth/native">) & {
