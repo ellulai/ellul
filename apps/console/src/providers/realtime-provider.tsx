@@ -12,6 +12,7 @@ import {
 } from "react";
 import { getCodeWsUrl } from "@/lib/domains";
 import { useVpsBridge } from "@/lib/vps-bridge";
+import { useCodeToken } from "@/contexts/CodeTokenContext";
 import { emitSessionStatus } from "@/lib/session-events";
 
 export interface TreeData {
@@ -136,16 +137,21 @@ export function RealtimeProvider({
   const needsAuth = securityTier !== "standard";
 
   const { send: bridgeSend, waitForReady: bridgeWaitForReady } = useVpsBridge();
+  const { token: codeToken } = useCodeToken();
   const bridgeSendRef = useRef(bridgeSend);
   const bridgeWaitForReadyRef = useRef(bridgeWaitForReady);
   bridgeSendRef.current = bridgeSend;
   bridgeWaitForReadyRef.current = bridgeWaitForReady;
 
+  // Standard tier: bridge's get_code_session relies on terminal_token cookie
+  // which CodeTokenContext sets. Wait for it before starting the WS loop.
+  const codeTokenReady = !needsAuth ? !!codeToken : true;
+
   // Single lifecycle owner. Effect re-runs only when the *server identity*
   // changes (enabled / wsUrl / needsAuth). Bridge state flaps are absorbed
   // inside the loop via separate budgets — they never reset the WS budget.
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || !codeTokenReady) {
       setStatus("disconnected");
       return;
     }
@@ -164,7 +170,6 @@ export function RealtimeProvider({
       });
 
     const acquireSession = async (): Promise<string | null> => {
-      if (!needsAuth) return null;
       const now = Date.now();
       if (sessionCache.id && now < sessionCache.expiresAt - SESSION_REFRESH_BUFFER_MS) {
         return sessionCache.id;
@@ -380,7 +385,7 @@ export function RealtimeProvider({
     return () => {
       controller.abort();
     };
-  }, [enabled, wsUrl, needsAuth, reconnectKick]);
+  }, [enabled, wsUrl, needsAuth, reconnectKick, codeTokenReady]);
 
   const reconnect = useCallback(() => {
     setReconnectKick((k) => k + 1);

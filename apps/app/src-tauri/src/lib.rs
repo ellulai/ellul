@@ -206,31 +206,16 @@ pub fn run() {
             std::thread::spawn(move || {
                 for delay in [3, 6, 10, 15, 20, 30] {
                     std::thread::sleep(std::time::Duration::from_secs(delay));
-                    // Probe via multiple methods to determine what works
+                    // Use window.name as persistent signal (not overwritten by React)
                     let probe = format!(r#"
-                        try {{
-                            var r = {{
-                                tauri: typeof window.__TAURI_INTERNALS__ !== 'undefined',
-                                tauri2: typeof window.__TAURI__ !== 'undefined',
-                                url: window.location.href,
-                                body: (document.body ? document.body.innerText.substring(0, 200) : 'NOBODY').replace(/\n/g, '|')
-                            }};
-                            localStorage.setItem('__ellul_probe_{}', JSON.stringify(r));
-                        }} catch(e) {{
-                            localStorage.setItem('__ellul_probe_{}', 'ERROR:' + e.message);
-                        }}
-                    "#, delay, delay);
-                    let eval_res = win_clone.eval(&probe);
-                    eprintln!("[ellul] eval t+{}s: {:?}", delay, eval_res);
-
-                    // Read back via another eval that uses a known IPC pattern
-                    std::thread::sleep(std::time::Duration::from_millis(300));
-                    let read_back = format!(r#"
-                        window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke('__dbg', {{
-                            msg: 'PROBE_READ: ' + (localStorage.getItem('__ellul_probe_{}') || 'NONE')
-                        }});
+                        window.name = 'PROBE|t={}|tauri=' + (typeof window.__TAURI_INTERNALS__ !== 'undefined') + '|url=' + window.location.pathname;
                     "#, delay);
-                    let _ = win_clone.eval(&read_back);
+                    let _ = win_clone.eval(&probe);
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                    // Read window.name back via JS eval that assigns to title briefly
+                    let readback = r#"document.title = window.name || 'NO_PROBE';"#;
+                    let _ = win_clone.eval(readback);
+                    std::thread::sleep(std::time::Duration::from_millis(100));
 
                     if let Ok(url) = win_clone.url() {
                         eprintln!("[ellul] url t+{}s: {}", delay, url);
