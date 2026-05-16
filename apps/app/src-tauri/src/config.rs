@@ -75,8 +75,30 @@ impl ConfigState {
 pub fn is_domain_allowed(domain: &str) -> bool {
     let d = domain.to_ascii_lowercase();
     let d = d.trim_end_matches('.');
-    d == "ellul.ai"
-        || d.ends_with(".ellul.ai")
-        || d == "ellul.app"
-        || d.ends_with(".ellul.app")
+    for suffix in allowed_domain_suffixes() {
+        if d == *suffix || d.ends_with(&format!(".{}", suffix)) {
+            return true;
+        }
+    }
+    false
+}
+
+pub fn allowed_domain_suffixes() -> &'static [&'static str] {
+    static DOMAINS: std::sync::OnceLock<Vec<&'static str>> = std::sync::OnceLock::new();
+    DOMAINS.get_or_init(|| {
+        let mut v: Vec<&'static str> = vec!["ellul.ai", "ellul.app"];
+        if let Some(extra) = option_env!("ELLUL_EXTRA_DOMAINS") {
+            for d in extra.split(',') {
+                let d = d.trim();
+                if !d.is_empty() {
+                    v.push(d);
+                }
+            }
+        }
+        v
+    })
+}
+
+pub fn console_url() -> &'static str {
+    option_env!("ELLUL_CONSOLE_URL").unwrap_or("https://console.ellul.ai")
 }

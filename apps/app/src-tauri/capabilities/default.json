@@ -19,7 +19,6 @@
     "notification:default",
     "notification:allow-request-permission",
     "notification:allow-notify",
-    "deep-link:default",
     "native-auth:default",
     "core:event:default",
     "core:event:allow-emit",

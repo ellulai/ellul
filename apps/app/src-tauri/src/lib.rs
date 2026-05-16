@@ -9,7 +9,6 @@ use tauri::{
 
 mod config;
 
-const CONSOLE_URL: &str = "https://console.ellul.ai/sign-up";
 const LOCAL_URL: &str = "https://localhost:8443";
 
 fn is_internal_navigation(url: &url::Url) -> bool {
@@ -17,11 +16,10 @@ fn is_internal_navigation(url: &url::Url) -> bool {
         return true;
     }
     let host = url.host_str().unwrap_or("");
-    if host.ends_with(".ellul.ai") || host == "ellul.ai" {
-        return true;
-    }
-    if host.ends_with(".ellul.app") || host == "ellul.app" {
-        return true;
+    for suffix in config::allowed_domain_suffixes() {
+        if host == *suffix || host.ends_with(&format!(".{}", suffix)) {
+            return true;
+        }
     }
     if (host == "localhost" || host == "127.0.0.1") && url.port() == Some(8443) {
         return true;
@@ -29,22 +27,6 @@ fn is_internal_navigation(url: &url::Url) -> bool {
     false
 }
 
-fn parse_connected_deep_link(url_str: &str) -> Option<String> {
-    let url = url::Url::parse(url_str).ok()?;
-    if url.scheme() != "ellul" {
-        return None;
-    }
-    if url.host_str() != Some("connected") {
-        return None;
-    }
-    let domain = url.query_pairs().find(|(k, _)| k == "domain")?.1.to_string();
-    if config::is_domain_allowed(&domain) {
-        Some(domain)
-    } else {
-        eprintln!("[ellul] deep-link domain rejected: {}", domain);
-        None
-    }
-}
 
 fn resolve_start_url(cfg: &config::AppConfig) -> tauri::WebviewUrl {
     match cfg.mode {
@@ -55,7 +37,8 @@ fn resolve_start_url(cfg: &config::AppConfig) -> tauri::WebviewUrl {
                     return tauri::WebviewUrl::External(url.parse().unwrap());
                 }
             }
-            tauri::WebviewUrl::External(CONSOLE_URL.parse().unwrap())
+            let dashboard = format!("{}/dashboard", config::console_url());
+            tauri::WebviewUrl::External(dashboard.parse().unwrap())
         }
         _ => tauri::WebviewUrl::App("index.html".into()),
     }
@@ -96,6 +79,11 @@ struct PlatformInfo {
 }
 
 #[tauri::command]
+fn get_console_url() -> &'static str {
+    config::console_url()
+}
+
+#[tauri::command]
 fn get_platform_info() -> PlatformInfo {
     if cfg!(target_os = "android") {
         PlatformInfo {
@@ -133,7 +121,6 @@ fn get_platform_info() -> PlatformInfo {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default()
-        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_native_auth::init())
@@ -145,6 +132,7 @@ pub fn run() {
             get_app_mode,
             set_app_mode,
             get_platform_info,
+            get_console_url,
         ]);
 
     #[cfg(desktop)]
@@ -214,34 +202,6 @@ pub fn run() {
                 }
             });
 
-            let app_handle = app.handle().clone();
-            app.listen("deep-link://new-url", move |event| {
-                let payload = event.payload();
-                eprintln!("[ellul] deep-link received: {}", payload);
-                if let Ok(urls) = serde_json::from_str::<Vec<String>>(payload) {
-                    for raw_url in urls {
-                        if let Some(domain) = parse_connected_deep_link(&raw_url) {
-                            eprintln!("[ellul] cloud domain from deep link: {}", domain);
-                            if let Some(cfg_state) = app_handle.try_state::<config::ConfigState>() {
-                                let _ = cfg_state.set_mode(
-                                    config::AppMode::Cloud,
-                                    Some(domain.clone()),
-                                );
-                            }
-                            if let Some(w) = app_handle.get_webview_window("main") {
-                                let url = format!("https://{}", domain);
-                                let _ = w.eval(&format!(
-                                    "window.location.replace('{}')",
-                                    url
-                                ));
-                                let _ = w.show();
-                                let _ = w.unminimize();
-                                let _ = w.set_focus();
-                            }
-                        }
-                    }
-                }
-            });
 
             #[cfg(desktop)]
             setup_desktop(app)?;

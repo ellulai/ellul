@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 "use client";
 
+import { useEffect, useCallback } from "react";
 import {
   LogOut,
   CreditCard,
@@ -8,6 +9,8 @@ import {
   XCircle,
   Clock,
   RefreshCw,
+  ExternalLink,
+  Monitor,
 } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { EllulLogo } from "@ellul.ai/ui/ellul-logo";
@@ -15,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { SessionExtendModal } from "@/components/dashboard/SessionExtendModal";
 import { MOCK_MODE } from "@/lib/mock-data";
+import { isTauriApp } from "@/lib/utils";
+import { useTabVisibility } from "@/hooks/useVisibility";
 import type { ServerStatus, ServerSummary } from "@/contexts/DashboardContext";
 import type { SessionInfo } from "@/hooks/useBrowserHeartbeat";
 import type { Session } from "@/lib/auth-client";
@@ -359,17 +364,24 @@ export function DashboardShell(props: DashboardShellProps) {
       onRetryStatus={onRetryStatus}
     >
       {serverStatus?.state === "none" && (
-        <div className="panel-ascente p-5 sm:p-8">
-          <ServerCreation
-            serverStatus={serverStatus}
-            selectedTier={selectedTier}
-            setSelectedTier={setSelectedTier}
-            createServerMutation={mutations.createServerMutation}
-            checkoutMutation={mutations.checkoutMutation}
-            handleCheckout={mutations.handleCheckout}
-            setAutoProvisionTriggered={setAutoProvisionTriggered}
+        isTauriApp() ? (
+          <NativeNoServerMessage
+            onRetryStatus={onRetryStatus}
+            onSignOut={mutations.handleSignOut}
           />
-        </div>
+        ) : (
+          <div className="panel-ascente p-5 sm:p-8">
+            <ServerCreation
+              serverStatus={serverStatus}
+              selectedTier={selectedTier}
+              setSelectedTier={setSelectedTier}
+              createServerMutation={mutations.createServerMutation}
+              checkoutMutation={mutations.checkoutMutation}
+              handleCheckout={mutations.handleCheckout}
+              setAutoProvisionTriggered={setAutoProvisionTriggered}
+            />
+          </div>
+        )
       )}
       {serverStatus && <ProvisioningOverlay serverStatus={serverStatus} />}
       {serverStatus && <UpgradingOverlay serverStatus={serverStatus} resizeElapsed={resizeElapsed} />}
@@ -396,5 +408,75 @@ export function DashboardShell(props: DashboardShellProps) {
       {serverStatus && <FrozenOverlay serverStatus={serverStatus} onRefresh={onRetryStatus} />}
     </SetupShell>
     </>
+  );
+}
+
+function NativeNoServerMessage({
+  onRetryStatus,
+  onSignOut,
+}: {
+  onRetryStatus: () => void;
+  onSignOut: () => void;
+}) {
+  const t = useTranslations("console");
+  const isVisible = useTabVisibility();
+
+  // Re-check when user returns to app (e.g. after creating server in browser)
+  useEffect(() => {
+    if (isVisible) onRetryStatus();
+  }, [isVisible, onRetryStatus]);
+
+  // Background poll every 10s while on this screen
+  useEffect(() => {
+    const interval = setInterval(onRetryStatus, 10_000);
+    return () => clearInterval(interval);
+  }, [onRetryStatus]);
+
+  const openInBrowser = useCallback(() => {
+    if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+      (window as any).__TAURI_INTERNALS__?.invoke?.("open_external", {
+        url: "https://console.ellul.ai/dashboard",
+      });
+    }
+  }, []);
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-10 bg-background/95 backdrop-blur-sm p-4">
+      <div className="max-w-md w-full">
+        <div className="panel-ascente p-8 sm:p-10 text-center">
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-16 h-16 rounded-full border border-sodium/20 bg-sodium/5 flex items-center justify-center">
+              <Monitor className="w-7 h-7 text-sodium" />
+            </div>
+          </div>
+
+          <h2 className="text-xl font-semibold text-cream mb-2">
+            {t("native.noServer.title")}
+          </h2>
+          <p className="text-cream/60 text-sm leading-relaxed mb-6">
+            {t("native.noServer.description")}
+          </p>
+
+          <Button
+            onClick={openInBrowser}
+            className="w-full bg-sodium hover:bg-sodium/90 text-background font-medium"
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            {t("native.noServer.openBrowser")}
+          </Button>
+
+          <p className="text-cream/40 text-xs mt-4">
+            {t("native.noServer.hint")}
+          </p>
+
+          <button
+            onClick={onSignOut}
+            className="mt-6 text-cream/40 hover:text-cream/60 text-xs transition-colors"
+          >
+            {t("native.noServer.signOut")}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

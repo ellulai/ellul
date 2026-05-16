@@ -119,7 +119,18 @@ export function useServerLifecycle(
       queryClient.invalidateQueries({ queryKey: ["security-tier"] });
       queryClient.invalidateQueries({ queryKey: ["access-status"] });
     }
-  }, [serverStatus?.state, queryClient]);
+    if ((prev === "provisioning" || prev === "creating") && curr === "running") {
+      queryClient.invalidateQueries({ queryKey: ["server-status"] });
+      // Persist domain in native app for direct VPS access on next launch
+      const domain = serverStatus?.server?.domain;
+      if (domain && typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+        (window as any).__TAURI_INTERNALS__?.invoke?.("set_app_mode", {
+          mode: "cloud",
+          cloudDomain: domain,
+        });
+      }
+    }
+  }, [serverStatus?.state, queryClient, serverStatus?.server?.domain]);
 
   // Track update operation transitions for completion toast
   useEffect(() => {

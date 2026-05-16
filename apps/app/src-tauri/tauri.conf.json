@@ -34,14 +34,5 @@
       "minimumSystemVersion": "15.0"
     }
   },
-  "plugins": {
-    "deep-link": {
-      "desktop": {
-        "schemes": ["ellul"]
-      },
-      "mobile": [
-        { "scheme": ["ellul"] }
-      ]
-    }
-  }
+  "plugins": {}
 }

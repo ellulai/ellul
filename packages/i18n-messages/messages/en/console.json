@@ -1855,6 +1855,15 @@
       "errorHint": "Return to the app and try again.",
       "backToApp": "Back to App"
     },
+    "native": {
+      "noServer": {
+        "title": "No workspace found",
+        "description": "Your account is signed in, but you haven't created a cloud workspace yet. Set up your workspace from the browser to get started.",
+        "openBrowser": "Set up in browser",
+        "hint": "Once your workspace is ready, this screen will update automatically.",
+        "signOut": "Sign in with a different account"
+      }
+    },
     "enableLock": {
       "title": "Enable Web Lock",
       "subtitle": "Web Lock requires a passkey for every action",

@@ -3,37 +3,28 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useTranslations } from "next-intl";
-import { getSession, signIn } from "@/lib/auth-client";
+import { getSession } from "@/lib/auth-client";
 import { LoadingScreen, Spinner } from "@/components/ui/spinner";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { API_URL } from "@/lib/api";
 import { OAuthSignIn } from "@/components/auth/oauth-buttons";
-import { CheckCircle2, Cloud, ArrowLeft, Laptop } from "lucide-react";
-
-interface ServerInfo {
-  state: string;
-  server: {
-    id: string;
-    domain: string | null;
-    ipAddress: string | null;
-  } | null;
-  plan: string;
-}
+import { CheckCircle2, Cloud } from "lucide-react";
 
 function ConnectContent() {
   const t = useTranslations("console.appConnect");
   const [error, setError] = useState<string | null>(null);
   const [needsAuth, setNeedsAuth] = useState(false);
-  const [blockReason, setBlockReason] = useState<
-    | null
-    | { type: "no_server" }
-    | { type: "not_active"; status: string }
-  >(null);
-  const [connected, setConnected] = useState<{ domain: string } | null>(null);
+  const [done, setDone] = useState(false);
+
+  const params =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search)
+      : new URLSearchParams();
+  const connectId = params.get("connect_id");
 
   useEffect(() => {
+    let cancelled = false;
+
     const init = async () => {
       try {
         const { data } = await getSession();
@@ -42,40 +33,41 @@ function ConnectContent() {
           return;
         }
 
-        const res = await fetch(`${API_URL}/api/servers/status`, {
+        if (!connectId) {
+          setDone(true);
+          return;
+        }
+
+        // Signal the app that auth is complete
+        const res = await fetch(`${API_URL}/api/auth/native/connect-complete`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           credentials: "include",
+          body: JSON.stringify({ connectId }),
         });
-        if (!res.ok) throw new Error(t("fetchStatusFailed"));
-        const status = (await res.json()) as ServerInfo;
 
-        if (!status.server || status.state === "none") {
-          setBlockReason({ type: "no_server" });
-          return;
+        if (!cancelled) {
+          if (res.ok) {
+            setDone(true);
+          } else {
+            setError(t("genericError"));
+          }
         }
-
-        if (status.state !== "running") {
-          setBlockReason({ type: "not_active", status: status.state });
-          return;
-        }
-
-        if (!status.server.domain) {
-          setError(t("noDomainConfigured"));
-          return;
-        }
-
-        setConnected({ domain: status.server.domain });
-
-        setTimeout(() => {
-          window.location.href = `ellul://connected?domain=${encodeURIComponent(status.server!.domain!)}`;
-        }, 1500);
       } catch (err) {
-        setError(err instanceof Error ? err.message : t("genericError"));
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : t("genericError"));
+        }
       }
     };
     init();
-  }, [t]);
+
+    return () => { cancelled = true; };
+  }, [connectId, t]);
 
   if (needsAuth) {
+    const callbackPath = connectId
+      ? `/connect?connect_id=${connectId}`
+      : "/connect";
     return (
       <Shell>
         <Card className="w-full max-w-sm border-cream/[0.06] bg-[#13131A]/80 backdrop-blur">
@@ -92,14 +84,14 @@ function ConnectContent() {
               </p>
             </div>
 
-            <OAuthSignIn callbackPath="/connect" />
+            <OAuthSignIn callbackPath={callbackPath} />
           </CardContent>
         </Card>
       </Shell>
     );
   }
 
-  if (connected) {
+  if (done) {
     return (
       <Shell>
         <Card className="w-full max-w-sm border-cream/[0.06] bg-[#13131A]/80 backdrop-blur">
@@ -115,20 +107,6 @@ function ConnectContent() {
                 {t("successSubtitle")}
               </p>
             </div>
-            <div className="flex items-center justify-center gap-2 text-xs text-cream/40">
-              <Spinner size="sm" />
-              <span>{t("returningToApp")}</span>
-            </div>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                window.location.href = `ellul://connected?domain=${encodeURIComponent(connected.domain)}`;
-              }}
-            >
-              <Laptop className="w-4 h-4 mr-2" />
-              {t("openApp")}
-            </Button>
           </CardContent>
         </Card>
       </Shell>
@@ -150,57 +128,6 @@ function ConnectContent() {
               <p className="text-sm text-red-400">{error}</p>
             </div>
             <p className="text-xs text-cream/40">{t("errorHint")}</p>
-          </CardContent>
-        </Card>
-      </Shell>
-    );
-  }
-
-  if (blockReason?.type === "no_server") {
-    return (
-      <Shell>
-        <Card className="w-full max-w-sm border-cream/[0.06] bg-[#13131A]/80 backdrop-blur">
-          <CardContent className="pt-6 text-center space-y-5">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full border border-cream/[0.08] bg-cream/[0.03]">
-              <Cloud className="w-5 h-5 text-cream/60" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-cream">
-                {t("noServerTitle")}
-              </h2>
-              <p className="text-sm text-cream/50 mt-1">
-                {t("noServerSubtitle")}
-              </p>
-            </div>
-            <Button asChild className="w-full">
-              <a href="/dashboard">{t("createWorkspace")}</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </Shell>
-    );
-  }
-
-  if (blockReason?.type === "not_active") {
-    return (
-      <Shell>
-        <Card className="w-full max-w-sm border-cream/[0.06] bg-[#13131A]/80 backdrop-blur">
-          <CardContent className="pt-6 text-center space-y-5">
-            <Spinner size="lg" color="primary" />
-            <div>
-              <h2 className="text-lg font-semibold text-cream">
-                {t("notReadyTitle")}
-              </h2>
-              <p className="text-sm text-cream/50 mt-1">
-                {t("notReadySubtitle", { status: blockReason.status })}
-              </p>
-            </div>
-            <Button variant="outline" asChild>
-              <a href="/dashboard">
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                Dashboard
-              </a>
-            </Button>
           </CardContent>
         </Card>
       </Shell>
