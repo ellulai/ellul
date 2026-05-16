@@ -20,7 +20,18 @@ function ConnectContent() {
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search)
       : new URLSearchParams();
-  const connectId = params.get("connect_id");
+  const urlConnectId = params.get("connect_id");
+
+  // Persist connectId in sessionStorage to survive OAuth redirects —
+  // better-auth's callbackURL may strip query parameters.
+  const connectId = urlConnectId
+    || (typeof window !== "undefined" ? sessionStorage.getItem("ellul_connect_id") : null);
+
+  useEffect(() => {
+    if (urlConnectId) {
+      sessionStorage.setItem("ellul_connect_id", urlConnectId);
+    }
+  }, [urlConnectId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,7 +49,6 @@ function ConnectContent() {
           return;
         }
 
-        // Signal the app that auth is complete
         const res = await fetch(`${API_URL}/api/auth/native/connect-complete`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -48,6 +58,7 @@ function ConnectContent() {
 
         if (!cancelled) {
           if (res.ok) {
+            sessionStorage.removeItem("ellul_connect_id");
             setDone(true);
           } else {
             setError(t("genericError"));

@@ -83,6 +83,42 @@ fn get_console_url() -> &'static str {
     config::console_url()
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ConnectPollResult {
+    status: String,
+    code: Option<String>,
+    has_server: Option<bool>,
+    server_domain: Option<String>,
+}
+
+#[tauri::command]
+async fn poll_connect(connect_id: String) -> Result<ConnectPollResult, String> {
+    let api_url = config::console_url().replace("console.", "api.");
+    let url = format!(
+        "{}/api/auth/native/connect-poll?connect_id={}",
+        api_url, connect_id
+    );
+    eprintln!("[ellul] poll_connect: {}", url);
+
+    let resp = reqwest::get(&url).await.map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Ok(ConnectPollResult {
+            status: "pending".into(),
+            code: None,
+            has_server: None,
+            server_domain: None,
+        });
+    }
+    let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
+    Ok(ConnectPollResult {
+        status: body["status"].as_str().unwrap_or("pending").into(),
+        code: body["code"].as_str().map(String::from),
+        has_server: body["hasServer"].as_bool(),
+        server_domain: body["serverDomain"].as_str().map(String::from),
+    })
+}
+
 #[tauri::command]
 fn get_platform_info() -> PlatformInfo {
     if cfg!(target_os = "android") {
@@ -133,6 +169,7 @@ pub fn run() {
             set_app_mode,
             get_platform_info,
             get_console_url,
+            poll_connect,
         ]);
 
     #[cfg(desktop)]
