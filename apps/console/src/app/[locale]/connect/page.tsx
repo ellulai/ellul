@@ -95,6 +95,12 @@ function ConnectContent() {
     return () => { cancelled = true; };
   }, [connectId, t]);
 
+  const debugPanel = debugLog.length > 0 && (
+    <div className="w-full max-w-lg mt-4 p-3 rounded-lg bg-black/60 border border-cream/10 font-mono text-[10px] leading-relaxed text-cream/70 max-h-48 overflow-y-auto">
+      {debugLog.map((line, i) => <div key={i}>{line}</div>)}
+    </div>
+  );
+
   if (needsAuth) {
     const callbackPath = connectId
       ? `/connect?connect_id=${connectId}`
@@ -122,12 +128,6 @@ function ConnectContent() {
       </Shell>
     );
   }
-
-  const debugPanel = debugLog.length > 0 && (
-    <div className="w-full max-w-lg mt-4 p-3 rounded-lg bg-black/60 border border-cream/10 font-mono text-[10px] leading-relaxed text-cream/70 max-h-48 overflow-y-auto">
-      {debugLog.map((line, i) => <div key={i}>{line}</div>)}
-    </div>
-  );
 
   if (done) {
     return (
