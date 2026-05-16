@@ -16,7 +16,7 @@ import { useBackgroundPersistence } from "@/hooks/useBackgroundPersistence";
 import { useDesktopIntegration } from "@/hooks/useDesktopIntegration";
 import { MOCK_MODE, mockSession, mockServerStatus } from "@/lib/mock-data";
 import { setupMockFetch } from "@/lib/mock-fetch";
-import { isNativeApp } from "@/lib/utils";
+import { isTauriApp } from "@/lib/utils";
 import { LoadingScreen } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import { useLocaleSync } from "@/hooks/useLocaleSync";
@@ -105,7 +105,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           continue;
         }
         // Either a definitive "no session" or exhausted retries
-        window.location.href = isNativeApp() ? "/sign-up" : WEB_URL;
+        window.location.href = isTauriApp() ? "/sign-up" : WEB_URL;
         return;
       }
     };

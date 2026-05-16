@@ -1814,6 +1814,27 @@
       "notReadyBodyAfter": " です。稼働状態になってから再度お試しください。",
       "dashboard": "ダッシュボード"
     },
+    "appConnect": {
+      "loadingFallback": "読み込み中...",
+      "connectingMessage": "ワークスペースに接続中...",
+      "signInTitle": "ellul に接続",
+      "signInSubtitle": "サインインしてクラウドワークスペースをデスクトップアプリにリンクします。",
+      "successTitle": "準備完了",
+      "successSubtitle": "ワークスペースが接続されました。アプリに戻ってください。",
+      "returningToApp": "アプリに戻ります...",
+      "openApp": "アプリを開く",
+      "noServerTitle": "ワークスペースがありません",
+      "noServerSubtitle": "クラウドワークスペースを作成してデスクトップアプリに接続します。",
+      "createWorkspace": "ワークスペースを作成",
+      "notReadyTitle": "ワークスペース起動中",
+      "notReadySubtitle": "ワークスペースは現在 {status} です。まもなく準備完了します。",
+      "fetchStatusFailed": "ワークスペースの状態を取得できませんでした。",
+      "genericError": "エラーが発生しました。",
+      "noDomainConfigured": "ワークスペースにドメインが設定されていません。",
+      "errorTitle": "接続に失敗しました",
+      "errorHint": "アプリに戻ってもう一度お試しください。",
+      "backToApp": "アプリに戻る"
+    },
     "enableLock": {
       "title": "Web ロックを有効化",
       "subtitle": "Web ロックは操作のたびにパスキーを要求します",

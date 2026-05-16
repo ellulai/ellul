@@ -1834,6 +1834,27 @@
       "notReadyBodyAfter": ". Try again once it's active.",
       "dashboard": "Dashboard"
     },
+    "appConnect": {
+      "loadingFallback": "Loading...",
+      "connectingMessage": "Connecting to your workspace...",
+      "signInTitle": "Connect to ellul",
+      "signInSubtitle": "Sign in to link your cloud workspace to the desktop app.",
+      "successTitle": "You're all set",
+      "successSubtitle": "Your workspace is connected. Return to the app — it's ready to go.",
+      "returningToApp": "Returning to app...",
+      "openApp": "Open App",
+      "noServerTitle": "No workspace yet",
+      "noServerSubtitle": "Create a cloud workspace to connect it to the desktop app.",
+      "createWorkspace": "Create Workspace",
+      "notReadyTitle": "Workspace starting",
+      "notReadySubtitle": "Your workspace is currently {status}. It will be ready shortly.",
+      "fetchStatusFailed": "Failed to fetch workspace status.",
+      "genericError": "Something went wrong.",
+      "noDomainConfigured": "Workspace has no domain configured yet.",
+      "errorTitle": "Connection failed",
+      "errorHint": "Return to the app and try again.",
+      "backToApp": "Back to App"
+    },
     "enableLock": {
       "title": "Enable Web Lock",
       "subtitle": "Web Lock requires a passkey for every action",

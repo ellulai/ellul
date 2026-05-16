@@ -8,7 +8,7 @@ import { getSession } from "@/lib/auth-client";
 import { useLocaleAwareRedirect } from "@/lib/locale-redirect";
 import { LoadingScreen } from "@/components/ui/spinner";
 import { MOCK_MODE } from "@/lib/mock-data";
-import { isNativeApp } from "@/lib/utils";
+import { isTauriApp } from "@/lib/utils";
 
 const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL!;
 
@@ -36,7 +36,7 @@ export default function Home() {
           await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
           continue;
         }
-        if (isNativeApp()) {
+        if (isTauriApp()) {
           router.replace("/sign-up");
         } else {
           window.location.href = WEB_URL;

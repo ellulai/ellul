@@ -440,14 +440,14 @@ export function useServerMutations(
   ) => { checkoutMutation.mutate({ product, plan }); };
   const handleSignOut = async () => {
     const { signOut } = await import("@/lib/auth-client");
-    const { isNativeApp } = await import("@/lib/utils");
+    const { isTauriApp } = await import("@/lib/utils");
     const { clearAllOperatorKeys } = await import("@/lib/operator-key");
     // Zero in-memory operator key + drop wrapped blobs before the session cookie
     // dies — otherwise the IDB blob outlives the server-side session it was
     // bound to, leaving a wrap whose matching pubkey the shield no longer knows.
     try { await clearAllOperatorKeys(); } catch { /* non-fatal on logout */ }
     await signOut();
-    window.location.href = isNativeApp() ? "/sign-up" : (process.env.NEXT_PUBLIC_WEB_URL!);
+    window.location.href = isTauriApp() ? "/sign-up" : (process.env.NEXT_PUBLIC_WEB_URL!);
   };
 
   // ── Passkey confirmation ──

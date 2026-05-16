@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-open-oauth-browser"
+description = "Enables the open_oauth_browser command without any pre-configured scope."
+commands.allow = ["open_oauth_browser"]
+
+[[permission]]
+identifier = "deny-open-oauth-browser"
+description = "Denies the open_oauth_browser command without any pre-configured scope."
+commands.deny = ["open_oauth_browser"]

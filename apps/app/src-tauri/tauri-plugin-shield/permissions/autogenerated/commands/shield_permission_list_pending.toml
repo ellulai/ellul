@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-shield-permission-list-pending"
+description = "Enables the shield_permission_list_pending command without any pre-configured scope."
+commands.allow = ["shield_permission_list_pending"]
+
+[[permission]]
+identifier = "deny-shield-permission-list-pending"
+description = "Denies the shield_permission_list_pending command without any pre-configured scope."
+commands.deny = ["shield_permission_list_pending"]

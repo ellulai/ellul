@@ -1,0 +1,14 @@
+{
+  "identifier": "desktop",
+  "description": "Desktop-only capabilities (global shortcuts, tray)",
+  "windows": ["main"],
+  "remote": {
+    "urls": ["https://console.ellul.ai/*", "https://localhost:8443/*"]
+  },
+  "platforms": ["linux", "macOS", "windows"],
+  "permissions": [
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
+    "global-shortcut:allow-is-registered"
+  ]
+}

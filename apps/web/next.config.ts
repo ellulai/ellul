@@ -56,6 +56,12 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: "/.well-known/apple-app-site-association",
+        headers: [
+          { key: "Content-Type", value: "application/json" },
+        ],
+      },
+      {
         source: "/:path*",
         headers: [
           { key: "X-LLM-Index", value: "/llms.txt" },

@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-proot-update-apply"
+description = "Enables the proot_update_apply command without any pre-configured scope."
+commands.allow = ["proot_update_apply"]
+
+[[permission]]
+identifier = "deny-proot-update-apply"
+description = "Denies the proot_update_apply command without any pre-configured scope."
+commands.deny = ["proot_update_apply"]

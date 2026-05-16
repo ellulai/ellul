@@ -50,7 +50,6 @@ interface WebLockCardProps {
   onUpgrade?: () => void;
   volumeSecurityMode?: "standard" | "enhanced" | "sovereign" | null;
   product?: string;
-  deploymentModel?: string;
 }
 
 type SecurityTier = "standard" | "web_locked" | "private_locked";
@@ -90,7 +89,6 @@ export function WebLockCard({
   onUpgrade,
   volumeSecurityMode,
   product,
-  deploymentModel,
 }: WebLockCardProps) {
   const t = useTranslations("console.webLockCard");
   const queryClient = useQueryClient();
@@ -194,7 +192,6 @@ export function WebLockCard({
   const lockState = getEnvironmentLockState({
     securityTier: security?.tier,
     volumeSecurityMode,
-    deploymentModel,
   });
 
   const levelConfig = getLockLevelConfig(product);

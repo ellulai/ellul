@@ -1,0 +1,48 @@
+[package]
+name = "tauri-plugin-shield"
+version = "0.1.0"
+edition = "2021"
+links = "tauri-plugin-shield"
+
+[dependencies]
+tauri = "2"
+tauri-plugin = { version = "2", features = ["build"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+
+# Post-quantum cryptography (FIPS 203, 204, 205)
+pqcrypto-mlkem = "0.1"
+fips204 = { version = "0.4", features = ["ml-dsa-44"] }
+pqcrypto-sphincsplus = "0.7"
+pqcrypto-traits = "0.3"
+
+# Symmetric cryptography
+aes-gcm = "0.10"
+sha2 = "0.10"
+hmac = "0.12"
+
+# HTTP client
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+
+# Serialization / encoding
+base64 = "0.22"
+uuid = { version = "1", features = ["v4"] }
+urlencoding = "2"
+
+# Memory safety
+zeroize = { version = "1", features = ["derive"] }
+
+# Async
+tokio = { version = "1", features = ["sync"] }
+
+# Random
+rand = "0.8"
+
+# Secure storage: desktop + iOS (Android uses EncryptedSharedPreferences via Kotlin bridge)
+[target.'cfg(not(target_os = "android"))'.dependencies]
+keyring = "3"
+
+[build-dependencies]
+tauri-plugin = { version = "2", features = ["build"] }
+cc = "1"

@@ -12,15 +12,13 @@ type Status = "loading" | "authenticating" | "success" | "error";
 function PasskeyFlow() {
   const params = useSearchParams();
   const flowId = params.get("flow_id");
-  const optionsB64 = params.get("options");
-  const callback = params.get("callback");
   const [status, setStatus] = useState<Status>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!flowId && !optionsB64) {
+    if (!flowId) {
       setStatus("error");
-      setErrorMsg("Missing parameters. Please try again from the app.");
+      setErrorMsg("Missing flow ID. Please try again from the app.");
       return;
     }
 
@@ -28,59 +26,36 @@ function PasskeyFlow() {
 
     (async () => {
       try {
-        let optionsJSON: Parameters<typeof startAuthentication>[0]["optionsJSON"];
-
-        if (optionsB64) {
-          optionsJSON = JSON.parse(atob(optionsB64));
-        } else {
-          const optionsRes = await fetch(
-            `${API_URL}/api/auth/native/vps-auth-data?flow_id=${encodeURIComponent(flowId!)}&type=options`,
-          );
-          const optionsBody = await optionsRes.json();
-          if (optionsBody.status !== "complete" || !optionsBody.data) {
-            throw new Error("No options available. Please try again from the app.");
-          }
-          optionsJSON = optionsBody.data;
+        const optionsRes = await fetch(
+          `${API_URL}/api/auth/native/vps-auth-data?flow_id=${encodeURIComponent(flowId)}&type=options`,
+        );
+        const optionsBody = await optionsRes.json();
+        if (optionsBody.status !== "complete" || !optionsBody.data) {
+          throw new Error("No options available. Please try again from the app.");
         }
         if (cancelled) return;
 
         setStatus("authenticating");
-        const assertion = await startAuthentication({ optionsJSON });
+        const assertion = await startAuthentication({ optionsJSON: optionsBody.data });
         if (cancelled) return;
 
-        if (callback) {
-          const assertionB64 = btoa(JSON.stringify(assertion));
-          window.location.href = `${callback}?assertion=${encodeURIComponent(assertionB64)}`;
-          setStatus("success");
-          return;
-        }
-
-        if (flowId) {
-          await fetch(`${API_URL}/api/auth/native/vps-auth-data`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ flowId, type: "assertion", data: assertion }),
-          });
-        }
+        await fetch(`${API_URL}/api/auth/native/vps-auth-data`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ flowId, type: "assertion", data: assertion }),
+        });
 
         setStatus("success");
       } catch (err: unknown) {
         if (!cancelled) {
           setStatus("error");
           setErrorMsg(err instanceof Error ? err.message : "Authentication failed. Please try again.");
-          if (callback) {
-            setTimeout(() => {
-              window.location.href = `${callback}?error=${encodeURIComponent(
-                err instanceof Error ? err.message : "Authentication failed",
-              )}`;
-            }, 2000);
-          }
         }
       }
     })();
 
     return () => { cancelled = true; };
-  }, [flowId, optionsB64, callback]);
+  }, [flowId]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-ink">

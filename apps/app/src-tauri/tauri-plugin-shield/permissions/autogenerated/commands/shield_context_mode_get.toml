@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-shield-context-mode-get"
+description = "Enables the shield_context_mode_get command without any pre-configured scope."
+commands.allow = ["shield_context_mode_get"]
+
+[[permission]]
+identifier = "deny-shield-context-mode-get"
+description = "Denies the shield_context_mode_get command without any pre-configured scope."
+commands.deny = ["shield_context_mode_get"]

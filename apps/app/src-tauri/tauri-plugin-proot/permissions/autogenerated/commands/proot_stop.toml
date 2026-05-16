@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-proot-stop"
+description = "Enables the proot_stop command without any pre-configured scope."
+commands.allow = ["proot_stop"]
+
+[[permission]]
+identifier = "deny-proot-stop"
+description = "Denies the proot_stop command without any pre-configured scope."
+commands.deny = ["proot_stop"]

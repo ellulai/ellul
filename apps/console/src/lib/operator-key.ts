@@ -4,7 +4,7 @@ import { ml_dsa44 } from "@noble/post-quantum/ml-dsa.js";
 import { slh_dsa_sha2_128s } from "@noble/post-quantum/slh-dsa.js";
 import { getRequiredSignatureType, type IntentSignatureType } from "@ellul.ai/pqc-types";
 import { derivePrfKey } from "./passy-prf";
-import { isElectronApp, isAndroidApp } from "./utils";
+import { isTauriApp } from "./utils";
 import type { BridgeSender } from "./gate-client";
 
 const PRF_SALT_LABEL = "ellul-browser-signing-keys-v1";
@@ -62,7 +62,9 @@ export function operatorKeyFor(
   serverDomain: string,
   bridgeSend: BridgeSender,
 ): OperatorKeyApi {
-  if (isElectronApp() || isAndroidApp()) return nativeOperatorKeyFor(serverDomain);
+  if (isTauriApp()) return tauriOperatorKeyFor(serverDomain);
+  // Latest call wins. There is one VpsBridgeProvider per dashboard session,
+  // so the same bridge instance is passed in for every operatorKeyFor() call.
   bridgeSendRef = bridgeSend;
   return {
     sign: (payload) => signOperation(serverDomain, payload),
@@ -71,22 +73,11 @@ export function operatorKeyFor(
   };
 }
 
-function nativeInvoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  if (isElectronApp()) {
-    return (window as any).electronShield.invoke(cmd, args) as Promise<T>;
-  }
-  return new Promise<T>((resolve, reject) => {
-    const cbId = `cb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const callbacks = ((window as any).__shieldCallbacks = (window as any).__shieldCallbacks || {});
-    callbacks[cbId] = {
-      resolve: (v: T) => { delete callbacks[cbId]; resolve(v); },
-      reject: (msg: string) => { delete callbacks[cbId]; reject(new Error(msg)); },
-    };
-    (window as any).androidShield.invokeAsync(cmd, JSON.stringify(args || {}), cbId);
-  });
+async function tauriInvoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  return (window as any).__TAURI_INTERNALS__.invoke(`plugin:shield|${cmd}`, args) as Promise<T>;
 }
 
-function nativeOperatorKeyFor(serverDomain: string): OperatorKeyApi {
+function tauriOperatorKeyFor(serverDomain: string): OperatorKeyApi {
   return {
     async sign(payload: Uint8Array): Promise<{ signature: string; timestamp: string }> {
       let binary = "";
@@ -94,16 +85,16 @@ function nativeOperatorKeyFor(serverDomain: string): OperatorKeyApi {
         binary += String.fromCharCode(payload[i]!);
       }
       const payloadB64 = btoa(binary);
-      return nativeInvoke("shield_operator_sign", { payloadB64 });
+      return tauriInvoke("shield_operator_sign", { payloadB64: payloadB64 });
     },
     async signIntent(action: string, resource?: string | null): Promise<IntentSignature> {
-      return nativeInvoke("shield_operator_sign_intent", {
+      return tauriInvoke("shield_operator_sign_intent", {
         action,
         resource: resource ?? undefined,
       });
     },
     async clear(): Promise<void> {
-      await nativeInvoke("shield_operator_clear");
+      await tauriInvoke("shield_operator_clear");
     },
   };
 }
@@ -120,8 +111,8 @@ function requireBridge(): BridgeSender {
 // Zero all in-memory state and drop every wrapped blob from IDB. Called on
 // logout — the wrapped key must not outlive its shield session.
 export async function clearAllOperatorKeys(): Promise<void> {
-  if (isElectronApp() || isAndroidApp()) {
-    await nativeInvoke("shield_operator_clear");
+  if (isTauriApp()) {
+    await tauriInvoke("shield_operator_clear");
     return;
   }
   zeroizeState();

@@ -1,0 +1,756 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PermissionFile",
+  "description": "Permission file that can define a default permission, a set of permissions or a list of inlined permissions.",
+  "type": "object",
+  "properties": {
+    "default": {
+      "description": "The default permission set for the plugin",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/DefaultPermission"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "set": {
+      "description": "A list of permissions sets defined",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/PermissionSet"
+      }
+    },
+    "permission": {
+      "description": "A list of inlined permissions",
+      "default": [],
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Permission"
+      }
+    }
+  },
+  "definitions": {
+    "DefaultPermission": {
+      "description": "The default permission set of the plugin.\n\nWorks similarly to a permission with the \"default\" identifier.",
+      "type": "object",
+      "required": [
+        "permissions"
+      ],
+      "properties": {
+        "version": {
+          "description": "The version of the permission.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 1.0
+        },
+        "description": {
+          "description": "Human-readable description of what the permission does. Tauri convention is to use `<h4>` headings in markdown content for Tauri documentation generation purposes.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "permissions": {
+          "description": "All permissions this set contains.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "PermissionSet": {
+      "description": "A set of direct permissions grouped together under a new name.",
+      "type": "object",
+      "required": [
+        "description",
+        "identifier",
+        "permissions"
+      ],
+      "properties": {
+        "identifier": {
+          "description": "A unique identifier for the permission.",
+          "type": "string"
+        },
+        "description": {
+          "description": "Human-readable description of what the permission does.",
+          "type": "string"
+        },
+        "permissions": {
+          "description": "All permissions this set contains.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PermissionKind"
+          }
+        }
+      }
+    },
+    "Permission": {
+      "description": "Descriptions of explicit privileges of commands.\n\nIt can enable commands to be accessible in the frontend of the application.\n\nIf the scope is defined it can be used to fine grain control the access of individual or multiple commands.",
+      "type": "object",
+      "required": [
+        "identifier"
+      ],
+      "properties": {
+        "version": {
+          "description": "The version of the permission.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 1.0
+        },
+        "identifier": {
+          "description": "A unique identifier for the permission.",
+          "type": "string"
+        },
+        "description": {
+          "description": "Human-readable description of what the permission does. Tauri internal convention is to use `<h4>` headings in markdown content for Tauri documentation generation purposes.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "commands": {
+          "description": "Allowed or denied commands when using this permission.",
+          "default": {
+            "allow": [],
+            "deny": []
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/Commands"
+            }
+          ]
+        },
+        "scope": {
+          "description": "Allowed or denied scoped when using this permission.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Scopes"
+            }
+          ]
+        },
+        "platforms": {
+          "description": "Target platforms this permission applies. By default all platforms are affected by this permission.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/Target"
+          }
+        }
+      }
+    },
+    "Commands": {
+      "description": "Allowed and denied commands inside a permission.\n\nIf two commands clash inside of `allow` and `deny`, it should be denied by default.",
+      "type": "object",
+      "properties": {
+        "allow": {
+          "description": "Allowed command.",
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "deny": {
+          "description": "Denied command, which takes priority.",
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Scopes": {
+      "description": "An argument for fine grained behavior control of Tauri commands.\n\nIt can be of any serde serializable type and is used to allow or prevent certain actions inside a Tauri command. The configured scope is passed to the command and will be enforced by the command implementation.\n\n## Example\n\n```json { \"allow\": [{ \"path\": \"$HOME/**\" }], \"deny\": [{ \"path\": \"$HOME/secret.txt\" }] } ```",
+      "type": "object",
+      "properties": {
+        "allow": {
+          "description": "Data that defines what is allowed by the scope.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/Value"
+          }
+        },
+        "deny": {
+          "description": "Data that defines what is denied by the scope. This should be prioritized by validation logic.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/Value"
+          }
+        }
+      }
+    },
+    "Value": {
+      "description": "All supported ACL values.",
+      "anyOf": [
+        {
+          "description": "Represents a null JSON value.",
+          "type": "null"
+        },
+        {
+          "description": "Represents a [`bool`].",
+          "type": "boolean"
+        },
+        {
+          "description": "Represents a valid ACL [`Number`].",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Number"
+            }
+          ]
+        },
+        {
+          "description": "Represents a [`String`].",
+          "type": "string"
+        },
+        {
+          "description": "Represents a list of other [`Value`]s.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Value"
+          }
+        },
+        {
+          "description": "Represents a map of [`String`] keys to [`Value`]s.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Value"
+          }
+        }
+      ]
+    },
+    "Number": {
+      "description": "A valid ACL number.",
+      "anyOf": [
+        {
+          "description": "Represents an [`i64`].",
+          "type": "integer",
+          "format": "int64"
+        },
+        {
+          "description": "Represents a [`f64`].",
+          "type": "number",
+          "format": "double"
+        }
+      ]
+    },
+    "Target": {
+      "description": "Platform target.",
+      "oneOf": [
+        {
+          "description": "MacOS.",
+          "type": "string",
+          "enum": [
+            "macOS"
+          ]
+        },
+        {
+          "description": "Windows.",
+          "type": "string",
+          "enum": [
+            "windows"
+          ]
+        },
+        {
+          "description": "Linux.",
+          "type": "string",
+          "enum": [
+            "linux"
+          ]
+        },
+        {
+          "description": "Android.",
+          "type": "string",
+          "enum": [
+            "android"
+          ]
+        },
+        {
+          "description": "iOS.",
+          "type": "string",
+          "enum": [
+            "iOS"
+          ]
+        }
+      ]
+    },
+    "PermissionKind": {
+      "type": "string",
+      "oneOf": [
+        {
+          "description": "Enables the shield_check_session command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-check-session",
+          "markdownDescription": "Enables the shield_check_session command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_check_session command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-check-session",
+          "markdownDescription": "Denies the shield_check_session command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_clear_session command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-clear-session",
+          "markdownDescription": "Enables the shield_clear_session command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_clear_session command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-clear-session",
+          "markdownDescription": "Denies the shield_clear_session command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_context_mode_get command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-context-mode-get",
+          "markdownDescription": "Enables the shield_context_mode_get command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_context_mode_get command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-context-mode-get",
+          "markdownDescription": "Denies the shield_context_mode_get command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_context_mode_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-context-mode-set",
+          "markdownDescription": "Enables the shield_context_mode_set command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_context_mode_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-context-mode-set",
+          "markdownDescription": "Denies the shield_context_mode_set command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_create_signed_ws_url command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-create-signed-ws-url",
+          "markdownDescription": "Enables the shield_create_signed_ws_url command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_create_signed_ws_url command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-create-signed-ws-url",
+          "markdownDescription": "Denies the shield_create_signed_ws_url command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_fetch command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-fetch",
+          "markdownDescription": "Enables the shield_fetch command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_fetch command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-fetch",
+          "markdownDescription": "Denies the shield_fetch command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_gate_list_active command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-gate-list-active",
+          "markdownDescription": "Enables the shield_gate_list_active command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_gate_list_active command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-gate-list-active",
+          "markdownDescription": "Denies the shield_gate_list_active command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_gate_request command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-gate-request",
+          "markdownDescription": "Enables the shield_gate_request command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_gate_request command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-gate-request",
+          "markdownDescription": "Denies the shield_gate_request command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_gate_respond command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-gate-respond",
+          "markdownDescription": "Enables the shield_gate_respond command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_gate_respond command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-gate-respond",
+          "markdownDescription": "Denies the shield_gate_respond command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_gate_revoke command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-gate-revoke",
+          "markdownDescription": "Enables the shield_gate_revoke command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_gate_revoke command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-gate-revoke",
+          "markdownDescription": "Denies the shield_gate_revoke command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_gate_set_permission command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-gate-set-permission",
+          "markdownDescription": "Enables the shield_gate_set_permission command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_gate_set_permission command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-gate-set-permission",
+          "markdownDescription": "Denies the shield_gate_set_permission command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_get_agent_token command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-get-agent-token",
+          "markdownDescription": "Enables the shield_get_agent_token command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_get_agent_token command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-get-agent-token",
+          "markdownDescription": "Denies the shield_get_agent_token command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_get_code_session command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-get-code-session",
+          "markdownDescription": "Enables the shield_get_code_session command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_get_code_session command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-get-code-session",
+          "markdownDescription": "Denies the shield_get_code_session command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_get_code_token command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-get-code-token",
+          "markdownDescription": "Enables the shield_get_code_token command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_get_code_token command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-get-code-token",
+          "markdownDescription": "Denies the shield_get_code_token command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_get_exchange_code command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-get-exchange-code",
+          "markdownDescription": "Enables the shield_get_exchange_code command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_get_exchange_code command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-get-exchange-code",
+          "markdownDescription": "Denies the shield_get_exchange_code command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_get_preview_token command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-get-preview-token",
+          "markdownDescription": "Enables the shield_get_preview_token command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_get_preview_token command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-get-preview-token",
+          "markdownDescription": "Denies the shield_get_preview_token command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_get_terminal_token command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-get-terminal-token",
+          "markdownDescription": "Enables the shield_get_terminal_token command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_get_terminal_token command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-get-terminal-token",
+          "markdownDescription": "Denies the shield_get_terminal_token command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_intent_nonce command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-intent-nonce",
+          "markdownDescription": "Enables the shield_intent_nonce command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_intent_nonce command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-intent-nonce",
+          "markdownDescription": "Denies the shield_intent_nonce command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_login_options command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-login-options",
+          "markdownDescription": "Enables the shield_login_options command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_login_options command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-login-options",
+          "markdownDescription": "Denies the shield_login_options command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_login_verify command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-login-verify",
+          "markdownDescription": "Enables the shield_login_verify command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_login_verify command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-login-verify",
+          "markdownDescription": "Denies the shield_login_verify command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_logout command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-logout",
+          "markdownDescription": "Enables the shield_logout command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_logout command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-logout",
+          "markdownDescription": "Denies the shield_logout command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_operator_bind command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-operator-bind",
+          "markdownDescription": "Enables the shield_operator_bind command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_operator_bind command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-operator-bind",
+          "markdownDescription": "Denies the shield_operator_bind command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_operator_clear command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-operator-clear",
+          "markdownDescription": "Enables the shield_operator_clear command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_operator_clear command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-operator-clear",
+          "markdownDescription": "Denies the shield_operator_clear command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_operator_sign command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-operator-sign",
+          "markdownDescription": "Enables the shield_operator_sign command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_operator_sign command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-operator-sign",
+          "markdownDescription": "Denies the shield_operator_sign command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_operator_sign_intent command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-operator-sign-intent",
+          "markdownDescription": "Enables the shield_operator_sign_intent command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_operator_sign_intent command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-operator-sign-intent",
+          "markdownDescription": "Denies the shield_operator_sign_intent command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_operator_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-operator-status",
+          "markdownDescription": "Enables the shield_operator_status command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_operator_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-operator-status",
+          "markdownDescription": "Denies the shield_operator_status command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_passkey_login command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-passkey-login",
+          "markdownDescription": "Enables the shield_passkey_login command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_passkey_login command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-passkey-login",
+          "markdownDescription": "Denies the shield_passkey_login command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_permission_get command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-permission-get",
+          "markdownDescription": "Enables the shield_permission_get command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_permission_get command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-permission-get",
+          "markdownDescription": "Denies the shield_permission_get command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_permission_history command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-permission-history",
+          "markdownDescription": "Enables the shield_permission_history command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_permission_history command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-permission-history",
+          "markdownDescription": "Denies the shield_permission_history command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_permission_list_pending command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-permission-list-pending",
+          "markdownDescription": "Enables the shield_permission_list_pending command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_permission_list_pending command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-permission-list-pending",
+          "markdownDescription": "Denies the shield_permission_list_pending command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_permission_mark_seen command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-permission-mark-seen",
+          "markdownDescription": "Enables the shield_permission_mark_seen command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_permission_mark_seen command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-permission-mark-seen",
+          "markdownDescription": "Denies the shield_permission_mark_seen command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_register_options command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-register-options",
+          "markdownDescription": "Enables the shield_register_options command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_register_options command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-register-options",
+          "markdownDescription": "Denies the shield_register_options command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_register_verify command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-register-verify",
+          "markdownDescription": "Enables the shield_register_verify command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_register_verify command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-register-verify",
+          "markdownDescription": "Denies the shield_register_verify command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_session_info command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-session-info",
+          "markdownDescription": "Enables the shield_session_info command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_session_info command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-session-info",
+          "markdownDescription": "Denies the shield_session_info command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_session_keepalive command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-session-keepalive",
+          "markdownDescription": "Enables the shield_session_keepalive command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_session_keepalive command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-session-keepalive",
+          "markdownDescription": "Denies the shield_session_keepalive command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_set_session command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-set-session",
+          "markdownDescription": "Enables the shield_set_session command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_set_session command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-set-session",
+          "markdownDescription": "Denies the shield_set_session command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_tool_permission_reset command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-tool-permission-reset",
+          "markdownDescription": "Enables the shield_tool_permission_reset command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_tool_permission_reset command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-tool-permission-reset",
+          "markdownDescription": "Denies the shield_tool_permission_reset command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_tool_permission_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-tool-permission-set",
+          "markdownDescription": "Enables the shield_tool_permission_set command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_tool_permission_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-tool-permission-set",
+          "markdownDescription": "Denies the shield_tool_permission_set command without any pre-configured scope."
+        }
+      ]
+    }
+  }
+}

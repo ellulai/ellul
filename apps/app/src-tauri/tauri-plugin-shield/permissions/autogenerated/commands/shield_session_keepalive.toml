@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-shield-session-keepalive"
+description = "Enables the shield_session_keepalive command without any pre-configured scope."
+commands.allow = ["shield_session_keepalive"]
+
+[[permission]]
+identifier = "deny-shield-session-keepalive"
+description = "Denies the shield_session_keepalive command without any pre-configured scope."
+commands.deny = ["shield_session_keepalive"]

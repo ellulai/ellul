@@ -3,15 +3,26 @@
 
 import { useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
+import { isTauriApp } from "@/lib/utils";
 import { useHapticFeedback, type HapticIntensity } from "./useHapticFeedback";
 
+interface TauriNotificationModule {
+  isPermissionGranted: () => Promise<boolean>;
+  requestPermission: () => Promise<string>;
+  sendNotification: (options: { title: string; body: string }) => void;
+}
+
+// Module specifier extracted to bypass TypeScript's static import resolution.
+const TAURI_NOTIFICATION_MODULE = "@tauri-apps/plugin-notification";
+
+// Notification categories that users can toggle
 export type NotificationCategory =
-  | "gate_request"
-  | "cli_prompt"
-  | "task_complete"
-  | "task_error"
-  | "server_status"
-  | "deploy_status";
+  | "gate_request"    // Agent needs authorization (deploy, git push, db write, etc.)
+  | "cli_prompt"      // Agent asking a question
+  | "task_complete"   // Agent finished a task
+  | "task_error"      // Agent encountered an error
+  | "server_status"   // Server status changes (ready, hibernating, etc.)
+  | "deploy_status";  // Deployment success/failure
 
 const STORAGE_KEY = "ellul_notification_prefs";
 
@@ -39,6 +50,7 @@ export function setNotificationPref(category: NotificationCategory, enabled: boo
   localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
 }
 
+// Map event types to notification content
 interface NotificationPayload {
   title: string;
   body: string;
@@ -119,6 +131,7 @@ function buildNotification(
   }
 }
 
+// Map notification categories to haptic feedback intensities
 const HAPTIC_INTENSITY_MAP: Record<NotificationCategory, HapticIntensity> = {
   gate_request: "heavy",
   cli_prompt: "medium",
@@ -128,12 +141,15 @@ const HAPTIC_INTENSITY_MAP: Record<NotificationCategory, HapticIntensity> = {
   server_status: "light",
 };
 
+// Hook that listens for app events and fires native OS notifications
 export function useNativeNotifications() {
   const t = useTranslations("console.notifications");
   const isBackground = useRef(false);
+  const notifyModule = useRef<TauriNotificationModule | null>(null);
   const permissionGranted = useRef(false);
   const { triggerHaptic } = useHapticFeedback();
 
+  // Track if app is in background
   useEffect(() => {
     const handleVisibility = () => {
       isBackground.current = document.hidden;
@@ -142,33 +158,51 @@ export function useNativeNotifications() {
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
+  // Initialize Tauri notifications
   useEffect(() => {
-    if (typeof Notification === "undefined") return;
-    if (Notification.permission === "granted") {
-      permissionGranted.current = true;
-    } else if (Notification.permission !== "denied") {
-      Notification.requestPermission().then((result) => {
-        permissionGranted.current = result === "granted";
-      });
-    }
+    if (!isTauriApp()) return;
+
+    (async () => {
+      try {
+        // Dynamic import — only available in Tauri runtime
+        const mod = await import(/* webpackIgnore: true */ TAURI_NOTIFICATION_MODULE) as TauriNotificationModule;
+        notifyModule.current = mod;
+
+        // Request permission
+        let permission = await mod.isPermissionGranted();
+        if (!permission) {
+          const result = await mod.requestPermission();
+          permission = result === "granted";
+        }
+        permissionGranted.current = permission;
+      } catch (err) {
+        console.warn("Failed to init native notifications:", err);
+      }
+    })();
   }, []);
 
   const sendNotification = useCallback((eventType: string, data: any) => {
     const payload = buildNotification(eventType, data, t as unknown as Translator);
     if (!payload) return;
 
+    // Check user preferences
     const prefs = getNotificationPrefs();
     if (!prefs[payload.category]) return;
 
+    // Trigger haptic feedback on mobile regardless of foreground/background
     const hapticIntensity = HAPTIC_INTENSITY_MAP[payload.category];
     if (hapticIntensity) {
       triggerHaptic(hapticIntensity);
     }
 
+    // Only send OS notification when app is in background
     if (!isBackground.current) return;
-    if (!permissionGranted.current) return;
+    if (!notifyModule.current || !permissionGranted.current) return;
 
-    new Notification(payload.title, { body: payload.body });
+    notifyModule.current.sendNotification({
+      title: payload.title,
+      body: payload.body,
+    });
   }, [triggerHaptic, t]);
 
   return { sendNotification };

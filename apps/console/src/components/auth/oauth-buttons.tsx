@@ -5,21 +5,15 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { signIn } from "@/lib/auth-client";
-import { isNativeApp, isElectronApp, isAndroidApp } from "@/lib/utils";
+import { isTauriApp } from "@/lib/utils";
 import { isLoginProviderEnabled } from "@/lib/feature-flags";
 
 type Provider = "github" | "google" | "apple";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-function nativeInvoke(cmd: string, args?: Record<string, unknown>): Promise<unknown> {
-  if (isElectronApp()) {
-    return (window as any).electronShield.invoke(cmd, args);
-  }
-  if (isAndroidApp()) {
-    return (window as any).androidShield.invokeAsync(cmd, args);
-  }
-  return Promise.reject(new Error("No native runtime available"));
+function tauriInvoke(cmd: string, args?: Record<string, unknown>): Promise<unknown> {
+  return (window as any).__TAURI_INTERNALS__.invoke(cmd, args);
 }
 
 function GitHubIcon() {
@@ -88,10 +82,10 @@ export function OAuthSignIn({
       localStorage.setItem("ps_cli_callback_nonce", callbackNonce);
     }
 
-    if (isNativeApp()) {
+    if (isTauriApp()) {
       try {
         if (provider === "apple") {
-          const result = (await nativeInvoke("plugin:native-auth|sign_in_apple")) as {
+          const result = (await tauriInvoke("plugin:native-auth|sign_in_apple")) as {
             identity_token: string;
             given_name: string | null;
             family_name: string | null;
@@ -126,7 +120,7 @@ export function OAuthSignIn({
           const flowId = crypto.randomUUID();
           const oauthUrl = `${API_URL}/api/auth/native/start?provider=${provider}&flow_id=${flowId}`;
 
-          window.open(oauthUrl, "_blank");
+          await tauriInvoke("plugin:native-auth|open_oauth_browser", { url: oauthUrl });
 
           const POLL_MS = 3_000;
           const TIMEOUT_MS = 300_000;

@@ -65,7 +65,6 @@ interface TabHomeProps {
     platformVersion?: string | null;
     volumeSecurityMode?: "standard" | "enhanced" | "sovereign" | null;
     region?: string | null;
-    deploymentModel?: string;
   };
   plan: string;
   onDeleteServer: () => void;
@@ -356,7 +355,7 @@ export function TabHome({
         {/* ─── Environment Lock ─── */}
         {showServer && (
           <div id="settings-security">
-            <WebLockCard serverId={server.id} serverDomain={serverDomain} serverIp={server.ipAddress} onUpgrade={onUpgrade} volumeSecurityMode={server.volumeSecurityMode} product={server.product} deploymentModel={server.deploymentModel} />
+            <WebLockCard serverId={server.id} serverDomain={serverDomain} serverIp={server.ipAddress} onUpgrade={onUpgrade} volumeSecurityMode={server.volumeSecurityMode} product={server.product} />
           </div>
         )}
 

@@ -7,14 +7,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function isElectronApp(): boolean {
-  return typeof window !== "undefined" && "electronShield" in window;
+// Detect if running inside Tauri native app
+export function isTauriApp(): boolean {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
 
-export function isAndroidApp(): boolean {
-  return typeof window !== "undefined" && "androidShield" in window;
-}
-
-export function isNativeApp(): boolean {
-  return isElectronApp() || isAndroidApp();
+// Detect if running on a mobile Tauri target (iOS/Android)
+export function isMobileTauri(): boolean {
+  if (!isTauriApp()) return false;
+  const ua = navigator.userAgent;
+  return /iPhone|iPad|iPod|Android/.test(ua);
 }

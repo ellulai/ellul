@@ -1,0 +1,398 @@
+use tauri::{Emitter, Listener, Manager, WindowEvent};
+
+#[cfg(desktop)]
+use tauri::{
+    image::Image,
+    menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem},
+    tray::TrayIconBuilder,
+};
+
+mod config;
+
+const CONSOLE_URL: &str = "https://console.ellul.ai/sign-up";
+const LOCAL_URL: &str = "https://localhost:8443";
+
+fn is_internal_navigation(url: &url::Url) -> bool {
+    if url.scheme() == "tauri" {
+        return true;
+    }
+    let host = url.host_str().unwrap_or("");
+    if host.ends_with(".ellul.ai") || host == "ellul.ai" {
+        return true;
+    }
+    if host.ends_with(".ellul.app") || host == "ellul.app" {
+        return true;
+    }
+    if (host == "localhost" || host == "127.0.0.1") && url.port() == Some(8443) {
+        return true;
+    }
+    false
+}
+
+fn parse_connected_deep_link(url_str: &str) -> Option<String> {
+    let url = url::Url::parse(url_str).ok()?;
+    if url.scheme() != "ellul" {
+        return None;
+    }
+    if url.host_str() != Some("connected") {
+        return None;
+    }
+    let domain = url.query_pairs().find(|(k, _)| k == "domain")?.1.to_string();
+    if config::is_domain_allowed(&domain) {
+        Some(domain)
+    } else {
+        eprintln!("[ellul] deep-link domain rejected: {}", domain);
+        None
+    }
+}
+
+fn resolve_start_url(cfg: &config::AppConfig) -> tauri::WebviewUrl {
+    match cfg.mode {
+        config::AppMode::Cloud => {
+            if let Some(ref domain) = cfg.cloud_domain {
+                if config::is_domain_allowed(domain) {
+                    let url = format!("https://{domain}");
+                    return tauri::WebviewUrl::External(url.parse().unwrap());
+                }
+            }
+            tauri::WebviewUrl::External(CONSOLE_URL.parse().unwrap())
+        }
+        _ => tauri::WebviewUrl::App("index.html".into()),
+    }
+}
+
+#[tauri::command]
+fn __dbg(msg: String) {
+    eprintln!("[ellul-webview] {}", msg);
+}
+
+#[tauri::command]
+fn open_external(url: String) -> Result<(), String> {
+    eprintln!("[ellul] open_external: {}", url);
+    open::that(&url).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_app_mode(state: tauri::State<'_, config::ConfigState>) -> config::AppConfig {
+    state.get()
+}
+
+#[tauri::command]
+fn set_app_mode(
+    mode: config::AppMode,
+    cloud_domain: Option<String>,
+    state: tauri::State<'_, config::ConfigState>,
+) -> Result<config::AppConfig, String> {
+    state.set_mode(mode, cloud_domain)?;
+    Ok(state.get())
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PlatformInfo {
+    os: &'static str,
+    can_run_local: bool,
+    local_engine: &'static str,
+}
+
+#[tauri::command]
+fn get_platform_info() -> PlatformInfo {
+    if cfg!(target_os = "android") {
+        PlatformInfo {
+            os: "android",
+            can_run_local: true,
+            local_engine: "proot",
+        }
+    } else if cfg!(target_os = "ios") {
+        PlatformInfo {
+            os: "ios",
+            can_run_local: false,
+            local_engine: "none",
+        }
+    } else if cfg!(target_os = "macos") {
+        PlatformInfo {
+            os: "macos",
+            can_run_local: true,
+            local_engine: "lima",
+        }
+    } else if cfg!(target_os = "windows") {
+        PlatformInfo {
+            os: "windows",
+            can_run_local: true,
+            local_engine: "wsl2",
+        }
+    } else {
+        PlatformInfo {
+            os: "linux",
+            can_run_local: true,
+            local_engine: "native",
+        }
+    }
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    let builder = tauri::Builder::default()
+        .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_native_auth::init())
+        .plugin(tauri_plugin_shield::init())
+        .plugin(tauri_plugin_proot::init())
+        .invoke_handler(tauri::generate_handler![
+            __dbg,
+            open_external,
+            get_app_mode,
+            set_app_mode,
+            get_platform_info,
+        ]);
+
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_global_shortcut::Builder::new().build());
+
+    builder
+        .setup(|app| {
+            let data_dir = app.path().app_data_dir().expect("no app data dir");
+            eprintln!("[ellul] data_dir: {:?}", data_dir);
+            let cfg_state = config::ConfigState::load(data_dir);
+            let cfg = cfg_state.get();
+            eprintln!("[ellul] config: {:?}", cfg);
+
+            let url = resolve_start_url(&cfg);
+            eprintln!("[ellul] start_url: {:?}", url);
+
+            app.manage(cfg_state);
+
+            let mut builder =
+                tauri::WebviewWindowBuilder::new(app, "main", url)
+                    .title("ellul")
+                    .inner_size(1280.0, 860.0)
+                    .min_inner_size(375.0, 600.0);
+
+            #[cfg(desktop)]
+            {
+                builder = builder.on_navigation(|url| {
+                    if !is_internal_navigation(url) {
+                        let _ = open::that(url.as_str());
+                        return false;
+                    }
+                    true
+                });
+            }
+
+            let win = builder.build()?;
+
+            let win_clone = win.clone();
+            let log_path = app.path().app_data_dir().expect("no data dir").join("debug.log");
+            let log_path_str = log_path.to_string_lossy().to_string();
+            eprintln!("[ellul] debug log path: {}", log_path_str);
+            std::thread::spawn(move || {
+                for delay in [1, 3, 5] {
+                    std::thread::sleep(std::time::Duration::from_secs(delay));
+                    let js = format!(r#"
+                        (function() {{
+                            try {{
+                                var info = JSON.stringify({{
+                                    url: window.location.href,
+                                    title: document.title,
+                                    bodyLen: document.body ? document.body.innerHTML.length : -1,
+                                    bodyText: document.body ? document.body.innerText.substring(0, 200) : 'NO BODY',
+                                    headLen: document.head ? document.head.innerHTML.length : -1,
+                                    scriptCount: document.querySelectorAll('script').length,
+                                    hasTauri: typeof window.__TAURI_INTERNALS__ !== 'undefined',
+                                    docReady: document.readyState,
+                                    allErrors: window.__ellul_errors || [],
+                                    delay: {},
+                                }});
+                                window.__TAURI_INTERNALS__.invoke('__dbg', {{ msg: info }});
+                            }} catch(e) {{
+                                window.__TAURI_INTERNALS__.invoke('__dbg', {{ msg: 'JS_ERROR: ' + e.message }});
+                            }}
+                        }})();
+                    "#, delay);
+                    let _ = win_clone.eval(&js);
+                }
+            });
+
+            let app_handle = app.handle().clone();
+            app.listen("deep-link://new-url", move |event| {
+                let payload = event.payload();
+                eprintln!("[ellul] deep-link received: {}", payload);
+                if let Ok(urls) = serde_json::from_str::<Vec<String>>(payload) {
+                    for raw_url in urls {
+                        if let Some(domain) = parse_connected_deep_link(&raw_url) {
+                            eprintln!("[ellul] cloud domain from deep link: {}", domain);
+                            if let Some(cfg_state) = app_handle.try_state::<config::ConfigState>() {
+                                let _ = cfg_state.set_mode(
+                                    config::AppMode::Cloud,
+                                    Some(domain.clone()),
+                                );
+                            }
+                            if let Some(w) = app_handle.get_webview_window("main") {
+                                let url = format!("https://{}", domain);
+                                let _ = w.eval(&format!(
+                                    "window.location.replace('{}')",
+                                    url
+                                ));
+                                let _ = w.show();
+                                let _ = w.unminimize();
+                                let _ = w.set_focus();
+                            }
+                        }
+                    }
+                }
+            });
+
+            #[cfg(desktop)]
+            setup_desktop(app)?;
+
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            #[cfg(desktop)]
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.hide();
+            }
+            #[cfg(not(desktop))]
+            {
+                let _ = (window, event);
+            }
+        })
+        .build(tauri::generate_context!())
+        .expect("error while building ellul.ai")
+        .run(|app_handle, event| {
+            #[cfg(desktop)]
+            if let tauri::RunEvent::Reopen { has_visible_windows, .. } = event {
+                if !has_visible_windows {
+                    if let Some(window) = app_handle.get_webview_window("main") {
+                        let _ = window.show();
+                        let _ = window.unminimize();
+                        let _ = window.set_focus();
+                    }
+                }
+            }
+        });
+}
+
+#[cfg(desktop)]
+fn setup_desktop(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    let tray_icon_bytes = include_bytes!("../icons/32x32.png");
+    let icon = Image::from_bytes(tray_icon_bytes).expect("failed to load tray icon");
+
+    let status_item = MenuItemBuilder::with_id("status", "Server: Unknown")
+        .enabled(false)
+        .build(app)?;
+
+    let show_item = MenuItemBuilder::with_id("show_dashboard", "Show Dashboard").build(app)?;
+
+    let gates_item = MenuItemBuilder::with_id("pending_gates", "Pending Gates: 0")
+        .enabled(false)
+        .build(app)?;
+
+    let quit_item = MenuItemBuilder::with_id("quit", "Quit ellul.ai").build(app)?;
+
+    let menu = MenuBuilder::new(app)
+        .item(&status_item)
+        .item(&PredefinedMenuItem::separator(app)?)
+        .item(&show_item)
+        .item(&gates_item)
+        .item(&PredefinedMenuItem::separator(app)?)
+        .item(&quit_item)
+        .build()?;
+
+    let _tray = TrayIconBuilder::new()
+        .icon(icon)
+        .tooltip("ellul.ai")
+        .menu(&menu)
+        .on_menu_event(move |app, event| match event.id().as_ref() {
+            "show_dashboard" => {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                }
+            }
+            "pending_gates" => {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                }
+                let _ = app.emit("global-shortcut", "open_gates");
+            }
+            "quit" => {
+                app.exit(0);
+            }
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let tauri::tray::TrayIconEvent::Click { .. } = event {
+                if let Some(window) = tray.app_handle().get_webview_window("main") {
+                    if window.is_visible().unwrap_or(false) {
+                        let _ = window.hide();
+                    } else {
+                        let _ = window.show();
+                        let _ = window.unminimize();
+                        let _ = window.set_focus();
+                    }
+                }
+            }
+        })
+        .build(app)?;
+
+    use tauri_plugin_global_shortcut::GlobalShortcutExt;
+
+    if let Err(e) = app.global_shortcut().on_shortcut("CmdOrCtrl+Shift+Alt+G", {
+        let app_handle = app.handle().clone();
+        move |_app, _shortcut, event| {
+            if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                if let Some(window) = app_handle.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                }
+                let _ = app_handle.emit("global-shortcut", "open_gates");
+            }
+        }
+    }) {
+        eprintln!("[ellul.ai] Failed to register shortcut: {}", e);
+    }
+
+    if let Err(e) = app.global_shortcut().on_shortcut("CmdOrCtrl+Shift+Alt+D", {
+        let app_handle = app.handle().clone();
+        move |_app, _shortcut, event| {
+            if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                if let Some(window) = app_handle.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                }
+                let _ = app_handle.emit("global-shortcut", "show_dashboard");
+            }
+        }
+    }) {
+        eprintln!("[ellul.ai] Failed to register shortcut: {}", e);
+    }
+
+    let status_item_clone = status_item.clone();
+    let gates_item_clone = gates_item.clone();
+    app.listen("tray-update-status", move |event| {
+        let payload = event.payload();
+        if let Ok(status) = serde_json::from_str::<String>(payload) {
+            let label = format!("Server: {}", status);
+            let _ = status_item_clone.set_text(&label);
+        }
+    });
+
+    app.listen("tray-update-gates", move |event| {
+        let payload = event.payload();
+        if let Ok(count) = serde_json::from_str::<u32>(payload) {
+            let label = format!("Pending Gates: {}", count);
+            let _ = gates_item_clone.set_text(&label);
+            let _ = gates_item_clone.set_enabled(count > 0);
+        }
+    });
+
+    Ok(())
+}

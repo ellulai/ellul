@@ -149,12 +149,10 @@ export function deriveTierFields(tier: ServerSecurityTier): TierConfigEntry {
 export function getEnvironmentLockState(server: {
   securityTier?: "standard" | "web_locked" | "private_locked";
   volumeSecurityMode?: "standard" | "enhanced" | "sovereign" | null;
-  deploymentModel?: string;
 }): EnvironmentLockState {
   const tier = server.securityTier ?? "standard";
   const mode = server.volumeSecurityMode ?? "standard";
   const hasUserKey = mode === "enhanced" || mode === "sovereign";
-  const luksAvailable = server.deploymentModel !== "localhost";
 
   // private_locked tier OR user holds a LUKS key → Privacy Lock (permanent)
   if (tier === "private_locked" || (tier === "web_locked" && hasUserKey)) {
@@ -177,7 +175,7 @@ export function getEnvironmentLockState(server: {
       isPartialSetup: false,
       isLegacyEncrypted: false,
       canEnableWebLock: false,
-      canEnablePrivacyLock: luksAvailable,
+      canEnablePrivacyLock: true,
       canDowngrade: true, // can go back to standard
     };
   }
