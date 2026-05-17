@@ -105,7 +105,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           continue;
         }
         // Either a definitive "no session" or exhausted retries
-        window.location.href = isTauriApp() ? "/sign-up" : WEB_URL;
+        if (isTauriApp()) {
+          // Tauri talks directly to VPS via shield commands — no console session needed.
+          // Set a minimal session so the dashboard renders; VPS bridge handles real auth.
+          setSession({ user: { id: "tauri", name: "Local", email: "", image: null, emailVerified: true, createdAt: new Date(), updatedAt: new Date() }, session: { id: "tauri", userId: "tauri", token: "", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date() } } as Session);
+          return;
+        }
+        window.location.href = WEB_URL;
         return;
       }
     };
