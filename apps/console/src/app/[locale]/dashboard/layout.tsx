@@ -40,6 +40,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const t = useTranslations("console");
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [tauriServerStatus, setTauriServerStatus] = useState<ServerStatus | null>(null);
+  const isTauri = isTauriApp();
 
   // ── Tier / checkout ──
 
@@ -106,9 +108,30 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         }
         // Either a definitive "no session" or exhausted retries
         if (isTauriApp()) {
-          // Tauri talks directly to VPS via shield commands — no console session needed.
-          // Set a minimal session so the dashboard renders; VPS bridge handles real auth.
           setSession({ user: { id: "tauri", name: "Local", email: "", image: null, emailVerified: true, createdAt: new Date(), updatedAt: new Date() }, session: { id: "tauri", userId: "tauri", token: "", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date() } } as Session);
+          try {
+            const cfg = await (window as any).__TAURI_INTERNALS__.invoke("get_app_mode");
+            const domain = cfg?.cloudDomain as string | undefined;
+            if (domain) {
+              setTauriServerStatus({
+                state: "running",
+                plan: "hobby",
+                hasActiveSubscription: true,
+                server: {
+                  id: domain.split("-")[0] || "tauri",
+                  ipAddress: "0.0.0.0",
+                  domain,
+                  createdAt: new Date().toISOString(),
+                  performanceStatus: "good" as const,
+                  size: "cx22",
+                  terminalEnabled: true,
+                  sshEnabled: true,
+                  securityTier: "web_locked" as const,
+                  serverPlan: "hobby" as const,
+                },
+              } as ServerStatus);
+            }
+          } catch {}
           return;
         }
         window.location.href = WEB_URL;
@@ -150,7 +173,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       if (!response.ok) throw new Error("Failed to fetch server status");
       return response.json() as Promise<ServerStatus>;
     },
-    enabled: !MOCK_MODE && !!session,
+    enabled: !MOCK_MODE && !isTauri && !!session,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     retry: 5,
@@ -186,13 +209,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   const hasServer = !!serverStatus?.server;
   const { isConnected: sseConnected } = useServerEvents({
-    enabled: !MOCK_MODE && !!session && hasServer && !!activeServerId,
+    enabled: !MOCK_MODE && !isTauri && !!session && hasServer && !!activeServerId,
     serverId: activeServerId,
   });
   sseConnectedRef.current = sseConnected;
 
-  const effectiveServerStatus = MOCK_MODE ? mockServerStatus : serverStatus;
-  const effectiveIsStatusLoading = MOCK_MODE ? false : isStatusLoading;
+  const effectiveServerStatus = MOCK_MODE ? mockServerStatus : isTauri ? (tauriServerStatus ?? undefined) : serverStatus;
+  const effectiveIsStatusLoading = MOCK_MODE || isTauri ? false : isStatusLoading;
 
   // ── Mutations ──
 
@@ -336,7 +359,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     return <LoadingScreen message="Loading dashboard..." />;
   }
 
-  if (!MOCK_MODE && session && !serverStatus && statusError) {
+  if (!MOCK_MODE && !isTauri && session && !serverStatus && statusError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <div className="panel-ascente max-w-md w-full p-8 text-center">
@@ -357,7 +380,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!MOCK_MODE && session && !serverStatus) {
+  if (!MOCK_MODE && !isTauri && session && !serverStatus) {
     return <LoadingScreen message="Loading dashboard..." />;
   }
 
@@ -366,7 +389,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <DashboardShell
       session={session}
-      serverStatus={serverStatus}
+      serverStatus={isTauri ? (tauriServerStatus ?? undefined) : serverStatus}
       effectiveServerStatus={effectiveServerStatus}
       effectiveIsStatusLoading={effectiveIsStatusLoading}
       isStatusLoading={isStatusLoading}
