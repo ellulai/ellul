@@ -34,7 +34,7 @@ urlencoding = "2"
 zeroize = { version = "1", features = ["derive"] }
 
 # Async
-tokio = { version = "1", features = ["sync"] }
+tokio = { version = "1", features = ["sync", "time"] }
 
 # Random
 rand = "0.8"

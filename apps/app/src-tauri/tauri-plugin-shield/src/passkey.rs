@@ -5,6 +5,9 @@ use tokio::sync::oneshot;
 type PasskeyCallback =
     unsafe extern "C" fn(json: *const c_char, error: *const c_char, cancelled: c_int, ctx: *mut c_void);
 
+type WebAuthCallback =
+    unsafe extern "C" fn(callback_url: *const c_char, error: *const c_char, cancelled: c_int, ctx: *mut c_void);
+
 extern "C" {
     fn ellul_passkey_available() -> c_int;
 
@@ -30,6 +33,13 @@ extern "C" {
         attestation: *const c_char,
         user_verification: *const c_char,
         callback: PasskeyCallback,
+        ctx: *mut c_void,
+    );
+
+    fn ellul_web_auth_session(
+        url_str: *const c_char,
+        callback_scheme: *const c_char,
+        callback: WebAuthCallback,
         ctx: *mut c_void,
     );
 }
@@ -222,4 +232,48 @@ pub async fn register(
 
     let result = rx.await.map_err(|_| "Passkey callback channel dropped".to_string())?;
     parse_result(result)
+}
+
+unsafe extern "C" fn on_web_auth_complete(
+    callback_url: *const c_char,
+    error: *const c_char,
+    cancelled: c_int,
+    ctx: *mut c_void,
+) {
+    let tx = Box::from_raw(ctx as *mut oneshot::Sender<CallbackResult>);
+    let result = CallbackResult {
+        json: if callback_url.is_null() {
+            None
+        } else {
+            Some(CStr::from_ptr(callback_url).to_string_lossy().into_owned())
+        },
+        error: if error.is_null() {
+            None
+        } else {
+            Some(CStr::from_ptr(error).to_string_lossy().into_owned())
+        },
+        cancelled: cancelled != 0,
+    };
+    let _ = tx.send(result);
+}
+
+pub async fn web_auth_session(url: &str, callback_scheme: &str) -> Result<String, String> {
+    let (tx, rx) = oneshot::channel::<CallbackResult>();
+    let ctx = SendPtr(Box::into_raw(Box::new(tx)) as *mut c_void);
+
+    let url_c = to_cstring(url)?;
+    let scheme_c = to_cstring(callback_scheme)?;
+
+    unsafe {
+        ellul_web_auth_session(url_c.as_ptr(), scheme_c.as_ptr(), on_web_auth_complete, ctx.0);
+    }
+
+    let result = rx.await.map_err(|_| "Web auth session channel dropped".to_string())?;
+    if result.cancelled {
+        return Err("User cancelled".into());
+    }
+    if let Some(err) = result.error {
+        return Err(err);
+    }
+    result.json.ok_or_else(|| "No callback URL from web auth session".into())
 }

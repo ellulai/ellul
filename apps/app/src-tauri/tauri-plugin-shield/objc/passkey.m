@@ -301,3 +301,68 @@ void ellul_passkey_cancel(void) {
         }
     }
 }
+
+// ── ASWebAuthenticationSession ──────────────────────────────────
+
+typedef void (*EllulWebAuthCallback)(const char *callback_url, const char *error, int cancelled, void *ctx);
+
+API_AVAILABLE(macos(12.0), ios(15.0))
+@interface EllulWebAuthPresentationProvider : NSObject <ASWebAuthenticationPresentationContextProviding>
+@end
+
+API_AVAILABLE(macos(12.0), ios(15.0))
+@implementation EllulWebAuthPresentationProvider
+#if TARGET_OS_OSX
+- (ASPresentationAnchor)presentationAnchorForWebAuthenticationSession:(ASWebAuthenticationSession *)session {
+    return [NSApp keyWindow] ?: [NSApp mainWindow] ?: [[NSApp windows] firstObject];
+}
+#else
+- (ASPresentationAnchor)presentationAnchorForWebAuthenticationSession:(ASWebAuthenticationSession *)session {
+    UIWindowScene *scene = (UIWindowScene *)[[UIApplication sharedApplication].connectedScenes anyObject];
+    return scene.windows.firstObject ?: [[UIWindow alloc] init];
+}
+#endif
+@end
+
+static EllulWebAuthPresentationProvider *activeWebAuthProvider API_AVAILABLE(macos(12.0), ios(15.0)) = nil;
+static ASWebAuthenticationSession *activeWebAuthSession API_AVAILABLE(macos(12.0), ios(15.0)) = nil;
+
+void ellul_web_auth_session(
+    const char *url_str,
+    const char *callback_scheme,
+    EllulWebAuthCallback callback,
+    void *ctx
+) {
+    if (@available(macOS 12.0, iOS 15.0, *)) {
+        NSURL *url = [NSURL URLWithString:[NSString stringWithUTF8String:url_str]];
+        NSString *scheme = [NSString stringWithUTF8String:callback_scheme];
+
+        ASWebAuthenticationSession *session = [[ASWebAuthenticationSession alloc]
+            initWithURL:url
+            callbackURLScheme:scheme
+            completionHandler:^(NSURL *callbackURL, NSError *error) {
+                activeWebAuthSession = nil;
+                activeWebAuthProvider = nil;
+                if (error) {
+                    int cancelled = (error.code == ASWebAuthenticationSessionErrorCodeCanceledLogin) ? 1 : 0;
+                    NSString *msg = [NSString stringWithFormat:@"%@ (code %ld)", error.localizedDescription, (long)error.code];
+                    callback(NULL, msg.UTF8String, cancelled, ctx);
+                } else {
+                    callback(callbackURL.absoluteString.UTF8String, NULL, 0, ctx);
+                }
+            }];
+
+        EllulWebAuthPresentationProvider *provider = [[EllulWebAuthPresentationProvider alloc] init];
+        session.presentationContextProvider = provider;
+        session.prefersEphemeralWebBrowserSession = NO;
+
+        activeWebAuthProvider = provider;
+        activeWebAuthSession = session;
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [session start];
+        });
+    } else {
+        callback(NULL, "ASWebAuthenticationSession requires macOS 12+ / iOS 15+", 0, ctx);
+    }
+}

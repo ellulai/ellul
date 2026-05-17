@@ -749,6 +749,18 @@
           "type": "string",
           "const": "deny-shield-tool-permission-set",
           "markdownDescription": "Denies the shield_tool_permission_set command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_web_auth_login command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-web-auth-login",
+          "markdownDescription": "Enables the shield_web_auth_login command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_web_auth_login command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-web-auth-login",
+          "markdownDescription": "Denies the shield_web_auth_login command without any pre-configured scope."
         }
       ]
     }

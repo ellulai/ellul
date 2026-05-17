@@ -394,6 +394,108 @@ pub async fn shield_register_verify(
     Ok(resp)
 }
 
+#[command(rename_all = "camelCase")]
+pub async fn shield_web_auth_login(
+    session: State<'_, SessionState>,
+    http: State<'_, ShieldHttpClient>,
+    server_domain: String,
+    console_url: String,
+) -> Result<serde_json::Value, Error> {
+    let base_url = format!("https://{server_domain}");
+
+    let res = http
+        .post_unauthed(&base_url, "/_auth/login/options", &serde_json::json!({}))
+        .await?;
+    let status = res.status();
+    let options: serde_json::Value = res.json().await.unwrap_or_default();
+    if !status.is_success() {
+        return Err(Error::HttpError(
+            options["error"].as_str().unwrap_or("options failed").to_string(),
+        ));
+    }
+
+    let flow_id = uuid::Uuid::new_v4().to_string();
+    let api_url = console_url.replace("console.", "api.");
+
+    let relay_client = reqwest::Client::new();
+    let relay_res = relay_client
+        .post(format!("{api_url}/api/auth/native/vps-auth-data"))
+        .json(&serde_json::json!({
+            "flowId": flow_id,
+            "type": "options",
+            "data": options,
+        }))
+        .send()
+        .await
+        .map_err(|e| Error::HttpError(format!("relay store options: {e}")))?;
+
+    if !relay_res.status().is_success() {
+        return Err(Error::HttpError("Failed to store auth options at relay".into()));
+    }
+
+    let auth_url = format!(
+        "{console_url}/en/vps-auth?flow_id={flow_id}&server={server_domain}"
+    );
+
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    {
+        crate::passkey::web_auth_session(&auth_url, "ellul-auth")
+            .await
+            .map_err(Error::HttpError)?;
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "ios")))]
+    return Err(Error::HttpError(
+        "Web auth session not available on this platform".into(),
+    ));
+
+    let mut assertion: Option<serde_json::Value> = None;
+    for _ in 0..30 {
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        let poll_res = relay_client
+            .get(format!(
+                "{api_url}/api/auth/native/vps-auth-data?flow_id={flow_id}&type=assertion"
+            ))
+            .send()
+            .await
+            .map_err(|e| Error::HttpError(format!("relay poll assertion: {e}")))?;
+        let body: serde_json::Value = poll_res.json().await.unwrap_or_default();
+        if body["status"].as_str() == Some("complete") {
+            assertion = body.get("data").cloned();
+            break;
+        }
+    }
+
+    let assertion = assertion
+        .ok_or_else(|| Error::HttpError("Timeout waiting for passkey assertion".into()))?;
+
+    let res = http
+        .post_unauthed(
+            &base_url,
+            "/_auth/login/verify",
+            &serde_json::json!({ "assertion": assertion }),
+        )
+        .await?;
+    let status = res.status();
+    let cookie = extract_session_cookie(&res);
+    let body: serde_json::Value = res.json().await.unwrap_or_default();
+    if !status.is_success() {
+        return Err(Error::HttpError(
+            body["error"].as_str().unwrap_or("verify failed").to_string(),
+        ));
+    }
+
+    if let Some(cookie_header) = cookie {
+        session
+            .set(server_domain.clone(), cookie_header.clone())
+            .await;
+        let result = pop::perform_mlkem_bind(http.raw(), &base_url, &cookie_header).await?;
+        session.set_k_pop(result.k_pop).await;
+    }
+
+    Ok(body)
+}
+
 #[command]
 pub async fn shield_session_info(
     session: State<'_, SessionState>,

@@ -994,4 +994,30 @@ Denies the shield_tool_permission_set command without any pre-configured scope.
 
 </td>
 </tr>
+
+<tr>
+<td>
+
+`shield:allow-shield-web-auth-login`
+
+</td>
+<td>
+
+Enables the shield_web_auth_login command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`shield:deny-shield-web-auth-login`
+
+</td>
+<td>
+
+Denies the shield_web_auth_login command without any pre-configured scope.
+
+</td>
+</tr>
 </table>
