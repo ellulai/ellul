@@ -174,7 +174,7 @@ importers:
         version: link:../../packages/ts-config
       '@opennextjs/cloudflare':
         specifier: ^1.14.8
-        version: 1.19.10(next@15.5.18(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(wrangler@4.92.0(@cloudflare/workers-types@4.20260517.1)(bufferutil@4.1.0))
+        version: 1.19.10(next@15.5.18(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(wrangler@4.92.0(@cloudflare/workers-types@4.20260517.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@tauri-apps/api':
         specifier: ^2.10.1
         version: 2.11.0
@@ -347,7 +347,7 @@ importers:
         version: 0.14.0(bufferutil@4.1.0)
       '@opennextjs/cloudflare':
         specifier: ^1.14.8
-        version: 1.19.10(next@15.5.18(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(wrangler@4.92.0(@cloudflare/workers-types@4.20260517.1)(bufferutil@4.1.0))
+        version: 1.19.10(next@15.5.18(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(wrangler@4.92.0(@cloudflare/workers-types@4.20260517.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@types/mdx':
         specifier: ^2.0.13
         version: 2.0.13
@@ -9557,7 +9557,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@opennextjs/cloudflare@1.19.10(next@15.5.18(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(wrangler@4.92.0(@cloudflare/workers-types@4.20260517.1)(bufferutil@4.1.0))':
+  '@opennextjs/cloudflare@1.19.10(next@15.5.18(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(wrangler@4.92.0(@cloudflare/workers-types@4.20260517.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
     dependencies:
       '@ast-grep/napi': 0.40.5
       '@dotenvx/dotenvx': 1.31.0

@@ -329,58 +329,79 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
   }, [ready, error, hostname]);
 
   const authenticateNative = useCallback(async (): Promise<void> => {
-    dbg("tauri", `authenticateNative called — attempting native passkey on ${hostname}`);
-    try {
-      dbg("tauri", "shield_passkey_login → calling...");
-      const result = await tauriInvoke<Record<string, unknown>>("shield_passkey_login", { serverDomain: hostname });
-      dbg("tauri", `shield_passkey_login → OK: ${JSON.stringify(result).slice(0, 200)}`);
-      setNeedsVpsAuth(false);
-      setSessionExpired(false);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      dbg("tauri", `shield_passkey_login FAILED: ${msg}`);
-      // Try WebAuthn in-browser as fallback
-      dbg("tauri", "fallback: trying navigator.credentials.get via WebAuthn JS...");
-      try {
-        dbg("tauri", "fallback: fetching login options from VPS...");
-        const optRes = await fetch(`https://${hostname}/_auth/login/options`, {
-          method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
-        });
-        dbg("tauri", `fallback: options response status=${optRes.status}`);
-        if (!optRes.ok) throw new Error(`options HTTP ${optRes.status}`);
-        const options = await optRes.json();
-        dbg("tauri", `fallback: got options challenge=${options.challenge?.slice(0, 20)}... rpId=${options.rpId}`);
-        dbg("tauri", "fallback: calling startAuthentication...");
-        const assertion = await startAuthentication({ optionsJSON: options });
-        dbg("tauri", `fallback: startAuthentication OK — credId=${assertion.id?.slice(0, 20)}...`);
-        dbg("tauri", "fallback: verifying assertion with VPS...");
-        const verRes = await fetch(`https://${hostname}/_auth/login/verify`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ assertion }), credentials: "include",
-        });
-        dbg("tauri", `fallback: verify response status=${verRes.status}`);
-        if (!verRes.ok) throw new Error(`verify HTTP ${verRes.status}`);
-        const verBody = await verRes.json();
-        dbg("tauri", `fallback: verify body=${JSON.stringify(verBody).slice(0, 200)}`);
-        // Extract session cookie and set via Rust plugin for ML-KEM bind
-        dbg("tauri", "fallback: WebAuthn verify succeeded — checking for session cookie...");
-        // The fetch won't give us the Set-Cookie header (browser security).
-        // Check if Rust plugin now has a session from the cookie jar.
-        const checkRes = await tauriInvoke<{ hasSession: boolean }>("shield_check_session");
-        dbg("tauri", `fallback: post-verify check_session → hasSession=${checkRes.hasSession}`);
-        if (checkRes.hasSession) {
-          setNeedsVpsAuth(false);
-          setSessionExpired(false);
-        } else {
-          dbg("tauri", "fallback: session not established after WebAuthn — cookie isolation likely");
-          throw new Error("WebAuthn succeeded but session cookie not received by native layer");
-        }
-      } catch (e2) {
-        const msg2 = e2 instanceof Error ? e2.message : String(e2);
-        dbg("tauri", `fallback WebAuthn FAILED: ${msg2}`);
-        throw e2;
-      }
+    dbg("tauri", `authenticateNative called — WebAuthn JS on ${hostname}`);
+    dbg("tauri", `document.hasFocus=${document.hasFocus()} visibilityState=${document.visibilityState}`);
+
+    // Wait briefly for focus if needed (user just clicked button)
+    if (!document.hasFocus()) {
+      dbg("tauri", "waiting for document focus...");
+      await new Promise<void>((resolve) => {
+        const onFocus = () => { window.removeEventListener("focus", onFocus); resolve(); };
+        window.addEventListener("focus", onFocus);
+        setTimeout(() => { window.removeEventListener("focus", onFocus); resolve(); }, 500);
+      });
+      dbg("tauri", `after wait: document.hasFocus=${document.hasFocus()}`);
     }
+
+    // Step 1: Fetch WebAuthn options from VPS
+    dbg("tauri", "step1: fetching login options from VPS...");
+    const optRes = await fetch(`https://${hostname}/_auth/login/options`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
+    });
+    dbg("tauri", `step1: options response status=${optRes.status}`);
+    if (!optRes.ok) throw new Error(`options HTTP ${optRes.status}`);
+    const options = await optRes.json();
+    dbg("tauri", `step1: challenge=${options.challenge?.slice(0, 20)}... rpId=${options.rpId} allowCredentials=${JSON.stringify(options.allowCredentials?.length ?? 0)}`);
+
+    // Step 2: WebAuthn ceremony (navigator.credentials.get)
+    dbg("tauri", "step2: calling startAuthentication (navigator.credentials.get)...");
+    let assertion;
+    try {
+      assertion = await startAuthentication({ optionsJSON: options });
+    } catch (e) {
+      const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+      dbg("tauri", `step2 FAILED: ${msg}`);
+      throw e;
+    }
+    dbg("tauri", `step2: OK — credId=${assertion.id?.slice(0, 20)}... type=${assertion.type}`);
+
+    // Step 3: Verify assertion with VPS
+    dbg("tauri", "step3: verifying assertion with VPS...");
+    const verRes = await fetch(`https://${hostname}/_auth/login/verify`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assertion }), credentials: "include",
+    });
+    dbg("tauri", `step3: verify status=${verRes.status}`);
+    const verBody = await verRes.json();
+    dbg("tauri", `step3: body=${JSON.stringify(verBody).slice(0, 200)}`);
+    if (!verRes.ok) throw new Error(`verify HTTP ${verRes.status}: ${verBody.error || "unknown"}`);
+
+    // Step 4: Extract session cookie — WKWebView may or may not expose it
+    dbg("tauri", "step4: checking if session landed in Rust plugin...");
+    const checkRes = await tauriInvoke<{ hasSession: boolean }>("shield_check_session");
+    dbg("tauri", `step4: hasSession=${checkRes.hasSession}`);
+
+    if (!checkRes.hasSession) {
+      // Session cookie from fetch won't reach Rust. Try shield_set_session if
+      // we can extract the cookie value from the response headers.
+      dbg("tauri", "step4: no Rust session — trying to establish via login_verify Tauri command...");
+      try {
+        const tauriResult = await tauriInvoke<Record<string, unknown>>("shield_login_verify", {
+          serverDomain: hostname, assertion,
+        });
+        dbg("tauri", `step4: shield_login_verify → ${JSON.stringify(tauriResult).slice(0, 200)}`);
+        setNeedsVpsAuth(false);
+        setSessionExpired(false);
+        return;
+      } catch (e3) {
+        dbg("tauri", `step4: shield_login_verify FAILED: ${e3 instanceof Error ? e3.message : e3}`);
+      }
+      throw new Error("Passkey succeeded but session not established in native layer");
+    }
+
+    dbg("tauri", "step4: session OK — doing ML-KEM bind check...");
+    setNeedsVpsAuth(false);
+    setSessionExpired(false);
   }, [hostname]);
 
   const registerNative = useCallback(async (name: string): Promise<unknown> => {
@@ -417,19 +438,13 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
       });
   }, []);
 
-  // Auto-trigger passkey when bridge is ready but needs auth (same as web).
-  const autoAuthAttempted = useRef(false);
+  // No auto-trigger for Tauri — WebAuthn requires user gesture (click).
+  // The AuthWall button calls reauthenticate → authenticateNative on click.
   useEffect(() => {
-    if (ready && needsVpsAuth && !autoAuthAttempted.current) {
-      dbg("tauri", "auto-auth: triggering (ready + needsVpsAuth)");
-      autoAuthAttempted.current = true;
-      authenticateNative().catch((e) => {
-        dbg("tauri", `auto-auth FAILED: ${e instanceof Error ? e.message : e}`);
-        setNeedsVpsAuth(true);
-      });
+    if (ready && needsVpsAuth) {
+      dbg("tauri", "state: ready=true needsVpsAuth=true — waiting for user to click Login with Passkey");
     }
-    if (!needsVpsAuth) autoAuthAttempted.current = false;
-  }, [ready, needsVpsAuth, authenticateNative]);
+  }, [ready, needsVpsAuth]);
 
   return (
     <VpsBridgeContext.Provider
