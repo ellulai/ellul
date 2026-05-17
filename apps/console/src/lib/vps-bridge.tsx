@@ -329,12 +329,10 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
   }, [ready, error, hostname]);
 
   const authenticateNative = useCallback(async (): Promise<void> => {
-    dbg("tauri", `authenticateNative called — web auth session on ${hostname}`);
+    dbg("tauri", `authenticateNative called — native passkey on ${hostname}`);
     try {
-      const consoleUrl = window.location.origin;
-      const result = await tauriInvoke<Record<string, unknown>>("shield_web_auth_login", {
+      const result = await tauriInvoke<Record<string, unknown>>("shield_passkey_login", {
         serverDomain: hostname,
-        consoleUrl,
       });
       dbg("tauri", `authenticateNative OK: ${JSON.stringify(result).slice(0, 200)}`);
       setNeedsVpsAuth(false);

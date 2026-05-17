@@ -34,6 +34,7 @@
     "shield:allow-shield-login-options",
     "shield:allow-shield-login-verify",
     "shield:allow-shield-passkey-login",
+    "shield:allow-shield-web-auth-login",
     "shield:allow-shield-register-options",
     "shield:allow-shield-register-verify",
     "shield:allow-shield-session-info",
