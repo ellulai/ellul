@@ -243,13 +243,11 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
   }, [ready, error, hostname]);
 
   const authenticateNative = useCallback(async (): Promise<void> => {
-    // Full native passkey flow: options → ASAuthorizationController → verify → ML-KEM bind.
-    // WebView WebAuthn (navigator.credentials.get) fails in WKWebView without
-    // code-signed Associated Domains; the Rust command uses ASAuthorizationController directly.
-    await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
-    setNeedsVpsAuth(false);
-    setSessionExpired(false);
-  }, [hostname]);
+    // Native passkey requires code-signed Associated Domains (ad-hoc builds can't use it).
+    // Redirect to sign-in to re-establish session via OAuth.
+    window.location.replace("/sign-in");
+    return new Promise(() => {});
+  }, []);
 
   const registerNative = useCallback(async (name: string): Promise<unknown> => {
     return tauriInvoke("shield_passkey_register", { serverDomain: hostname, name });
