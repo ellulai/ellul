@@ -65,10 +65,9 @@ interface VpsBridgeProviderProps {
 // a single component body.
 export function VpsBridgeProvider(props: VpsBridgeProviderProps) {
   if (MOCK_MODE) return <MockVpsBridgeProvider>{props.children}</MockVpsBridgeProvider>;
-  // Tauri always uses native bridge — WebView WebAuthn (navigator.credentials.get)
-  // fails in WKWebView without code-signed Associated Domains. The Rust plugin
-  // uses ASAuthorizationController directly for passkey ceremonies.
-  if (isTauriApp()) return <TauriVpsBridgeProvider hostname={props.hostname}>{props.children}</TauriVpsBridgeProvider>;
+  // Tauri native bridge for non-standard tiers (passkey + PoP in Rust).
+  // Standard tier uses the iframe bridge — session managed via cookies.
+  if (isTauriApp() && props.securityTier !== "standard") return <TauriVpsBridgeProvider hostname={props.hostname}>{props.children}</TauriVpsBridgeProvider>;
   return <RealVpsBridgeProvider hostname={props.hostname}>{props.children}</RealVpsBridgeProvider>;
 }
 
@@ -441,6 +440,13 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
   }, []);
 
   const authenticateNative = useCallback(async (): Promise<void> => {
+    if (isTauriApp()) {
+      // WKWebView can't do WebAuthn (no code-signed Associated Domains) and
+      // blocks third-party cookies (iframe bridge can't hold a session).
+      // Redirect to sign-in to re-establish everything via OAuth.
+      window.location.replace("/sign-in");
+      return new Promise(() => {});
+    }
     const options = await send<PublicKeyCredentialRequestOptionsJSON>("get_auth_options");
     const assertion = await startAuthentication({ optionsJSON: options });
     await send("verify_auth", { assertion });
@@ -504,9 +510,12 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
     });
   }, []);
 
-  // Auto-trigger passkey auth when bridge is ready but has no session
+  // Auto-trigger passkey auth when bridge is ready but has no session.
+  // Skip in Tauri — WKWebView can't do WebAuthn; user clicks the button
+  // which redirects to /sign-in instead.
   const autoAuthAttempted = useRef(false);
   useEffect(() => {
+    if (isTauriApp()) return;
     if (ready && needsVpsAuth && !autoAuthAttempted.current) {
       autoAuthAttempted.current = true;
       authenticateNative().catch(() => {
