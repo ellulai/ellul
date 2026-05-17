@@ -10,6 +10,7 @@ import { useUserLocale } from "@/lib/use-user-locale";
 import { API_URL } from "@/lib/api";
 import { useVpsBridge } from "@/lib/vps-bridge";
 import { useCodeToken } from "@/contexts/CodeTokenContext";
+import { isTauriApp } from "@/lib/utils";
 import { useWorkbenchOptional, type WorkbenchContextValue } from "@/contexts/WorkbenchContext";
 import { getCodeApiUrl, isValidServerOrigin } from "@/lib/domains";
 import type { ApiApp } from "@/contexts/AppsListContext";
@@ -100,9 +101,10 @@ export function TabEditor({
       setChatExchangeCode(null);
       return;
     }
-    // Wait for CodeToken establishment — ensures the JWT has been injected
-    // into the bridge iframe before we request the exchange code.
-    if (!codeToken) return;
+    // Native apps (Tauri/Electron): wait for JWT injection into the bridge
+    // iframe before requesting the exchange code. Web browsers don't need
+    // this — the bridge iframe has its own session via cookies.
+    if (isTauriApp() && !codeToken) return;
     if (exchangeCodeFetchedRef.current) return;
     exchangeCodeFetchedRef.current = true;
 

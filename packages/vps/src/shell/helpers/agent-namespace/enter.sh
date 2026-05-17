@@ -271,9 +271,9 @@ enter)
           printf "source %q\n" "$NS_ENV_PATH"
           printf "rm -f %q\n" "$NS_ENV_PATH"
         fi
-        printf '_NS_CWD="${ELLUL_NS_CWD:-%q}"\n' "$PROJECT_DIR"
-        printf 'export ZEROCLAW_WORKSPACE="$_NS_CWD"\n'
-        printf 'cd "$_NS_CWD" && '
+        printf "_NS_CWD=\"\${ELLUL_NS_CWD:-%q}\"\n" "$PROJECT_DIR"
+        printf "export ZEROCLAW_WORKSPACE=\"\$_NS_CWD\"\n"
+        printf "cd \"\$_NS_CWD\" && "
         # Use pre-escaped args file (written outside shell layers, preserves quoting)
         if [ -f "$NS_ARGS_FILE" ]; then
           cat "$NS_ARGS_FILE"

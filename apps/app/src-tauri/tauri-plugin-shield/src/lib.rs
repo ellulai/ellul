@@ -24,6 +24,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::shield_login_options,
             commands::shield_login_verify,
             commands::shield_passkey_login,
+            commands::shield_passkey_register,
             commands::shield_register_options,
             commands::shield_register_verify,
             commands::shield_session_info,

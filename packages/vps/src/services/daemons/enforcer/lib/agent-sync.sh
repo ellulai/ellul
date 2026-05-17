@@ -1161,7 +1161,17 @@ bootstrap_nsd_manifest_files() {
 self_heal_opencode_binary_version() {
   [ -n "${EXPECTED_OPENCODE_VERSION:-}" ] || return 0
   local target=/usr/local/libexec/ellul/opencode
-  [ -x "$target" ] || return 0
+
+  if [ ! -x "$target" ]; then
+    mkdir -p "$(dirname "$target")" 2>/dev/null || true
+    log "agent-sync: opencode binary missing at $target — running ellul-update-binary"
+    if /usr/local/bin/ellul-update-binary opencode >/dev/null 2>&1; then
+      log "agent-sync: opencode installed ($EXPECTED_OPENCODE_VERSION)"
+    else
+      log "agent-sync: ellul-update-binary opencode FAILED (missing binary)"
+    fi
+    [ -x "$target" ] || return 0
+  fi
 
   # Cache: skip `opencode --version` when binary hasn't changed.
   # The binary embeds V8 — each invocation leaks a ~4.5MB JIT .so in /tmp.

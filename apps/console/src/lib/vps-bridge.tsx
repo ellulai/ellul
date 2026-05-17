@@ -65,11 +65,10 @@ interface VpsBridgeProviderProps {
 // a single component body.
 export function VpsBridgeProvider(props: VpsBridgeProviderProps) {
   if (MOCK_MODE) return <MockVpsBridgeProvider>{props.children}</MockVpsBridgeProvider>;
-  // Tauri native bridge for non-standard tiers (passkey + PoP in Rust).
-  // Standard tier uses the iframe bridge with JWT injection — the Tauri
-  // plugin doesn't carry JWT auth, and the iframe bridge works identically
-  // in both browser and native WebView contexts.
-  if (isTauriApp() && props.securityTier !== "standard") return <TauriVpsBridgeProvider hostname={props.hostname}>{props.children}</TauriVpsBridgeProvider>;
+  // Tauri always uses native bridge — WebView WebAuthn (navigator.credentials.get)
+  // fails in WKWebView without code-signed Associated Domains. The Rust plugin
+  // uses ASAuthorizationController directly for passkey ceremonies.
+  if (isTauriApp()) return <TauriVpsBridgeProvider hostname={props.hostname}>{props.children}</TauriVpsBridgeProvider>;
   return <RealVpsBridgeProvider hostname={props.hostname}>{props.children}</RealVpsBridgeProvider>;
 }
 
@@ -245,33 +244,16 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
   }, [ready, error, hostname]);
 
   const authenticateNative = useCallback(async (): Promise<void> => {
-    // Get WebAuthn options via Rust (signed HTTP to VPS)
-    const options = await tauriInvoke<PublicKeyCredentialRequestOptionsJSON>(
-      "shield_login_options",
-      { serverDomain: hostname },
-    );
-    // Passkey ceremony in webview — presents native Touch ID / security key / QR sheet.
-    // Uses console.ellul.ai origin (already in VPS allowed origins), avoiding the
-    // AASA + code-signing requirement of ASAuthorizationController.
-    const assertion = await startAuthentication({ optionsJSON: options });
-    // Verify via Rust → extracts session cookie → ML-KEM bind → PoP ready
-    await tauriInvoke("shield_login_verify", { serverDomain: hostname, assertion });
+    // Full native passkey flow: options → ASAuthorizationController → verify → ML-KEM bind.
+    // WebView WebAuthn (navigator.credentials.get) fails in WKWebView without
+    // code-signed Associated Domains; the Rust command uses ASAuthorizationController directly.
+    await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
     setNeedsVpsAuth(false);
     setSessionExpired(false);
   }, [hostname]);
 
   const registerNative = useCallback(async (name: string): Promise<unknown> => {
-    const regOptions = await tauriInvoke<{ options: PublicKeyCredentialCreationOptionsJSON }>(
-      "shield_register_options",
-      { serverDomain: hostname, body: { name } },
-    );
-    const attestation = await startRegistration({ optionsJSON: regOptions.options ?? regOptions as unknown as PublicKeyCredentialCreationOptionsJSON });
-    const extResults = attestation.clientExtensionResults as Record<string, unknown> | undefined;
-    const prfEnabled = (extResults?.prf as { enabled?: boolean } | undefined)?.enabled === true;
-    return tauriInvoke("shield_register_verify", {
-      serverDomain: hostname,
-      body: { attestation, name, prfEnabled },
-    });
+    return tauriInvoke("shield_passkey_register", { serverDomain: hostname, name });
   }, [hostname]);
 
   const reauthenticate = useCallback(async (): Promise<void> => {
