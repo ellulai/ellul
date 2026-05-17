@@ -23,16 +23,22 @@ import type {
 
 const SHARED_RP_ID = process.env.NEXT_PUBLIC_WEBAUTHN_RP_ID!;
 
-// ── Debug overlay ──
-const _debugLines: string[] = [];
+// ── Debug overlay (persists across navigations via sessionStorage) ──
+const _DBG_KEY = "__vps_bridge_dbg__";
+function _loadLines(): string[] {
+  try { return JSON.parse(sessionStorage.getItem(_DBG_KEY) || "[]"); } catch { return []; }
+}
+const _debugLines: string[] = typeof window !== "undefined" ? _loadLines() : [];
 let _debugListeners: Array<() => void> = [];
 function dbg(tag: string, msg: string) {
   const ts = new Date().toISOString().slice(11, 23);
   const line = `${ts} [${tag}] ${msg}`;
   _debugLines.push(line);
-  if (_debugLines.length > 200) _debugLines.shift();
+  if (_debugLines.length > 300) _debugLines.splice(0, _debugLines.length - 300);
+  try { sessionStorage.setItem(_DBG_KEY, JSON.stringify(_debugLines)); } catch {}
   for (const fn of _debugListeners) fn();
 }
+if (typeof window !== "undefined") dbg("init", `page=${location.pathname} ua=${navigator.userAgent.slice(0, 80)}`);
 function useDebugLog() {
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -45,21 +51,32 @@ function useDebugLog() {
 function DebugOverlay() {
   const lines = useDebugLog();
   const ref = useRef<HTMLDivElement>(null);
+  const [collapsed, setCollapsed] = useState(false);
   useEffect(() => { ref.current?.scrollTo(0, ref.current.scrollHeight); }, [lines.length]);
   if (lines.length === 0) return null;
   return (
-    <div
-      ref={ref}
-      style={{
-        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 99999,
-        maxHeight: "35vh", overflowY: "auto",
-        background: "rgba(0,0,0,0.92)", borderTop: "1px solid rgba(255,255,255,0.15)",
-        padding: "6px 10px", fontFamily: "monospace", fontSize: "10px",
-        lineHeight: "1.5", color: "rgba(255,255,255,0.8)", whiteSpace: "pre-wrap",
-        wordBreak: "break-all",
-      }}
-    >
-      {lines.map((l, i) => <div key={i}>{l}</div>)}
+    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 99999 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", background: "rgba(0,0,0,0.95)", borderTop: "1px solid rgba(255,255,255,0.15)", padding: "2px 10px", fontSize: "10px", color: "rgba(255,255,255,0.6)" }}>
+        <span>VPS Bridge Debug ({lines.length} lines)</span>
+        <span style={{ display: "flex", gap: "8px" }}>
+          <button onClick={() => { _debugLines.length = 0; try { sessionStorage.removeItem(_DBG_KEY); } catch {} }} style={{ color: "#f88", background: "none", border: "none", cursor: "pointer", fontSize: "10px" }}>clear</button>
+          <button onClick={() => setCollapsed(!collapsed)} style={{ color: "#8ff", background: "none", border: "none", cursor: "pointer", fontSize: "10px" }}>{collapsed ? "expand" : "collapse"}</button>
+        </span>
+      </div>
+      {!collapsed && (
+        <div
+          ref={ref}
+          style={{
+            maxHeight: "35vh", overflowY: "auto",
+            background: "rgba(0,0,0,0.92)",
+            padding: "4px 10px", fontFamily: "monospace", fontSize: "10px",
+            lineHeight: "1.5", color: "rgba(255,255,255,0.8)", whiteSpace: "pre-wrap",
+            wordBreak: "break-all",
+          }}
+        >
+          {lines.map((l, i) => <div key={i}>{l}</div>)}
+        </div>
+      )}
     </div>
   );
 }
