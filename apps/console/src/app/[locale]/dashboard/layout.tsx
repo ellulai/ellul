@@ -33,6 +33,55 @@ import { DashboardShell } from "./components/DashboardShell";
 
 const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL!;
 
+function TauriAuthScreen({ domain, onAuthenticated }: { domain?: string; onAuthenticated: () => void }) {
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const handlePasskeyLogin = async () => {
+    if (!domain) return;
+    setIsAuthenticating(true);
+    setAuthError(null);
+    try {
+      await (window as any).__TAURI_INTERNALS__.invoke(
+        "plugin:shield|shield_passkey_login",
+        { serverDomain: domain },
+      );
+      onAuthenticated();
+    } catch (e) {
+      setAuthError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="text-center max-w-sm p-8">
+        <div className="w-16 h-16 rounded-2xl bg-sodium/10 border border-sodium/20 flex items-center justify-center mx-auto mb-6">
+          <svg className="h-8 w-8 text-sodium" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-semibold text-cream mb-2">Sign in to your server</h2>
+        <p className="text-sm text-cream/60 mb-8">
+          Authenticate with your passkey to access {domain || "your development environment"}.
+        </p>
+        <Button
+          onClick={handlePasskeyLogin}
+          disabled={isAuthenticating || !domain}
+          className="w-full bg-sodium hover:bg-sodium/90 text-ink font-medium"
+          size="lg"
+        >
+          {isAuthenticating ? "Authenticating..." : "Login with Passkey"}
+        </Button>
+        {authError && (
+          <p className="mt-4 text-xs text-red-400">{authError}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,6 +90,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [tauriServerStatus, setTauriServerStatus] = useState<ServerStatus | null>(null);
+  const [tauriNeedsAuth, setTauriNeedsAuth] = useState(false);
   const isTauri = isTauriApp();
 
   // ── Tier / checkout ──
@@ -108,25 +158,33 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         }
         // Either a definitive "no session" or exhausted retries
         if (isTauriApp()) {
+          const invoke = (cmd: string, args?: Record<string, unknown>) =>
+            (window as any).__TAURI_INTERNALS__.invoke(cmd, args);
           let domain: string | undefined;
+          let hasShieldSession = false;
           try {
-            const cfg = await (window as any).__TAURI_INTERNALS__.invoke("get_app_mode");
+            const cfg = await invoke("get_app_mode");
             domain = cfg?.cloudDomain as string | undefined;
           } catch {}
+          try {
+            const info = await invoke("plugin:shield|shield_session_info");
+            if (info?.active) {
+              hasShieldSession = true;
+              if (!domain && info.serverDomain) domain = info.serverDomain;
+            }
+          } catch {}
           if (!domain) {
-            try {
-              const info = await (window as any).__TAURI_INTERNALS__.invoke("plugin:shield|shield_session_info");
-              domain = info?.serverDomain as string | undefined;
-            } catch {}
+            router.replace("/connect");
+            return;
           }
-          const stubStatus: ServerStatus = {
+          setTauriServerStatus({
             state: "running",
             plan: "hobby",
             hasActiveSubscription: true,
             server: {
-              id: domain?.split("-")[0] || "tauri",
+              id: domain.split("-")[0] || "tauri",
               ipAddress: "0.0.0.0",
-              domain: domain || "unknown",
+              domain,
               createdAt: new Date().toISOString(),
               performanceStatus: "good" as const,
               size: "cx22",
@@ -135,8 +193,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               securityTier: "web_locked" as const,
               serverPlan: "hobby" as const,
             },
-          } as ServerStatus;
-          setTauriServerStatus(stubStatus);
+          } as ServerStatus);
+          if (!hasShieldSession) setTauriNeedsAuth(true);
           setSession({ user: { id: "tauri", name: "Local", email: "", image: null, emailVerified: true, createdAt: new Date(), updatedAt: new Date() }, session: { id: "tauri", userId: "tauri", token: "", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date() } } as Session);
           return;
         }
@@ -363,6 +421,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   if (isAuthLoading || effectiveIsStatusLoading || (isTauri && !tauriServerStatus)) {
     return <LoadingScreen message="Loading dashboard..." />;
+  }
+
+  if (isTauri && tauriNeedsAuth) {
+    return (
+      <TauriAuthScreen
+        domain={tauriServerStatus?.server?.domain ?? undefined}
+        onAuthenticated={() => setTauriNeedsAuth(false)}
+      />
+    );
   }
 
   if (!MOCK_MODE && !isTauri && session && !serverStatus && statusError) {
