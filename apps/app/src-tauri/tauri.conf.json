@@ -28,6 +28,7 @@
     "longDescription": "ellul.ai - Build, deploy, and manage applications with AI agents on secure cloud infrastructure.",
     "macOS": {
       "minimumSystemVersion": "13.0",
+      "signingIdentity": "Apple Development: admin@darscover.com (L4ZSJ95S78)",
       "entitlements": "Entitlements.plist"
     },
     "iOS": {

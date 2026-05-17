@@ -329,77 +329,11 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
   }, [ready, error, hostname]);
 
   const authenticateNative = useCallback(async (): Promise<void> => {
-    dbg("tauri", `authenticateNative called — WebAuthn JS on ${hostname}`);
-    dbg("tauri", `document.hasFocus=${document.hasFocus()} visibilityState=${document.visibilityState}`);
-
-    // Wait briefly for focus if needed (user just clicked button)
-    if (!document.hasFocus()) {
-      dbg("tauri", "waiting for document focus...");
-      await new Promise<void>((resolve) => {
-        const onFocus = () => { window.removeEventListener("focus", onFocus); resolve(); };
-        window.addEventListener("focus", onFocus);
-        setTimeout(() => { window.removeEventListener("focus", onFocus); resolve(); }, 500);
-      });
-      dbg("tauri", `after wait: document.hasFocus=${document.hasFocus()}`);
-    }
-
-    // Step 1: Fetch WebAuthn options from VPS
-    dbg("tauri", "step1: fetching login options from VPS...");
-    const optRes = await fetch(`https://${hostname}/_auth/login/options`, {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
+    dbg("tauri", `authenticateNative called — native passkey on ${hostname}`);
+    const result = await tauriInvoke<Record<string, unknown>>("shield_passkey_login", {
+      serverDomain: hostname,
     });
-    dbg("tauri", `step1: options response status=${optRes.status}`);
-    if (!optRes.ok) throw new Error(`options HTTP ${optRes.status}`);
-    const options = await optRes.json();
-    dbg("tauri", `step1: challenge=${options.challenge?.slice(0, 20)}... rpId=${options.rpId} allowCredentials=${JSON.stringify(options.allowCredentials?.length ?? 0)}`);
-
-    // Step 2: WebAuthn ceremony (navigator.credentials.get)
-    dbg("tauri", "step2: calling startAuthentication (navigator.credentials.get)...");
-    let assertion;
-    try {
-      assertion = await startAuthentication({ optionsJSON: options });
-    } catch (e) {
-      const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-      dbg("tauri", `step2 FAILED: ${msg}`);
-      throw e;
-    }
-    dbg("tauri", `step2: OK — credId=${assertion.id?.slice(0, 20)}... type=${assertion.type}`);
-
-    // Step 3: Verify assertion with VPS
-    dbg("tauri", "step3: verifying assertion with VPS...");
-    const verRes = await fetch(`https://${hostname}/_auth/login/verify`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ assertion }), credentials: "include",
-    });
-    dbg("tauri", `step3: verify status=${verRes.status}`);
-    const verBody = await verRes.json();
-    dbg("tauri", `step3: body=${JSON.stringify(verBody).slice(0, 200)}`);
-    if (!verRes.ok) throw new Error(`verify HTTP ${verRes.status}: ${verBody.error || "unknown"}`);
-
-    // Step 4: Extract session cookie — WKWebView may or may not expose it
-    dbg("tauri", "step4: checking if session landed in Rust plugin...");
-    const checkRes = await tauriInvoke<{ hasSession: boolean }>("shield_check_session");
-    dbg("tauri", `step4: hasSession=${checkRes.hasSession}`);
-
-    if (!checkRes.hasSession) {
-      // Session cookie from fetch won't reach Rust. Try shield_set_session if
-      // we can extract the cookie value from the response headers.
-      dbg("tauri", "step4: no Rust session — trying to establish via login_verify Tauri command...");
-      try {
-        const tauriResult = await tauriInvoke<Record<string, unknown>>("shield_login_verify", {
-          serverDomain: hostname, assertion,
-        });
-        dbg("tauri", `step4: shield_login_verify → ${JSON.stringify(tauriResult).slice(0, 200)}`);
-        setNeedsVpsAuth(false);
-        setSessionExpired(false);
-        return;
-      } catch (e3) {
-        dbg("tauri", `step4: shield_login_verify FAILED: ${e3 instanceof Error ? e3.message : e3}`);
-      }
-      throw new Error("Passkey succeeded but session not established in native layer");
-    }
-
-    dbg("tauri", "step4: session OK — doing ML-KEM bind check...");
+    dbg("tauri", `authenticateNative OK: ${JSON.stringify(result).slice(0, 200)}`);
     setNeedsVpsAuth(false);
     setSessionExpired(false);
   }, [hostname]);

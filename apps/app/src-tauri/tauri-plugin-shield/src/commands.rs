@@ -27,6 +27,33 @@ pub struct ShieldFetchResponse {
     pub body: serde_json::Value,
 }
 
+// ── Native WebAuthn ceremony (called from injected JS) ──
+
+#[command(rename_all = "camelCase")]
+pub async fn shield_native_credential_get(
+    challenge_b64: String,
+    rp_id: String,
+    allow_credentials_json: Option<String>,
+    user_verification: Option<String>,
+) -> Result<serde_json::Value, Error> {
+    #[cfg(any(target_os = "macos", target_os = "ios", target_os = "windows"))]
+    {
+        let challenge = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .decode(&challenge_b64)
+            .map_err(|e| Error::HttpError(format!("bad challenge: {e}")))?;
+        crate::passkey::authenticate_with_options(
+            &challenge,
+            &rp_id,
+            allow_credentials_json.as_deref(),
+            user_verification.as_deref(),
+        )
+        .await
+        .map_err(Error::HttpError)
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows")))]
+    Err(Error::HttpError("Native passkey not available on this platform".into()))
+}
+
 // ── Session lifecycle ──
 
 #[command]
