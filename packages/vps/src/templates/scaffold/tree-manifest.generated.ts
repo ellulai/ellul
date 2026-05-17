@@ -379,6 +379,10 @@ export const TREE_MANIFEST: TreeManifest = {
       "kind": "text",
       "content": "export default function Page() {\n  return (\n    <main className=\"min-h-screen flex items-center justify-center px-6 py-12\">\n      <div className=\"flex flex-col items-center gap-8 text-center max-w-xl w-full\">\n        <div className=\"text-xs uppercase tracking-[0.2em] opacity-50\">ellul</div>\n        <div>\n          <h1 className=\"text-5xl font-semibold tracking-tight\">Your app is ready.</h1>\n          <p className=\"text-base opacity-60 leading-relaxed\">Ask the agent to build, or edit this page to start shipping.</p>\n        </div>\n        <div className=\"grid grid-cols-2 gap-3 w-full text-sm text-left mt-4\">\n          <div className=\"rounded-lg border border-current/10 p-4\">\n            <div className=\"font-medium mb-1\">Edit</div>\n            <div className=\"opacity-60 text-xs\">Change this file, see it live.</div>\n          </div>\n          <div className=\"rounded-lg border border-current/10 p-4\">\n            <div className=\"font-medium mb-1\">Chat</div>\n            <div className=\"opacity-60 text-xs\">Ask the agent to build features.</div>\n          </div>\n        </div>\n      </div>\n    </main>\n  );\n}\n"
     },
+    "next-env.d.ts": {
+      "kind": "text",
+      "content": "/// <reference types=\"next\" />\n/// <reference types=\"next/image-types/global\" />\n\n// NOTE: This file should not be edited\n// see https://nextjs.org/docs/app/api-reference/config/typescript\n"
+    },
     "next.config.ts": {
       "kind": "text",
       "content": "import type { NextConfig } from 'next';\n\nconst nextConfig: NextConfig = {\n  // Permit the {{APP_ZONE}} preview domain to serve dev bundles — Next's\n  // dev-origin check otherwise blocks requests whose Host header isn't\n  // localhost. The same list is used by our Caddy dev-route generator.\n  allowedDevOrigins: ['*.{{APP_ZONE}}'],\n};\n\nexport default nextConfig;\n"

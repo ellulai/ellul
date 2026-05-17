@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { AlertCircle, KeyRound, RefreshCw, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useVpsBridge } from "@/lib/vps-bridge";
+import { isTauriApp } from "@/lib/utils";
 
 interface AuthWallProps {
   // Whether to show the auth wall
@@ -26,19 +27,28 @@ export function AuthWall({
   isConnectionError = false,
 }: AuthWallProps) {
   const t = useTranslations("console.authWall");
-  // Native passkey auth — RP_ID = "ellul.ai" allows Touch ID/Face ID directly
-  const { reauthenticate } = useVpsBridge();
+  const { reauthenticate, ready, needsVpsAuth, sessionExpired, error } = useVpsBridge();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (show) {
+      console.log(`[AuthWall] SHOWN: isTauri=${isTauriApp()} ready=${ready} needsVpsAuth=${needsVpsAuth} sessionExpired=${sessionExpired} error=${error} isConnectionError=${isConnectionError}`);
+    }
+  }, [show, ready, needsVpsAuth, sessionExpired, error, isConnectionError]);
+
   const handleReauthenticate = useCallback(async () => {
+    console.log(`[AuthWall] button clicked: calling reauthenticate()`);
     setIsAuthenticating(true);
     setAuthError(null);
     try {
       await reauthenticate();
+      console.log(`[AuthWall] reauthenticate() succeeded`);
       onReauthenticated?.();
     } catch (err) {
-      setAuthError(err instanceof Error ? err.message : t("authFailed"));
+      const msg = err instanceof Error ? err.message : t("authFailed");
+      console.log(`[AuthWall] reauthenticate() FAILED: ${msg}`);
+      setAuthError(msg);
     } finally {
       setIsAuthenticating(false);
     }
