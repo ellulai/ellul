@@ -224,6 +224,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           setSession(stubSession);
           return;
         }
+        let tier: "standard" | "web_locked" | "private_locked" = "standard";
+        try {
+          const probe = await fetch(`https://${domain}/_auth/login/options`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: "{}",
+          });
+          if (probe.status !== 404) tier = "web_locked";
+        } catch {}
         setTauriServerStatus({
           state: "running",
           plan: "hobby",
@@ -237,11 +246,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             size: "cx22",
             terminalEnabled: true,
             sshEnabled: true,
-            securityTier: "web_locked" as const,
+            securityTier: tier,
             serverPlan: "hobby" as const,
           },
         } as ServerStatus);
-        if (!hasShieldSession) setTauriNeedsAuth(true);
+        if (tier !== "standard" && !hasShieldSession) setTauriNeedsAuth(true);
         setSession(stubSession);
         return;
       }
