@@ -608,6 +608,32 @@ Denies the shield_native_credential_get command without any pre-configured scope
 <tr>
 <td>
 
+`shield:allow-shield-open-auth-sheet`
+
+</td>
+<td>
+
+Enables the shield_open_auth_sheet command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`shield:deny-shield-open-auth-sheet`
+
+</td>
+<td>
+
+Denies the shield_open_auth_sheet command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `shield:allow-shield-operator-bind`
 
 </td>

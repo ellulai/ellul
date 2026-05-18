@@ -85,7 +85,7 @@ function RealCodeTokenProvider({
   srvUrl,
 }: CodeTokenProviderProps) {
   const t = useTranslations("console.contexts.codeToken");
-  const { ready, send, waitForReady, reauthenticate: vpsBridgeReauth } = useVpsBridge();
+  const { ready, send, waitForReady, needsVpsAuth, reauthenticate: vpsBridgeReauth } = useVpsBridge();
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -190,15 +190,23 @@ function RealCodeTokenProvider({
   }, [establishCookie]);
 
   useEffect(() => {
+    if (securityTier !== "standard" && needsVpsAuth && error) {
+      setError(null);
+      cookieEstablishedRef.current = false;
+      lastEstablishTimeRef.current = 0;
+    }
+  }, [securityTier, needsVpsAuth, error]);
+
+  useEffect(() => {
     if (cookieEstablishedRef.current || loading || error) return;
-    if (securityTier !== "standard" && !ready) return;
+    if (securityTier !== "standard" && (!ready || needsVpsAuth)) return;
     if (securityTier === "standard" && (!serverId || !srvUrl)) return;
 
     setLoading(true);
     establishCookie()
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [securityTier, ready, loading, error, serverId, srvUrl, establishCookie]);
+  }, [securityTier, ready, needsVpsAuth, loading, error, serverId, srvUrl, establishCookie]);
 
   useEffect(() => {
     if (!cookieEstablishedRef.current || sessionExpiresRef.current === 0) return;

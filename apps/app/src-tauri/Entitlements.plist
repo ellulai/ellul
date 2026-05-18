@@ -12,6 +12,8 @@
     </array>
     <key>com.apple.security.network.client</key>
     <true/>
+    <key>com.apple.security.get-task-allow</key>
+    <true/>
     <key>com.apple.developer.associated-domains</key>
     <array>
         <string>webcredentials:ellul.ai?mode=developer</string>

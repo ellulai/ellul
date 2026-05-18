@@ -220,6 +220,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
           continue;
         }
+        if (isTauriApp()) {
+          setTauriNeedsConnect(true);
+          return;
+        }
         window.location.href = WEB_URL;
         return;
       }

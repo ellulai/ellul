@@ -54,7 +54,6 @@ pub async fn shield_native_credential_create(
         .map_err(|e| Error::HttpError(format!("bad user.id: {e}")))?;
     let user_name = user["name"].as_str().unwrap_or("");
     let user_display = user["displayName"].as_str().unwrap_or(user_name);
-    let attestation = options.get("attestation").and_then(|v| v.as_str());
     let uv = options.get("authenticatorSelection")
         .and_then(|v| v.get("userVerification"))
         .and_then(|v| v.as_str());
@@ -64,7 +63,7 @@ pub async fn shield_native_credential_create(
     {
         crate::passkey::register(
             &challenge, rp_id, rp_name, &user_id, user_name, user_display,
-            attestation, uv,
+            None, uv,
         )
         .await
         .map_err(|e| { eprintln!("[shield] native_credential_create FAILED: {e}"); Error::HttpError(e) })
@@ -96,6 +95,27 @@ pub async fn shield_native_credential_get(
     }
     #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows")))]
     Err(Error::HttpError("Native passkey not available on this platform".into()))
+}
+
+// ── Safari auth sheet (opens ASWebAuthenticationSession) ──
+
+#[command(rename_all = "camelCase")]
+pub async fn shield_open_auth_sheet(
+    url: String,
+    callback_scheme: Option<String>,
+) -> Result<serde_json::Value, Error> {
+    let scheme = callback_scheme.as_deref().unwrap_or("ellul-auth");
+    eprintln!("[shield] open_auth_sheet url={url} scheme={scheme}");
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    {
+        let callback_url = crate::passkey::web_auth_session(&url, scheme)
+            .await
+            .map_err(Error::HttpError)?;
+        eprintln!("[shield] open_auth_sheet completed callback={callback_url}");
+        Ok(serde_json::json!({ "callbackUrl": callback_url }))
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "ios")))]
+    Err(Error::HttpError("Auth sheet not available on this platform".into()))
 }
 
 // ── Session lifecycle ──

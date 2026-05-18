@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-shield-open-auth-sheet"
+description = "Enables the shield_open_auth_sheet command without any pre-configured scope."
+commands.allow = ["shield_open_auth_sheet"]
+
+[[permission]]
+identifier = "deny-shield-open-auth-sheet"
+description = "Denies the shield_open_auth_sheet command without any pre-configured scope."
+commands.deny = ["shield_open_auth_sheet"]

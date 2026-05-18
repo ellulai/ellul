@@ -11,6 +11,11 @@ mod config;
 
 const LOCAL_URL: &str = "https://localhost:8443";
 
+fn is_marketing_site(url: &url::Url) -> bool {
+    let host = url.host_str().unwrap_or("");
+    (host == "ellul.ai" || host == "www.ellul.ai") && !host.contains("console.")
+}
+
 fn is_internal_navigation(url: &url::Url) -> bool {
     if url.scheme() == "tauri" {
         return true;
@@ -178,7 +183,30 @@ pub fn run() {
 
             let config_json = serde_json::to_string(&cfg).unwrap_or_default();
             let init_script = format!(
-                r#"window.__ELLUL_APP_CONFIG__ = {cfg};"#,
+                r#"window.__ELLUL_APP_CONFIG__ = {cfg};
+// If session-expired flag is set, hide cloudDomain so dashboard shows connect screen
+if (sessionStorage.getItem('ellul_needs_reconnect')) {{
+  delete window.__ELLUL_APP_CONFIG__.cloudDomain;
+  sessionStorage.removeItem('ellul_needs_reconnect');
+}}
+// Polyfill PublicKeyCredential so browserSupportsWebAuthn() passes in WKWebView
+if (!window.PublicKeyCredential) {{
+  window.PublicKeyCredential = function() {{}};
+  window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable = function() {{ return Promise.resolve(true); }};
+  window.PublicKeyCredential.isConditionalMediationAvailable = function() {{ return Promise.resolve(false); }};
+}}
+// Fix upgrade endpoint URL (ensures correct endpoint regardless of CF cache)
+(function() {{
+  var _fetch = window.fetch;
+  window.fetch = function(url, opts) {{
+    if (typeof url === 'string' && url.indexOf('/_auth/bridge/upgrade-to-web-locked') !== -1) {{
+      url = url.replace('/_auth/bridge/upgrade-to-web-locked', '/_auth/upgrade-to-web-locked');
+      console.log('[ellul] Rewrote upgrade URL:', url);
+    }}
+    return _fetch.call(this, url, opts);
+  }};
+}})();
+"#,
                 cfg = config_json,
             );
 
@@ -191,7 +219,17 @@ pub fn run() {
 
             #[cfg(desktop)]
             {
-                builder = builder.on_navigation(|url| {
+                let nav_handle = app.handle().clone();
+                builder = builder.on_navigation(move |url| {
+                    if is_marketing_site(url) {
+                        eprintln!("[ellul] Session expired — triggering connect screen");
+                        if let Some(win) = nav_handle.get_webview_window("main") {
+                            let _ = win.eval(
+                                "sessionStorage.setItem('ellul_needs_reconnect','1'); window.location.reload();"
+                            );
+                        }
+                        return false;
+                    }
                     if !is_internal_navigation(url) {
                         let _ = open::that(url.as_str());
                         return false;

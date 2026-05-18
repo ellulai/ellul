@@ -263,16 +263,6 @@ void ellul_passkey_register(
                 request.userVerificationPreference = ASAuthorizationPublicKeyCredentialUserVerificationPreferencePreferred;
         }
 
-        if (attestation) {
-            NSString *att = [NSString stringWithUTF8String:attestation];
-            if ([att isEqualToString:@"direct"])
-                request.attestationPreference = ASAuthorizationPublicKeyCredentialAttestationKindDirect;
-            else if ([att isEqualToString:@"indirect"])
-                request.attestationPreference = ASAuthorizationPublicKeyCredentialAttestationKindIndirect;
-            else
-                request.attestationPreference = ASAuthorizationPublicKeyCredentialAttestationKindNone;
-        }
-
         EllulPasskeyDelegate *delegate = [[EllulPasskeyDelegate alloc] init];
         delegate.callback = callback;
         delegate.callbackCtx = ctx;
