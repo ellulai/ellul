@@ -209,16 +209,9 @@ async function tauriInvoke<T = unknown>(cmd: string, args?: Record<string, unkno
 function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [needsVpsAuthRaw, setNeedsVpsAuthRaw] = useState(false);
+  const [needsVpsAuth, setNeedsVpsAuth] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
-  const mountIdRef = useRef(Math.random().toString(36).slice(2, 8));
-  const needsVpsAuth = needsVpsAuthRaw;
-  const setNeedsVpsAuth = useCallback((v: boolean) => {
-    console.error("[tauri-bridge] setNeedsVpsAuth(%s) ← %s", v, new Error().stack?.split("\n").slice(1, 4).join(" | "));
-    setNeedsVpsAuthRaw(v);
-  }, []);
 
-  console.error("[tauri-bridge] render: needsVpsAuth=%s ready=%s mountId=%s", needsVpsAuth, ready, mountIdRef.current);
   dbg("tauri", `mount hostname=${hostname}`);
 
   // Check session on mount
@@ -305,17 +298,14 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
     dbg("tauri", `send(${type}) → ${cmd}`);
     return tauriInvoke<T>(cmd, data).then((res) => {
       dbg("tauri", `send(${type}) → OK`);
-      console.error("[tauri] send(%s) → OK", type);
       return res;
     }).catch((e) => {
       const msg = String(e);
       dbg("tauri", `send(${type}) ERROR: ${msg}`);
-      console.error("[tauri] send(%s) ERROR: %s", type, msg);
       if (msg.includes("No active session") || msg.includes("NoSession") ||
           msg.includes("Authentication required") || msg.includes("401") ||
           msg.includes("Unauthorized")) {
         dbg("tauri", `send(${type}) → auth failure detected, setting needsVpsAuth=true`);
-        console.error("[tauri] send(%s) → auth failure detected, setting needsVpsAuth=true", type);
         setNeedsVpsAuth(true);
       }
       throw e instanceof Error ? e : new Error(msg);

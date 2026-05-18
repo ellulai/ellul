@@ -56,6 +56,7 @@ pub fn sign_request(
 
 pub struct MlKemBindResult {
     pub k_pop: [u8; 32],
+    pub rotated_cookie: Option<String>,
 }
 
 pub async fn perform_mlkem_bind(
@@ -63,14 +64,22 @@ pub async fn perform_mlkem_bind(
     base_url: &str,
     session_cookie: &str,
 ) -> Result<MlKemBindResult, Error> {
+    let mut current_cookie = session_cookie.to_string();
+    let mut latest_rotated: Option<String> = None;
+
     // Phase 1: Init
     let init_res = client
         .post(format!("{base_url}/_auth/pop/bind/init"))
         .header("Content-Type", "application/json")
-        .header("Cookie", session_cookie)
+        .header("Cookie", &current_cookie)
         .body("{}")
         .send()
         .await?;
+
+    if let Some(rotated) = crate::http::extract_session_cookie(&init_res) {
+        current_cookie = rotated.clone();
+        latest_rotated = Some(rotated);
+    }
 
     if !init_res.status().is_success() {
         let body: serde_json::Value = init_res.json().await.unwrap_or_default();
@@ -123,10 +132,14 @@ pub async fn perform_mlkem_bind(
     let complete_res = client
         .post(format!("{base_url}/_auth/pop/bind/complete"))
         .header("Content-Type", "application/json")
-        .header("Cookie", session_cookie)
+        .header("Cookie", &current_cookie)
         .json(&complete_body)
         .send()
         .await?;
+
+    if let Some(rotated) = crate::http::extract_session_cookie(&complete_res) {
+        latest_rotated = Some(rotated);
+    }
 
     if !complete_res.status().is_success() {
         let body: serde_json::Value = complete_res.json().await.unwrap_or_default();
@@ -137,7 +150,7 @@ pub async fn perform_mlkem_bind(
         return Err(Error::MlKemBindFailed(err.to_string()));
     }
 
-    Ok(MlKemBindResult { k_pop })
+    Ok(MlKemBindResult { k_pop, rotated_cookie: latest_rotated })
 }
 
 fn now_millis() -> u128 {

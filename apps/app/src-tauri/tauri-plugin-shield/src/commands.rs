@@ -313,6 +313,9 @@ pub async fn shield_passkey_login(
             .set(server_domain.clone(), cookie_header.clone())
             .await;
         let result = pop::perform_mlkem_bind(http.raw(), &base_url, &cookie_header).await?;
+        if let Some(rotated) = result.rotated_cookie {
+            session.update_cookie(rotated).await;
+        }
         session.set_k_pop(result.k_pop).await;
     }
 
