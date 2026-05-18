@@ -302,7 +302,10 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
     }).catch((e) => {
       const msg = String(e);
       dbg("tauri", `send(${type}) ERROR: ${msg}`);
-      if (msg.includes("No active session") || msg.includes("NoSession")) {
+      if (msg.includes("No active session") || msg.includes("NoSession") ||
+          msg.includes("Authentication required") || msg.includes("401") ||
+          msg.includes("Unauthorized")) {
+        dbg("tauri", `send(${type}) → auth failure detected, setting needsVpsAuth=true`);
         setNeedsVpsAuth(true);
       }
       throw e instanceof Error ? e : new Error(msg);
