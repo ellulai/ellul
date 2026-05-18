@@ -206,10 +206,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           (window as any).__TAURI_INTERNALS__.invoke(cmd, args);
         let domain: string | undefined;
         let hasShieldSession = false;
-        try {
-          const cfg = await invoke("get_app_mode");
-          domain = cfg?.cloudDomain as string | undefined;
-        } catch {}
+        const appConfig = (window as any).__ELLUL_APP_CONFIG__;
+        domain = appConfig?.cloudDomain as string | undefined;
         try {
           const info = await invoke("plugin:shield|shield_session_info");
           if (info?.active) {

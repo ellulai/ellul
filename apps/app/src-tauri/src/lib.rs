@@ -176,11 +176,18 @@ pub fn run() {
 
             app.manage(cfg_state);
 
+            let config_json = serde_json::to_string(&cfg).unwrap_or_default();
+            let init_script = format!(
+                "window.__ELLUL_APP_CONFIG__ = {};",
+                config_json
+            );
+
             let mut builder =
                 tauri::WebviewWindowBuilder::new(app, "main", url)
                     .title("ellul")
                     .inner_size(1280.0, 860.0)
-                    .min_inner_size(375.0, 600.0);
+                    .min_inner_size(375.0, 600.0)
+                    .initialization_script(&init_script);
 
             #[cfg(desktop)]
             {
