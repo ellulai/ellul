@@ -85,7 +85,7 @@ function RealCodeTokenProvider({
   srvUrl,
 }: CodeTokenProviderProps) {
   const t = useTranslations("console.contexts.codeToken");
-  const { ready, send, waitForReady, needsVpsAuth, reauthenticate: vpsBridgeReauth } = useVpsBridge();
+  const { ready, send, waitForReady, needsVpsAuth, signalAuthNeeded, reauthenticate: vpsBridgeReauth } = useVpsBridge();
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -184,6 +184,14 @@ function RealCodeTokenProvider({
           establishingRef.current = null;
           return establishCookie();
         }
+        const isAuthErr = securityTier !== "standard" && (
+          msg.includes("Authentication required") || msg.includes("No active session") ||
+          msg.includes("NoSession") || msg.includes("401") || msg.includes("Unauthorized")
+        );
+        if (isAuthErr) {
+          console.error("[code-token] establishCookie: auth error detected → signalAuthNeeded()");
+          signalAuthNeeded();
+        }
         setError(msg);
         throw err;
       } finally {
@@ -192,7 +200,7 @@ function RealCodeTokenProvider({
     })();
 
     await establishingRef.current;
-  }, [codeApiUrl, securityTier, serverId, srvUrl, waitForReady, send, t]);
+  }, [codeApiUrl, securityTier, serverId, srvUrl, waitForReady, send, signalAuthNeeded, t]);
 
   const refresh = useCallback(async (): Promise<string | null> => {
     cookieEstablishedRef.current = false;

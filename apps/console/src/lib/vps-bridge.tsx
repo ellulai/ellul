@@ -298,14 +298,17 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
     dbg("tauri", `send(${type}) → ${cmd}`);
     return tauriInvoke<T>(cmd, data).then((res) => {
       dbg("tauri", `send(${type}) → OK`);
+      console.error("[tauri] send(%s) → OK", type);
       return res;
     }).catch((e) => {
       const msg = String(e);
       dbg("tauri", `send(${type}) ERROR: ${msg}`);
+      console.error("[tauri] send(%s) ERROR: %s", type, msg);
       if (msg.includes("No active session") || msg.includes("NoSession") ||
           msg.includes("Authentication required") || msg.includes("401") ||
           msg.includes("Unauthorized")) {
         dbg("tauri", `send(${type}) → auth failure detected, setting needsVpsAuth=true`);
+        console.error("[tauri] send(%s) → auth failure detected, setting needsVpsAuth=true", type);
         setNeedsVpsAuth(true);
       }
       throw e instanceof Error ? e : new Error(msg);
