@@ -124,8 +124,8 @@ export function EnableLockWizard({
           const vpsBase = `https://${serverDomain}`;
           const invoke = (window as any).__TAURI_INTERNALS__.invoke;
 
-          // 1. Get registration options from VPS (authenticated via WKWebView cookies)
-          const optRes = await fetch(`${vpsBase}/_auth/bridge/upgrade-to-web-locked`, {
+          // 1. Get registration options from VPS (JWT cookie from connect flow)
+          const optRes = await fetch(`${vpsBase}/_auth/upgrade-to-web-locked`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ name: "Passkey" }),
@@ -143,7 +143,7 @@ export function EnableLockWizard({
           // 3. Verify with VPS (authenticated via WKWebView cookies)
           const extResults = (attestation as Record<string, unknown>)?.clientExtensionResults as Record<string, unknown> | undefined;
           const prfEnabled = (extResults?.prf as { enabled?: boolean } | undefined)?.enabled === true;
-          const verRes = await fetch(`${vpsBase}/_auth/bridge/upgrade-to-web-locked/verify`, {
+          const verRes = await fetch(`${vpsBase}/_auth/upgrade-to-web-locked/verify`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ attestation, name: "Passkey", prfEnabled }),
