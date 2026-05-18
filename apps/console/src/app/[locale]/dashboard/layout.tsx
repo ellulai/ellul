@@ -142,6 +142,47 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       return;
     }
     const checkSession = async () => {
+      if (isTauriApp()) {
+        const invoke = (cmd: string, args?: Record<string, unknown>) =>
+          (window as any).__TAURI_INTERNALS__.invoke(cmd, args);
+        let domain: string | undefined;
+        let hasShieldSession = false;
+        try {
+          const cfg = await invoke("get_app_mode");
+          domain = cfg?.cloudDomain as string | undefined;
+        } catch {}
+        try {
+          const info = await invoke("plugin:shield|shield_session_info");
+          if (info?.active) {
+            hasShieldSession = true;
+            if (!domain && info.serverDomain) domain = info.serverDomain;
+          }
+        } catch {}
+        if (!domain) {
+          window.location.replace("tauri://localhost/index.html");
+          return;
+        }
+        setTauriServerStatus({
+          state: "running",
+          plan: "hobby",
+          hasActiveSubscription: true,
+          server: {
+            id: domain.split("-")[0] || "tauri",
+            ipAddress: "0.0.0.0",
+            domain,
+            createdAt: new Date().toISOString(),
+            performanceStatus: "good" as const,
+            size: "cx22",
+            terminalEnabled: true,
+            sshEnabled: true,
+            securityTier: "web_locked" as const,
+            serverPlan: "hobby" as const,
+          },
+        } as ServerStatus);
+        if (!hasShieldSession) setTauriNeedsAuth(true);
+        setSession({ user: { id: "tauri", name: "Local", email: "", image: null, emailVerified: true, createdAt: new Date(), updatedAt: new Date() }, session: { id: "tauri", userId: "tauri", token: "", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date() } } as Session);
+        return;
+      }
       const MAX_RETRIES = 3;
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         const { data, error } = await getSession();
@@ -149,54 +190,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           setSession(data);
           return;
         }
-        // Distinguish "no session" (401) from transient API error (500/network)
         const isTransient = error && typeof error === "object" && "status" in error &&
           ((error as { status?: number }).status === undefined || (error as { status?: number }).status! >= 500);
         if (isTransient && attempt < MAX_RETRIES) {
           await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
           continue;
-        }
-        // Either a definitive "no session" or exhausted retries
-        if (isTauriApp()) {
-          const invoke = (cmd: string, args?: Record<string, unknown>) =>
-            (window as any).__TAURI_INTERNALS__.invoke(cmd, args);
-          let domain: string | undefined;
-          let hasShieldSession = false;
-          try {
-            const cfg = await invoke("get_app_mode");
-            domain = cfg?.cloudDomain as string | undefined;
-          } catch {}
-          try {
-            const info = await invoke("plugin:shield|shield_session_info");
-            if (info?.active) {
-              hasShieldSession = true;
-              if (!domain && info.serverDomain) domain = info.serverDomain;
-            }
-          } catch {}
-          if (!domain) {
-            window.location.replace("tauri://localhost/index.html");
-            return;
-          }
-          setTauriServerStatus({
-            state: "running",
-            plan: "hobby",
-            hasActiveSubscription: true,
-            server: {
-              id: domain.split("-")[0] || "tauri",
-              ipAddress: "0.0.0.0",
-              domain,
-              createdAt: new Date().toISOString(),
-              performanceStatus: "good" as const,
-              size: "cx22",
-              terminalEnabled: true,
-              sshEnabled: true,
-              securityTier: "web_locked" as const,
-              serverPlan: "hobby" as const,
-            },
-          } as ServerStatus);
-          if (!hasShieldSession) setTauriNeedsAuth(true);
-          setSession({ user: { id: "tauri", name: "Local", email: "", image: null, emailVerified: true, createdAt: new Date(), updatedAt: new Date() }, session: { id: "tauri", userId: "tauri", token: "", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date() } } as Session);
-          return;
         }
         window.location.href = WEB_URL;
         return;
