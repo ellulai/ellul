@@ -231,7 +231,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             headers: { "Content-Type": "application/json" },
             body: "{}",
           });
-          if (probe.status !== 404) tier = "web_locked";
+          if (probe.ok) tier = "web_locked";
         } catch {}
         setTauriServerStatus({
           state: "running",
