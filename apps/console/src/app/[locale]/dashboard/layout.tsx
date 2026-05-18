@@ -147,8 +147,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const t = useTranslations("console");
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [tauriServerStatus, setTauriServerStatus] = useState<ServerStatus | null>(null);
-  const [tauriNeedsAuth, setTauriNeedsAuth] = useState(false);
   const [tauriNeedsConnect, setTauriNeedsConnect] = useState(false);
   const isTauri = isTauriApp();
 
@@ -202,57 +200,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     }
     const checkSession = async () => {
       if (isTauriApp()) {
-        const invoke = (cmd: string, args?: Record<string, unknown>) =>
-          (window as any).__TAURI_INTERNALS__.invoke(cmd, args);
-        let domain: string | undefined;
-        let hasShieldSession = false;
         const appConfig = (window as any).__ELLUL_APP_CONFIG__;
-        domain = appConfig?.cloudDomain as string | undefined;
-        try {
-          const info = await invoke("plugin:shield|shield_session_info");
-          if (info?.active) {
-            hasShieldSession = true;
-            if (!domain && info.serverDomain) domain = info.serverDomain;
-          }
-        } catch {}
-        const stubSession = {
-          user: { id: "tauri", name: "Local", email: "", image: null, emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
-          session: { id: "tauri", userId: "tauri", token: "", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date() },
-        } as Session;
-        if (!domain) {
+        if (!appConfig?.cloudDomain) {
           setTauriNeedsConnect(true);
-          setSession(stubSession);
+          setIsAuthLoading(false);
           return;
         }
-        let tier: "standard" | "web_locked" | "private_locked" = "standard";
-        try {
-          const probe = await fetch(`https://${domain}/_auth/login/options`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: "{}",
-          });
-          if (probe.ok) tier = "web_locked";
-        } catch {}
-        setTauriServerStatus({
-          state: "running",
-          plan: "hobby",
-          hasActiveSubscription: true,
-          server: {
-            id: domain.split("-")[0] || "tauri",
-            ipAddress: "0.0.0.0",
-            domain,
-            createdAt: new Date().toISOString(),
-            performanceStatus: "good" as const,
-            size: "cx22",
-            terminalEnabled: true,
-            sshEnabled: true,
-            securityTier: tier,
-            serverPlan: "hobby" as const,
-          },
-        } as ServerStatus);
-        if (tier !== "standard" && !hasShieldSession) setTauriNeedsAuth(true);
-        setSession(stubSession);
-        return;
       }
       const MAX_RETRIES = 3;
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -306,7 +259,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       if (!response.ok) throw new Error("Failed to fetch server status");
       return response.json() as Promise<ServerStatus>;
     },
-    enabled: !MOCK_MODE && !isTauri && !!session,
+    enabled: !MOCK_MODE && !!session,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     retry: 5,
@@ -342,13 +295,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   const hasServer = !!serverStatus?.server;
   const { isConnected: sseConnected } = useServerEvents({
-    enabled: !MOCK_MODE && !isTauri && !!session && hasServer && !!activeServerId,
+    enabled: !MOCK_MODE && !!session && hasServer && !!activeServerId,
     serverId: activeServerId,
   });
   sseConnectedRef.current = sseConnected;
 
-  const effectiveServerStatus = MOCK_MODE ? mockServerStatus : isTauri ? (tauriServerStatus ?? undefined) : serverStatus;
-  const effectiveIsStatusLoading = MOCK_MODE || isTauri ? false : isStatusLoading;
+  const effectiveServerStatus = MOCK_MODE ? mockServerStatus : serverStatus;
+  const effectiveIsStatusLoading = MOCK_MODE ? false : isStatusLoading;
 
   // ── Mutations ──
 
@@ -488,24 +441,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   // ── Loading guard ──
 
-  if (isAuthLoading || effectiveIsStatusLoading || (isTauri && !tauriNeedsConnect && !tauriServerStatus)) {
-    return <LoadingScreen message="Loading dashboard..." />;
-  }
-
   if (isTauri && tauriNeedsConnect) {
     return <TauriConnectScreen />;
   }
 
-  if (isTauri && tauriNeedsAuth) {
-    return (
-      <TauriAuthScreen
-        domain={tauriServerStatus!.server!.domain!}
-        onAuthenticated={() => setTauriNeedsAuth(false)}
-      />
-    );
+  if (isAuthLoading || effectiveIsStatusLoading) {
+    return <LoadingScreen message="Loading dashboard..." />;
   }
 
-  if (!MOCK_MODE && !isTauri && session && !serverStatus && statusError) {
+  if (!MOCK_MODE && session && !serverStatus && statusError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <div className="panel-ascente max-w-md w-full p-8 text-center">
@@ -526,7 +470,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!MOCK_MODE && !isTauri && session && !serverStatus) {
+  if (!MOCK_MODE && session && !serverStatus) {
     return <LoadingScreen message="Loading dashboard..." />;
   }
 
@@ -535,7 +479,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <DashboardShell
       session={session}
-      serverStatus={isTauri ? (tauriServerStatus ?? undefined) : serverStatus}
+      serverStatus={serverStatus}
       effectiveServerStatus={effectiveServerStatus}
       effectiveIsStatusLoading={effectiveIsStatusLoading}
       isStatusLoading={isStatusLoading}
