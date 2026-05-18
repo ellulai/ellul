@@ -33,12 +33,70 @@ import { DashboardShell } from "./components/DashboardShell";
 
 const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL!;
 
-function TauriAuthScreen({ domain, onAuthenticated }: { domain?: string; onAuthenticated: () => void }) {
+const CONSOLE_URL = process.env.NEXT_PUBLIC_CONSOLE_URL || "https://console.ellul.ai";
+const TAURI_API_URL = CONSOLE_URL.replace("console.", "api.");
+
+function TauriConnectScreen() {
+  const [status, setStatus] = useState<"idle" | "waiting" | "establishing">("idle");
+
+  const handleConnect = async () => {
+    const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+    if (!invoke) return;
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let connectId = "";
+    for (let i = 0; i < 32; i++) connectId += chars[Math.floor(Math.random() * chars.length)];
+    const connectUrl = `${CONSOLE_URL}/connect?connect_id=${connectId}`;
+    try {
+      await invoke("open_external", { url: connectUrl });
+    } catch { return; }
+    setStatus("waiting");
+    for (let i = 0; i < 100; i++) {
+      await new Promise((r) => setTimeout(r, 3000));
+      try {
+        const data = await invoke("poll_connect", { connectId });
+        if (data.status === "complete" && data.code) {
+          setStatus("establishing");
+          const domain = data.hasServer ? data.serverDomain : null;
+          await invoke("set_app_mode", { mode: "cloud", cloudDomain: domain });
+          const establishUrl = `${TAURI_API_URL}/api/auth/native/session/establish?code=${encodeURIComponent(data.code)}&redirect=${encodeURIComponent(CONSOLE_URL + "/dashboard")}`;
+          window.location.replace(establishUrl);
+          return;
+        }
+      } catch {}
+    }
+    setStatus("idle");
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="text-center max-w-sm p-8">
+        <div className="w-16 h-16 rounded-2xl bg-sodium/10 border border-sodium/20 flex items-center justify-center mx-auto mb-6">
+          <svg className="h-8 w-8 text-sodium" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-semibold text-cream mb-2">Connect to cloud</h2>
+        <p className="text-sm text-cream/60 mb-8">
+          Sign in with your browser to connect to your cloud development environment.
+        </p>
+        <Button
+          onClick={handleConnect}
+          disabled={status !== "idle"}
+          className="w-full bg-sodium hover:bg-sodium/90 text-ink font-medium"
+          size="lg"
+        >
+          {status === "waiting" ? "Waiting for sign-in..." : status === "establishing" ? "Connecting..." : "Connect to Cloud"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function TauriAuthScreen({ domain, onAuthenticated }: { domain: string; onAuthenticated: () => void }) {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
   const handlePasskeyLogin = async () => {
-    if (!domain) return;
     setIsAuthenticating(true);
     setAuthError(null);
     try {
@@ -64,11 +122,11 @@ function TauriAuthScreen({ domain, onAuthenticated }: { domain?: string; onAuthe
         </div>
         <h2 className="text-xl font-semibold text-cream mb-2">Sign in to your server</h2>
         <p className="text-sm text-cream/60 mb-8">
-          Authenticate with your passkey to access {domain || "your development environment"}.
+          Authenticate with your passkey to access {domain}.
         </p>
         <Button
           onClick={handlePasskeyLogin}
-          disabled={isAuthenticating || !domain}
+          disabled={isAuthenticating}
           className="w-full bg-sodium hover:bg-sodium/90 text-ink font-medium"
           size="lg"
         >
@@ -91,6 +149,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [tauriServerStatus, setTauriServerStatus] = useState<ServerStatus | null>(null);
   const [tauriNeedsAuth, setTauriNeedsAuth] = useState(false);
+  const [tauriNeedsConnect, setTauriNeedsConnect] = useState(false);
   const isTauri = isTauriApp();
 
   // ── Tier / checkout ──
@@ -158,8 +217,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             if (!domain && info.serverDomain) domain = info.serverDomain;
           }
         } catch {}
+        const stubSession = {
+          user: { id: "tauri", name: "Local", email: "", image: null, emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+          session: { id: "tauri", userId: "tauri", token: "", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date() },
+        } as Session;
         if (!domain) {
-          window.location.replace("tauri://localhost/index.html");
+          setTauriNeedsConnect(true);
+          setSession(stubSession);
           return;
         }
         setTauriServerStatus({
@@ -180,7 +244,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           },
         } as ServerStatus);
         if (!hasShieldSession) setTauriNeedsAuth(true);
-        setSession({ user: { id: "tauri", name: "Local", email: "", image: null, emailVerified: true, createdAt: new Date(), updatedAt: new Date() }, session: { id: "tauri", userId: "tauri", token: "", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date() } } as Session);
+        setSession(stubSession);
         return;
       }
       const MAX_RETRIES = 3;
@@ -417,14 +481,18 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   // ── Loading guard ──
 
-  if (isAuthLoading || effectiveIsStatusLoading || (isTauri && !tauriServerStatus)) {
+  if (isAuthLoading || effectiveIsStatusLoading || (isTauri && !tauriNeedsConnect && !tauriServerStatus)) {
     return <LoadingScreen message="Loading dashboard..." />;
+  }
+
+  if (isTauri && tauriNeedsConnect) {
+    return <TauriConnectScreen />;
   }
 
   if (isTauri && tauriNeedsAuth) {
     return (
       <TauriAuthScreen
-        domain={tauriServerStatus?.server?.domain ?? undefined}
+        domain={tauriServerStatus!.server!.domain!}
         onAuthenticated={() => setTauriNeedsAuth(false)}
       />
     );
