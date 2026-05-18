@@ -117,30 +117,43 @@ export function EnableLockWizard({
     try {
       if (mode === "web_lock") {
         setStep("registering");
+        console.log("[lock-wizard] web_lock mode, isTauriApp=", isTauriApp(), "serverDomain=", serverDomain);
 
         // In Tauri, WKWebView can't do WebAuthn — use native ASAuthorizationController
         // JS handles HTTP (WKWebView has the VPS session cookies), Rust does Touch ID
         if (isTauriApp()) {
           const vpsBase = `https://${serverDomain}`;
           const invoke = (window as any).__TAURI_INTERNALS__.invoke;
+          console.log("[lock-wizard] Tauri path: vpsBase=", vpsBase, "invoke=", typeof invoke);
 
           // 1. Get registration options from VPS (JWT cookie from connect flow)
+          console.log("[lock-wizard] Step 1: fetching upgrade-to-web-locked options...");
           const optRes = await fetch(`${vpsBase}/_auth/upgrade-to-web-locked`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ name: "Passkey" }),
             credentials: "include",
           });
-          if (!optRes.ok) throw new Error(`Options: HTTP ${optRes.status}`);
-          const { options } = await optRes.json();
+          console.log("[lock-wizard] Step 1 response:", optRes.status, optRes.statusText);
+          if (!optRes.ok) {
+            const errBody = await optRes.text().catch(() => "");
+            console.error("[lock-wizard] Step 1 FAILED:", optRes.status, errBody);
+            throw new Error(`Options: HTTP ${optRes.status} — ${errBody}`);
+          }
+          const optData = await optRes.json();
+          const { options } = optData;
+          console.log("[lock-wizard] Step 1 OK, challenge=", options?.challenge?.slice(0, 20), "rpId=", options?.rp?.id);
 
           // 2. Native passkey ceremony via ASAuthorizationController (Touch ID)
+          console.log("[lock-wizard] Step 2: invoking native credential create...");
           const attestation = await invoke(
             "plugin:shield|shield_native_credential_create",
             { optionsJson: JSON.stringify(options) },
           );
+          console.log("[lock-wizard] Step 2 OK, attestation id=", (attestation as Record<string, unknown>)?.id);
 
           // 3. Verify with VPS (authenticated via WKWebView cookies)
+          console.log("[lock-wizard] Step 3: verifying with VPS...");
           const extResults = (attestation as Record<string, unknown>)?.clientExtensionResults as Record<string, unknown> | undefined;
           const prfEnabled = (extResults?.prf as { enabled?: boolean } | undefined)?.enabled === true;
           const verRes = await fetch(`${vpsBase}/_auth/upgrade-to-web-locked/verify`, {
@@ -149,10 +162,16 @@ export function EnableLockWizard({
             body: JSON.stringify({ attestation, name: "Passkey", prfEnabled }),
             credentials: "include",
           });
-          if (!verRes.ok) throw new Error(`Verify: HTTP ${verRes.status}`);
+          console.log("[lock-wizard] Step 3 response:", verRes.status, verRes.statusText);
+          if (!verRes.ok) {
+            const errBody = await verRes.text().catch(() => "");
+            console.error("[lock-wizard] Step 3 FAILED:", verRes.status, errBody);
+            throw new Error(`Verify: HTTP ${verRes.status} — ${errBody}`);
+          }
           const result = await verRes.json() as {
             recoveryCodes?: string[];
           };
+          console.log("[lock-wizard] Step 3 OK, has recovery codes:", !!(result.recoveryCodes?.length));
 
           if (result.recoveryCodes && result.recoveryCodes.length > 0) {
             setRecoveryCodes(result.recoveryCodes);
@@ -216,6 +235,7 @@ export function EnableLockWizard({
         setStep("done");
       }
     } catch (err) {
+      console.error("[lock-wizard] CATCH:", err);
       const msg = err instanceof Error ? err.message : t("errors.setupFailed");
       if (err instanceof Error && (err.name === "NotAllowedError" || err.name === "AbortError")) {
         setError(t("errors.cancelled"));
