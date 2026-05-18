@@ -100,21 +100,26 @@ function RealCodeTokenProvider({
   const jwtRef = useRef<string | null>(null);
 
   const establishCookie = useCallback(async (): Promise<void> => {
-    if (!codeApiUrl) return;
+    if (!codeApiUrl) { console.error("[code-token] establishCookie: no codeApiUrl, skipping"); return; }
 
     if (establishingRef.current) {
+      console.error("[code-token] establishCookie: already in progress, waiting");
       await establishingRef.current;
       return;
     }
 
+    console.error("[code-token] establishCookie: starting, tier=%s codeApiUrl=%s", securityTier, codeApiUrl);
     establishingRef.current = (async () => {
       try {
         let codeSessionId: string;
         let expiresAt: number;
 
         if (securityTier !== "standard") {
+          console.error("[code-token] waiting for bridge ready...");
           await waitForReady();
+          console.error("[code-token] bridge ready, calling get_code_session...");
           const result = await send("get_code_session");
+          console.error("[code-token] get_code_session OK: sessionId=%s", result.codeSessionId?.slice(0, 8));
           codeSessionId = result.codeSessionId;
           expiresAt = result.expiresAt;
         } else {
@@ -149,13 +154,18 @@ function RealCodeTokenProvider({
           expiresAt = sessionData.expiresAt;
         }
 
-        const res = await fetch(
-          `${codeApiUrl}/_auth/code/establish?_code_session=${codeSessionId}`,
-          { credentials: "include" },
-        );
-        if (!res.ok) throw new Error(t("establishCookieFailed"));
+        const establishUrl = `${codeApiUrl}/_auth/code/establish?_code_session=${codeSessionId}`;
+        console.error("[code-token] establish fetch → %s", establishUrl);
+        const res = await fetch(establishUrl, { credentials: "include" });
+        console.error("[code-token] establish fetch ← status=%d", res.status);
+        if (!res.ok) {
+          const body = await res.text().catch(() => "");
+          console.error("[code-token] establish fetch FAILED body=%s", body.slice(0, 300));
+          throw new Error(t("establishCookieFailed"));
+        }
 
         const data = await res.json() as { established: boolean; expiresAt: number };
+        console.error("[code-token] establish result: established=%s expiresAt=%d", data.established, data.expiresAt);
         if (data.established) {
           cookieEstablishedRef.current = true;
           lastEstablishTimeRef.current = Date.now();
@@ -164,6 +174,8 @@ function RealCodeTokenProvider({
           setActiveSessionExpiresAt(data.expiresAt || expiresAt);
           setToken("cookie-session");
           setError(null);
+        } else {
+          console.error("[code-token] establish returned established=false!");
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : t("establishSessionFailed");
@@ -191,6 +203,7 @@ function RealCodeTokenProvider({
 
   useEffect(() => {
     if (securityTier !== "standard" && needsVpsAuth && error) {
+      console.error("[code-token] clearing error on needsVpsAuth (was: %s)", error);
       setError(null);
       cookieEstablishedRef.current = false;
       lastEstablishTimeRef.current = 0;
@@ -198,13 +211,20 @@ function RealCodeTokenProvider({
   }, [securityTier, needsVpsAuth, error]);
 
   useEffect(() => {
+    console.error("[code-token] effect: cookie=%s loading=%s error=%s ready=%s needsVpsAuth=%s tier=%s serverId=%s",
+      cookieEstablishedRef.current, loading, error, ready, needsVpsAuth, securityTier, serverId?.slice(0, 8));
     if (cookieEstablishedRef.current || loading || error) return;
-    if (securityTier !== "standard" && (!ready || needsVpsAuth)) return;
+    if (securityTier !== "standard" && (!ready || needsVpsAuth)) {
+      console.error("[code-token] effect: blocked — ready=%s needsVpsAuth=%s", ready, needsVpsAuth);
+      return;
+    }
     if (securityTier === "standard" && (!serverId || !srvUrl)) return;
 
+    console.error("[code-token] effect: → starting establishCookie");
     setLoading(true);
     establishCookie()
-      .catch(() => {})
+      .then(() => console.error("[code-token] effect: establishCookie resolved, cookie=%s", cookieEstablishedRef.current))
+      .catch((e) => console.error("[code-token] effect: establishCookie rejected: %s", e))
       .finally(() => setLoading(false));
   }, [securityTier, ready, needsVpsAuth, loading, error, serverId, srvUrl, establishCookie]);
 
@@ -232,7 +252,9 @@ function RealCodeTokenProvider({
 
   const fetchWithCodeToken = useCallback(
     async (url: string, options?: RequestInit): Promise<Response> => {
+      console.error("[code-token] fetchWithCodeToken: url=%s cookie=%s", url.replace(/https?:\/\/[^/]+/, ""), cookieEstablishedRef.current);
       if (!cookieEstablishedRef.current) {
+        console.error("[code-token] fetchWithCodeToken: cookie not established, fixing...");
         if (securityTier !== "standard") {
           try {
             await waitForReady();
@@ -243,12 +265,14 @@ function RealCodeTokenProvider({
           }
         }
         await establishCookie();
+        console.error("[code-token] fetchWithCodeToken: after establishCookie, cookie=%s", cookieEstablishedRef.current);
       }
 
       const response = await fetch(url, {
         ...options,
         credentials: "include",
       });
+      console.error("[code-token] fetchWithCodeToken: response status=%d for %s", response.status, url.replace(/https?:\/\/[^/]+/, ""));
 
       if (response.status === 401) {
         const timeSinceEstablish = Date.now() - lastEstablishTimeRef.current;
