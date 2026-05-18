@@ -209,9 +209,14 @@ async function tauriInvoke<T = unknown>(cmd: string, args?: Record<string, unkno
 function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [needsVpsAuth, setNeedsVpsAuth] = useState(false);
+  const [needsVpsAuthRaw, setNeedsVpsAuthRaw] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
   const mountIdRef = useRef(Math.random().toString(36).slice(2, 8));
+  const needsVpsAuth = needsVpsAuthRaw;
+  const setNeedsVpsAuth = useCallback((v: boolean) => {
+    console.error("[tauri-bridge] setNeedsVpsAuth(%s) ← %s", v, new Error().stack?.split("\n").slice(1, 4).join(" | "));
+    setNeedsVpsAuthRaw(v);
+  }, []);
 
   console.error("[tauri-bridge] render: needsVpsAuth=%s ready=%s mountId=%s", needsVpsAuth, ready, mountIdRef.current);
   dbg("tauri", `mount hostname=${hostname}`);
