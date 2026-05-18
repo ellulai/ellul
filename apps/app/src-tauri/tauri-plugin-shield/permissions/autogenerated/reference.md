@@ -556,6 +556,58 @@ Denies the shield_logout command without any pre-configured scope.
 <tr>
 <td>
 
+`shield:allow-shield-native-credential-create`
+
+</td>
+<td>
+
+Enables the shield_native_credential_create command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`shield:deny-shield-native-credential-create`
+
+</td>
+<td>
+
+Denies the shield_native_credential_create command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`shield:allow-shield-native-credential-get`
+
+</td>
+<td>
+
+Enables the shield_native_credential_get command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`shield:deny-shield-native-credential-get`
+
+</td>
+<td>
+
+Denies the shield_native_credential_get command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `shield:allow-shield-operator-bind`
 
 </td>
@@ -705,6 +757,32 @@ Enables the shield_passkey_login command without any pre-configured scope.
 <td>
 
 Denies the shield_passkey_login command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`shield:allow-shield-passkey-register`
+
+</td>
+<td>
+
+Enables the shield_passkey_register command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`shield:deny-shield-passkey-register`
+
+</td>
+<td>
+
+Denies the shield_passkey_register command without any pre-configured scope.
 
 </td>
 </tr>

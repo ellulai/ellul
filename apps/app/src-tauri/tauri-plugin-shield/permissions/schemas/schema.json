@@ -547,6 +547,30 @@
           "markdownDescription": "Denies the shield_logout command without any pre-configured scope."
         },
         {
+          "description": "Enables the shield_native_credential_create command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-native-credential-create",
+          "markdownDescription": "Enables the shield_native_credential_create command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_native_credential_create command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-native-credential-create",
+          "markdownDescription": "Denies the shield_native_credential_create command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_native_credential_get command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-native-credential-get",
+          "markdownDescription": "Enables the shield_native_credential_get command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_native_credential_get command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-native-credential-get",
+          "markdownDescription": "Denies the shield_native_credential_get command without any pre-configured scope."
+        },
+        {
           "description": "Enables the shield_operator_bind command without any pre-configured scope.",
           "type": "string",
           "const": "allow-shield-operator-bind",
@@ -617,6 +641,18 @@
           "type": "string",
           "const": "deny-shield-passkey-login",
           "markdownDescription": "Denies the shield_passkey_login command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_passkey_register command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-passkey-register",
+          "markdownDescription": "Enables the shield_passkey_register command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_passkey_register command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-passkey-register",
+          "markdownDescription": "Denies the shield_passkey_register command without any pre-configured scope."
         },
         {
           "description": "Enables the shield_permission_get command without any pre-configured scope.",

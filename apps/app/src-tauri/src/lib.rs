@@ -177,9 +177,38 @@ pub fn run() {
             app.manage(cfg_state);
 
             let config_json = serde_json::to_string(&cfg).unwrap_or_default();
+            let server_domain = cfg.cloud_domain.clone().unwrap_or_default();
             let init_script = format!(
-                "window.__ELLUL_APP_CONFIG__ = {};",
-                config_json
+                r#"window.__ELLUL_APP_CONFIG__ = {cfg};
+window.__testNativePasskeyRegister = async function() {{
+  console.log('[test] calling shield_passkey_register...');
+  try {{
+    const r = await window.__TAURI_INTERNALS__.invoke('plugin:shield|shield_passkey_register', {{
+      serverDomain: '{domain}',
+      name: 'Passkey',
+    }});
+    console.log('[test] SUCCESS:', JSON.stringify(r));
+    return r;
+  }} catch(e) {{
+    console.error('[test] FAILED:', e);
+    throw e;
+  }}
+}};
+window.__testNativePasskeyLogin = async function() {{
+  console.log('[test] calling shield_passkey_login...');
+  try {{
+    const r = await window.__TAURI_INTERNALS__.invoke('plugin:shield|shield_passkey_login', {{
+      serverDomain: '{domain}',
+    }});
+    console.log('[test] SUCCESS:', JSON.stringify(r));
+    return r;
+  }} catch(e) {{
+    console.error('[test] FAILED:', e);
+    throw e;
+  }}
+}};"#,
+                cfg = config_json,
+                domain = server_domain,
             );
 
             let mut builder =

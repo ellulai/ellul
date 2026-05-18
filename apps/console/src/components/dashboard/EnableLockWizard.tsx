@@ -118,25 +118,40 @@ export function EnableLockWizard({
       if (mode === "web_lock") {
         setStep("registering");
 
-        // In Tauri, WKWebView can't do WebAuthn — delegate to Safari sheet
+        // In Tauri, WKWebView can't do WebAuthn — use native ASAuthorizationController
+        // JS handles HTTP (WKWebView has the VPS session cookies), Rust does Touch ID
         if (isTauriApp()) {
-          const consoleUrl = window.location.origin;
-          const result = await (window as any).__TAURI_INTERNALS__.invoke(
-            "plugin:shield|shield_web_auth_register",
-            { serverDomain, name: "Passkey", consoleUrl },
-          ) as {
-            verified?: boolean;
-            success?: boolean;
+          const vpsBase = `https://${serverDomain}`;
+          const invoke = (window as any).__TAURI_INTERNALS__.invoke;
+
+          // 1. Get registration options from VPS (authenticated via WKWebView cookies)
+          const optRes = await fetch(`${vpsBase}/_auth/bridge/upgrade-to-web-locked`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: "Passkey" }),
+            credentials: "include",
+          });
+          if (!optRes.ok) throw new Error(`Options: HTTP ${optRes.status}`);
+          const { options } = await optRes.json();
+
+          // 2. Native passkey ceremony via ASAuthorizationController (Touch ID)
+          const attestation = await invoke(
+            "plugin:shield|shield_native_credential_create",
+            { optionsJson: JSON.stringify(options) },
+          );
+
+          // 3. Verify with VPS (authenticated via WKWebView cookies)
+          const extResults = (attestation as Record<string, unknown>)?.clientExtensionResults as Record<string, unknown> | undefined;
+          const prfEnabled = (extResults?.prf as { enabled?: boolean } | undefined)?.enabled === true;
+          const verRes = await fetch(`${vpsBase}/_auth/bridge/upgrade-to-web-locked/verify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ attestation, name: "Passkey", prfEnabled }),
+            credentials: "include",
+          });
+          if (!verRes.ok) throw new Error(`Verify: HTTP ${verRes.status}`);
+          const result = await verRes.json() as {
             recoveryCodes?: string[];
-            credentialSynced?: boolean;
-            credential?: {
-              id: string;
-              publicKey: string;
-              counter: number;
-              transports: string[];
-              aaguid: string;
-              prfSupported: boolean;
-            };
           };
 
           if (result.recoveryCodes && result.recoveryCodes.length > 0) {

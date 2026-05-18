@@ -27,7 +27,51 @@ pub struct ShieldFetchResponse {
     pub body: serde_json::Value,
 }
 
-// ── Native WebAuthn ceremony (called from injected JS) ──
+// ── Native WebAuthn ceremony (called from JS) ──
+
+#[command(rename_all = "camelCase")]
+pub async fn shield_native_credential_create(
+    options_json: String,
+) -> Result<serde_json::Value, Error> {
+    eprintln!("[shield] native_credential_create: parsing options...");
+    let options: serde_json::Value = serde_json::from_str(&options_json)
+        .map_err(|e| Error::HttpError(format!("bad options JSON: {e}")))?;
+
+    let challenge_b64 = options["challenge"]
+        .as_str()
+        .ok_or_else(|| Error::HttpError("No challenge in options".into()))?;
+    let challenge = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(challenge_b64)
+        .map_err(|e| Error::HttpError(format!("bad challenge: {e}")))?;
+    let rp_id = options["rp"]["id"].as_str().unwrap_or("ellul.ai");
+    let rp_name = options["rp"]["name"].as_str().unwrap_or("ellul");
+    let user = &options["user"];
+    let user_id_b64 = user["id"]
+        .as_str()
+        .ok_or_else(|| Error::HttpError("No user.id".into()))?;
+    let user_id = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(user_id_b64)
+        .map_err(|e| Error::HttpError(format!("bad user.id: {e}")))?;
+    let user_name = user["name"].as_str().unwrap_or("");
+    let user_display = user["displayName"].as_str().unwrap_or(user_name);
+    let attestation = options.get("attestation").and_then(|v| v.as_str());
+    let uv = options.get("authenticatorSelection")
+        .and_then(|v| v.get("userVerification"))
+        .and_then(|v| v.as_str());
+
+    eprintln!("[shield] native_credential_create: calling ASAuthorizationController rp_id={rp_id} user={user_name}");
+    #[cfg(any(target_os = "macos", target_os = "ios", target_os = "windows"))]
+    {
+        crate::passkey::register(
+            &challenge, rp_id, rp_name, &user_id, user_name, user_display,
+            attestation, uv,
+        )
+        .await
+        .map_err(|e| { eprintln!("[shield] native_credential_create FAILED: {e}"); Error::HttpError(e) })
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows")))]
+    Err(Error::HttpError("Native passkey not available on this platform".into()))
+}
 
 #[command(rename_all = "camelCase")]
 pub async fn shield_native_credential_get(
@@ -168,6 +212,7 @@ pub async fn shield_passkey_login(
     http: State<'_, ShieldHttpClient>,
     server_domain: String,
 ) -> Result<serde_json::Value, Error> {
+    eprintln!("[shield] passkey_login START domain={server_domain}");
     let base_url = format!("https://{server_domain}");
 
     // 1. Get WebAuthn options from VPS
@@ -254,25 +299,19 @@ pub async fn shield_passkey_login(
     Ok(body)
 }
 
-#[command(rename_all = "camelCase")]
-pub async fn shield_passkey_register(
-    session: State<'_, SessionState>,
-    http: State<'_, ShieldHttpClient>,
+async fn shield_passkey_register_impl(
+    session: &SessionState,
+    http: &ShieldHttpClient,
     server_domain: String,
     name: String,
 ) -> Result<serde_json::Value, Error> {
-    let base_url = format!("https://{server_domain}");
+    eprintln!("[shield] passkey_register_impl START domain={server_domain} name={name}");
 
-    let res = http
-        .post_unauthed(&base_url, "/_auth/register/options", &serde_json::json!({ "name": name }))
+    eprintln!("[shield] passkey_register_impl: fetching register options (authenticated)...");
+    let resp = http
+        .post(session, "/_auth/register/options", &serde_json::json!({ "name": name }))
         .await?;
-    let status = res.status();
-    let resp: serde_json::Value = res.json().await.unwrap_or_default();
-    if !status.is_success() {
-        return Err(Error::HttpError(
-            resp["error"].as_str().unwrap_or("options failed").to_string(),
-        ));
-    }
+    eprintln!("[shield] passkey_register_impl: options OK");
 
     let options = resp.get("options").unwrap_or(&resp);
     let challenge_b64 = options["challenge"]
@@ -297,14 +336,18 @@ pub async fn shield_passkey_register(
         .and_then(|v| v.get("userVerification"))
         .and_then(|v| v.as_str());
 
+    eprintln!("[shield] passkey_register_impl: calling native ASAuthorizationController rp_id={rp_id} user={user_name}");
     #[cfg(any(target_os = "macos", target_os = "ios", target_os = "windows"))]
     let attestation_result = {
-        crate::passkey::register(
+        match crate::passkey::register(
             &challenge, rp_id, rp_name, &user_id, user_name, user_display,
             attestation, uv,
         )
         .await
-        .map_err(Error::HttpError)?
+        {
+            Ok(v) => { eprintln!("[shield] passkey_register_impl: native register OK"); v }
+            Err(e) => { eprintln!("[shield] passkey_register_impl: native register FAILED: {e}"); return Err(Error::HttpError(e)); }
+        }
     };
 
     #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows")))]
@@ -312,29 +355,50 @@ pub async fn shield_passkey_register(
         "Native passkey registration not available on this platform.".into(),
     ));
 
-    let res = http
-        .post_unauthed(
-            &base_url,
-            "/_auth/register/verify",
-            &serde_json::json!({ "attestation": attestation_result, "name": name, "prfEnabled": false }),
-        )
-        .await?;
+    eprintln!("[shield] passkey_register_impl: verifying attestation with VPS...");
+    let base_url = format!("https://{server_domain}");
+    let verify_body = serde_json::json!({ "attestation": attestation_result, "name": name, "prfEnabled": false });
+
+    // Verify needs auth (current session) but we also need the raw response for Set-Cookie
+    let session_cookie = session.cookie_header().await;
+    let mut builder = http.raw()
+        .post(format!("{base_url}/_auth/register/verify"))
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json")
+        .json(&verify_body);
+    if let Some(ref cookie) = session_cookie {
+        builder = builder.header("Cookie", cookie);
+    }
+    let res = builder.send().await?;
+
     let status = res.status();
     let cookie = extract_session_cookie(&res);
     let body: serde_json::Value = res.json().await.unwrap_or_default();
+    eprintln!("[shield] passkey_register_impl: verify status={status}");
     if !status.is_success() {
-        return Err(Error::HttpError(
-            body["error"].as_str().unwrap_or("verify failed").to_string(),
-        ));
+        let e = body["error"].as_str().unwrap_or("verify failed").to_string();
+        eprintln!("[shield] passkey_register_impl: verify FAILED: {e}");
+        return Err(Error::HttpError(e));
     }
 
     if let Some(cookie_header) = cookie {
         session.set(server_domain.clone(), cookie_header.clone()).await;
         let result = pop::perform_mlkem_bind(http.raw(), &base_url, &cookie_header).await?;
         session.set_k_pop(result.k_pop).await;
+        eprintln!("[shield] passkey_register_impl: session + PoP bind OK");
     }
 
     Ok(body)
+}
+
+#[command(rename_all = "camelCase")]
+pub async fn shield_passkey_register(
+    session: State<'_, SessionState>,
+    http: State<'_, ShieldHttpClient>,
+    server_domain: String,
+    name: String,
+) -> Result<serde_json::Value, Error> {
+    shield_passkey_register_impl(&session, &http, server_domain, name).await
 }
 
 #[command(rename_all = "camelCase")]
@@ -504,122 +568,10 @@ pub async fn shield_web_auth_register(
     name: String,
     console_url: String,
 ) -> Result<serde_json::Value, Error> {
-    let base_url = format!("https://{server_domain}");
-
-    let res = http
-        .post_unauthed(
-            &base_url,
-            "/_auth/register/options",
-            &serde_json::json!({ "name": name }),
-        )
-        .await?;
-    let status = res.status();
-    let resp: serde_json::Value = res.json().await.unwrap_or_default();
-    if !status.is_success() {
-        return Err(Error::HttpError(
-            resp["error"]
-                .as_str()
-                .unwrap_or("register options failed")
-                .to_string(),
-        ));
-    }
-
-    let options = resp.get("options").unwrap_or(&resp);
-
-    let flow_id = uuid::Uuid::new_v4().to_string();
-    let api_url = console_url.replace("console.", "api.");
-
-    let relay_client = reqwest::Client::new();
-    let relay_res = relay_client
-        .post(format!("{api_url}/api/auth/native/vps-auth-data"))
-        .json(&serde_json::json!({
-            "flowId": flow_id,
-            "type": "reg_options",
-            "data": options,
-        }))
-        .send()
-        .await
-        .map_err(|e| Error::HttpError(format!("relay store reg options: {e}")))?;
-
-    if !relay_res.status().is_success() {
-        return Err(Error::HttpError(
-            "Failed to store registration options at relay".into(),
-        ));
-    }
-
-    let auth_url = format!(
-        "{console_url}/en/vps-register?flow_id={flow_id}&server={server_domain}&name={}",
-        urlencoding::encode(&name)
-    );
-
-    #[cfg(any(target_os = "macos", target_os = "ios"))]
-    {
-        crate::passkey::web_auth_session(&auth_url, "ellul-auth")
-            .await
-            .map_err(Error::HttpError)?;
-    }
-
-    #[cfg(not(any(target_os = "macos", target_os = "ios")))]
-    return Err(Error::HttpError(
-        "Web auth session not available on this platform".into(),
-    ));
-
-    let mut attestation: Option<serde_json::Value> = None;
-    for _ in 0..30 {
-        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-        let poll_res = relay_client
-            .get(format!(
-                "{api_url}/api/auth/native/vps-auth-data?flow_id={flow_id}&type=attestation"
-            ))
-            .send()
-            .await
-            .map_err(|e| Error::HttpError(format!("relay poll attestation: {e}")))?;
-        let body: serde_json::Value = poll_res.json().await.unwrap_or_default();
-        if body["status"].as_str() == Some("complete") {
-            attestation = body.get("data").cloned();
-            break;
-        }
-    }
-
-    let attestation = attestation
-        .ok_or_else(|| Error::HttpError("Timeout waiting for passkey registration".into()))?;
-
-    let prf_enabled = attestation
-        .get("clientExtensionResults")
-        .and_then(|e| e.get("prf"))
-        .and_then(|p| p.get("enabled"))
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-
-    let res = http
-        .post_unauthed(
-            &base_url,
-            "/_auth/register/verify",
-            &serde_json::json!({ "attestation": attestation, "name": name, "prfEnabled": prf_enabled }),
-        )
-        .await?;
-    let status = res.status();
-    let cookie = extract_session_cookie(&res);
-    let body: serde_json::Value = res.json().await.unwrap_or_default();
-    if !status.is_success() {
-        return Err(Error::HttpError(
-            body["error"]
-                .as_str()
-                .unwrap_or("register verify failed")
-                .to_string(),
-        ));
-    }
-
-    if let Some(cookie_header) = cookie {
-        session
-            .set(server_domain.clone(), cookie_header.clone())
-            .await;
-        let result =
-            pop::perform_mlkem_bind(http.raw(), &base_url, &cookie_header).await?;
-        session.set_k_pop(result.k_pop).await;
-    }
-
-    Ok(body)
+    // Delegate directly to native ASAuthorizationController passkey + PoP
+    eprintln!("[shield] web_auth_register → delegating to native passkey_register domain={server_domain}");
+    let _ = console_url; // not needed for native path
+    shield_passkey_register_impl(&session, &http, server_domain, name).await
 }
 
 #[command]
