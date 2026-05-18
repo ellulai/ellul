@@ -267,8 +267,8 @@ export function EnableLockWizard({
     setTimeout(() => setCopiedKey(false), 2000);
   };
 
-  // ─── Browser Check ──────────────────────────────────────
-  if (!webauthnSupported) {
+  // ─── Browser Check (skip for Tauri — uses native ASAuthorizationController) ──
+  if (!webauthnSupported && !isTauriApp()) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="bg-card border-border z-[200]">
