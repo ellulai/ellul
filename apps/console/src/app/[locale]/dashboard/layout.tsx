@@ -174,7 +174,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             }
           } catch {}
           if (!domain) {
-            router.replace("/connect");
+            window.location.replace("tauri://localhost/index.html");
             return;
           }
           setTauriServerStatus({
