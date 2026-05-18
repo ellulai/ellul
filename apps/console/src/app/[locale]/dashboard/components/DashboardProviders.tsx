@@ -38,7 +38,11 @@ function TauriReauthWall({ hostname, children }: { hostname: string; children: R
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  console.error("[reauth-wall] render: isTauri=%s needsVpsAuth=%s", isTauriApp(), needsVpsAuth);
+
   if (!isTauriApp() || !needsVpsAuth) return <>{children}</>;
+
+  console.error("[reauth-wall] SHOWING WALL — blocking children");
 
   const handlePasskeyLogin = async () => {
     setIsAuthenticating(true);

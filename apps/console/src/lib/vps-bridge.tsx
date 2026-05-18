@@ -211,7 +211,9 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
   const [error, setError] = useState<string | null>(null);
   const [needsVpsAuth, setNeedsVpsAuth] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const mountIdRef = useRef(Math.random().toString(36).slice(2, 8));
 
+  console.error("[tauri-bridge] render: needsVpsAuth=%s ready=%s mountId=%s", needsVpsAuth, ready, mountIdRef.current);
   dbg("tauri", `mount hostname=${hostname}`);
 
   // Check session on mount
