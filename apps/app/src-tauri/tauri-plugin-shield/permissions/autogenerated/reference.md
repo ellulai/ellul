@@ -1020,4 +1020,30 @@ Denies the shield_web_auth_login command without any pre-configured scope.
 
 </td>
 </tr>
+
+<tr>
+<td>
+
+`shield:allow-shield-web-auth-register`
+
+</td>
+<td>
+
+Enables the shield_web_auth_register command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`shield:deny-shield-web-auth-register`
+
+</td>
+<td>
+
+Denies the shield_web_auth_register command without any pre-configured scope.
+
+</td>
+</tr>
 </table>

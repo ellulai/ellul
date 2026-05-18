@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useVpsBridge } from "@/lib/vps-bridge";
 import { useEncryptionPasskey } from "@/hooks/useEncryptionPasskey";
+import { isTauriApp } from "@/lib/utils";
 
 // Resolve translated lock name based on product
 function useLockNames(product: string | undefined) {
@@ -115,8 +116,37 @@ export function EnableLockWizard({
 
     try {
       if (mode === "web_lock") {
-        // Web Lock: register passkey on VPS, sync credential to API
         setStep("registering");
+
+        // In Tauri, WKWebView can't do WebAuthn — delegate to Safari sheet
+        if (isTauriApp()) {
+          const consoleUrl = window.location.origin;
+          const result = await (window as any).__TAURI_INTERNALS__.invoke(
+            "plugin:shield|shield_web_auth_register",
+            { serverDomain, name: "Passkey", consoleUrl },
+          ) as {
+            verified?: boolean;
+            success?: boolean;
+            recoveryCodes?: string[];
+            credentialSynced?: boolean;
+            credential?: {
+              id: string;
+              publicKey: string;
+              counter: number;
+              transports: string[];
+              aaguid: string;
+              prfSupported: boolean;
+            };
+          };
+
+          if (result.recoveryCodes && result.recoveryCodes.length > 0) {
+            setRecoveryCodes(result.recoveryCodes);
+          }
+          setStep("done");
+          return;
+        }
+
+        // Web Lock: register passkey on VPS, sync credential to API
         const result = await registerNative("Passkey") as {
           verified?: boolean;
           success?: boolean;

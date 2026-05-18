@@ -6,6 +6,7 @@ const COMMANDS: &[&str] = &[
     "shield_login_verify",
     "shield_passkey_login",
     "shield_web_auth_login",
+    "shield_web_auth_register",
     "shield_register_options",
     "shield_register_verify",
     "shield_session_info",

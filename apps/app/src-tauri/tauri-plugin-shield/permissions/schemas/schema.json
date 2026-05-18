@@ -761,6 +761,18 @@
           "type": "string",
           "const": "deny-shield-web-auth-login",
           "markdownDescription": "Denies the shield_web_auth_login command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_web_auth_register command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-web-auth-register",
+          "markdownDescription": "Enables the shield_web_auth_register command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_web_auth_register command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-web-auth-register",
+          "markdownDescription": "Denies the shield_web_auth_register command without any pre-configured scope."
         }
       ]
     }

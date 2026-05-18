@@ -496,6 +496,132 @@ pub async fn shield_web_auth_login(
     Ok(body)
 }
 
+#[command(rename_all = "camelCase")]
+pub async fn shield_web_auth_register(
+    session: State<'_, SessionState>,
+    http: State<'_, ShieldHttpClient>,
+    server_domain: String,
+    name: String,
+    console_url: String,
+) -> Result<serde_json::Value, Error> {
+    let base_url = format!("https://{server_domain}");
+
+    let res = http
+        .post_unauthed(
+            &base_url,
+            "/_auth/register/options",
+            &serde_json::json!({ "name": name }),
+        )
+        .await?;
+    let status = res.status();
+    let resp: serde_json::Value = res.json().await.unwrap_or_default();
+    if !status.is_success() {
+        return Err(Error::HttpError(
+            resp["error"]
+                .as_str()
+                .unwrap_or("register options failed")
+                .to_string(),
+        ));
+    }
+
+    let options = resp.get("options").unwrap_or(&resp);
+
+    let flow_id = uuid::Uuid::new_v4().to_string();
+    let api_url = console_url.replace("console.", "api.");
+
+    let relay_client = reqwest::Client::new();
+    let relay_res = relay_client
+        .post(format!("{api_url}/api/auth/native/vps-auth-data"))
+        .json(&serde_json::json!({
+            "flowId": flow_id,
+            "type": "reg_options",
+            "data": options,
+        }))
+        .send()
+        .await
+        .map_err(|e| Error::HttpError(format!("relay store reg options: {e}")))?;
+
+    if !relay_res.status().is_success() {
+        return Err(Error::HttpError(
+            "Failed to store registration options at relay".into(),
+        ));
+    }
+
+    let auth_url = format!(
+        "{console_url}/en/vps-register?flow_id={flow_id}&server={server_domain}&name={}",
+        urlencoding::encode(&name)
+    );
+
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    {
+        crate::passkey::web_auth_session(&auth_url, "ellul-auth")
+            .await
+            .map_err(Error::HttpError)?;
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "ios")))]
+    return Err(Error::HttpError(
+        "Web auth session not available on this platform".into(),
+    ));
+
+    let mut attestation: Option<serde_json::Value> = None;
+    for _ in 0..30 {
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        let poll_res = relay_client
+            .get(format!(
+                "{api_url}/api/auth/native/vps-auth-data?flow_id={flow_id}&type=attestation"
+            ))
+            .send()
+            .await
+            .map_err(|e| Error::HttpError(format!("relay poll attestation: {e}")))?;
+        let body: serde_json::Value = poll_res.json().await.unwrap_or_default();
+        if body["status"].as_str() == Some("complete") {
+            attestation = body.get("data").cloned();
+            break;
+        }
+    }
+
+    let attestation = attestation
+        .ok_or_else(|| Error::HttpError("Timeout waiting for passkey registration".into()))?;
+
+    let prf_enabled = attestation
+        .get("clientExtensionResults")
+        .and_then(|e| e.get("prf"))
+        .and_then(|p| p.get("enabled"))
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+
+    let res = http
+        .post_unauthed(
+            &base_url,
+            "/_auth/register/verify",
+            &serde_json::json!({ "attestation": attestation, "name": name, "prfEnabled": prf_enabled }),
+        )
+        .await?;
+    let status = res.status();
+    let cookie = extract_session_cookie(&res);
+    let body: serde_json::Value = res.json().await.unwrap_or_default();
+    if !status.is_success() {
+        return Err(Error::HttpError(
+            body["error"]
+                .as_str()
+                .unwrap_or("register verify failed")
+                .to_string(),
+        ));
+    }
+
+    if let Some(cookie_header) = cookie {
+        session
+            .set(server_domain.clone(), cookie_header.clone())
+            .await;
+        let result =
+            pop::perform_mlkem_bind(http.raw(), &base_url, &cookie_header).await?;
+        session.set_k_pop(result.k_pop).await;
+    }
+
+    Ok(body)
+}
+
 #[command]
 pub async fn shield_session_info(
     session: State<'_, SessionState>,
