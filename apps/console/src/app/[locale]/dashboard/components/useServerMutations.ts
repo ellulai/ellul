@@ -445,9 +445,8 @@ export function useServerMutations(
     try { await clearAllOperatorKeys(); } catch { /* non-fatal on logout */ }
     await signOut();
     if (isTauriApp() && "__TAURI_INTERNALS__" in window) {
-      // Reset app mode and return to the bundled picker page
       await (window as any).__TAURI_INTERNALS__?.invoke?.("set_app_mode", { mode: "unset", cloudDomain: null });
-      window.location.replace("tauri://localhost/index.html");
+      window.location.reload();
     } else {
       window.location.href = process.env.NEXT_PUBLIC_WEB_URL!;
     }
