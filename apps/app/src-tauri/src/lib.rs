@@ -293,10 +293,6 @@ if (!window.PublicKeyCredential) {{
       urlStr = urlStr.replace('/_auth/bridge/upgrade-to-web-locked', '/_auth/upgrade-to-web-locked');
       url = urlStr;
     }}
-    if (window.__IS_ELLUL_TAURI__ && urlStr.indexOf('/_auth/pop/bind/init') !== -1) {{
-      console.error('[ellul-pop-init] intercepting /_auth/pop/bind/init → synthetic success (Tauri pre-auth)');
-      return Promise.resolve(new Response(JSON.stringify({{bound:true,existing:true}}), {{ status: 200, headers: {{ 'Content-Type': 'application/json' }} }}));
-    }}
     if ((window.__TAURI_INTERNALS__ || window.__IS_ELLUL_TAURI__) && urlStr.indexOf('/encryption/authenticate/options') !== -1) {{
       console.error('[ellul-prf-native] intercepting /encryption/authenticate/options → returning synthetic challenge');
       var ch = new Uint8Array(32); crypto.getRandomValues(ch);
@@ -456,7 +452,6 @@ if (!window.PublicKeyCredential) {{
                 let _ = win.with_webview(|wv| {
                     let ptr = wv.inner() as *mut std::ffi::c_void;
                     tauri_plugin_shield::webview_cookie::set_webview_ptr(ptr);
-                    tauri_plugin_shield::webview_cookie::inject_pop_stub();
                     tauri_plugin_shield::webview_cookie::disable_itp();
                     tauri_plugin_shield::webview_cookie::clear_http_cache_and_reload();
                     eprintln!("[ellul] WKWebView pointer stored, ITP disabled, cache clear+reload queued");

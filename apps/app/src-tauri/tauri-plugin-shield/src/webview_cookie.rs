@@ -37,7 +37,6 @@ extern "C" {
         js_source: *const std::os::raw::c_char,
     );
     fn ellul_remove_pop_user_scripts(wk_webview_ptr: *mut std::ffi::c_void);
-    fn ellul_inject_pop_stub_script(wk_webview_ptr: *mut std::ffi::c_void);
 }
 
 #[cfg(target_os = "macos")]
@@ -169,17 +168,6 @@ pub fn inject_pop_to_webview(k_pop_b64: &str) {
     #[cfg(not(target_os = "macos"))]
     {
         let _ = k_pop_b64;
-    }
-}
-
-pub fn inject_pop_stub() {
-    #[cfg(target_os = "macos")]
-    {
-        if let Some(ptr) = get_webview_ptr() {
-            unsafe {
-                ellul_inject_pop_stub_script(ptr);
-            }
-        }
     }
 }
 

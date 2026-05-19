@@ -5,32 +5,6 @@
 
 static NSString *const POP_MARKER = @"__ELLUL_POP_SEED__";
 
-void ellul_inject_pop_stub_script(void *wk_webview_ptr) {
-    NSString *source = @"(function(){"
-        "var _f=window.fetch;"
-        "window.fetch=function(u,o){"
-            "var s=(typeof u==='string')?u:(u&&u.url?u.url:String(u));"
-            "if(s.indexOf('/_auth/pop/bind/init')!==-1){"
-                "return Promise.resolve(new Response("
-                    "JSON.stringify({bound:false,error:'tauri_pre_auth'}),"
-                    "{status:401,headers:{'Content-Type':'application/json'}}"
-                "));"
-            "}"
-            "return _f.apply(this,arguments);"
-        "};"
-    "})();";
-    dispatch_async(dispatch_get_main_queue(), ^{
-        WKWebView *webview = (__bridge WKWebView *)wk_webview_ptr;
-        WKUserContentController *ctrl = webview.configuration.userContentController;
-        WKUserScript *stub = [[WKUserScript alloc]
-            initWithSource:source
-            injectionTime:WKUserScriptInjectionTimeAtDocumentStart
-            forMainFrameOnly:NO];
-        [ctrl addUserScript:stub];
-        NSLog(@"[ellul-pop] injected PoP stub (bind/init intercept, forMainFrameOnly=NO)");
-    });
-}
-
 void ellul_inject_pop_user_script(void *wk_webview_ptr, const char *js_source_c) {
     NSString *source = [[NSString alloc] initWithUTF8String:js_source_c];
     dispatch_async(dispatch_get_main_queue(), ^{

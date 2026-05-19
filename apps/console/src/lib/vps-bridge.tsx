@@ -416,6 +416,24 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
   const [needsVpsAuth, setNeedsVpsAuth] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [bridgeKey, setBridgeKey] = useState(0);
+  const [tauriPreAuth, setTauriPreAuth] = useState(isTauriApp() ? "checking" as const : "done" as const);
+
+  useEffect(() => {
+    if (!isTauriApp() || tauriPreAuth !== "checking") return;
+    (async () => {
+      try {
+        const { hasSession } = await tauriInvoke<{ hasSession: boolean }>("shield_check_session");
+        dbg("real", `tauri pre-auth: hasSession=${hasSession}`);
+        if (hasSession) { setTauriPreAuth("done"); return; }
+        dbg("real", "tauri pre-auth: no session → passkey_login");
+        await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
+        dbg("real", "tauri pre-auth: passkey_login OK");
+      } catch (e) {
+        dbg("real", `tauri pre-auth: failed: ${e}`);
+      }
+      setTauriPreAuth("done");
+    })();
+  }, [hostname, tauriPreAuth]);
 
   dbg("real", `mount hostname=${hostname}, isTauri=${isTauriApp()}, bridgeKey=${bridgeKey}`);
 
@@ -781,14 +799,14 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
 
   return (
     <VpsBridgeContext.Provider value={{ ready, error, needsVpsAuth, sessionExpired, send, waitForReady, reauthenticate, signalAuthNeeded, reload, authenticateNative, registerNative }}>
-      <iframe
+      {tauriPreAuth === "done" && <iframe
         key={bridgeKey}
         ref={setIframeNode}
         src={`https://${hostname}/_auth/bridge`}
         style={{ display: "none" }}
         title="VPS Auth Bridge"
         allow="publickey-credentials-create *; publickey-credentials-get *"
-      />
+      />}
       {children}
     </VpsBridgeContext.Provider>
   );
