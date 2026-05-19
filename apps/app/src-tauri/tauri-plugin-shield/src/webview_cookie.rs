@@ -30,6 +30,7 @@ extern "C" {
         ctx: *mut std::ffi::c_void,
     );
     fn ellul_dump_cookies(wk_webview_ptr: *mut std::ffi::c_void);
+    fn ellul_clear_http_cache_and_reload(wk_webview_ptr: *mut std::ffi::c_void);
     fn ellul_disable_itp(wk_webview_ptr: *mut std::ffi::c_void);
     fn ellul_inject_pop_user_script(
         wk_webview_ptr: *mut std::ffi::c_void,
@@ -75,6 +76,17 @@ pub fn start_cookie_observer(session: &crate::session::SessionState) {
         .ok();
     unsafe {
         ellul_observe_cookie_changes(ptr, on_cookie_change, std::ptr::null_mut());
+    }
+}
+
+pub fn clear_http_cache_and_reload() {
+    #[cfg(target_os = "macos")]
+    {
+        if let Some(ptr) = get_webview_ptr() {
+            unsafe {
+                ellul_clear_http_cache_and_reload(ptr);
+            }
+        }
     }
 }
 

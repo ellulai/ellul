@@ -39,6 +39,25 @@ typedef void (*EllulCookieChangeCallback)(const char *domain, const char *new_va
 
 static EllulCookieObserver *_observer = nil;
 
+void ellul_clear_http_cache_and_reload(void *wk_webview_ptr) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        WKWebView *webview = (__bridge WKWebView *)wk_webview_ptr;
+        WKWebsiteDataStore *store = webview.configuration.websiteDataStore;
+        NSSet *types = [NSSet setWithArray:@[
+            WKWebsiteDataTypeDiskCache,
+            WKWebsiteDataTypeMemoryCache,
+        ]];
+        [store removeDataOfTypes:types
+                   modifiedSince:[NSDate distantPast]
+               completionHandler:^{
+            NSLog(@"[ellul-cookie] HTTP cache cleared → reloading");
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [webview reload];
+            });
+        }];
+    });
+}
+
 void ellul_disable_itp(void *wk_webview_ptr) {
     dispatch_async(dispatch_get_main_queue(), ^{
         WKWebView *webview = (__bridge WKWebView *)wk_webview_ptr;
@@ -56,6 +75,7 @@ void ellul_disable_itp(void *wk_webview_ptr) {
         } else {
             NSLog(@"[ellul-cookie] WARN: ITP disable selector not available");
         }
+
     });
 }
 

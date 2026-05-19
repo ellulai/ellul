@@ -36,7 +36,11 @@ fn is_internal_navigation(url: &url::Url) -> bool {
 fn resolve_start_url(cfg: &config::AppConfig) -> tauri::WebviewUrl {
     match cfg.mode {
         config::AppMode::Cloud => {
-            let dashboard = format!("{}/dashboard", config::console_url());
+            let ts = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs();
+            let dashboard = format!("{}/dashboard?_cb={}", config::console_url(), ts);
             tauri::WebviewUrl::External(dashboard.parse().unwrap())
         }
         _ => tauri::WebviewUrl::App("index.html".into()),
@@ -184,6 +188,19 @@ pub fn run() {
             let config_json = serde_json::to_string(&cfg).unwrap_or_default();
             let init_script = format!(
                 r#"window.__ELLUL_APP_CONFIG__ = {cfg};
+// Nuke service workers + force one reload to bypass cached JS
+(function() {{
+  if (!navigator.serviceWorker) return;
+  navigator.serviceWorker.getRegistrations().then(function(regs) {{
+    if (regs.length === 0) return;
+    for (var i = 0; i < regs.length; i++) regs[i].unregister();
+    if ('caches' in window) caches.keys().then(function(ks) {{ for (var i=0;i<ks.length;i++) caches.delete(ks[i]); }});
+    if (!sessionStorage.getItem('_sw_cleared')) {{
+      sessionStorage.setItem('_sw_cleared', '1');
+      location.reload();
+    }}
+  }});
+}})();
 // If session-expired flag is set, hide cloudDomain so dashboard shows connect screen
 if (sessionStorage.getItem('ellul_needs_reconnect')) {{
   delete window.__ELLUL_APP_CONFIG__.cloudDomain;
@@ -306,6 +323,10 @@ if (!window.PublicKeyCredential) {{
                 let nav_handle = app.handle().clone();
                 builder = builder.on_navigation(move |url| {
                     eprintln!("[ellul-nav] {}", url.as_str());
+                    if url.path() == "/sign-in" && url.host_str().map_or(false, |h| h.contains("console.")) {
+                        eprintln!("[ellul-nav] BLOCKED /sign-in redirect — VPS session needs passkey re-auth, not platform sign-in");
+                        return false;
+                    }
                     if is_marketing_site(url) {
                         eprintln!("[ellul-nav] BLOCKED marketing site — triggering reconnect");
                         if let Some(win) = nav_handle.get_webview_window("main") {
@@ -332,7 +353,8 @@ if (!window.PublicKeyCredential) {{
                     let ptr = wv.inner() as *mut std::ffi::c_void;
                     tauri_plugin_shield::webview_cookie::set_webview_ptr(ptr);
                     tauri_plugin_shield::webview_cookie::disable_itp();
-                    eprintln!("[ellul] WKWebView pointer stored, ITP disabled");
+                    tauri_plugin_shield::webview_cookie::clear_http_cache_and_reload();
+                    eprintln!("[ellul] WKWebView pointer stored, ITP disabled, cache clear+reload queued");
                 });
             }
             #[cfg(not(target_os = "macos"))]
