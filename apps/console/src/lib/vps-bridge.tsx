@@ -33,6 +33,7 @@ let _debugListeners: Array<() => void> = [];
 function dbg(tag: string, msg: string) {
   const ts = new Date().toISOString().slice(11, 23);
   const line = `${ts} [${tag}] ${msg}`;
+  console.error(`[VpsBridge] ${line}`);
   _debugLines.push(line);
   if (_debugLines.length > 300) _debugLines.splice(0, _debugLines.length - 300);
   try { sessionStorage.setItem(_DBG_KEY, JSON.stringify(_debugLines)); } catch {}
