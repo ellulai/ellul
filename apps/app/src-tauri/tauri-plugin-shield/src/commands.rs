@@ -8,6 +8,10 @@ use crate::operator::{self, OperatorState};
 use crate::pop;
 use crate::session::SessionState;
 
+fn sandbox_slug(project: &str) -> &str {
+    project.split('/').next().unwrap_or(project)
+}
+
 // ── Response types (mirror bridge-contracts.ts) ──
 
 #[derive(Serialize)]
@@ -148,6 +152,10 @@ pub async fn shield_set_session(
     .await?;
     session.set_k_pop(result.k_pop).await;
 
+    crate::webview_cookie::inject_cookies_for_session(&cookie_header, &server_domain);
+    let k_pop_b64 = base64::engine::general_purpose::STANDARD.encode(result.k_pop);
+    crate::webview_cookie::inject_pop_to_webview(&k_pop_b64);
+
     Ok(())
 }
 
@@ -156,6 +164,7 @@ pub async fn shield_clear_session(
     session: State<'_, SessionState>,
     operator: State<'_, OperatorState>,
 ) -> Result<(), Error> {
+    crate::webview_cookie::remove_pop_from_webview();
     if let Some(domain) = session.server_domain().await {
         operator::clear_keys(&domain)?;
     }
@@ -221,10 +230,18 @@ pub async fn shield_login_verify(
             .await;
         let result = pop::perform_mlkem_bind(http.raw(), &base_url, &cookie_header).await?;
         session.set_k_pop(result.k_pop).await;
+        let k_pop_b64 = base64::engine::general_purpose::STANDARD.encode(result.k_pop);
+        crate::webview_cookie::inject_pop_to_webview(&k_pop_b64);
     }
 
     Ok(body)
 }
+
+static PASSKEY_LOGIN_ACTIVE: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+static PASSKEY_LOGIN_LAST_OK: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(0);
+const PASSKEY_LOGIN_COOLDOWN_SECS: u64 = 60;
 
 #[command(rename_all = "camelCase")]
 pub async fn shield_passkey_login(
@@ -232,6 +249,54 @@ pub async fn shield_passkey_login(
     http: State<'_, ShieldHttpClient>,
     server_domain: String,
 ) -> Result<serde_json::Value, Error> {
+    // If we recently logged in, validate with the server before deciding.
+    let now_secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let last_ok = PASSKEY_LOGIN_LAST_OK.load(std::sync::atomic::Ordering::SeqCst);
+    if last_ok > 0 && now_secs.saturating_sub(last_ok) < PASSKEY_LOGIN_COOLDOWN_SECS {
+        let has_local = session.0.read().await.is_some();
+        if has_local {
+            // Actually check with the server that our session is alive
+            match http.get(&session, "/_auth/session/info").await {
+                Ok(info) => {
+                    let alive = info.get("active").and_then(|v| v.as_bool()).unwrap_or(false);
+                    if alive {
+                        eprintln!(
+                            "[shield] passkey_login SKIPPED — cooldown ({}s, server confirmed alive)",
+                            now_secs.saturating_sub(last_ok)
+                        );
+                        return Ok(serde_json::json!({"skipped": true, "reason": "cooldown"}));
+                    }
+                    eprintln!("[shield] passkey_login cooldown — server says NOT alive, proceeding");
+                }
+                Err(e) => {
+                    eprintln!("[shield] passkey_login cooldown — server check failed: {e}, proceeding");
+                }
+            }
+        }
+    }
+
+    if PASSKEY_LOGIN_ACTIVE
+        .compare_exchange(
+            false,
+            true,
+            std::sync::atomic::Ordering::SeqCst,
+            std::sync::atomic::Ordering::SeqCst,
+        )
+        .is_err()
+    {
+        eprintln!("[shield] passkey_login SKIPPED — already in progress");
+        return Err(Error::Other("Passkey login already in progress".into()));
+    }
+    struct ResetGuard;
+    impl Drop for ResetGuard {
+        fn drop(&mut self) {
+            PASSKEY_LOGIN_ACTIVE.store(false, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+    let _guard = ResetGuard;
     eprintln!("[shield] passkey_login START domain={server_domain}");
     let base_url = format!("https://{server_domain}");
 
@@ -313,12 +378,27 @@ pub async fn shield_passkey_login(
             .set(server_domain.clone(), cookie_header.clone())
             .await;
         let result = pop::perform_mlkem_bind(http.raw(), &base_url, &cookie_header).await?;
-        if let Some(rotated) = result.rotated_cookie {
-            session.update_cookie(rotated).await;
-        }
+        let final_cookie = if let Some(rotated) = result.rotated_cookie {
+            session.update_cookie(rotated.clone()).await;
+            rotated
+        } else {
+            cookie_header
+        };
         session.set_k_pop(result.k_pop).await;
+
+        crate::webview_cookie::inject_cookies_for_session(&final_cookie, &server_domain);
+        let k_pop_b64 = base64::engine::general_purpose::STANDARD.encode(result.k_pop);
+        crate::webview_cookie::inject_pop_to_webview(&k_pop_b64);
+        #[cfg(target_os = "macos")]
+        crate::webview_cookie::start_cookie_observer(&session);
     }
 
+    let ok_ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    PASSKEY_LOGIN_LAST_OK.store(ok_ts, std::sync::atomic::Ordering::SeqCst);
+    eprintln!("[shield] passkey_login OK — cooldown armed for {PASSKEY_LOGIN_COOLDOWN_SECS}s");
     Ok(body)
 }
 
@@ -683,7 +763,7 @@ pub async fn shield_get_preview_token(
     session: State<'_, SessionState>,
     http: State<'_, ShieldHttpClient>,
 ) -> Result<serde_json::Value, Error> {
-    http.post(&session, "/_auth/preview/token", &serde_json::json!({}))
+    http.post(&session, "/_auth/preview/authorize", &serde_json::json!({}))
         .await
 }
 
@@ -749,7 +829,8 @@ pub async fn shield_gate_list_active(
     http: State<'_, ShieldHttpClient>,
     project: String,
 ) -> Result<serde_json::Value, Error> {
-    http.get(&session, &format!("/_auth/gates/active?project={project}"))
+    let sts = http.acquire_sts_token(&session, &project).await?;
+    http.get_with_headers(&session, "/_auth/gates/active", &[("X-STS-Token", &sts)])
         .await
 }
 
@@ -761,14 +842,15 @@ pub async fn shield_gate_request(
     gate: String,
     reason: Option<String>,
 ) -> Result<serde_json::Value, Error> {
-    http.post(
+    let sts = http.acquire_sts_token(&session, &project).await?;
+    http.post_with_headers(
         &session,
         "/_auth/gates/request",
         &serde_json::json!({
-            "project": project,
             "gate": gate,
             "reason": reason.unwrap_or_default(),
         }),
+        &[("X-STS-Token", &sts)],
     )
     .await
 }
@@ -876,24 +958,34 @@ pub async fn shield_gate_set_permission(
 pub async fn shield_context_mode_get(
     session: State<'_, SessionState>,
     http: State<'_, ShieldHttpClient>,
+    project: Option<String>,
 ) -> Result<serde_json::Value, Error> {
-    http.get(&session, "/_auth/context-mode").await
+    let proj = project.unwrap_or_default();
+    let slug = sandbox_slug(&proj);
+    http.get(&session, &format!("/_auth/context-mode?project={}", urlencoding::encode(slug)))
+        .await
 }
 
 #[command(rename_all = "camelCase")]
 pub async fn shield_context_mode_set(
     session: State<'_, SessionState>,
     http: State<'_, ShieldHttpClient>,
+    operator: State<'_, OperatorState>,
+    project: String,
     mode: String,
     operator_signature: Option<String>,
     operator_timestamp: Option<String>,
 ) -> Result<serde_json::Value, Error> {
-    let mut body = serde_json::json!({ "mode": mode });
-    if let Some(sig) = &operator_signature {
-        body["operatorSignature"] = serde_json::Value::String(sig.clone());
-    }
-    if let Some(ts) = &operator_timestamp {
-        body["operatorTimestamp"] = serde_json::Value::String(ts.clone());
+    let slug = sandbox_slug(&project);
+    let mut body = serde_json::json!({ "project": slug, "mode": mode });
+    if operator_signature.is_some() {
+        let guard = operator.0.read().await;
+        if let Some(keys) = guard.as_ref() {
+            let payload = format!("context-mode|{slug}|{mode}");
+            let sig = operator::sign_operator(keys, payload.as_bytes())?;
+            body["operatorSignature"] = serde_json::Value::String(sig.signature);
+            body["operatorTimestamp"] = serde_json::Value::String(sig.timestamp);
+        }
     }
     http.post(&session, "/_auth/context-mode", &body).await
 }
@@ -1049,12 +1141,101 @@ pub async fn shield_fetch(
     path: String,
     body: Option<serde_json::Value>,
 ) -> Result<serde_json::Value, Error> {
-    match method.to_uppercase().as_str() {
+    eprintln!("[shield] shield_fetch called method={method} path={path}");
+    let m = method.to_uppercase();
+    match m.as_str() {
         "GET" => http.get(&session, &path).await,
-        "POST" => {
-            http.post(&session, &path, &body.unwrap_or(serde_json::json!({})))
-                .await
+        "POST" | "PUT" | "PATCH" => {
+            let b = body.unwrap_or(serde_json::json!({}));
+            let body_bytes = serde_json::to_vec(&b).map_err(|e| Error::Other(e.to_string()))?;
+            let guard = session.0.read().await;
+            let sess = guard.as_ref().ok_or(Error::NoSession)?;
+            let url = format!("https://{}{path}", sess.server_domain);
+            let cookie = sess.session_cookie.clone();
+            let k_pop = sess.k_pop;
+            let pop_bound = sess.pop_bound;
+            drop(guard);
+
+            let mut builder = match m.as_str() {
+                "PUT" => http.raw().put(&url),
+                "PATCH" => http.raw().patch(&url),
+                _ => http.raw().post(&url),
+            };
+            builder = builder
+                .header("Cookie", &cookie)
+                .header("Accept", "application/json")
+                .header("Content-Type", "application/json")
+                .body(body_bytes.clone());
+            if pop_bound {
+                let headers = crate::pop::sign_request(&k_pop, &m, &path, Some(&body_bytes));
+                builder = builder
+                    .header("X-PoP-Timestamp", &headers.timestamp)
+                    .header("X-PoP-Nonce", &headers.nonce)
+                    .header("X-PoP-Signature", &headers.signature);
+                if let Some(hash) = &headers.body_hash {
+                    builder = builder.header("X-PoP-BodyHash", hash.as_str());
+                }
+            }
+            let res = builder.send().await?;
+            if let Some(new_cookie) = crate::http::extract_session_cookie(&res) {
+                session.update_cookie(new_cookie).await;
+            }
+            let status = res.status();
+            if !status.is_success() {
+                let body: serde_json::Value = res.json().await.unwrap_or_default();
+                let err = body["error"].as_str().unwrap_or("request failed");
+                return Err(Error::HttpError(err.to_string()));
+            }
+            res.json().await.map_err(|e| Error::HttpError(format!("JSON parse: {e}")))
+        }
+        "DELETE" => {
+            let guard = session.0.read().await;
+            let sess = guard.as_ref().ok_or(Error::NoSession)?;
+            let url = format!("https://{}{path}", sess.server_domain);
+            let cookie = sess.session_cookie.clone();
+            let k_pop = sess.k_pop;
+            let pop_bound = sess.pop_bound;
+            drop(guard);
+
+            let body_bytes = body.as_ref().map(|b| serde_json::to_vec(b).unwrap_or_default());
+            let mut builder = http.raw().delete(&url)
+                .header("Cookie", &cookie)
+                .header("Accept", "application/json");
+            if let Some(ref b) = body_bytes {
+                builder = builder
+                    .header("Content-Type", "application/json")
+                    .body(b.clone());
+            }
+            if pop_bound {
+                let headers = crate::pop::sign_request(&k_pop, "DELETE", &path, body_bytes.as_deref());
+                builder = builder
+                    .header("X-PoP-Timestamp", &headers.timestamp)
+                    .header("X-PoP-Nonce", &headers.nonce)
+                    .header("X-PoP-Signature", &headers.signature);
+                if let Some(hash) = &headers.body_hash {
+                    builder = builder.header("X-PoP-BodyHash", hash.as_str());
+                }
+            }
+            let res = builder.send().await?;
+            if let Some(new_cookie) = crate::http::extract_session_cookie(&res) {
+                session.update_cookie(new_cookie).await;
+            }
+            let status = res.status();
+            if !status.is_success() {
+                let body: serde_json::Value = res.json().await.unwrap_or_default();
+                let err = body["error"].as_str().unwrap_or("request failed");
+                return Err(Error::HttpError(err.to_string()));
+            }
+            res.json().await.map_err(|e| Error::HttpError(format!("JSON parse: {e}")))
         }
         _ => Err(Error::Other(format!("unsupported method: {method}"))),
     }
+}
+
+// ── JS console log forwarder ──
+
+#[command]
+pub async fn shield_js_log(message: String) -> Result<(), Error> {
+    eprintln!("[js] {message}");
+    Ok(())
 }

@@ -511,6 +511,18 @@
           "markdownDescription": "Denies the shield_intent_nonce command without any pre-configured scope."
         },
         {
+          "description": "Enables the shield_js_log command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-js-log",
+          "markdownDescription": "Enables the shield_js_log command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_js_log command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-js-log",
+          "markdownDescription": "Denies the shield_js_log command without any pre-configured scope."
+        },
+        {
           "description": "Enables the shield_login_options command without any pre-configured scope.",
           "type": "string",
           "const": "allow-shield-login-options",

@@ -478,6 +478,32 @@ Denies the shield_intent_nonce command without any pre-configured scope.
 <tr>
 <td>
 
+`shield:allow-shield-js-log`
+
+</td>
+<td>
+
+Enables the shield_js_log command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`shield:deny-shield-js-log`
+
+</td>
+<td>
+
+Denies the shield_js_log command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `shield:allow-shield-login-options`
 
 </td>

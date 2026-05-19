@@ -827,6 +827,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "fips205"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f5626bf5534df4ebdbd2536465d7eaa8a9dc2cdeb7e036e0ecf291dcc80ffb6"
+dependencies = [
+ "rand_core 0.6.4",
+ "sha2",
+ "sha3",
+ "zeroize",
+]
+
+[[package]]
 name = "flate2"
 version = "1.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3570,6 +3582,7 @@ dependencies = [
  "base64 0.22.1",
  "cc",
  "fips204",
+ "fips205",
  "hmac",
  "keyring",
  "pqcrypto-mlkem",

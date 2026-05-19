@@ -13,9 +13,9 @@ thiserror = "2"
 
 # Post-quantum cryptography (FIPS 203, 204, 205)
 pqcrypto-mlkem = "0.1"
-fips204 = { version = "0.4", features = ["ml-dsa-44"] }
-pqcrypto-sphincsplus = "0.7"
 pqcrypto-traits = "0.3"
+fips204 = { version = "0.4", features = ["ml-dsa-44"] }
+fips205 = { version = "0.4", features = ["slh_dsa_sha2_128s"] }
 
 # Symmetric cryptography
 aes-gcm = "0.10"

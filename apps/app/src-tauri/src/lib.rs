@@ -189,21 +189,105 @@ if (sessionStorage.getItem('ellul_needs_reconnect')) {{
   delete window.__ELLUL_APP_CONFIG__.cloudDomain;
   sessionStorage.removeItem('ellul_needs_reconnect');
 }}
+// Forward JS console to Rust stderr via Tauri IPC
+(function() {{
+  var _log = console.log, _err = console.error, _warn = console.warn;
+  function fwd(level, args) {{
+    try {{
+      var msg = '[' + level + '] ' + Array.prototype.slice.call(args).map(function(a) {{
+        return typeof a === 'object' ? JSON.stringify(a) : String(a);
+      }}).join(' ');
+      if (window.__TAURI_INTERNALS__) {{
+        window.__TAURI_INTERNALS__.invoke('plugin:shield|shield_js_log', {{ message: msg }});
+      }}
+    }} catch(e) {{}}
+  }}
+  console.log = function() {{ fwd('log', arguments); _log.apply(console, arguments); }};
+  console.error = function() {{ fwd('err', arguments); _err.apply(console, arguments); }};
+  console.warn = function() {{ fwd('warn', arguments); _warn.apply(console, arguments); }};
+}})();
+// Trace passkey_login invocations to find re-auth triggers
+(function() {{
+  var ti = window.__TAURI_INTERNALS__;
+  if (!ti || !ti.invoke) return;
+  var _inv = ti.invoke.bind(ti);
+  ti.invoke = function(cmd, args) {{
+    if (cmd && cmd.indexOf('passkey_login') !== -1) {{
+      console.warn('[ellul-diag] passkey_login invoked — stack:', new Error().stack);
+    }}
+    return _inv(cmd, args);
+  }};
+}})();
 // Polyfill PublicKeyCredential so browserSupportsWebAuthn() passes in WKWebView
 if (!window.PublicKeyCredential) {{
   window.PublicKeyCredential = function() {{}};
   window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable = function() {{ return Promise.resolve(true); }};
   window.PublicKeyCredential.isConditionalMediationAvailable = function() {{ return Promise.resolve(false); }};
 }}
-// Fix upgrade endpoint URL (ensures correct endpoint regardless of CF cache)
 (function() {{
   var _fetch = window.fetch;
   window.fetch = function(url, opts) {{
-    if (typeof url === 'string' && url.indexOf('/_auth/bridge/upgrade-to-web-locked') !== -1) {{
-      url = url.replace('/_auth/bridge/upgrade-to-web-locked', '/_auth/upgrade-to-web-locked');
-      console.log('[ellul] Rewrote upgrade URL:', url);
+    var urlStr = (typeof url === 'string') ? url : (url && url.url ? url.url : String(url));
+    if (urlStr.indexOf('/_auth/bridge/upgrade-to-web-locked') !== -1) {{
+      urlStr = urlStr.replace('/_auth/bridge/upgrade-to-web-locked', '/_auth/upgrade-to-web-locked');
+      url = urlStr;
     }}
-    return _fetch.call(this, url, opts);
+    var creds = (opts && opts.credentials) || 'same-origin';
+    var isAuth = urlStr.indexOf('/_auth/') !== -1 || urlStr.indexOf('.ellul.ai') !== -1;
+    if (isAuth) {{
+      console.log('[ellul-fetch] → ' + urlStr.substring(0, 160) + ' creds=' + creds);
+    }}
+    return _fetch.call(this, url, opts).then(function(resp) {{
+      if (isAuth) {{
+        var tag = resp.ok ? 'OK' : 'FAIL';
+        console.log('[ellul-fetch] ← ' + resp.status + ' ' + tag + ' ' + urlStr.substring(0, 120));
+        if (!resp.ok) {{
+          resp.clone().text().then(function(body) {{
+            console.error('[ellul-fetch] body=' + body.substring(0, 300));
+          }});
+        }}
+      }}
+      return resp;
+    }}, function(err) {{
+      if (isAuth) {{
+        console.error('[ellul-fetch] NETWORK/CORS err=' + String(err) + ' url=' + urlStr.substring(0, 120));
+      }}
+      throw err;
+    }});
+  }};
+  setTimeout(function() {{
+    console.log('[ellul-cookie-js] document.cookie=' + document.cookie.substring(0, 200));
+    console.log('[ellul-cookie-js] location=' + window.location.href);
+  }}, 2000);
+}})();
+// Strip _shield_code from iframe src — Tauri injects session cookie directly,
+// so the exchange code creates a duplicate session that evicts the reqwest one.
+(function() {{
+  var desc = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'src');
+  if (!desc || !desc.set) return;
+  var origSet = desc.set;
+  var origGet = desc.get;
+  function stripCode(v) {{
+    if (typeof v !== 'string' || v.indexOf('_shield_code=') === -1) return v;
+    var u;
+    try {{ u = new URL(v); }} catch(e) {{ return v; }}
+    u.searchParams.delete('_shield_code');
+    var clean = u.toString();
+    console.log('[ellul-iframe] stripped _shield_code → ' + clean.substring(0, 120));
+    return clean;
+  }}
+  Object.defineProperty(HTMLIFrameElement.prototype, 'src', {{
+    set: function(v) {{ return origSet.call(this, stripCode(v)); }},
+    get: function() {{ return origGet.call(this); }},
+    enumerable: desc.enumerable,
+    configurable: true
+  }});
+  var origSetAttr = Element.prototype.setAttribute;
+  Element.prototype.setAttribute = function(name, val) {{
+    if (this instanceof HTMLIFrameElement && name === 'src') {{
+      val = stripCode(val);
+    }}
+    return origSetAttr.call(this, name, val);
   }};
 }})();
 "#,
@@ -221,8 +305,9 @@ if (!window.PublicKeyCredential) {{
             {
                 let nav_handle = app.handle().clone();
                 builder = builder.on_navigation(move |url| {
+                    eprintln!("[ellul-nav] {}", url.as_str());
                     if is_marketing_site(url) {
-                        eprintln!("[ellul] Session expired — triggering connect screen");
+                        eprintln!("[ellul-nav] BLOCKED marketing site — triggering reconnect");
                         if let Some(win) = nav_handle.get_webview_window("main") {
                             let _ = win.eval(
                                 "sessionStorage.setItem('ellul_needs_reconnect','1'); window.location.reload();"
@@ -231,6 +316,7 @@ if (!window.PublicKeyCredential) {{
                         return false;
                     }
                     if !is_internal_navigation(url) {
+                        eprintln!("[ellul-nav] BLOCKED external — opening in browser");
                         let _ = open::that(url.as_str());
                         return false;
                     }
@@ -238,7 +324,19 @@ if (!window.PublicKeyCredential) {{
                 });
             }
 
-            let _win = builder.build()?;
+            let win = builder.build()?;
+
+            #[cfg(target_os = "macos")]
+            {
+                let _ = win.with_webview(|wv| {
+                    let ptr = wv.inner() as *mut std::ffi::c_void;
+                    tauri_plugin_shield::webview_cookie::set_webview_ptr(ptr);
+                    tauri_plugin_shield::webview_cookie::disable_itp();
+                    eprintln!("[ellul] WKWebView pointer stored, ITP disabled");
+                });
+            }
+            #[cfg(not(target_os = "macos"))]
+            let _ = &win;
 
             #[cfg(desktop)]
             setup_desktop(app)?;

@@ -3,9 +3,8 @@ use aes_gcm::{
     Aes256Gcm, Nonce,
 };
 use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
-use fips204::traits::{SerDes, Signer};
-use pqcrypto_sphincsplus::sphincssha2128ssimple as slhdsa128s;
-use pqcrypto_traits::sign::{DetachedSignature as _, PublicKey as _, SecretKey as _};
+use fips204::traits::{SerDes as SerDes204, Signer as Signer204};
+use fips205::traits::{SerDes as SerDes205, Signer as Signer205};
 use rand::RngCore;
 use tokio::sync::RwLock;
 use zeroize::Zeroize;
@@ -141,18 +140,20 @@ pub fn load_or_bind<'a>(
         .to_string();
 
     // Generate three keypairs
-    let (operator_pk, operator_sk) = slhdsa128s::keypair();
+    let (operator_pk, operator_sk) = fips205::slh_dsa_sha2_128s::try_keygen()
+        .map_err(|_| Error::SigningFailed("SLH-DSA-SHA2-128s keygen failed".into()))?;
     let (mldsa44_pk, mldsa44_sk) = fips204::ml_dsa_44::try_keygen()
         .map_err(|_| Error::SigningFailed("ML-DSA-44 keygen failed".into()))?;
-    let (slhdsa_intent_pk, slhdsa_intent_sk) = slhdsa128s::keypair();
+    let (slhdsa_intent_pk, slhdsa_intent_sk) = fips205::slh_dsa_sha2_128s::try_keygen()
+        .map_err(|_| Error::SigningFailed("SLH-DSA-SHA2-128s intent keygen failed".into()))?;
 
-    let operator_pk_b64 = B64.encode(operator_pk.as_bytes());
+    let operator_pk_b64 = B64.encode(operator_pk.into_bytes());
     let intent_mldsa44_pk_b64 = B64.encode(mldsa44_pk.into_bytes());
-    let intent_slhdsa128s_pk_b64 = B64.encode(slhdsa_intent_pk.as_bytes());
+    let intent_slhdsa128s_pk_b64 = B64.encode(slhdsa_intent_pk.into_bytes());
 
-    let operator_sk_bytes = operator_sk.as_bytes().to_vec();
+    let operator_sk_bytes = operator_sk.into_bytes().to_vec();
     let mldsa44_sk_bytes = mldsa44_sk.into_bytes().to_vec();
-    let slhdsa_intent_sk_bytes = slhdsa_intent_sk.as_bytes().to_vec();
+    let slhdsa_intent_sk_bytes = slhdsa_intent_sk.into_bytes().to_vec();
 
     // Wrap bundle with AES-GCM and store in keychain
     let mut kek = [0u8; 32];
@@ -216,12 +217,23 @@ pub fn sign_operator(keys: &OperatorKeys, payload: &[u8]) -> Result<OperatorSign
     message.extend_from_slice(payload);
     message.extend_from_slice(sep.as_bytes());
 
-    let sk = slhdsa128s::SecretKey::from_bytes(&keys.operator_sk)
+    eprintln!("[shield-sign] payload_utf8={:?} timestamp={timestamp}", String::from_utf8_lossy(payload));
+    eprintln!("[shield-sign] full_message={:?}", String::from_utf8_lossy(&message));
+    eprintln!("[shield-sign] sk_len={} pk_b64_len={}", keys.operator_sk.len(), keys.operator_pk_b64.len());
+
+    let sk_arr: [u8; 64] = keys.operator_sk.as_slice().try_into()
+        .map_err(|_| Error::SigningFailed(format!(
+            "SLH-DSA sk wrong size: {}", keys.operator_sk.len()
+        )))?;
+    let sk = fips205::slh_dsa_sha2_128s::PrivateKey::try_from_bytes(&sk_arr)
         .map_err(|_| Error::SigningFailed("invalid SLH-DSA secret key".into()))?;
-    let sig = slhdsa128s::detached_sign(&message, &sk);
+    let sig = sk.try_sign(&message, &[], false)
+        .map_err(|_| Error::SigningFailed("SLH-DSA signing failed".into()))?;
+
+    eprintln!("[shield-sign] sig_len={}", sig.len());
 
     Ok(OperatorSignature {
-        signature: B64.encode(sig.as_bytes()),
+        signature: B64.encode(sig),
         timestamp,
     })
 }
@@ -253,10 +265,15 @@ pub async fn sign_intent(
 
     let sig_b64 = match required {
         "slhdsa128s" => {
-            let sk = slhdsa128s::SecretKey::from_bytes(&keys.intent_slhdsa128s_sk)
+            let sk_arr: [u8; 64] = keys.intent_slhdsa128s_sk.as_slice().try_into()
+                .map_err(|_| Error::SigningFailed(format!(
+                    "SLH-DSA intent sk wrong size: {}", keys.intent_slhdsa128s_sk.len()
+                )))?;
+            let sk = fips205::slh_dsa_sha2_128s::PrivateKey::try_from_bytes(&sk_arr)
                 .map_err(|_| Error::SigningFailed("invalid SLH-DSA intent key".into()))?;
-            let sig = slhdsa128s::detached_sign(payload_bytes, &sk);
-            B64.encode(sig.as_bytes())
+            let sig = sk.try_sign(payload_bytes, &[], false)
+                .map_err(|_| Error::SigningFailed("SLH-DSA intent signing failed".into()))?;
+            B64.encode(sig)
         }
         "mldsa44" => {
             let sk_arr: [u8; 2560] = keys

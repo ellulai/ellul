@@ -27,7 +27,16 @@ impl ShieldHttpClient {
         session: &SessionState,
         path: &str,
     ) -> Result<serde_json::Value, Error> {
-        self.request(session, "GET", path, None).await
+        self.request(session, "GET", path, None, &[]).await
+    }
+
+    pub async fn get_with_headers(
+        &self,
+        session: &SessionState,
+        path: &str,
+        extra_headers: &[(&str, &str)],
+    ) -> Result<serde_json::Value, Error> {
+        self.request(session, "GET", path, None, extra_headers).await
     }
 
     pub async fn post(
@@ -37,7 +46,18 @@ impl ShieldHttpClient {
         body: &serde_json::Value,
     ) -> Result<serde_json::Value, Error> {
         let body_bytes = serde_json::to_vec(body).map_err(|e| Error::Other(e.to_string()))?;
-        self.request(session, "POST", path, Some(&body_bytes)).await
+        self.request(session, "POST", path, Some(&body_bytes), &[]).await
+    }
+
+    pub async fn post_with_headers(
+        &self,
+        session: &SessionState,
+        path: &str,
+        body: &serde_json::Value,
+        extra_headers: &[(&str, &str)],
+    ) -> Result<serde_json::Value, Error> {
+        let body_bytes = serde_json::to_vec(body).map_err(|e| Error::Other(e.to_string()))?;
+        self.request(session, "POST", path, Some(&body_bytes), extra_headers).await
     }
 
     /// Send an unauthenticated request (no session cookie, no PoP).
@@ -66,10 +86,14 @@ impl ShieldHttpClient {
         method: &str,
         path: &str,
         body: Option<&[u8]>,
+        extra_headers: &[(&str, &str)],
     ) -> Result<serde_json::Value, Error> {
         let (url, cookie, k_pop, pop_bound) = {
             let guard = session.0.read().await;
-            let sess = guard.as_ref().ok_or(Error::NoSession)?;
+            let sess = guard.as_ref().ok_or_else(|| {
+                eprintln!("[shield-http] {method} {path} → NoSession (no session in state)");
+                Error::NoSession
+            })?;
             (
                 format!("https://{}{path}", sess.server_domain),
                 sess.session_cookie.clone(),
@@ -77,6 +101,8 @@ impl ShieldHttpClient {
                 sess.pop_bound,
             )
         };
+
+        eprintln!("[shield-http] → {method} {path} pop={pop_bound} cookie={}...", &cookie[..cookie.len().min(40)]);
 
         let mut builder = match method {
             "GET" => self.client.get(&url),
@@ -102,6 +128,10 @@ impl ShieldHttpClient {
             }
         }
 
+        for &(name, value) in extra_headers {
+            builder = builder.header(name, value);
+        }
+
         if let Some(b) = body {
             builder = builder
                 .header("Content-Type", "application/json")
@@ -110,9 +140,6 @@ impl ShieldHttpClient {
 
         let res = builder.send().await?;
 
-        // Track session rotation: server may send a new session cookie on any
-        // response (rotation interval is 15 min). Update our stored cookie so
-        // subsequent requests use the rotated session ID.
         if let Some(new_cookie) = extract_session_cookie(&res) {
             session.update_cookie(new_cookie).await;
         }
@@ -125,12 +152,27 @@ impl ShieldHttpClient {
                 Some(e) => e.to_string(),
                 None => format!("HTTP {status}"),
             };
+            eprintln!("[shield-http] ← {method} {path} FAIL {status}: {err_msg}");
             return Err(Error::HttpError(err_msg));
         }
 
+        eprintln!("[shield-http] ← {method} {path} OK {status}");
         res.json()
             .await
             .map_err(|e| Error::HttpError(format!("JSON parse: {e}")))
+    }
+
+    pub async fn acquire_sts_token(
+        &self,
+        session: &SessionState,
+        project: &str,
+    ) -> Result<String, Error> {
+        let body = serde_json::json!({ "slug": project });
+        let resp = self.post(session, "/_auth/sts/token", &body).await?;
+        resp["token"]
+            .as_str()
+            .map(String::from)
+            .ok_or_else(|| Error::HttpError("STS token response missing 'token' field".into()))
     }
 }
 

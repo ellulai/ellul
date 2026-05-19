@@ -43,6 +43,7 @@ const COMMANDS: &[&str] = &[
     "shield_intent_nonce",
     "shield_create_signed_ws_url",
     "shield_fetch",
+    "shield_js_log",
 ];
 
 fn main() {
@@ -55,6 +56,22 @@ fn main() {
                 .flag("-fobjc-arc")
                 .flag("-fmodules")
                 .compile("ellul_passkey");
+
+            if target_os == "macos" {
+                cc::Build::new()
+                    .file("objc/cookie.m")
+                    .include("objc")
+                    .flag("-fobjc-arc")
+                    .flag("-fmodules")
+                    .compile("ellul_cookie");
+                cc::Build::new()
+                    .file("objc/pop_inject.m")
+                    .include("objc")
+                    .flag("-fobjc-arc")
+                    .flag("-fmodules")
+                    .compile("ellul_pop_inject");
+                println!("cargo:rustc-link-lib=framework=WebKit");
+            }
 
             println!("cargo:rustc-link-lib=framework=AuthenticationServices");
             if target_os == "macos" {

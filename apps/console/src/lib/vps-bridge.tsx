@@ -126,12 +126,6 @@ export function VpsBridgeProvider(props: VpsBridgeProviderProps) {
   const hasTauriInternals = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
   dbg("dispatch", `isTauriApp=${tauri} __TAURI_INTERNALS__=${hasTauriInternals} securityTier=${props.securityTier ?? "undefined"} hostname=${props.hostname} MOCK_MODE=${MOCK_MODE}`);
   if (MOCK_MODE) { dbg("dispatch", "→ MockVpsBridgeProvider"); return <MockVpsBridgeProvider>{props.children}</MockVpsBridgeProvider>; }
-  // Tauri native bridge for non-standard tiers (passkey + PoP in Rust).
-  // Standard tier uses the iframe bridge — session managed via cookies.
-  if (tauri && props.securityTier !== "standard") {
-    dbg("dispatch", `→ TauriVpsBridgeProvider (tier=${props.securityTier})`);
-    return <><TauriVpsBridgeProvider hostname={props.hostname} securityTier={props.securityTier}>{props.children}</TauriVpsBridgeProvider><DebugOverlay /></>;
-  }
   dbg("dispatch", `→ RealVpsBridgeProvider (tauri=${tauri}, tier=${props.securityTier})`);
   return <><RealVpsBridgeProvider hostname={props.hostname}>{props.children}</RealVpsBridgeProvider><DebugOverlay /></>;
 }
@@ -201,6 +195,7 @@ const TAURI_COMMAND_MAP: Record<string, string> = {
   gate_bind_operator: "shield_operator_bind",
   intent_nonce: "shield_intent_nonce",
 };
+
 
 async function tauriInvoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   return (window as any).__TAURI_INTERNALS__.invoke(`plugin:shield|${cmd}`, args) as Promise<T>;

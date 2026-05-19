@@ -12,6 +12,7 @@ mod passkey;
 mod pop;
 mod session;
 mod storage;
+pub mod webview_cookie;
 
 pub use error::Error;
 
@@ -62,6 +63,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::shield_intent_nonce,
             commands::shield_create_signed_ws_url,
             commands::shield_fetch,
+            commands::shield_js_log,
         ])
         .setup(|app, api| {
             #[cfg(target_os = "android")]
