@@ -701,6 +701,12 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
             setReady(true);
             return;
           }
+          if (isTauriApp()) {
+            dbg("real", `bridge_ready: Tauri PoP failed → needsVpsAuth=true (${data.error})`);
+            setNeedsVpsAuth(true);
+            setReady(true);
+            return;
+          }
           dbg("real", `bridge_ready: PoP init FAILED: ${data.error}`);
           console.error('[VpsBridge] PoP initialization failed:', data.error);
           setError('Security initialization failed. Please refresh the page.');

@@ -293,9 +293,10 @@ if (!window.PublicKeyCredential) {{
       urlStr = urlStr.replace('/_auth/bridge/upgrade-to-web-locked', '/_auth/upgrade-to-web-locked');
       url = urlStr;
     }}
-    // Intercept the PRF auth options fetch — return synthetic challenge so
-    // the web code path reaches navigator.credentials.get (which we also
-    // intercept above to use Tauri native PRF).
+    if (window.__IS_ELLUL_TAURI__ && urlStr.indexOf('/_auth/pop/bind/init') !== -1) {{
+      console.error('[ellul-pop-init] intercepting /_auth/pop/bind/init → synthetic success (Tauri pre-auth)');
+      return Promise.resolve(new Response(JSON.stringify({{bound:true,existing:true}}), {{ status: 200, headers: {{ 'Content-Type': 'application/json' }} }}));
+    }}
     if ((window.__TAURI_INTERNALS__ || window.__IS_ELLUL_TAURI__) && urlStr.indexOf('/encryption/authenticate/options') !== -1) {{
       console.error('[ellul-prf-native] intercepting /encryption/authenticate/options → returning synthetic challenge');
       var ch = new Uint8Array(32); crypto.getRandomValues(ch);
@@ -377,7 +378,49 @@ if (!window.PublicKeyCredential) {{
                     .title("ellul")
                     .inner_size(1280.0, 860.0)
                     .min_inner_size(375.0, 600.0)
-                    .initialization_script(&init_script);
+                    .initialization_script(&init_script)
+                    .on_page_load(|webview, payload| {
+                        let url = payload.url().to_string();
+                        let event = match payload.event() {
+                            tauri::webview::PageLoadEvent::Started => "started",
+                            tauri::webview::PageLoadEvent::Finished => "finished",
+                            _ => "unknown",
+                        };
+                        if url.contains("console.ellul.ai") {
+                            eprintln!("[ellul-diag] page {event}: {}", &url[..url.len().min(80)]);
+                        }
+                        if matches!(payload.event(), tauri::webview::PageLoadEvent::Finished) && url.contains("console.ellul.ai") {
+                            let wv = webview.clone();
+                            std::thread::spawn(move || {
+                                std::thread::sleep(std::time::Duration::from_millis(500));
+                                let result = wv.eval(
+                                    "try { \
+                                        var ti = typeof window.__TAURI_INTERNALS__ !== 'undefined' && window.__TAURI_INTERNALS__ !== null; \
+                                        var ie = typeof window.__IS_ELLUL_TAURI__ !== 'undefined' && !!window.__IS_ELLUL_TAURI__; \
+                                        var cfg = typeof window.__ELLUL_APP_CONFIG__ !== 'undefined'; \
+                                        localStorage.setItem('_ellul_diag', JSON.stringify({ti:ti,ie:ie,cfg:cfg,t:Date.now()})); \
+                                        var msg = '[ellul-diag] main-frame: TAURI_INTERNALS=' + ti + ' IS_ELLUL_TAURI=' + ie + ' APP_CONFIG=' + cfg; \
+                                        if (window.__TAURI_INTERNALS__) { \
+                                            window.__TAURI_INTERNALS__.invoke('plugin:shield|shield_js_log', {message: msg}); \
+                                        } \
+                                    } catch(e) { localStorage.setItem('_ellul_diag', 'ERROR:' + e.message); }"
+                                );
+                                eprintln!("[ellul-diag] eval result: {:?}", result);
+                                // Read back localStorage after another delay
+                                std::thread::sleep(std::time::Duration::from_millis(200));
+                                let _ = wv.eval(
+                                    "try { \
+                                        var d = localStorage.getItem('_ellul_diag'); \
+                                        if (window.__TAURI_INTERNALS__) { \
+                                            window.__TAURI_INTERNALS__.invoke('plugin:shield|shield_js_log', {message: '[ellul-diag] localStorage: ' + d}); \
+                                        } else if (d) { \
+                                            fetch('https://console.ellul.ai/__ellul_diag__?' + encodeURIComponent(d)).catch(function(){}); \
+                                        } \
+                                    } catch(e) {}"
+                                );
+                            });
+                        }
+                    });
 
             #[cfg(desktop)]
             {
@@ -413,6 +456,7 @@ if (!window.PublicKeyCredential) {{
                 let _ = win.with_webview(|wv| {
                     let ptr = wv.inner() as *mut std::ffi::c_void;
                     tauri_plugin_shield::webview_cookie::set_webview_ptr(ptr);
+                    tauri_plugin_shield::webview_cookie::inject_pop_stub();
                     tauri_plugin_shield::webview_cookie::disable_itp();
                     tauri_plugin_shield::webview_cookie::clear_http_cache_and_reload();
                     eprintln!("[ellul] WKWebView pointer stored, ITP disabled, cache clear+reload queued");
