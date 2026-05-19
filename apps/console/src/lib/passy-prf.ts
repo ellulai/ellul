@@ -14,11 +14,11 @@ export async function derivePrfKey(saltLabel: string): Promise<Uint8Array> {
     await crypto.subtle.digest("SHA-256", new TextEncoder().encode(saltLabel)),
   );
 
-  const options = await fetchAuthOptions();
-
   if (isTauriApp()) {
-    return derivePrfKeyTauri(saltBytes, options);
+    return derivePrfKeyTauri(saltBytes);
   }
+
+  const options = await fetchAuthOptions();
 
   const allowCredentials = (
     options.allowCredentials as Array<{ id: string; transports?: string[] }> | undefined
@@ -63,35 +63,36 @@ export async function derivePrfKey(saltLabel: string): Promise<Uint8Array> {
   return bytes;
 }
 
-async function derivePrfKeyTauri(
-  saltBytes: Uint8Array,
-  options: Record<string, unknown>,
-): Promise<Uint8Array> {
+async function derivePrfKeyTauri(saltBytes: Uint8Array): Promise<Uint8Array> {
   const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
   if (!invoke) throw new Error("Tauri runtime not available");
 
-  const allowCredentials = options.allowCredentials as
-    | Array<{ id: string }>
-    | undefined;
+  // PRF output is deterministic on credential+salt, independent of challenge.
+  // Generate locally to avoid the platform API round-trip (which 404s when
+  // the encryption credentials table hasn't been populated yet).
+  const challenge = new Uint8Array(32);
+  crypto.getRandomValues(challenge);
 
   const result = (await invoke(
     "plugin:shield|shield_native_credential_get_prf",
     {
-      challengeB64: options.challenge as string,
-      rpId: (options.rpId as string) || "ellul.ai",
-      allowCredentialsJson: allowCredentials
-        ? JSON.stringify(allowCredentials)
-        : undefined,
-      userVerification:
-        (options.userVerification as string) || "required",
+      challengeB64: bufferToBase64URL(challenge),
+      rpId: "ellul.ai",
+      userVerification: "required",
       prfSaltB64: bufferToBase64URL(saltBytes),
     },
-  )) as { prfFirst?: string };
+  )) as { id?: string; prfFirst?: string };
 
   if (!result.prfFirst) {
     throw new Error(
       "PRF extension did not return a result. Requires macOS 15+ / iOS 18+.",
     );
+  }
+
+  // Sync credential to encryption table in background so future web sessions
+  // and the platform API know this passkey supports PRF.
+  if (result.id) {
+    syncEncryptionCredentialBackground(result.id);
   }
 
   const bytes = new Uint8Array(base64URLToBuffer(result.prfFirst));
@@ -100,6 +101,23 @@ async function derivePrfKeyTauri(
   }
 
   return bytes;
+}
+
+function syncEncryptionCredentialBackground(credentialId: string): void {
+  fetch(`${API_URL}/api/servers/encryption/credentials/sync`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      credentialId,
+      publicKey: "native-platform-passkey",
+      counter: 0,
+      transports: ["internal"],
+      aaguid: null,
+      prfSupported: true,
+      name: "Passkey",
+    }),
+  }).catch(() => {});
 }
 
 async function fetchAuthOptions(): Promise<Record<string, unknown>> {
