@@ -188,6 +188,7 @@ pub fn run() {
             let config_json = serde_json::to_string(&cfg).unwrap_or_default();
             let init_script = format!(
                 r#"window.__ELLUL_APP_CONFIG__ = {cfg};
+window.__IS_ELLUL_TAURI__ = true;
 // Nuke service workers + force one reload to bypass cached JS
 (function() {{
   if (!navigator.serviceWorker) return;
@@ -223,24 +224,67 @@ if (sessionStorage.getItem('ellul_needs_reconnect')) {{
   console.error = function() {{ fwd('err', arguments); _err.apply(console, arguments); }};
   console.warn = function() {{ fwd('warn', arguments); _warn.apply(console, arguments); }};
 }})();
-// Trace passkey_login invocations to find re-auth triggers
-(function() {{
-  var ti = window.__TAURI_INTERNALS__;
-  if (!ti || !ti.invoke) return;
-  var _inv = ti.invoke.bind(ti);
-  ti.invoke = function(cmd, args) {{
-    if (cmd && cmd.indexOf('passkey_login') !== -1) {{
-      console.warn('[ellul-diag] passkey_login invoked — stack:', new Error().stack);
-    }}
-    return _inv(cmd, args);
-  }};
-}})();
 // Polyfill PublicKeyCredential so browserSupportsWebAuthn() passes in WKWebView
 if (!window.PublicKeyCredential) {{
   window.PublicKeyCredential = function() {{}};
   window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable = function() {{ return Promise.resolve(true); }};
   window.PublicKeyCredential.isConditionalMediationAvailable = function() {{ return Promise.resolve(false); }};
 }}
+// Intercept navigator.credentials.get with PRF → redirect to Tauri native.
+// MUST check __TAURI_INTERNALS__ at CALL TIME (not setup time) because
+// Tauri's IPC bridge may inject after this script runs.
+(function() {{
+  function b64url(buf) {{
+    var b = '';
+    var bytes = new Uint8Array(buf);
+    for (var i = 0; i < bytes.length; i++) b += String.fromCharCode(bytes[i]);
+    return btoa(b).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }}
+  function b64urlDecode(s) {{
+    var b = s.replace(/-/g, '+').replace(/_/g, '/');
+    b += '='.repeat((4 - b.length % 4) % 4);
+    var raw = atob(b);
+    var arr = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    return arr;
+  }}
+  var origGet = navigator.credentials && navigator.credentials.get
+    ? navigator.credentials.get.bind(navigator.credentials) : null;
+  if (origGet) {{
+    navigator.credentials.get = function(opts) {{
+      var ti = window.__TAURI_INTERNALS__;
+      var pk = opts && opts.publicKey;
+      var hasPrf = pk && pk.extensions && pk.extensions.prf;
+      if (!hasPrf || !ti || !ti.invoke) return origGet(opts);
+      console.error('[ellul-prf-native] intercepted credentials.get with PRF — using Tauri native');
+      var saltBytes = pk.extensions.prf.eval && pk.extensions.prf.eval.first;
+      if (!saltBytes) return origGet(opts);
+      var challenge = new Uint8Array(32);
+      crypto.getRandomValues(challenge);
+      return ti.invoke('plugin:shield|shield_native_credential_get_prf', {{
+        challengeB64: b64url(challenge),
+        rpId: pk.rpId || 'ellul.ai',
+        userVerification: pk.userVerification || 'required',
+        prfSaltB64: b64url(saltBytes),
+      }}).then(function(result) {{
+        console.error('[ellul-prf-native] native PRF result: id=' + (result.id || '').substring(0, 8) + ' prfFirst=' + (result.prfFirst ? 'present' : 'absent'));
+        if (!result.prfFirst) throw new Error('PRF extension did not return a result. Requires macOS 15+ / iOS 18+.');
+        var prfBytes = b64urlDecode(result.prfFirst);
+        var credIdBytes = result.id ? b64urlDecode(result.id) : new Uint8Array(0);
+        var mockResponse = Object.create(PublicKeyCredential.prototype);
+        mockResponse.id = result.id || '';
+        mockResponse.rawId = credIdBytes.buffer;
+        mockResponse.type = 'public-key';
+        mockResponse.response = {{ attestationObject: new ArrayBuffer(0), clientDataJSON: new ArrayBuffer(0) }};
+        mockResponse.getClientExtensionResults = function() {{
+          return {{ prf: {{ results: {{ first: prfBytes.buffer }} }} }};
+        }};
+        mockResponse.authenticatorAttachment = 'platform';
+        return mockResponse;
+      }});
+    }};
+  }}
+}})();
 (function() {{
   var _fetch = window.fetch;
   window.fetch = function(url, opts) {{
@@ -248,6 +292,23 @@ if (!window.PublicKeyCredential) {{
     if (urlStr.indexOf('/_auth/bridge/upgrade-to-web-locked') !== -1) {{
       urlStr = urlStr.replace('/_auth/bridge/upgrade-to-web-locked', '/_auth/upgrade-to-web-locked');
       url = urlStr;
+    }}
+    // Intercept the PRF auth options fetch — return synthetic challenge so
+    // the web code path reaches navigator.credentials.get (which we also
+    // intercept above to use Tauri native PRF).
+    if ((window.__TAURI_INTERNALS__ || window.__IS_ELLUL_TAURI__) && urlStr.indexOf('/encryption/authenticate/options') !== -1) {{
+      console.error('[ellul-prf-native] intercepting /encryption/authenticate/options → returning synthetic challenge');
+      var ch = new Uint8Array(32); crypto.getRandomValues(ch);
+      var b = ''; for (var j = 0; j < ch.length; j++) b += String.fromCharCode(ch[j]);
+      var chB64 = btoa(b).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      var body = JSON.stringify({{
+        challenge: chB64,
+        rpId: 'ellul.ai',
+        allowCredentials: [],
+        userVerification: 'required',
+        timeout: 60000,
+      }});
+      return Promise.resolve(new Response(body, {{ status: 200, headers: {{ 'Content-Type': 'application/json' }} }}));
     }}
     var creds = (opts && opts.credentials) || 'same-origin';
     var isAuth = urlStr.indexOf('/_auth/') !== -1 || urlStr.indexOf('.ellul.ai') !== -1;

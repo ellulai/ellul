@@ -402,6 +402,12 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     return;
   }
 
+  // Keep session alive on every authenticated request (tools/list, tools/call).
+  // Without this, only handleInitialize refreshed lastActivity, so the GC
+  // would reap active sessions after SESSION_TTL_MS regardless of tool usage.
+  const session = sessions.get(project);
+  if (session) session.lastActivity = Date.now();
+
   let response: string;
 
   switch (method) {

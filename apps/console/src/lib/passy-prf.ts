@@ -15,7 +15,10 @@ export async function derivePrfKey(saltLabel: string): Promise<Uint8Array> {
   );
 
   const tauri = isTauriApp();
-  console.error("[passy-prf] derivePrfKey: isTauriApp=%s saltLabel=%s", tauri, saltLabel);
+  console.error("[passy-prf] derivePrfKey: isTauriApp=%s saltLabel=%s TAURI_INTERNALS=%s IS_ELLUL_TAURI=%s",
+    tauri, saltLabel,
+    typeof window !== "undefined" && "__TAURI_INTERNALS__" in window,
+    typeof window !== "undefined" && !!(window as any).__IS_ELLUL_TAURI__);
   if (tauri) {
     return derivePrfKeyTauri(saltBytes);
   }

@@ -109,6 +109,7 @@ pub async fn shield_native_credential_get_prf(
     user_verification: Option<String>,
     prf_salt_b64: String,
 ) -> Result<serde_json::Value, Error> {
+    eprintln!("[shield-prf] native_credential_get_prf called rp_id={rp_id}");
     #[cfg(any(target_os = "macos", target_os = "ios", target_os = "windows"))]
     {
         let challenge = base64::engine::general_purpose::URL_SAFE_NO_PAD

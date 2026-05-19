@@ -119,6 +119,8 @@ function bufferIndexOf(buf, needle) {
   return -1;
 }
 
+let _reinitializing = false;
+
 function handleMessage(jsonStr) {
   let msg;
   try {
@@ -136,6 +138,12 @@ function handleMessage(jsonStr) {
 
   pendingInflight++;
   forwardToEndpoint(jsonStr)
+    .then((response) => {
+      if (response && !_reinitializing && isSessionExpired(response)) {
+        return reinitializeAndRetry(jsonStr);
+      }
+      return response;
+    })
     .then((response) => writeResponse(response))
     .catch((err) => {
       writeError(msg.id, -32000, 'Relay error: ' + (err && err.message ? err.message : 'unknown'));
@@ -144,6 +152,31 @@ function handleMessage(jsonStr) {
       pendingInflight--;
       if (pendingInflight === 0 && !process.stdin.readable) process.exit(0);
     });
+}
+
+function isSessionExpired(responseBody) {
+  try {
+    const parsed = JSON.parse(responseBody);
+    return parsed.error && parsed.error.code === -32002;
+  } catch { return false; }
+}
+
+function reinitializeAndRetry(originalBody) {
+  _reinitializing = true;
+  const initReq = JSON.stringify({
+    jsonrpc: '2.0', id: '_relay_reinit_' + Date.now(),
+    method: 'initialize',
+    params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'ellul-mcp-relay' } },
+  });
+  return forwardToEndpoint(initReq)
+    .then((initResp) => {
+      _reinitializing = false;
+      let parsed;
+      try { parsed = JSON.parse(initResp); } catch { return null; }
+      if (parsed.error) return null;
+      return forwardToEndpoint(originalBody);
+    })
+    .catch(() => { _reinitializing = false; return null; });
 }
 
 function forwardToEndpoint(body) {

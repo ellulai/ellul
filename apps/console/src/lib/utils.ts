@@ -9,7 +9,9 @@ export function cn(...inputs: ClassValue[]) {
 
 // Detect if running inside Tauri native app
 export function isTauriApp(): boolean {
-  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+  if (typeof window === "undefined") return false;
+  if ("__TAURI_INTERNALS__" in window) return true;
+  return !!(window as any).__IS_ELLUL_TAURI__;
 }
 
 // Detect if running on a mobile Tauri target (iOS/Android)
