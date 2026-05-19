@@ -548,9 +548,31 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
   const authenticateNative = useCallback(async (): Promise<void> => {
     dbg("real", `authenticateNative called, isTauri=${isTauriApp()}`);
     if (isTauriApp()) {
-      dbg("real", "authenticateNative → redirecting to /sign-in (Tauri WKWebView)");
-      window.location.replace("/sign-in");
-      return new Promise(() => {});
+      dbg("real", "authenticateNative → native shield_passkey_login");
+      try {
+        await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
+        dbg("real", "authenticateNative → passkey login OK, reloading bridge");
+        setNeedsVpsAuth(false);
+        setSessionExpired(false);
+        setReady(false);
+        handleRef.current = null;
+        setBridgeKey((k) => k + 1);
+        return new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => { dbg("real", "authenticateNative → TIMEOUT waiting for bridge"); reject(new Error("Auth timeout")); }, 30_000);
+          const check = setInterval(() => {
+            if (handleRef.current) {
+              clearInterval(check);
+              clearTimeout(timeout);
+              dbg("real", "authenticateNative → bridge re-ready after passkey login");
+              resolve();
+            }
+          }, 100);
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        dbg("real", `authenticateNative → passkey login FAILED: ${msg}`);
+        throw e;
+      }
     }
     dbg("real", "authenticateNative → WebAuthn flow: get_auth_options...");
     const options = await send<PublicKeyCredentialRequestOptionsJSON>("get_auth_options");
@@ -570,7 +592,7 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
         }
       }, 100);
     });
-  }, [send]);
+  }, [send, hostname]);
 
   const registerNative = useCallback(async (name: string): Promise<unknown> => {
     dbg("real", `registerNative name=${name}`);
