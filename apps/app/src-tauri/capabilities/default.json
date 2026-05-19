@@ -37,6 +37,7 @@
     "shield:allow-shield-passkey-register",
     "shield:allow-shield-native-credential-create",
     "shield:allow-shield-native-credential-get",
+    "shield:allow-shield-native-credential-get-prf",
     "shield:allow-shield-open-auth-sheet",
     "shield:allow-shield-web-auth-login",
     "shield:allow-shield-web-auth-register",

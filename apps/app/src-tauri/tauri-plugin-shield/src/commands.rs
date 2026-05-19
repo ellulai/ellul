@@ -101,6 +101,36 @@ pub async fn shield_native_credential_get(
     Err(Error::HttpError("Native passkey not available on this platform".into()))
 }
 
+#[command(rename_all = "camelCase")]
+pub async fn shield_native_credential_get_prf(
+    challenge_b64: String,
+    rp_id: String,
+    allow_credentials_json: Option<String>,
+    user_verification: Option<String>,
+    prf_salt_b64: String,
+) -> Result<serde_json::Value, Error> {
+    #[cfg(any(target_os = "macos", target_os = "ios", target_os = "windows"))]
+    {
+        let challenge = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .decode(&challenge_b64)
+            .map_err(|e| Error::HttpError(format!("bad challenge: {e}")))?;
+        let prf_salt = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .decode(&prf_salt_b64)
+            .map_err(|e| Error::HttpError(format!("bad prf_salt: {e}")))?;
+        crate::passkey::authenticate_with_prf(
+            &challenge,
+            &rp_id,
+            allow_credentials_json.as_deref(),
+            user_verification.as_deref(),
+            &prf_salt,
+        )
+        .await
+        .map_err(Error::HttpError)
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows")))]
+    Err(Error::HttpError("Native PRF passkey not available on this platform".into()))
+}
+
 // ── Safari auth sheet (opens ASWebAuthenticationSession) ──
 
 #[command(rename_all = "camelCase")]

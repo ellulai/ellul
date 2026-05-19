@@ -21,6 +21,18 @@ extern "C" {
         ctx: *mut c_void,
     );
 
+    fn ellul_passkey_authenticate_prf(
+        challenge: *const u8,
+        challenge_len: usize,
+        rp_id: *const c_char,
+        allow_creds_json: *const c_char,
+        user_verification: *const c_char,
+        prf_salt: *const u8,
+        prf_salt_len: usize,
+        callback: PasskeyCallback,
+        ctx: *mut c_void,
+    );
+
     fn ellul_passkey_register(
         challenge: *const u8,
         challenge_len: usize,
@@ -225,6 +237,66 @@ pub async fn register(
             display_c.as_ptr(),
             att_c.as_ref().map_or(std::ptr::null(), |c| c.as_ptr()),
             uv_c.as_ref().map_or(std::ptr::null(), |c| c.as_ptr()),
+            on_complete,
+            ctx.0,
+        );
+    }
+
+    let result = rx.await.map_err(|_| "Passkey callback channel dropped".to_string())?;
+    parse_result(result)
+}
+
+pub async fn authenticate_with_prf(
+    challenge: &[u8],
+    rp_id: &str,
+    allow_credentials: Option<&str>,
+    user_verification: Option<&str>,
+    prf_salt: &[u8],
+) -> Result<serde_json::Value, String> {
+    if !is_available() {
+        return Err(not_available_msg());
+    }
+
+    let (tx, rx) = oneshot::channel::<CallbackResult>();
+    let ctx = SendPtr(Box::into_raw(Box::new(tx)) as *mut c_void);
+
+    let challenge = challenge.to_vec();
+    let prf_salt = prf_salt.to_vec();
+    let rp_id_c = to_cstring(rp_id)?;
+    let allow_c = allow_credentials.map(to_cstring).transpose()?;
+    let uv_c = user_verification.map(to_cstring).transpose()?;
+
+    #[cfg(target_os = "windows")]
+    {
+        tokio::task::spawn_blocking(move || {
+            unsafe {
+                ellul_passkey_authenticate_prf(
+                    challenge.as_ptr(),
+                    challenge.len(),
+                    rp_id_c.as_ptr(),
+                    allow_c.as_ref().map_or(std::ptr::null(), |c| c.as_ptr()),
+                    uv_c.as_ref().map_or(std::ptr::null(), |c| c.as_ptr()),
+                    prf_salt.as_ptr(),
+                    prf_salt.len(),
+                    on_complete,
+                    ctx.0,
+                );
+            }
+        })
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    unsafe {
+        ellul_passkey_authenticate_prf(
+            challenge.as_ptr(),
+            challenge.len(),
+            rp_id_c.as_ptr(),
+            allow_c.as_ref().map_or(std::ptr::null(), |c| c.as_ptr()),
+            uv_c.as_ref().map_or(std::ptr::null(), |c| c.as_ptr()),
+            prf_salt.as_ptr(),
+            prf_salt.len(),
             on_complete,
             ctx.0,
         );

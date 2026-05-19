@@ -8,6 +8,7 @@ const COMMANDS: &[&str] = &[
     "shield_passkey_register",
     "shield_native_credential_create",
     "shield_native_credential_get",
+    "shield_native_credential_get_prf",
     "shield_open_auth_sheet",
     "shield_web_auth_login",
     "shield_web_auth_register",

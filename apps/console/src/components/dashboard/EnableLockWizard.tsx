@@ -176,6 +176,26 @@ export function EnableLockWizard({
           if (result.recoveryCodes && result.recoveryCodes.length > 0) {
             setRecoveryCodes(result.recoveryCodes);
           }
+
+          // 4. Sync credential to platform API encryption table for PRF
+          const credId = (attestation as Record<string, unknown>).id as string;
+          if (credId) {
+            try {
+              await syncCredential({
+                credentialId: credId,
+                publicKey: "native-platform-passkey",
+                counter: 0,
+                transports: ["internal"],
+                aaguid: null,
+                prfSupported: true,
+                name: "Passkey",
+              });
+              console.log("[lock-wizard] Step 4 OK: synced encryption credential");
+            } catch (syncErr) {
+              console.warn("[lock-wizard] Step 4 encryption sync failed (non-fatal):", syncErr);
+            }
+          }
+
           setStep("done");
           return;
         }

@@ -75,6 +75,18 @@ API_AVAILABLE(macos(13.0), ios(16.0))
         if (a.userID) response[@"userHandle"] = b64url_encode(a.userID);
         result[@"response"] = response;
 
+        if (@available(macOS 15.0, iOS 18.0, *)) {
+            ASAuthorizationPublicKeyCredentialPRFAssertionOutput *prfOutput = a.prf;
+            if (prfOutput) {
+                if (prfOutput.first) {
+                    result[@"prfFirst"] = b64url_encode(prfOutput.first);
+                }
+                if (prfOutput.second) {
+                    result[@"prfSecond"] = b64url_encode(prfOutput.second);
+                }
+            }
+        }
+
     } else if ([authorization.credential isKindOfClass:[ASAuthorizationSecurityKeyPublicKeyCredentialAssertion class]]) {
         ASAuthorizationSecurityKeyPublicKeyCredentialAssertion *a =
             (ASAuthorizationSecurityKeyPublicKeyCredentialAssertion *)authorization.credential;
@@ -225,6 +237,85 @@ void ellul_passkey_authenticate(
         });
     } else {
         callback(NULL, "macOS 13+ / iOS 16+ required", 0, ctx);
+    }
+}
+
+void ellul_passkey_authenticate_prf(
+    const uint8_t *challenge, size_t challenge_len,
+    const char *rp_id,
+    const char *allow_creds_json,
+    const char *user_verification,
+    const uint8_t *prf_salt, size_t prf_salt_len,
+    EllulPasskeyCallback callback,
+    void *ctx
+) {
+    if (@available(macOS 15.0, iOS 18.0, *)) {
+        NSData *challengeData = [NSData dataWithBytes:challenge length:challenge_len];
+        NSString *rpId = [NSString stringWithUTF8String:rp_id];
+
+        ASAuthorizationPlatformPublicKeyCredentialProvider *provider =
+            [[ASAuthorizationPlatformPublicKeyCredentialProvider alloc] initWithRelyingPartyIdentifier:rpId];
+        ASAuthorizationPlatformPublicKeyCredentialAssertionRequest *request =
+            [provider createCredentialAssertionRequestWithChallenge:challengeData];
+
+        // Set PRF input salt
+        if (prf_salt && prf_salt_len > 0) {
+            NSData *saltData = [NSData dataWithBytes:prf_salt length:prf_salt_len];
+            ASAuthorizationPublicKeyCredentialPRFAssertionInputValues *values =
+                [[ASAuthorizationPublicKeyCredentialPRFAssertionInputValues alloc]
+                 initWithSaltInput1:saltData saltInput2:nil];
+            ASAuthorizationPublicKeyCredentialPRFAssertionInput *prfInput =
+                [[ASAuthorizationPublicKeyCredentialPRFAssertionInput alloc]
+                 initWithInputValues:values perCredentialInputValues:nil];
+            request.prf = prfInput;
+        }
+
+        // Parse allowCredentials
+        if (allow_creds_json) {
+            NSData *jsonData = [NSData dataWithBytes:allow_creds_json length:strlen(allow_creds_json)];
+            NSArray *creds = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:nil];
+            if ([creds isKindOfClass:[NSArray class]] && creds.count > 0) {
+                NSMutableArray *descs = [NSMutableArray new];
+                for (NSDictionary *cred in creds) {
+                    NSString *idStr = cred[@"id"];
+                    if (!idStr) continue;
+                    NSData *credId = b64url_decode(idStr);
+                    [descs addObject:[[ASAuthorizationPlatformPublicKeyCredentialDescriptor alloc]
+                        initWithCredentialID:credId]];
+                }
+                if (descs.count > 0) request.allowedCredentials = descs;
+            }
+        }
+
+        if (user_verification) {
+            NSString *uv = [NSString stringWithUTF8String:user_verification];
+            ASAuthorizationPublicKeyCredentialUserVerificationPreference pref =
+                ASAuthorizationPublicKeyCredentialUserVerificationPreferencePreferred;
+            if ([uv isEqualToString:@"required"])
+                pref = ASAuthorizationPublicKeyCredentialUserVerificationPreferenceRequired;
+            else if ([uv isEqualToString:@"discouraged"])
+                pref = ASAuthorizationPublicKeyCredentialUserVerificationPreferenceDiscouraged;
+            request.userVerificationPreference = pref;
+        }
+
+        EllulPasskeyDelegate *delegate = [[EllulPasskeyDelegate alloc] init];
+        delegate.callback = callback;
+        delegate.callbackCtx = ctx;
+        delegate.settled = NO;
+
+        ASAuthorizationController *controller = [[ASAuthorizationController alloc]
+            initWithAuthorizationRequests:@[request]];
+        controller.delegate = delegate;
+        controller.presentationContextProvider = delegate;
+
+        activeDelegate = delegate;
+        activeController = controller;
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [controller performRequests];
+        });
+    } else {
+        callback(NULL, "PRF requires macOS 15+ / iOS 18+", 0, ctx);
     }
 }
 

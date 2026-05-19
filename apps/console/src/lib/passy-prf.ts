@@ -5,6 +5,8 @@
 // case — identical to SHA-256("ellul-luks-vault-v1"), so ignoring it preserves
 // behavior.
 
+import { isTauriApp } from "./utils";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export async function derivePrfKey(saltLabel: string): Promise<Uint8Array> {
@@ -13,6 +15,10 @@ export async function derivePrfKey(saltLabel: string): Promise<Uint8Array> {
   );
 
   const options = await fetchAuthOptions();
+
+  if (isTauriApp()) {
+    return derivePrfKeyTauri(saltBytes, options);
+  }
 
   const allowCredentials = (
     options.allowCredentials as Array<{ id: string; transports?: string[] }> | undefined
@@ -57,6 +63,45 @@ export async function derivePrfKey(saltLabel: string): Promise<Uint8Array> {
   return bytes;
 }
 
+async function derivePrfKeyTauri(
+  saltBytes: Uint8Array,
+  options: Record<string, unknown>,
+): Promise<Uint8Array> {
+  const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+  if (!invoke) throw new Error("Tauri runtime not available");
+
+  const allowCredentials = options.allowCredentials as
+    | Array<{ id: string }>
+    | undefined;
+
+  const result = (await invoke(
+    "plugin:shield|shield_native_credential_get_prf",
+    {
+      challengeB64: options.challenge as string,
+      rpId: (options.rpId as string) || "ellul.ai",
+      allowCredentialsJson: allowCredentials
+        ? JSON.stringify(allowCredentials)
+        : undefined,
+      userVerification:
+        (options.userVerification as string) || "required",
+      prfSaltB64: bufferToBase64URL(saltBytes),
+    },
+  )) as { prfFirst?: string };
+
+  if (!result.prfFirst) {
+    throw new Error(
+      "PRF extension did not return a result. Requires macOS 15+ / iOS 18+.",
+    );
+  }
+
+  const bytes = new Uint8Array(base64URLToBuffer(result.prfFirst));
+  if (bytes.length !== 32) {
+    throw new Error(`Unexpected PRF key length: ${bytes.length} (expected 32)`);
+  }
+
+  return bytes;
+}
+
 async function fetchAuthOptions(): Promise<Record<string, unknown>> {
   const res = await fetch(`${API_URL}/api/servers/encryption/authenticate/options`, {
     method: "POST",
@@ -79,4 +124,15 @@ function base64URLToBuffer(base64url: string): ArrayBuffer {
     bytes[i] = binary.charCodeAt(i);
   }
   return bytes.buffer;
+}
+
+function bufferToBase64URL(data: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < data.length; i++) {
+    binary += String.fromCharCode(data[i]!);
+  }
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
