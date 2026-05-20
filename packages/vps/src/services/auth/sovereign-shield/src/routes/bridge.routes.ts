@@ -2039,6 +2039,179 @@ export function registerBridgeRoutes(app: Hono, hostname: string): void {
   });
 
   // =========================================================================
+  //  DISPATCH — single endpoint for Tauri Android (replaces iframe bridge)
+  // =========================================================================
+
+  type D = Record<string, unknown>;
+  type RouteSpec = {
+    m: string;
+    p: string | ((d: D) => string);
+    b?: (d: D) => unknown;
+    t?: (res: unknown, d: D) => unknown;
+  };
+
+  const enc = (v: unknown) => encodeURIComponent(String(v ?? ''));
+
+  const DISPATCH_ROUTES: Record<string, RouteSpec> = {
+    check_session:       { m: 'GET', p: '/_auth/bridge/session', t: (r: any) => ({ hasSession: r?.valid === true }) },
+    session_keepalive:   { m: 'POST', p: '/_auth/session/keepalive' },
+    get_auth_options:    { m: 'POST', p: '/_auth/login/options' },
+    verify_auth:         { m: 'POST', p: '/_auth/login/verify', b: d => ({ assertion: d.assertion }) },
+    get_registration_options: { m: 'POST', p: d => String(d.endpoint || '/_auth/upgrade-to-web-locked'), b: d => ({ name: d.name }) },
+    verify_registration: { m: 'POST', p: d => String(d.endpoint || '/_auth/upgrade-to-web-locked/verify'), b: d => ({ attestation: d.attestation, name: d.name, prfEnabled: d.prfEnabled }) },
+    get_ssh_keys:        { m: 'GET', p: '/_auth/bridge/keys', t: r => ({ keys: r }) },
+    add_ssh_key:         { m: 'POST', p: '/_auth/keys', b: d => ({ name: d.name, publicKey: d.publicKey }) },
+    remove_ssh_key:      { m: 'DELETE', p: d => `/_auth/keys/${enc(d.fingerprint)}`, t: (_, d) => ({ fingerprint: d.fingerprint }) },
+    get_passkeys:        { m: 'GET', p: '/_auth/bridge/passkeys', t: r => ({ passkeys: r }) },
+    remove_passkey:      { m: 'DELETE', p: d => `/_auth/bridge/passkey/${enc(d.credentialId)}`, t: (_, d) => ({ credentialId: d.credentialId }) },
+    register_passkey:    { m: 'GET', p: '/_auth/bridge/passkeys', t: () => ({ requiresPopup: true, popupUrl: '/_auth/standard-upgrade', message: 'Open popup to register passkey' }) },
+    upgrade_to_web_locked: { m: 'GET', p: '/_auth/bridge/passkeys', t: () => ({ requiresPopup: true, popupUrl: '/_auth/standard-upgrade', message: 'Open popup to register passkey' }) },
+    get_current_tier:    { m: 'GET', p: '/_auth/bridge/tier' },
+    downgrade_to_standard: { m: 'POST', p: '/_auth/bridge/downgrade-to-standard' },
+    switch_to_web_locked: { m: 'POST', p: '/_auth/bridge/switch-tier', b: () => ({ targetTier: 'web_locked' }) },
+    confirm_operation:   { m: 'POST', p: '/_auth/confirm-operation', b: d => ({ operation: d.operation }) },
+    exchange_session:    { m: 'POST', p: '/_auth/session/exchange', b: d => ({ exchangeCode: d.exchangeCode }) },
+    get_code_token:      { m: 'POST', p: '/_auth/code/authorize' },
+    get_code_session:    { m: 'POST', p: '/_auth/code/session' },
+    get_exchange_code:   { m: 'POST', p: '/_auth/bridge/exchange-code' },
+    get_agent_token:     { m: 'POST', p: '/_auth/agent/authorize' },
+    get_terminal_token:  { m: 'POST', p: '/_auth/terminal/authorize' },
+    get_preview_token:   { m: 'POST', p: '/_auth/preview/authorize' },
+    get_settings:        { m: 'GET', p: '/_auth/bridge/settings' },
+    toggle_terminal:     { m: 'POST', p: '/_auth/bridge/toggle-terminal', b: d => ({ enabled: d.enabled }) },
+    toggle_ssh:          { m: 'POST', p: '/_auth/bridge/toggle-ssh', b: d => ({ enabled: d.enabled }) },
+    set_view_mode:       { m: 'POST', p: '/_auth/bridge/set-view-mode', b: d => ({ mode: d.mode }) },
+    set_ui_mode:         { m: 'POST', p: '/_auth/bridge/set-ui-mode', b: d => ({ mode: d.mode }) },
+    set_secret:          { m: 'POST', p: '/_auth/secrets', b: d => ({ ...d }) },
+    delete_secret:       { m: 'DELETE', p: d => `/_auth/secrets/${enc(d.name)}${d.sandboxId ? '?sandboxId=' + enc(d.sandboxId) : ''}` },
+    list_secrets:        { m: 'GET', p: d => { const p = new URLSearchParams(); if (d.sandboxId) p.set('sandboxId', String(d.sandboxId)); if (d.env) p.set('env', String(d.env)); const q = p.toString(); return '/_auth/secrets' + (q ? '?' + q : ''); } },
+    read_secret_values:  { m: 'GET', p: d => { const p = new URLSearchParams(); if (d.sandboxId) p.set('sandboxId', String(d.sandboxId)); if (d.env) p.set('env', String(d.env)); const q = p.toString(); return '/_auth/secrets/values' + (q ? '?' + q : ''); } },
+    set_secrets_bulk:    { m: 'POST', p: '/_auth/secrets/bulk', b: d => ({ secrets: d.secrets, ...(d.sandboxId ? { sandboxId: d.sandboxId } : {}) }) },
+    authorize_git_link:  { m: 'POST', p: '/_auth/git/authorize-link', b: d => ({ repoFullName: d.repoFullName, provider: d.provider }) },
+    authorize_git_unlink: { m: 'POST', p: '/_auth/git/authorize-unlink', b: () => ({}) },
+    kill_ports:          { m: 'POST', p: '/_auth/bridge/kill-ports', b: d => ({ ports: d.ports }) },
+    git_action:          { m: 'POST', p: '/_auth/bridge/git-action', b: d => ({ action: d.action, sandboxId: d.sandboxId }) },
+    switch_deployment:   { m: 'POST', p: '/_auth/bridge/switch-deployment', b: d => ({ ...d }) },
+    confirm_infra:       { m: 'POST', p: '/_auth/bridge/confirm-infra', b: d => ({ operation: d.operation }) },
+    reset_heartbeat:     { m: 'POST', p: '/_auth/bridge/reset-heartbeat' },
+    db_status:           { m: 'GET', p: '/_auth/db/status' },
+    db_info:             { m: 'GET', p: d => `/_auth/db/info?sandboxId=${enc(d.sandboxId)}` },
+    db_provision:        { m: 'POST', p: '/_auth/db/provision', b: d => ({ sandboxId: d.sandboxId }) },
+    db_delete:           { m: 'POST', p: '/_auth/db/delete', b: d => ({ sandboxId: d.sandboxId }) },
+    db_list:             { m: 'GET', p: d => `/_auth/db/list?sandboxId=${enc(d.sandboxId)}` },
+    db_schema:           { m: 'GET', p: d => `/_auth/db/schema?sandboxId=${enc(d.sandboxId)}&database=${enc(d.database)}` },
+    db_query:            { m: 'POST', p: '/_auth/db/query', b: d => ({ sandboxId: d.sandboxId, sql: d.sql, database: d.database }) },
+    db_execute:          { m: 'POST', p: '/_auth/db/execute', b: d => ({ sandboxId: d.sandboxId, sql: d.sql, database: d.database }) },
+    db_create:           { m: 'POST', p: '/_auth/db/create', b: d => ({ sandboxId: d.sandboxId, label: d.label }) },
+    db_drop:             { m: 'POST', p: '/_auth/db/drop', b: d => ({ sandboxId: d.sandboxId, label: d.label }) },
+    db_assign:           { m: 'POST', p: '/_auth/db/assign', b: d => ({ sandboxId: d.sandboxId, label: d.label, role: d.role }) },
+    db_backups:          { m: 'GET', p: d => `/_auth/db/backups?sandboxId=${enc(d.sandboxId)}` },
+    db_backup:           { m: 'POST', p: '/_auth/db/backup', b: d => ({ sandboxId: d.sandboxId }) },
+    db_restore:          { m: 'POST', p: '/_auth/db/restore', b: d => ({ sandboxId: d.sandboxId, file: d.file }) },
+    cross_project_list:  { m: 'GET', p: '/_auth/cross-project-access' },
+    cross_project_grant: { m: 'POST', p: '/_auth/cross-project-access', b: d => ({ sandboxId: d.sandboxId, sharedSandboxId: d.sharedSandboxId, sharePreview: !!d.sharePreview }) },
+    cross_project_revoke: { m: 'DELETE', p: '/_auth/cross-project-access', b: d => ({ sandboxId: d.sandboxId, sharedSandboxId: d.sharedSandboxId }) },
+    audit_log:           { m: 'GET', p: '/_auth/audit' },
+    audit_verify:        { m: 'GET', p: '/_auth/audit/verify' },
+    secrets_exposures:   { m: 'GET', p: d => `/_auth/secrets/exposures?sandboxId=${enc(d.sandboxId)}` },
+    secrets_classify:    { m: 'PUT', p: '/_auth/secrets/classify', b: d => ({ keyName: d.name, kind: d.kind, sandboxId: d.sandboxId }) },
+    secrets_acknowledge: { m: 'POST', p: '/_auth/secrets/acknowledge', b: d => ({ keyName: d.name, sandboxId: d.sandboxId }) },
+    guardrail_rules:     { m: 'GET', p: '/_auth/guardrail/rules' },
+    guardrail_proposals: { m: 'GET', p: '/_auth/guardrail/proposals' },
+    guardrail_toggle:    { m: 'PATCH', p: d => `/_auth/guardrail/rules/${enc(d.id)}/toggle`, b: d => ({ enabled: d.enabled }) },
+    guardrail_delete:    { m: 'DELETE', p: d => `/_auth/guardrail/rules/${enc(d.id)}` },
+    guardrail_create:    { m: 'POST', p: '/_auth/guardrail/rules', b: d => d.rule as D },
+    guardrail_proposal_approve: { m: 'POST', p: d => `/_auth/guardrail/proposals/${enc(d.id)}/approve` },
+    guardrail_proposal_deny:    { m: 'POST', p: d => `/_auth/guardrail/proposals/${enc(d.id)}/deny` },
+    watchdog_health:     { m: 'GET', p: '/_auth/bridge/watchdog/health' },
+    agents_auth_status:  { m: 'GET', p: '/_auth/bridge/agents/auth-status' },
+    restart_services:    { m: 'POST', p: '/_auth/bridge/restart-services' },
+    permission_list_pending: { m: 'GET', p: d => `/_auth/permissions/pending${d.threadId ? '?threadId=' + enc(d.threadId) : ''}` },
+    permission_get:      { m: 'GET', p: d => `/_auth/permissions/${enc(d.id)}` },
+    permission_history:  { m: 'GET', p: d => `/_auth/permissions/history?threadId=${enc(d.threadId)}` },
+    permission_mark_seen: { m: 'POST', p: d => `/_auth/permissions/${enc(d.id)}/seen` },
+    gate_respond:        { m: 'POST', p: '/_auth/gates/respond', b: d => { const b: D = { requestId: d.gateRequestId, action: d.action, operatorSignature: d.operatorSignature, operatorTimestamp: d.operatorTimestamp }; if (d.metadata !== undefined) b.metadata = d.metadata; if (d.intentSignature) b.intentSignature = d.intentSignature; if (d.intentNonce) b.intentNonce = d.intentNonce; if (d.intentType) b.intentType = d.intentType; return b; } },
+    gate_revoke:         { m: 'POST', p: '/_auth/gates/revoke', b: d => ({ gate: d.gate, project: d.project, operatorSignature: d.operatorSignature, operatorTimestamp: d.operatorTimestamp }) },
+    gate_set_permission: { m: 'POST', p: '/_auth/gates/permissions', b: d => ({ gate: d.gate, project: d.project, policy: d.policy, operatorSignature: d.operatorSignature, operatorTimestamp: d.operatorTimestamp }) },
+    gate_operator_status: { m: 'GET', p: '/_auth/gates/operator-status' },
+    gate_bind_nonce:     { m: 'GET', p: '/_auth/gates/bind-nonce' },
+    gate_bind_operator:  { m: 'POST', p: '/_auth/gates/bind-operator', b: d => ({ ...d }) },
+    context_mode_get:    { m: 'GET', p: d => `/_auth/context-mode?project=${enc(d.project)}` },
+    context_mode_set:    { m: 'POST', p: '/_auth/context-mode', b: d => ({ project: d.project, mode: d.mode, operatorSignature: d.operatorSignature, operatorTimestamp: d.operatorTimestamp }) },
+    tool_permission_set: { m: 'POST', p: '/_auth/tool-permissions', b: d => ({ connectionId: d.connectionId, toolName: d.toolName, permission: d.permission, operatorSignature: d.operatorSignature, operatorTimestamp: d.operatorTimestamp }) },
+    tool_permission_reset: { m: 'POST', p: '/_auth/tool-permissions/reset', b: d => ({ connectionId: d.connectionId, toolName: d.toolName, operatorSignature: d.operatorSignature, operatorTimestamp: d.operatorTimestamp }) },
+    intent_nonce:        { m: 'GET', p: d => { let qs = `action=${enc(d.action)}`; if (typeof d.resource === 'string' && d.resource) qs += `&resource=${enc(d.resource)}`; return `/_auth/intent/nonce?${qs}`; } },
+    features_get:        { m: 'GET', p: '/_auth/bridge/features' },
+    features_toggle:     { m: 'POST', p: '/_auth/bridge/features/toggle', b: d => ({ feature: d.feature, enabled: !!d.enabled }) },
+    gbrain_wipe:         { m: 'POST', p: '/_auth/bridge/features/gbrain-wipe' },
+    tool_provider_set:   { m: 'POST', p: '/_auth/bridge/features/tool-provider', b: d => ({ tool: d.tool, provider: d.provider }) },
+    connector_save_key:  { m: 'POST', p: '/_auth/bridge/features/connector-key', b: d => ({ provider: d.provider, apiKey: d.apiKey }) },
+    connector_remove_key: { m: 'POST', p: '/_auth/bridge/features/connector-key-remove', b: d => ({ provider: d.provider }) },
+  };
+
+  async function dispatchInternal(
+    app: Hono,
+    c: any,
+    method: string,
+    path: string,
+    body?: string,
+    extraHeaders?: Record<string, string>,
+  ): Promise<Response> {
+    const headers: Record<string, string> = {};
+    const cookie = c.req.header('cookie');
+    if (cookie) headers['Cookie'] = cookie;
+    if (body) headers['Content-Type'] = 'application/json';
+    for (const h of ['x-forwarded-for', 'x-real-ip', 'cf-connecting-ip', 'user-agent']) {
+      const v = c.req.header(h);
+      if (v) headers[h] = v;
+    }
+    if (extraHeaders) Object.assign(headers, extraHeaders);
+    return app.request(path, { method, headers, body: body || undefined });
+  }
+
+  app.post('/_auth/bridge/dispatch', async (c) => {
+    let parsed: any;
+    try { parsed = await c.req.json(); } catch { return c.json({ error: 'Invalid JSON' }, 400); }
+    const { type, ...data } = parsed;
+    if (!type || typeof type !== 'string') return c.json({ error: 'Missing type' }, 400);
+
+    // STS-requiring gate routes: mint token then forward
+    if (type === 'gate_list_active' || type === 'gate_request') {
+      if (!data.project || typeof data.project !== 'string') {
+        return c.json({ error: `${type}: project required` }, 400);
+      }
+      const stsRes = await dispatchInternal(app, c, 'POST', '/_auth/sts/token', JSON.stringify({ slug: data.project }));
+      if (!stsRes.ok) {
+        const stsErr = await stsRes.json().catch(() => ({}));
+        return c.json(stsErr, stsRes.status as any);
+      }
+      const stsData = await stsRes.json() as { token: string };
+
+      if (type === 'gate_list_active') {
+        const res = await dispatchInternal(app, c, 'GET', '/_auth/gates/active', undefined, { 'X-STS-Token': stsData.token });
+        return c.json(await res.json(), res.status as any);
+      }
+      if (type === 'gate_request') {
+        if (!data.gate || typeof data.gate !== 'string') return c.json({ error: 'gate_request: gate required' }, 400);
+        const body = JSON.stringify({ gate: data.gate, reason: typeof data.reason === 'string' ? data.reason : '' });
+        const res = await dispatchInternal(app, c, 'POST', '/_auth/gates/request', body, { 'X-STS-Token': stsData.token });
+        return c.json(await res.json(), res.status as any);
+      }
+    }
+
+    const route = DISPATCH_ROUTES[type];
+    if (!route) return c.json({ error: `Unknown type: ${type}`, success: false }, 400);
+
+    const path = typeof route.p === 'function' ? route.p(data) : route.p;
+    const body = route.b ? JSON.stringify(route.b(data)) : undefined;
+    const res = await dispatchInternal(app, c, route.m, path, body);
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok) return c.json(json, res.status as any);
+    return c.json(route.t ? route.t(json, data) : json);
+  });
+
+  // =========================================================================
   //  INTERNAL — localhost-only endpoints (no session required)
   // =========================================================================
 

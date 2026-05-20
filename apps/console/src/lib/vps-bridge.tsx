@@ -16,6 +16,10 @@ import type { PublicKeyCredentialCreationOptionsJSON, PublicKeyCredentialRequest
 import { MOCK_MODE, mockVpsBridgeResponses } from "@/lib/mock-data";
 import { onSessionStatus } from "@/lib/session-events";
 import { isTauriApp } from "@/lib/utils";
+
+function isAndroidTauriApp(): boolean {
+  return isTauriApp() && /Android/i.test(navigator.userAgent);
+}
 import type {
   BridgeMessageType,
   BridgeResponse,
@@ -63,6 +67,7 @@ interface VpsBridgeProviderProps {
 // a single component body.
 export function VpsBridgeProvider(props: VpsBridgeProviderProps) {
   if (MOCK_MODE) return <MockVpsBridgeProvider>{props.children}</MockVpsBridgeProvider>;
+  if (isAndroidTauriApp()) return <TauriVpsBridgeProvider hostname={props.hostname}>{props.children}</TauriVpsBridgeProvider>;
   return <RealVpsBridgeProvider hostname={props.hostname}>{props.children}</RealVpsBridgeProvider>;
 }
 
@@ -106,7 +111,175 @@ async function tauriInvoke<T = unknown>(cmd: string, args?: Record<string, unkno
   return (window as any).__TAURI_INTERNALS__.invoke(`plugin:shield|${cmd}`, args) as Promise<T>;
 }
 
-// ── Iframe bridge (web + Tauri) ──
+// ── Native bridge (Android Tauri — no iframe, uses shield_fetch dispatch) ──
+
+function TauriVpsBridgeProvider({ hostname, children }: { hostname: string; children: ReactNode }) {
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [needsVpsAuth, setNeedsVpsAuth] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  const readyRef = useRef(false);
+  const errorRef = useRef<string | null>(null);
+  useEffect(() => { readyRef.current = ready; }, [ready]);
+  useEffect(() => { errorRef.current = error; }, [error]);
+
+  type ReadyWaiter = { resolve: (h: BridgeHandle) => void; reject: (err: Error) => void };
+  const readyCallbacks = useRef<ReadyWaiter[]>([]);
+
+  const dummyHandle = useRef<BridgeHandle>({
+    contentWindow: typeof window !== "undefined" ? window : ({} as Window),
+    hostname,
+    generation: 0,
+  });
+
+  useEffect(() => {
+    if (!ready || error) return;
+    const waiters = readyCallbacks.current;
+    readyCallbacks.current = [];
+    for (const w of waiters) w.resolve(dummyHandle.current);
+  }, [ready, error]);
+
+  useEffect(() => {
+    if (!error) return;
+    const waiters = readyCallbacks.current;
+    readyCallbacks.current = [];
+    const err = new Error(error);
+    for (const w of waiters) w.reject(err);
+  }, [error]);
+
+  const waitForReady = useCallback((): Promise<BridgeHandle> => {
+    if (readyRef.current && !errorRef.current) return Promise.resolve(dummyHandle.current);
+    if (errorRef.current) return Promise.reject(new Error(errorRef.current));
+    return new Promise<BridgeHandle>((resolve, reject) => {
+      readyCallbacks.current.push({ resolve, reject });
+    });
+  }, []);
+
+  const send = useCallback(<T = unknown,>(type: string, data: Record<string, unknown> = {}): Promise<T> => {
+    return (async () => {
+      await waitForReady();
+      try {
+        return await tauriInvoke<T>("shield_fetch", {
+          method: "POST",
+          path: "/_auth/bridge/dispatch",
+          body: { type, ...data },
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg === "Authentication required" || msg.includes("No session") || msg.includes("Invalid session")) {
+          setNeedsVpsAuth(true);
+        }
+        throw err;
+      }
+    })();
+  }, [waitForReady]);
+
+  const checkSession = useCallback(async () => {
+    try {
+      const result = await tauriInvoke<{ valid?: boolean }>("shield_fetch", {
+        method: "GET",
+        path: "/_auth/bridge/session",
+      });
+      if (result.valid) {
+        setNeedsVpsAuth(false);
+        setSessionExpired(false);
+        setReady(true);
+      } else {
+        setNeedsVpsAuth(true);
+        setReady(true);
+      }
+    } catch {
+      setNeedsVpsAuth(true);
+      setReady(true);
+    }
+  }, []);
+
+  useEffect(() => { checkSession(); }, [checkSession]);
+
+  const signalAuthNeeded = useCallback(() => { setNeedsVpsAuth(true); }, []);
+
+  const reload = useCallback(() => {
+    setReady(false);
+    setError(null);
+    setNeedsVpsAuth(false);
+    setSessionExpired(false);
+    const waiters = readyCallbacks.current;
+    readyCallbacks.current = [];
+    const err = new Error("Bridge reloading");
+    for (const w of waiters) w.reject(err);
+    checkSession();
+  }, [checkSession]);
+
+  const authenticateNative = useCallback(async (): Promise<void> => {
+    await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
+    setNeedsVpsAuth(false);
+    setSessionExpired(false);
+    setReady(true);
+  }, [hostname]);
+
+  const registerNative = useCallback(async (name: string): Promise<unknown> => {
+    return tauriInvoke("shield_passkey_register", { serverDomain: hostname, name });
+  }, [hostname]);
+
+  const reauthenticate = useCallback(async (): Promise<void> => {
+    await authenticateNative();
+  }, [authenticateNative]);
+
+  const autoAuthAttempted = useRef(false);
+  useEffect(() => {
+    if (ready && needsVpsAuth && !autoAuthAttempted.current) {
+      autoAuthAttempted.current = true;
+      authenticateNative().catch(() => { setNeedsVpsAuth(true); });
+    }
+    if (!needsVpsAuth) autoAuthAttempted.current = false;
+  }, [ready, needsVpsAuth, authenticateNative]);
+
+  const needsAuthRef = useRef(false);
+  useEffect(() => { needsAuthRef.current = needsVpsAuth || sessionExpired; }, [needsVpsAuth, sessionExpired]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== "visible" || !needsAuthRef.current) return;
+      setNeedsVpsAuth(false);
+      setSessionExpired(false);
+      authenticateNative().catch(() => { setNeedsVpsAuth(true); });
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [authenticateNative]);
+
+  useEffect(() => {
+    let lastAlive: boolean | null = null;
+    return onSessionStatus((signal) => {
+      if (signal.alive) { lastAlive = true; return; }
+      if (lastAlive !== true) return;
+      lastAlive = false;
+      if (document.visibilityState === "visible") {
+        setSessionExpired(false);
+        authenticateNative().catch(() => {
+          setSessionExpired(true);
+          setNeedsVpsAuth(true);
+        });
+      } else {
+        setSessionExpired(true);
+        setNeedsVpsAuth(true);
+      }
+    });
+  }, [authenticateNative]);
+
+  return (
+    <VpsBridgeContext.Provider value={{
+      ready, error, needsVpsAuth, sessionExpired, send,
+      waitForReady, reauthenticate, signalAuthNeeded, reload,
+      authenticateNative, registerNative,
+    }}>
+      {children}
+    </VpsBridgeContext.Provider>
+  );
+}
+
+// ── Iframe bridge (web + Tauri macOS) ──
 
 function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
   const queryClient = useQueryClient();
