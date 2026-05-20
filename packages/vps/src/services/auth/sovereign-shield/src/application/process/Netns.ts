@@ -18,6 +18,7 @@
 
 import { spawn, spawnSync, ChildProcess } from 'child_process';
 import { createRedactor } from '../audit/LogRedaction';
+import { capabilities } from '@vps/shared/platform';
 
 const HELPER = '/usr/local/bin/ellul-netns-helper';
 
@@ -138,6 +139,10 @@ function runHelper(action: string, nsName: string, extraArgs: string[] = [], std
  * IP scheme: 10.200.{port%256}.{1,2}/30
  */
 export function createShieldedNamespace(sandboxId: string, port: number): { nsIp: string; hostIp: string } {
+  if (!capabilities.namespaces) {
+    return { nsIp: '127.0.0.1', hostIp: '127.0.0.1' };
+  }
+
   const nsName = toNsName(sandboxId);
   const result = runHelper('create', nsName, [String(port)]);
 
@@ -159,6 +164,8 @@ export function createShieldedNamespace(sandboxId: string, port: number): { nsIp
  * Destinations are passed via stdin pipe (not CLI args).
  */
 export function applyWhitelist(sandboxId: string, destinations: AllowedDestination[]): void {
+  if (!capabilities.nftables) return;
+
   const nsName = toNsName(sandboxId);
   const result = runHelper('apply-whitelist', nsName, [], JSON.stringify(destinations));
 
@@ -193,30 +200,32 @@ export function execInNamespace(
   secretValues: string[] = [],
 ): ShieldedProcess {
   const nsName = toNsName(sandboxId);
-
-  // Build the redactor from secret values
   const redact = createRedactor(secretValues);
 
-  // Spawn helper with stdin pipe for config (command + env)
-  const child = spawn('sudo', [HELPER, 'exec', nsName], {
-    stdio: ['pipe', 'pipe', 'pipe'],
+  let child: ChildProcess;
+
+  if (capabilities.namespaces) {
+    child = spawn('sudo', [HELPER, 'exec', nsName], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    child.stdin!.write(JSON.stringify(config));
+    child.stdin!.end();
+  } else {
+    child = spawn('bash', ['-c', config.command], {
+      cwd: config.cwd,
+      env: { ...process.env, ...config.env },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  }
+
+  child.stdout!.on('data', (chunk: Buffer) => {
+    const text = chunk.toString();
+    logStore.append(sandboxId, redact(text), text);
   });
 
-  // Write config to stdin (secrets stay in pipe, invisible to ps aux)
-  child.stdin.write(JSON.stringify(config));
-  child.stdin.end();
-
-  // Trusted log pipe: redact secrets before storing
-  child.stdout.on('data', (chunk: Buffer) => {
+  child.stderr!.on('data', (chunk: Buffer) => {
     const text = chunk.toString();
-    const redacted = redact(text);
-    logStore.append(sandboxId, redacted, text);
-  });
-
-  child.stderr.on('data', (chunk: Buffer) => {
-    const text = chunk.toString();
-    const redacted = redact(text);
-    logStore.append(sandboxId, redacted, text);
+    logStore.append(sandboxId, redact(text), text);
   });
 
   child.on('close', (code) => {
@@ -256,10 +265,11 @@ export function destroyNamespace(sandboxId: string): void {
   // Clean up logs
   logStore.clear(sandboxId);
 
-  // Run helper destroy
-  const result = runHelper('destroy', nsName);
-  if (!result.success) {
-    console.warn(`[netns] Destroy ${nsName} warning:`, result.output);
+  if (capabilities.namespaces) {
+    const result = runHelper('destroy', nsName);
+    if (!result.success) {
+      console.warn(`[netns] Destroy ${nsName} warning:`, result.output);
+    }
   }
 }
 
@@ -267,6 +277,11 @@ export function destroyNamespace(sandboxId: string): void {
  * Get the status of a shielded namespace.
  */
 export function getShieldStatus(sandboxId: string): ShieldStatus {
+  if (!capabilities.namespaces) {
+    const active = activeShields.has(sandboxId);
+    return { exists: active, alive: active, pidCount: active ? 1 : 0, ruleCount: 0 };
+  }
+
   const nsName = toNsName(sandboxId);
   const result = runHelper('status', nsName);
 
@@ -287,6 +302,8 @@ export function getShieldStatus(sandboxId: string): ShieldStatus {
  * Handles CDN IP rotation (Stripe, Supabase, etc.).
  */
 export function refreshShield(sandboxId: string, destinations: AllowedDestination[]): void {
+  if (!capabilities.nftables) return;
+
   const nsName = toNsName(sandboxId);
   const status = getShieldStatus(sandboxId);
   if (!status.exists) return;

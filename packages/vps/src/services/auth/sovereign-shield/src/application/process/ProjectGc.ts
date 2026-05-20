@@ -30,10 +30,10 @@
 
 import fs from 'fs';
 import path from 'path';
-import { execSync, execFileSync } from 'child_process';
 import { SANDBOX_ID_RE } from '@ellul.ai/types';
 import { SVC_HOME } from '../../config';
 import { logAuditEvent } from '../audit/Audit';
+import { capabilities, isValidProjectOwner, removeProjectDir } from '@vps/shared/platform';
 
 const PROJECTS_DIR = path.join(SVC_HOME, 'projects');
 const SHIELDED_PROJECTS_DIR = '/var/lib/ellul-shielded/projects';
@@ -62,7 +62,7 @@ export function sweepOrphanedProjects(): void {
         const stat = fs.statSync(fullPath);
 
         // Must be a directory owned by root
-        if (!stat.isDirectory() || stat.uid !== 0) continue;
+        if (!stat.isDirectory() || !isValidProjectOwner(stat)) continue;
 
         // Must be older than ORPHAN_AGE_MS (prevents racing with in-flight creates)
         const ageMs = now - stat.mtimeMs;
@@ -76,8 +76,10 @@ export function sweepOrphanedProjects(): void {
 
         // Tamper-proof check: if shielded workspace exists, this is a real project
         // whose ellul.json was deleted (possibly by agent). Do NOT reclaim.
-        const shieldedWorkspace = path.join(SHIELDED_PROJECTS_DIR, entry, 'workspace');
-        if (fs.existsSync(shieldedWorkspace)) continue;
+        if (capabilities.shieldedWorkspaces) {
+          const shieldedWorkspace = path.join(SHIELDED_PROJECTS_DIR, entry, 'workspace');
+          if (fs.existsSync(shieldedWorkspace)) continue;
+        }
 
         // Must be effectively empty (only allowed entries like .zeroclaw)
         const contents = fs.readdirSync(fullPath);
@@ -88,10 +90,7 @@ export function sweepOrphanedProjects(): void {
         console.log(`[project-gc] Reclaiming orphaned project dir: ${entry} (age: ${Math.round(ageMs / 60000)}min)`);
 
         try {
-          execFileSync('sudo', ['/usr/local/bin/shield-project-lock', 'rm', entry], {
-            stdio: 'pipe',
-            timeout: 5000,
-          });
+          removeProjectDir(PROJECTS_DIR, entry);
         } catch (rmErr) {
           console.error(`[project-gc] Failed to rm ${entry}:`, (rmErr as Error).message);
           continue;

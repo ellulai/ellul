@@ -69,8 +69,10 @@ fn get_required_signature_type(action: &str) -> Option<&'static str> {
     }
 }
 
+#[cfg(any(target_os = "macos", target_os = "ios", target_os = "windows"))]
 const OPERATOR_PRF_SALT_LABEL: &[u8] = b"ellul-operator-key-v1";
 
+#[cfg(any(target_os = "macos", target_os = "ios", target_os = "windows"))]
 async fn derive_prf_kek() -> Result<[u8; 32], Error> {
     let salt = Sha256::digest(OPERATOR_PRF_SALT_LABEL);
     let mut challenge = [0u8; 32];
@@ -101,6 +103,11 @@ async fn derive_prf_kek() -> Result<[u8; 32], Error> {
     let mut kek = [0u8; 32];
     kek.copy_from_slice(&prf_bytes);
     Ok(kek)
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows")))]
+async fn derive_prf_kek() -> Result<[u8; 32], Error> {
+    Err(Error::Other("PRF-based operator key not available on this platform".into()))
 }
 
 fn pubkeys_key(server_domain: &str) -> String {

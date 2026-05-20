@@ -1,0 +1,40 @@
+[default]
+description = "Default permissions for ellul.ai app commands"
+permissions = [
+  "allow-open-external",
+  "allow-get-app-mode",
+  "allow-set-app-mode",
+  "allow-get-platform-info",
+  "allow-get-console-url",
+  "allow-poll-connect",
+]
+
+[[permission]]
+identifier = "allow-open-external"
+description = "Open URL in external browser"
+commands.allow = ["open_external"]
+
+[[permission]]
+identifier = "allow-get-app-mode"
+description = "Read current app mode"
+commands.allow = ["get_app_mode"]
+
+[[permission]]
+identifier = "allow-set-app-mode"
+description = "Set app mode"
+commands.allow = ["set_app_mode"]
+
+[[permission]]
+identifier = "allow-get-platform-info"
+description = "Read platform info"
+commands.allow = ["get_platform_info"]
+
+[[permission]]
+identifier = "allow-get-console-url"
+description = "Read console URL"
+commands.allow = ["get_console_url"]
+
+[[permission]]
+identifier = "allow-poll-connect"
+description = "Poll connect status"
+commands.allow = ["poll_connect"]

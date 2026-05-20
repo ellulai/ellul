@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 "use client";
 
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerEvents } from "@/hooks/useServerEvents";
@@ -19,6 +19,7 @@ import { setupMockFetch } from "@/lib/mock-fetch";
 import { isTauriApp } from "@/lib/utils";
 import { LoadingScreen } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
+import { EllulLogo } from "@ellul.ai/ui/ellul-logo";
 import { useLocaleSync } from "@/hooks/useLocaleSync";
 import { useTranslations } from "next-intl";
 
@@ -38,8 +39,213 @@ const TAURI_API_URL = CONSOLE_URL.replace("console.", "api.");
 
 const CONNECT_STORAGE_KEY = "ellul_pending_connect_id";
 
-function TauriConnectScreen() {
-  const [status, setStatus] = useState<"idle" | "waiting" | "establishing">(() => {
+const LOCAL_SERVER_STATUS: ServerStatus = {
+  state: "running",
+  plan: "free",
+  hasActiveSubscription: false,
+  server: {
+    id: "local",
+    ipAddress: "127.0.0.1",
+    domain: null,
+    createdAt: new Date().toISOString(),
+    performanceStatus: "good",
+    size: "local",
+    terminalEnabled: true,
+    sshEnabled: false,
+    securityTier: "standard",
+    serverPlan: "free",
+    product: "self_hosted",
+  },
+};
+
+type LocalStage = "checking" | "downloading" | "verifying" | "extracting" | "initializing" | "starting" | "health" | "ready" | "failed";
+
+const LOCAL_STAGE_KEYS: Record<LocalStage, string> = {
+  checking: "checking",
+  downloading: "downloading",
+  verifying: "verifying",
+  extracting: "extracting",
+  initializing: "initializing",
+  starting: "starting",
+  health: "health",
+  ready: "ready",
+  failed: "failed",
+};
+
+function LocalProvisioningScreen({ onBack, onComplete }: { onBack: () => void; onComplete: () => void }) {
+  const t = useTranslations("console.transitions.localProvisioning");
+  const [stage, setStage] = useState<LocalStage>("checking");
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+
+    const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+    if (!invoke) { setStage("failed"); setError("Tauri not available"); return; }
+
+    let cancelled = false;
+    let eventUnlisten: (() => void) | null = null;
+
+    const run = async () => {
+      try {
+        // Listen for setup-progress events from the Kotlin plugin
+        const ti = (window as any).__TAURI_INTERNALS__;
+        if (ti?.transformCallback) {
+          try {
+            const handlerId = ti.transformCallback((event: { payload: { stage: string; percent: number } }) => {
+              if (cancelled) return;
+              const s = event.payload.stage?.toLowerCase() as LocalStage;
+              if (s && LOCAL_STAGE_KEYS[s]) { setStage(s); setProgress(event.payload.percent ?? 0); }
+            });
+            const unlistenId = await ti.invoke("plugin:event|listen", {
+              event: "proot://setup-progress",
+              target: { kind: "Any" },
+              handler: handlerId,
+            });
+            eventUnlisten = () => { try { ti.invoke("plugin:event|unlisten", { event: unlistenId }); } catch {} };
+          } catch {}
+        }
+
+        // Check if already set up
+        setStage("checking");
+        const status = await invoke("plugin:proot|proot_setup_status");
+        const isComplete = status?.complete === true;
+
+        if (!isComplete) {
+          setStage("downloading"); setProgress(0);
+          await invoke("plugin:proot|proot_setup_start");
+        }
+
+        if (cancelled) return;
+
+        // Start workspace
+        setStage("starting"); setProgress(0);
+        await invoke("plugin:proot|proot_start");
+
+        // Poll health until services are ready
+        setStage("health"); setProgress(0);
+        for (let i = 0; i < 60 && !cancelled; i++) {
+          await new Promise((r) => setTimeout(r, 2000));
+          try {
+            const healthList = await invoke("plugin:proot|proot_health") as Array<{ name: string; healthy: boolean }>;
+            const allHealthy = healthList.length > 0 && healthList.every((s: { healthy: boolean }) => s.healthy);
+            setProgress(Math.min(Math.round(((i + 1) / 60) * 100), allHealthy ? 100 : 95));
+            if (allHealthy) break;
+          } catch {}
+        }
+
+        if (cancelled) return;
+
+        setStage("ready"); setProgress(100);
+        await new Promise((r) => setTimeout(r, 500));
+        onComplete();
+      } catch (e: any) {
+        if (!cancelled) {
+          setStage("failed");
+          setError(typeof e === "string" ? e : e?.message ?? "Setup failed");
+        }
+      }
+    };
+
+    run();
+    return () => { cancelled = true; eventUnlisten?.(); };
+  }, []);
+
+  const handleRetry = () => {
+    startedRef.current = false;
+    setStage("checking");
+    setProgress(0);
+    setError(null);
+    startedRef.current = false;
+    // Force re-run by remounting
+    window.location.reload();
+  };
+
+  const stageLabel = useMemo(() => {
+    const key = LOCAL_STAGE_KEYS[stage];
+    if (!key) return "";
+    try { return t(key as any); } catch { return stage; }
+  }, [stage, t]);
+
+  const showProgress = stage === "downloading" || stage === "extracting" || stage === "health";
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-10 bg-background/95 backdrop-blur-sm p-4">
+      <div className="max-w-lg w-full">
+        <div className="panel-ascente p-6 sm:p-10">
+          {stage !== "failed" ? (
+            <>
+              <div className="flex items-center justify-center py-6">
+                <div className="relative">
+                  <div className="w-20 h-20 rounded-full border-4 border-sodium/20" />
+                  <div className="absolute inset-0 w-20 h-20 rounded-full border-4 border-sodium border-t-transparent animate-spin" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <EllulLogo className="h-7 w-7 text-sodium" />
+                  </div>
+                </div>
+              </div>
+              <h2 className="mb-3 text-2xl font-semibold text-center text-cream">
+                {t("title")}
+              </h2>
+              <p className="text-center text-sodium text-sm font-medium mb-2">
+                {stageLabel}
+              </p>
+              {showProgress && progress > 0 && (
+                <div className="max-w-xs mx-auto mb-3">
+                  <div className="w-full h-1.5 bg-cream/5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-sodium transition-all duration-500 ease-out"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+              <p className="text-center text-cream/60 text-sm">
+                {t("wait")}
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-center py-6">
+                <div className="w-20 h-20 rounded-full border-4 border-terra/30 flex items-center justify-center">
+                  <svg className="h-8 w-8 text-terra" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                </div>
+              </div>
+              <h2 className="mb-3 text-2xl font-semibold text-center text-cream">
+                {t("failedTitle")}
+              </h2>
+              {error && <p className="text-center text-terra text-sm mb-4">{error}</p>}
+              <div className="flex gap-3 justify-center">
+                <Button variant="outline" size="sm" className="border-cream/[0.08] text-cream/75" onClick={onBack}>
+                  {t("back")}
+                </Button>
+                <Button size="sm" className="bg-sodium hover:bg-sodium/90 text-ink" onClick={handleRetry}>
+                  {t("retry")}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TauriSetupScreen({ onLocalReady }: { onLocalReady: () => void }) {
+  const [step, setStep] = useState<"choose" | "connect" | "local">(() => {
+    if (typeof window !== "undefined") {
+      const cfg = (window as any).__ELLUL_APP_CONFIG__;
+      if (cfg?.mode === "local") return "local";
+      if (localStorage.getItem(CONNECT_STORAGE_KEY)) return "connect";
+    }
+    return "choose";
+  });
+  const [connectStatus, setConnectStatus] = useState<"idle" | "waiting" | "establishing">(() => {
     if (typeof window !== "undefined" && localStorage.getItem(CONNECT_STORAGE_KEY)) return "waiting";
     return "idle";
   });
@@ -53,10 +259,11 @@ function TauriConnectScreen() {
       try {
         const data = await invoke("poll_connect", { connectId });
         if (data.status === "complete" && data.code) {
-          setStatus("establishing");
+          setConnectStatus("establishing");
           localStorage.removeItem(CONNECT_STORAGE_KEY);
           const domain = data.hasServer ? data.serverDomain : null;
-          await invoke("set_app_mode", { mode: "cloud", cloudDomain: domain });
+          const newCfg = await invoke("set_app_mode", { mode: "cloud", cloudDomain: domain });
+          (window as any).__ELLUL_APP_CONFIG__ = newCfg;
           const establishUrl = `${TAURI_API_URL}/api/auth/native/session/establish?code=${encodeURIComponent(data.code)}&redirect=${encodeURIComponent(CONSOLE_URL + "/dashboard")}`;
           window.location.replace(establishUrl);
           return;
@@ -64,7 +271,7 @@ function TauriConnectScreen() {
       } catch {}
     }
     localStorage.removeItem(CONNECT_STORAGE_KEY);
-    setStatus("idle");
+    setConnectStatus("idle");
   }, []);
 
   useEffect(() => {
@@ -77,7 +284,8 @@ function TauriConnectScreen() {
       if (document.visibilityState === "visible") {
         const pendingId = localStorage.getItem(CONNECT_STORAGE_KEY);
         if (pendingId) {
-          setStatus("waiting");
+          setStep("connect");
+          setConnectStatus("waiting");
           pollForConnect(pendingId);
         }
       }
@@ -86,6 +294,18 @@ function TauriConnectScreen() {
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [pollForConnect]);
 
+  const handleChooseLocal = async () => {
+    const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+    if (!invoke) return;
+    try {
+      const newCfg = await invoke("set_app_mode", { mode: "local" });
+      (window as any).__ELLUL_APP_CONFIG__ = newCfg;
+      setStep("local");
+    } catch {}
+  };
+
+  const handleChooseCloud = () => setStep("connect");
+
   const handleConnect = async () => {
     const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
     if (!invoke) return;
@@ -93,30 +313,102 @@ function TauriConnectScreen() {
     let connectId = "";
     for (let i = 0; i < 32; i++) connectId += chars[Math.floor(Math.random() * chars.length)];
     localStorage.setItem(CONNECT_STORAGE_KEY, connectId);
+    setConnectStatus("waiting");
     const connectUrl = `${CONSOLE_URL}/connect?connect_id=${connectId}`;
-    window.location.href = connectUrl;
+    try {
+      await invoke("plugin:shield|shield_open_url", { url: connectUrl });
+    } catch {
+      try {
+        await invoke("open_external", { url: connectUrl });
+      } catch {
+        window.open(connectUrl, "_blank");
+      }
+    }
+    pollForConnect(connectId);
   };
+
+  if (step === "local") {
+    return <LocalProvisioningScreen onBack={() => setStep("choose")} onComplete={onLocalReady} />;
+  }
+
+  if (step === "connect") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center max-w-sm p-8">
+          <div className="w-16 h-16 rounded-2xl bg-sodium/10 border border-sodium/20 flex items-center justify-center mx-auto mb-6">
+            <svg className="h-8 w-8 text-sodium" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-cream mb-2">Connect to cloud</h2>
+          <p className="text-sm text-cream/60 mb-8">
+            Sign in with your browser to connect to your cloud development environment.
+          </p>
+          <Button
+            onClick={handleConnect}
+            disabled={connectStatus !== "idle"}
+            className="w-full bg-sodium hover:bg-sodium/90 text-ink font-medium"
+            size="lg"
+          >
+            {connectStatus === "waiting" ? "Waiting for sign-in..." : connectStatus === "establishing" ? "Connecting..." : "Connect to Cloud"}
+          </Button>
+          <button
+            onClick={() => { localStorage.removeItem(CONNECT_STORAGE_KEY); setStep("choose"); setConnectStatus("idle"); }}
+            className="mt-4 text-sm text-cream/40 hover:text-cream/60 transition-colors"
+          >
+            Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center max-w-sm p-8">
-        <div className="w-16 h-16 rounded-2xl bg-sodium/10 border border-sodium/20 flex items-center justify-center mx-auto mb-6">
-          <svg className="h-8 w-8 text-sodium" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z" />
-          </svg>
+      <div className="max-w-md w-full p-8">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 rounded-2xl bg-sodium/10 border border-sodium/20 flex items-center justify-center mx-auto mb-6">
+            <svg className="h-8 w-8 text-sodium" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-cream">Welcome to ellul.ai</h2>
+          <p className="text-sm text-cream/60 mt-2">Choose how you want to code</p>
         </div>
-        <h2 className="text-xl font-semibold text-cream mb-2">Connect to cloud</h2>
-        <p className="text-sm text-cream/60 mb-8">
-          Sign in with your browser to connect to your cloud development environment.
-        </p>
-        <Button
-          onClick={handleConnect}
-          disabled={status !== "idle"}
-          className="w-full bg-sodium hover:bg-sodium/90 text-ink font-medium"
-          size="lg"
-        >
-          {status === "waiting" ? "Waiting for sign-in..." : status === "establishing" ? "Connecting..." : "Connect to Cloud"}
-        </Button>
+        <div className="space-y-3">
+          <button
+            onClick={handleChooseLocal}
+            className="w-full text-left rounded-xl border border-cream/10 hover:border-sodium/40 bg-cream/[0.02] hover:bg-cream/[0.04] p-4 transition-all group"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="h-5 w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                </svg>
+              </div>
+              <div>
+                <div className="font-medium text-cream group-hover:text-sodium transition-colors">Free &mdash; On Device</div>
+                <div className="text-sm text-cream/50 mt-0.5">Run a full dev environment locally on your phone. No account needed.</div>
+              </div>
+            </div>
+          </button>
+          <button
+            onClick={handleChooseCloud}
+            className="w-full text-left rounded-xl border border-cream/10 hover:border-sodium/40 bg-cream/[0.02] hover:bg-cream/[0.04] p-4 transition-all group"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-sodium/10 border border-sodium/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="h-5 w-5 text-sodium" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z" />
+                </svg>
+              </div>
+              <div>
+                <div className="font-medium text-cream group-hover:text-sodium transition-colors">Cloud VPS</div>
+                <div className="text-sm text-cream/50 mt-0.5">Dedicated cloud server with full Linux, AI agents, and passkey security.</div>
+              </div>
+            </div>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -178,6 +470,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [tauriNeedsConnect, setTauriNeedsConnect] = useState(false);
+  const [isLocalMode, setIsLocalMode] = useState(false);
   const isTauri = isTauriApp();
 
   // ── Tier / checkout ──
@@ -230,8 +523,24 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     }
     const checkSession = async () => {
       if (isTauriApp()) {
-        const appConfig = (window as any).__ELLUL_APP_CONFIG__;
-        if (!appConfig?.cloudDomain) {
+        const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+        let appConfig = (window as any).__ELLUL_APP_CONFIG__;
+        if (invoke) {
+          try {
+            appConfig = await invoke("get_app_mode");
+            (window as any).__ELLUL_APP_CONFIG__ = appConfig;
+          } catch {}
+        }
+        if (appConfig?.mode === "local") {
+          setIsLocalMode(true);
+          setSession({
+            user: { id: "local", name: "Local User", email: "local@localhost", emailVerified: true, image: null, createdAt: new Date(), updatedAt: new Date() },
+            session: { id: "local", userId: "local", token: "local", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date(), ipAddress: "127.0.0.1", userAgent: "" },
+          });
+          setIsAuthLoading(false);
+          return;
+        }
+        if (appConfig?.mode !== "cloud") {
           setTauriNeedsConnect(true);
           setIsAuthLoading(false);
           return;
@@ -251,7 +560,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           continue;
         }
         if (isTauriApp()) {
-          setTauriNeedsConnect(true);
+          const tauriCfg = (window as any).__ELLUL_APP_CONFIG__;
+          if (tauriCfg?.mode === "cloud") {
+            window.location.href = `${CONSOLE_URL}/sign-in`;
+          } else {
+            setTauriNeedsConnect(true);
+          }
           return;
         }
         window.location.href = WEB_URL;
@@ -293,7 +607,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       if (!response.ok) throw new Error("Failed to fetch server status");
       return response.json() as Promise<ServerStatus>;
     },
-    enabled: !MOCK_MODE && !!session,
+    enabled: !MOCK_MODE && !isLocalMode && !!session,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     retry: 5,
@@ -327,15 +641,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     if (firstId) updateActiveServer(firstId);
   }, [allServers, activeServerId, updateActiveServer]);
 
-  const hasServer = !!serverStatus?.server;
+  const hasServer = !!serverStatus?.server || isLocalMode;
   const { isConnected: sseConnected } = useServerEvents({
-    enabled: !MOCK_MODE && !!session && hasServer && !!activeServerId,
+    enabled: !MOCK_MODE && !isLocalMode && !!session && hasServer && !!activeServerId,
     serverId: activeServerId,
   });
   sseConnectedRef.current = sseConnected;
 
-  const effectiveServerStatus = MOCK_MODE ? mockServerStatus : serverStatus;
-  const effectiveIsStatusLoading = MOCK_MODE ? false : isStatusLoading;
+  const effectiveServerStatus = MOCK_MODE ? mockServerStatus : isLocalMode ? LOCAL_SERVER_STATUS : serverStatus;
+  const effectiveIsStatusLoading = MOCK_MODE ? false : isLocalMode ? false : isStatusLoading;
 
   // ── Mutations ──
 
@@ -424,7 +738,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   // ── Terminal token pre-fetch ──
 
-  const [authReady, setAuthReady] = useState(MOCK_MODE);
+  const [authReady, setAuthReady] = useState(MOCK_MODE || isLocalMode);
   const terminalServerId =
     effectiveServerStatus?.state === "running"
       ? effectiveServerStatus.server?.id
@@ -476,14 +790,22 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   // ── Loading guard ──
 
   if (isTauri && tauriNeedsConnect) {
-    return <TauriConnectScreen />;
+    return <TauriSetupScreen onLocalReady={() => {
+      setIsLocalMode(true);
+      setTauriNeedsConnect(false);
+      setSession({
+        user: { id: "local", name: "Local User", email: "local@localhost", emailVerified: true, image: null, createdAt: new Date(), updatedAt: new Date() },
+        session: { id: "local", userId: "local", token: "local", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date(), ipAddress: "127.0.0.1", userAgent: "" },
+      });
+      setIsAuthLoading(false);
+    }} />;
   }
 
   if (isAuthLoading || effectiveIsStatusLoading) {
     return <LoadingScreen message="Loading dashboard..." />;
   }
 
-  if (!MOCK_MODE && session && !serverStatus && statusError) {
+  if (!MOCK_MODE && !isLocalMode && session && !serverStatus && statusError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <div className="panel-ascente max-w-md w-full p-8 text-center">
@@ -504,7 +826,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!MOCK_MODE && session && !serverStatus) {
+  if (!MOCK_MODE && !isLocalMode && session && !serverStatus) {
     return <LoadingScreen message="Loading dashboard..." />;
   }
 

@@ -134,18 +134,23 @@ impl ShieldHttpClient {
         }
 
         let res = builder.send().await?;
-
-        if let Some(new_cookie) = extract_session_cookie(&res) {
-            session.update_cookie(new_cookie).await;
-        }
-
         let status = res.status();
+
+        // Only update session cookie from successful responses.
+        // 401s from forward_auth include Set-Cookie clearing the session;
+        // applying that would poison all subsequent requests.
+        if status.is_success() {
+            if let Some(new_cookie) = extract_session_cookie(&res) {
+                session.update_cookie(new_cookie).await;
+            }
+        }
 
         if !status.is_success() {
             let body: serde_json::Value = res.json().await.unwrap_or_default();
+            let reason = body["reason"].as_str().unwrap_or("?");
             let err_msg = match body["error"].as_str() {
-                Some(e) => e.to_string(),
-                None => format!("HTTP {status}"),
+                Some(e) => format!("{e} (reason={reason}) [HTTP {status} {method} {path} pop={pop_bound}]"),
+                None => format!("HTTP {status} {method} {path} body={body}"),
             };
             return Err(Error::HttpError(err_msg));
         }

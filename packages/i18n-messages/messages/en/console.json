@@ -483,6 +483,22 @@
         "title": "Hibernating server",
         "saving": "Saving your workspace...",
         "subtitle": "Your data is being safely preserved. This usually takes 30-60 seconds."
+      },
+      "localProvisioning": {
+        "title": "Setting up your device",
+        "wait": "This is a one-time setup. Please wait.",
+        "checking": "Checking setup status...",
+        "downloading": "Downloading environment...",
+        "verifying": "Verifying integrity...",
+        "extracting": "Extracting environment...",
+        "initializing": "Initializing services...",
+        "starting": "Starting workspace...",
+        "health": "Waiting for services...",
+        "ready": "Ready",
+        "failed": "Setup failed",
+        "failedTitle": "Setup Failed",
+        "retry": "Retry",
+        "back": "Back"
       }
     },
     "appGrid": {
@@ -936,6 +952,15 @@
       "rollbackExpires": "This snapshot expires {date}.",
       "rollbackButton": "Rollback Server",
       "copiedToClipboard": "Copied to clipboard",
+      "resetWorkspace": "Reset Workspace",
+      "resetWorkspaceSubtitle": "Delete all projects, secrets, and database data",
+      "resetWorkspaceButton": "Reset Workspace",
+      "resetWorkspaceDialogTitle": "Reset Workspace?",
+      "resetWorkspaceDialogDescription": "This will permanently delete all projects, secrets, and database data. Your device configuration and account will remain intact.",
+      "resetWorkspaceConfirmLabel": "Type RESET to confirm:",
+      "resetWorkspaceSuccess": "Workspace reset successfully",
+      "resetWorkspaceError": "Failed to reset workspace",
+      "resetting": "Resetting...",
       "health": {
         "ok": "Healthy",
         "degraded": "Degraded",

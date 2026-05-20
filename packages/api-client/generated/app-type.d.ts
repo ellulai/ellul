@@ -6919,7 +6919,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     readonly message?: string | undefined;
                 };
                 circuit: {
-                    readonly status: "open" | "closed" | "half_open";
+                    readonly status: "closed" | "open" | "half_open";
                     readonly lastErrorCode: import("./services/diag.service").DbErrorCode | null;
                     readonly consecutiveFailures: number;
                     readonly openedAt: number;

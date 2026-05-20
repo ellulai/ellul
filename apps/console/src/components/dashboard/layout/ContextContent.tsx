@@ -16,6 +16,7 @@ import type { IntegrationGroup } from "@/hooks/useIntegrationGroups";
 import { ContextSettings } from "../ContextSettings";
 import type { ContextContentProps } from "./layout-types";
 import { isContextVisible } from "@/lib/feature-flags";
+import { isLocalServer } from "@/lib/domains";
 
 export function ContextContent({
   server,
@@ -46,10 +47,12 @@ export function ContextContent({
   const allProjects = flatApps.map((a) => a.directory);
 
   // Delete from the danger zone takes an app/sandbox directory. Extract the
-  const handleDeleteFromDangerZone = async (dir: string) => {
-    const sandboxId = dir.split("/")[0] ?? dir;
-    return deleteSandbox(sandboxId);
-  };
+  const handleDeleteFromDangerZone = deleteSandbox
+    ? async (dir: string) => {
+        const sandboxId = dir.split("/")[0] ?? dir;
+        return deleteSandbox(sandboxId);
+      }
+    : undefined;
 
   return (
     <>
@@ -228,6 +231,7 @@ export function ContextContent({
             serverDomain={serverDomain}
             onUpgrade={onUpgrade}
             app={app ?? null}
+            isLocal={isLocalServer(server)}
           />
         </div>
         <div
@@ -244,12 +248,12 @@ export function ContextContent({
             app={app ?? null}
             allProjects={allProjects}
             dangerZone={
-              selectedAppName && selectedApp
+              selectedAppName && selectedApp && handleDeleteFromDangerZone
                 ? {
                     sandboxId: selectedAppName,
                     appDirectory: selectedApp,
                     onDelete: handleDeleteFromDangerZone,
-                    isDeleting: isDeletingSandbox,
+                    isDeleting: isDeletingSandbox ?? false,
                     onDeleteSuccess: onBackToOverview,
                   }
                 : undefined

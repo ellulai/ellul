@@ -8,7 +8,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { execSync, execFileSync } from 'child_process';
+import { capabilities, createProjectDir, removeProjectDir, lockProjectDir, isValidProjectOwner, dropDbRoles, IS_ANDROID } from '@vps/shared/platform';
 import type { Hono } from 'hono';
 import { SANDBOX_ID_RE } from '@ellul.ai/types';
 import { SVC_HOME } from '../config';
@@ -24,7 +24,6 @@ const SHIELDED_PROJECTS_DIR = '/var/lib/ellul-shielded/projects';
 
 const SLUG_REGEX = SANDBOX_ID_RE;
 const DISPLAY_NAME_MAX_LENGTH = 64;
-
 // UID/GID resolution is in the shield-project-lock wrapper (runs as root via sudo).
 
 // ── Slug generation ────────────────────────────────────────────────────────
@@ -135,7 +134,7 @@ function isOrphan(slug: string): { orphan: boolean; reason?: string } {
   let stat: fs.Stats;
   try { stat = fs.statSync(dir); } catch { return { orphan: false }; }
   if (!stat.isDirectory()) return { orphan: false };
-  if (stat.uid !== 0) return { orphan: false }; // not a shield-managed dir
+  if (!isValidProjectOwner(stat)) return { orphan: false };
   const ageMs = Date.now() - stat.mtimeMs;
   if (ageMs < ORPHAN_GRACE_MS) return { orphan: false, reason: 'within grace window' };
   if (fs.existsSync(path.join(dir, 'ellul.json'))) return { orphan: false };
@@ -171,10 +170,7 @@ function reapOrphans(): void {
       details: { slug: entry, reason: probe2.reason },
     });
     try {
-      execFileSync('sudo', ['/usr/local/bin/shield-project-lock', 'rm', entry], {
-        stdio: 'pipe',
-        timeout: 10_000,
-      });
+      removeProjectDir(PROJECTS_DIR, entry);
     } catch (err) {
       console.error(`[orphan-reaper] rm failed for ${entry}:`, (err as Error).message);
       logAuditEvent({
@@ -300,35 +296,22 @@ export function registerProjectsRoutes(app: Hono): void {
     const slug = allocateSlug();
     const id = crypto.createHash('sha256').update(slug).digest('hex').slice(0, 16);
 
-    // Atomic mkdir+chown+chmod+ellul.json under one root call. Shield runs as
-    // shield-runner (not in dev group), so metadata write MUST happen in the
-    // same root context as the mkdir. No fallback — fail clean if wrapper is old.
     const fallbackName = (displayName || slug).slice(0, 200);
     try {
-      execFileSync('sudo', [
-        '/usr/local/bin/shield-project-lock',
-        'create-with-meta',
-        slug,
-        fallbackName,
-      ], { stdio: 'pipe', timeout: 10_000 });
+      createProjectDir(PROJECTS_DIR, slug, fallbackName);
     } catch (createErr) {
-      const stderr = (createErr as { stderr?: Buffer }).stderr?.toString() ?? '';
-      console.error(`[projects] CRITICAL: create-with-meta failed for ${slug}:`, (createErr as Error).message, stderr);
-      try { execFileSync('sudo', ['/usr/local/bin/shield-project-lock', 'rm', slug], { stdio: 'pipe', timeout: 5000 }); } catch {}
-      if (/unknown action|usage:/i.test(stderr)) {
-        return c.json({
-          error: 'host_wrapper_outdated',
-          message: 'Host shield-project-lock is on the pre-Apr-21 version. The next provisioning cycle will upgrade the wrapper; retry after ~15 minutes.',
-        }, 503);
-      }
+      console.error(`[projects] CRITICAL: create failed for ${slug}:`, (createErr as Error).message);
+      try { removeProjectDir(PROJECTS_DIR, slug); } catch {}
       return c.json({ error: 'Failed to provision project directory' }, 500);
     }
 
     let shielded: ReturnType<typeof provisionShieldedWorkspace> | null = null;
-    try {
-      shielded = provisionShieldedWorkspace(slug);
-    } catch (err) {
-      console.warn(`[projects] Shielded workspace provisioning failed for "${slug}":`, (err as Error).message);
+    if (capabilities.shieldedWorkspaces) {
+      try {
+        shielded = provisionShieldedWorkspace(slug);
+      } catch (err) {
+        console.warn(`[projects] Shielded workspace provisioning failed for "${slug}":`, (err as Error).message);
+      }
     }
 
     logAuditEvent({
@@ -445,18 +428,10 @@ export function registerProjectsRoutes(app: Hono): void {
       catch (err) { return fail('namespace', err); }
     }
 
-    // 2. DB roles. MUST go through shield-pg-wrapper — sudoers only allow sudo as
-    // postgres through the wrapper; raw psql blocks on hidden password prompt.
+    // 2. DB roles.
     try {
-      const roles = [`shield_${slug}_owner`, `shield_${slug}_app`, `shield_${slug}_readonly`];
-      for (const role of roles) {
-        execFileSync('sudo', ['-u', 'postgres', '/usr/local/bin/shield-pg-wrapper', '/usr/bin/psql', '-c', `DROP OWNED BY "${role}" CASCADE;`], { stdio: 'pipe' });
-        execFileSync('sudo', ['-u', 'postgres', '/usr/local/bin/shield-pg-wrapper', '/usr/bin/psql', '-c', `DROP ROLE IF EXISTS "${role}";`], { stdio: 'pipe' });
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (!/role .* does not exist/i.test(msg)) return fail('database', err);
-    }
+      dropDbRoles(slug);
+    } catch (err) { return fail('database', err); }
 
     // 3. Secrets.
     try {
@@ -472,19 +447,17 @@ export function registerProjectsRoutes(app: Hono): void {
 
     // 5. Project dir (entitlement counter's source of truth).
     try {
-      execFileSync('sudo', ['/usr/local/bin/shield-project-lock', 'rm', slug], {
-        stdio: 'pipe',
-        timeout: 10_000,
-      });
+      removeProjectDir(PROJECTS_DIR, slug);
     } catch (err) { return fail('project-directory', err); }
 
-    // Wrapper can exit 0 while leaving the dir (stale bind mount, immutable bit, race).
-    let dirGone = false;
-    try { fs.statSync(projectPath); }
-    catch { dirGone = true; }
-    if (!dirGone) {
-      return fail('project-directory-verify',
-        new Error(`shield-project-lock exited 0 but ${projectPath} still exists`));
+    if (capabilities.sudo) {
+      let dirGone = false;
+      try { fs.statSync(projectPath); }
+      catch { dirGone = true; }
+      if (!dirGone) {
+        return fail('project-directory-verify',
+          new Error(`removeProjectDir exited 0 but ${projectPath} still exists`));
+      }
     }
 
     // 6. Epoch marker.
@@ -512,10 +485,7 @@ export function registerProjectsRoutes(app: Hono): void {
     }
 
     try {
-      execFileSync('sudo', ['/usr/local/bin/shield-project-lock', 'lock', slug], {
-        stdio: 'pipe',
-        timeout: 5000,
-      });
+      lockProjectDir(slug);
     } catch (err) {
       console.error(`[projects] Failed to lock dir:`, (err as Error).message);
       return c.json({ error: 'Failed to lock directory' }, 500);
@@ -577,37 +547,34 @@ export function registerProjectsRoutes(app: Hono): void {
     const id = crypto.createHash('sha256').update(slug).digest('hex').slice(0, 16);
     const projectDir = path.join(PROJECTS_DIR, slug);
 
-    // Wrapper self-destructs on uid != 0; Node-side stat below is defense-in-depth.
     try {
-      execFileSync('sudo', ['/usr/local/bin/shield-project-lock', 'create', slug], {
-        stdio: 'pipe',
-        timeout: 5000,
-      });
+      createProjectDir(PROJECTS_DIR, slug);
     } catch (createErr) {
       console.error(`[projects] CRITICAL: Internal create failed for ${slug}:`, (createErr as Error).message);
-      try { execFileSync('sudo', ['/usr/local/bin/shield-project-lock', 'rm', slug], { stdio: 'pipe', timeout: 5000 }); } catch {}
+      try { removeProjectDir(PROJECTS_DIR, slug); } catch {}
       return c.json({ error: 'Failed to provision project directory' }, 500);
     }
 
     try {
       const dirStat = fs.statSync(projectDir);
-      if (dirStat.uid !== 0) {
-        console.error(`[projects] CRITICAL: Post-create verification failed: uid=${dirStat.uid}, expected 0`);
-        try { execFileSync('sudo', ['/usr/local/bin/shield-project-lock', 'rm', slug], { stdio: 'pipe', timeout: 5000 }); } catch {}
+      if (!isValidProjectOwner(dirStat)) {
+        console.error(`[projects] CRITICAL: Post-create verification failed: uid=${dirStat.uid}`);
+        try { removeProjectDir(PROJECTS_DIR, slug); } catch {}
         return c.json({ error: 'Failed to provision project directory' }, 500);
       }
     } catch (statErr) {
       console.error(`[projects] CRITICAL: Cannot stat after create:`, (statErr as Error).message);
-      try { execFileSync('sudo', ['/usr/local/bin/shield-project-lock', 'rm', slug], { stdio: 'pipe', timeout: 5000 }); } catch {}
+      try { removeProjectDir(PROJECTS_DIR, slug); } catch {}
       return c.json({ error: 'Failed to provision project directory' }, 500);
     }
 
-    // Optional — failure logs but does NOT roll back; caller retries on next shielded op.
     let shielded: ReturnType<typeof provisionShieldedWorkspace> | null = null;
-    try {
-      shielded = provisionShieldedWorkspace(slug);
-    } catch (err) {
-      console.warn(`[projects] Shielded workspace provisioning failed for "${slug}":`, (err as Error).message);
+    if (capabilities.shieldedWorkspaces) {
+      try {
+        shielded = provisionShieldedWorkspace(slug);
+      } catch (err) {
+        console.warn(`[projects] Shielded workspace provisioning failed for "${slug}":`, (err as Error).message);
+      }
     }
 
     logAuditEvent({
@@ -656,18 +623,10 @@ export function registerProjectsRoutes(app: Hono): void {
       catch (err) { return fail('namespace', err); }
     }
 
-    // 2. DB roles (must go through shield-pg-wrapper — raw psql has no sudoers entry).
+    // 2. DB roles.
     try {
-      const roles = [`shield_${slug}_owner`, `shield_${slug}_app`, `shield_${slug}_readonly`];
-      for (const role of roles) {
-        execFileSync('sudo', ['-u', 'postgres', '/usr/local/bin/shield-pg-wrapper', '/usr/bin/psql', '-c', `DROP OWNED BY "${role}" CASCADE;`], { stdio: 'pipe' });
-        execFileSync('sudo', ['-u', 'postgres', '/usr/local/bin/shield-pg-wrapper', '/usr/bin/psql', '-c', `DROP ROLE IF EXISTS "${role}";`], { stdio: 'pipe' });
-      }
-    } catch (err) {
-      // DROP OWNED BY on non-existent role exits non-zero — not fatal.
-      const msg = err instanceof Error ? err.message : String(err);
-      if (!/role .* does not exist/i.test(msg)) return fail('database', err);
-    }
+      dropDbRoles(slug);
+    } catch (err) { return fail('database', err); }
 
     // 3. Secrets.
     try {
@@ -683,19 +642,17 @@ export function registerProjectsRoutes(app: Hono): void {
 
     // 5. Project dir (entitlement counter's source of truth).
     try {
-      execFileSync('sudo', ['/usr/local/bin/shield-project-lock', 'rm', slug], {
-        stdio: 'pipe',
-        timeout: 10_000,
-      });
+      removeProjectDir(PROJECTS_DIR, slug);
     } catch (err) { return fail('project-directory', err); }
 
-    // Wrapper can exit 0 while leaving the dir (stale bind mount, immutable bit, race).
-    let dirGone = false;
-    try { fs.statSync(projectPath); }
-    catch { dirGone = true; }
-    if (!dirGone) {
-      return fail('project-directory-verify',
-        new Error(`shield-project-lock exited 0 but ${projectPath} still exists`));
+    if (capabilities.sudo) {
+      let dirGone = false;
+      try { fs.statSync(projectPath); }
+      catch { dirGone = true; }
+      if (!dirGone) {
+        return fail('project-directory-verify',
+          new Error(`removeProjectDir exited 0 but ${projectPath} still exists`));
+      }
     }
 
     // 7. Epoch marker.
@@ -705,6 +662,42 @@ export function registerProjectsRoutes(app: Hono): void {
 
     logAuditEvent({ type: 'project_deleted', ip: getClientIp(c), details: { slug } });
     return c.json({ deleted: true, slug });
+  });
+
+  // ── Workspace reset (local/Android only) ──
+
+  app.post('/_auth/workspace/reset', async (c) => {
+    if (!IS_ANDROID) {
+      return c.json({ error: 'Reset is only available on local devices' }, 403);
+    }
+
+    const ip = getClientIp(c);
+    const projects = discoverProjects();
+    const errors: string[] = [];
+
+    for (const project of projects) {
+      const { slug } = project;
+
+      if (isShielded(slug)) {
+        try { destroyNamespace(slug); }
+        catch (err) { errors.push(`${slug}:namespace:${(err as Error).message}`); }
+      }
+
+      dropDbRoles(slug);
+
+      for (const pattern of [slug, `${slug}.env`, `${slug}.dev.env`]) {
+        try { fs.rmSync(path.join(SECRETS_DIR, pattern), { recursive: true, force: true }); } catch {}
+      }
+      try { fs.rmSync(path.join(SHIELDED_PROJECTS_DIR, slug), { recursive: true, force: true }); } catch {}
+      try { fs.rmSync(path.join(SHIELDED_PROJECTS_DIR, `${slug}.epoch`), { force: true }); } catch {}
+
+      try {
+        removeProjectDir(PROJECTS_DIR, slug);
+      } catch (err) { errors.push(`${slug}:dir:${(err as Error).message}`); }
+    }
+
+    logAuditEvent({ type: 'workspace_reset', ip, details: { projectCount: projects.length, errors } });
+    return c.json({ reset: true, projectsRemoved: projects.length, errors: errors.length ? errors : undefined });
   });
 }
 
@@ -722,7 +715,7 @@ function discoverProjects(): Array<{ id: string; slug: string; displayName: stri
       const dir = path.join(PROJECTS_DIR, entry);
       try {
         const stat = fs.statSync(dir);
-        if (!stat.isDirectory() || stat.uid !== 0) continue;
+        if (!stat.isDirectory() || !isValidProjectOwner(stat)) continue;
         if (!fs.existsSync(path.join(dir, 'ellul.json'))) continue;
         slugs.push(entry);
       } catch { /* stat failed — skip */ }

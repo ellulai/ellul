@@ -45,6 +45,7 @@ const COMMANDS: &[&str] = &[
     "shield_create_signed_ws_url",
     "shield_fetch",
     "shield_js_log",
+    "shield_open_url",
 ];
 
 fn main() {
@@ -88,5 +89,7 @@ fn main() {
         _ => {}
     }
 
-    tauri_plugin::Builder::new(COMMANDS).build();
+    tauri_plugin::Builder::new(COMMANDS)
+        .android_path("android")
+        .build();
 }

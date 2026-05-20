@@ -385,7 +385,7 @@ pub async fn shield_passkey_login(
         .await?;
     let status = res.status();
     let cookie = extract_session_cookie(&res);
-    let body: serde_json::Value = res.json().await.unwrap_or_default();
+    let mut body: serde_json::Value = res.json().await.unwrap_or_default();
     if !status.is_success() {
         return Err(Error::HttpError(
             body["error"].as_str().unwrap_or("verify failed").to_string(),
@@ -405,7 +405,7 @@ pub async fn shield_passkey_login(
             cookie_header
         };
         session.set_k_pop(result.k_pop).await;
-    pop::persist_k_pop(&result.k_pop);
+        pop::persist_k_pop(&result.k_pop);
 
         crate::webview_cookie::inject_cookies_for_session(&final_cookie, &server_domain);
         let k_pop_b64 = base64::engine::general_purpose::STANDARD.encode(result.k_pop);
@@ -470,37 +470,39 @@ async fn shield_passkey_register_impl(
         "Native passkey registration not available on this platform.".into(),
     ));
 
-    let base_url = format!("https://{server_domain}");
-    let verify_body = serde_json::json!({ "attestation": attestation_result, "name": name, "prfEnabled": false });
+    #[cfg(any(target_os = "macos", target_os = "ios", target_os = "windows"))]
+    {
+        let base_url = format!("https://{server_domain}");
+        let verify_body = serde_json::json!({ "attestation": attestation_result, "name": name, "prfEnabled": false });
 
-    // Verify needs auth (current session) but we also need the raw response for Set-Cookie
-    let session_cookie = session.cookie_header().await;
-    let mut builder = http.raw()
-        .post(format!("{base_url}/_auth/register/verify"))
-        .header("Content-Type", "application/json")
-        .header("Accept", "application/json")
-        .json(&verify_body);
-    if let Some(ref cookie) = session_cookie {
-        builder = builder.header("Cookie", cookie);
+        let session_cookie = session.cookie_header().await;
+        let mut builder = http.raw()
+            .post(format!("{base_url}/_auth/register/verify"))
+            .header("Content-Type", "application/json")
+            .header("Accept", "application/json")
+            .json(&verify_body);
+        if let Some(ref cookie) = session_cookie {
+            builder = builder.header("Cookie", cookie);
+        }
+        let res = builder.send().await?;
+
+        let status = res.status();
+        let cookie = extract_session_cookie(&res);
+        let body: serde_json::Value = res.json().await.unwrap_or_default();
+        if !status.is_success() {
+            let e = body["error"].as_str().unwrap_or("verify failed").to_string();
+            return Err(Error::HttpError(e));
+        }
+
+        if let Some(cookie_header) = cookie {
+            session.set(server_domain.clone(), cookie_header.clone()).await;
+            let result = pop::perform_mlkem_bind(http.raw(), &base_url, &cookie_header).await?;
+            session.set_k_pop(result.k_pop).await;
+            pop::persist_k_pop(&result.k_pop);
+        }
+
+        Ok(body)
     }
-    let res = builder.send().await?;
-
-    let status = res.status();
-    let cookie = extract_session_cookie(&res);
-    let body: serde_json::Value = res.json().await.unwrap_or_default();
-    if !status.is_success() {
-        let e = body["error"].as_str().unwrap_or("verify failed").to_string();
-        return Err(Error::HttpError(e));
-    }
-
-    if let Some(cookie_header) = cookie {
-        session.set(server_domain.clone(), cookie_header.clone()).await;
-        let result = pop::perform_mlkem_bind(http.raw(), &base_url, &cookie_header).await?;
-        session.set_k_pop(result.k_pop).await;
-    pop::persist_k_pop(&result.k_pop);
-    }
-
-    Ok(body)
 }
 
 #[command(rename_all = "camelCase")]
@@ -738,8 +740,39 @@ pub async fn shield_get_code_session(
     session: State<'_, SessionState>,
     http: State<'_, ShieldHttpClient>,
 ) -> Result<serde_json::Value, Error> {
-    http.post(&session, "/_auth/code/session", &serde_json::json!({}))
-        .await
+    let resp = http
+        .post(&session, "/_auth/code/session", &serde_json::json!({}))
+        .await?;
+
+    // Inject __Host-code_session cookie into the WebView so that
+    // fetchWithCodeToken (browser fetch to the code domain) works.
+    // On Android, CookieManager is the only way — the WebView blocks
+    // cross-origin Set-Cookie from the establish fetch.
+    if let Some(code_session_id) = resp["codeSessionId"].as_str() {
+        let server_domain = {
+            let guard = session.0.read().await;
+            guard.as_ref().map(|s| s.server_domain.clone())
+        };
+        if let Some(domain) = server_domain {
+            let code_domain = crate::webview_cookie::code_domain_from_server(&domain);
+
+            #[cfg(target_os = "android")]
+            {
+                let code_url = format!("https://{code_domain}");
+                let cookie_str = format!(
+                    "__Host-code_session={code_session_id}; Path=/; Secure; HttpOnly; SameSite=None"
+                );
+                let _ = crate::storage::android_cookie_set(&code_url, &cookie_str);
+            }
+
+            #[cfg(not(target_os = "android"))]
+            {
+                let _ = &code_domain;
+            }
+        }
+    }
+
+    Ok(resp)
 }
 
 #[command]
@@ -1246,5 +1279,35 @@ pub async fn shield_fetch(
 
 #[command]
 pub async fn shield_js_log(_message: String) -> Result<(), Error> {
+    Ok(())
+}
+
+#[command]
+pub async fn shield_open_url(url: String) -> Result<(), Error> {
+    #[cfg(target_os = "android")]
+    {
+        crate::storage::android_open_url(&url)?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| Error::Other(e.to_string()))?;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("cmd")
+            .args(["/C", "start", &url])
+            .spawn()
+            .map_err(|e| Error::Other(e.to_string()))?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| Error::Other(e.to_string()))?;
+    }
     Ok(())
 }

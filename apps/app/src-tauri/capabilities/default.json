@@ -6,6 +6,7 @@
     "urls": ["https://console.ellul.ai/*"]
   },
   "permissions": [
+    "default",
     "core:default",
     "core:window:default",
     "core:window:allow-start-dragging",
@@ -74,6 +75,7 @@
     "shield:allow-shield-create-signed-ws-url",
     "shield:allow-shield-fetch",
     "shield:allow-shield-js-log",
+    "shield:allow-shield-open-url",
     "proot:allow-proot-start",
     "proot:allow-proot-stop",
     "proot:allow-proot-status",

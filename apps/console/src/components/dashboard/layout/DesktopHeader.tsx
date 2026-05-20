@@ -67,12 +67,14 @@ export function DesktopHeader({
       ) : (
         // App view: Show back button, app selector, and context selector
         <div className="flex items-center gap-3 min-w-0">
-          <button
-            onClick={onBackToOverview}
-            className="p-2 rounded-lg hover:bg-cream/[0.06] text-cream/60 hover:text-cream transition-colors shrink-0"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+          {onBackToOverview && (
+            <button
+              onClick={onBackToOverview}
+              className="p-2 rounded-lg hover:bg-cream/[0.06] text-cream/60 hover:text-cream transition-colors shrink-0"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+          )}
 
           {/* Context Selector Dropdown */}
           <div className="relative shrink-0">

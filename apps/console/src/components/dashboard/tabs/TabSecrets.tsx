@@ -16,10 +16,10 @@ interface TabSecretsProps {
   serverDomain: string;
   onUpgrade?: () => void;
   app?: AppInfo | null;
+  isLocal?: boolean;
 }
 
-export function TabSecrets({ serverId, securityTier, serverDomain, app }: TabSecretsProps) {
-  // Secrets are sandbox-scoped. Fold the selected app's directory
+export function TabSecrets({ serverId, securityTier, serverDomain, app, isLocal }: TabSecretsProps) {
   const sandboxId = app ? tryParseSandboxId((app.directory.split("/")[0] ?? "")) : undefined;
 
   return (
@@ -32,7 +32,7 @@ export function TabSecrets({ serverId, securityTier, serverDomain, app }: TabSec
           sandboxId={sandboxId}
         />
       )}
-      <EncryptionFingerprintCard serverId={serverId} />
+      {!isLocal && <EncryptionFingerprintCard serverId={serverId} />}
     </div>
   );
 }

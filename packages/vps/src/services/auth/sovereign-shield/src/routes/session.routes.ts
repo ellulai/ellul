@@ -427,7 +427,7 @@ export function registerSessionRoutes(app: Hono, hostname: string): void {
 
       clearSessionCookie(c, hostname);
       if (isApiRequest) {
-        return c.json({ error: 'Session expired', loginUrl }, 401);
+        return c.json({ error: 'Session expired', reason: result.reason, loginUrl }, 401);
       }
       return c.redirect(loginUrl, 302);
     }
@@ -446,9 +446,11 @@ export function registerSessionRoutes(app: Hono, hostname: string): void {
     const isStaticAssetUrl = /\.(css|js|map|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/i.test(path);
 
     // Skip PoP where browser can't sign: WS upgrade, ttyd /token, shield-direct (tier-gate
-    // re-enforces there), and without SW: real navigations + static assets.
+    // re-enforces there), and without SW: real navigations + static assets + requests with
+    // no PoP headers at all (cross-origin fetch wrapper can't sign, pre-init timing).
+    const hasAnyPopHeader = !!(c.req.header('x-pop-timestamp') || c.req.header('x-pop-signature'));
     const skipPoP = isWebSocketUpgrade || isTtydToken || isShieldEndpoint ||
-      (!hasSw && (isGenuineNavigation || isStaticAssetUrl));
+      (!hasSw && (isGenuineNavigation || isStaticAssetUrl || !hasAnyPopHeader));
 
     if (result.session!.pop_hmac_key && !skipPoP) {
       const popResult = await verifyForwardAuthPoP(c, result.session!);

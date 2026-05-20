@@ -128,7 +128,7 @@ export interface DesktopHeaderProps {
   appContext: AppContext;
   visibleContexts: ContextConfig[];
   onContextChange: (ctx: AppContext) => void;
-  onBackToOverview: () => void;
+  onBackToOverview?: () => void;
   onShowServerSettings: () => void;
   allServers: ServerSummary[];
   activeServerId: string | null;
@@ -198,8 +198,8 @@ export interface ContextContentProps {
   // Dynamic integration groups
   integrationGroups: IntegrationGroup[];
   // Sandbox-scoped deletion (sandbox is the billing unit)
-  deleteSandbox: (sandboxId: string) => Promise<{ success: boolean; error?: string }>;
-  isDeletingSandbox: boolean;
+  deleteSandbox?: (sandboxId: string) => Promise<{ success: boolean; error?: string }>;
+  isDeletingSandbox?: boolean;
 }
 
 // ── Server settings modal props ─────────────────────────────────────────
@@ -226,4 +226,5 @@ export interface ServerSettingsModalProps {
   onSetAgentUpdateMode?: (mode: "auto" | "manual") => void;
   isSettingAgentUpdateMode?: boolean;
   onUpgrade?: () => void;
+  onResetWorkspace?: () => Promise<void>;
 }

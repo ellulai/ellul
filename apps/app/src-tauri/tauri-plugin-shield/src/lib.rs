@@ -11,7 +11,7 @@ mod operator;
 mod passkey;
 pub mod pop;
 pub mod session;
-mod storage;
+pub mod storage;
 pub mod webview_cookie;
 
 pub use error::Error;
@@ -65,6 +65,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::shield_create_signed_ws_url,
             commands::shield_fetch,
             commands::shield_js_log,
+            commands::shield_open_url,
         ])
         .setup(|app, api| {
             #[cfg(target_os = "android")]
@@ -72,6 +73,13 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
                 let handle = api
                     .register_android_plugin("ai.ellul.plugins.shield", "ShieldPlugin")?;
                 storage::init_android(handle);
+
+                let app_handle = app.clone();
+                webview_cookie::set_android_eval(Box::new(move |js: &str| {
+                    if let Some(win) = app_handle.get_webview_window("main") {
+                        let _ = win.eval(js);
+                    }
+                }));
             }
 
             #[cfg(not(target_os = "android"))]

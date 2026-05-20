@@ -10,6 +10,21 @@ pub(crate) fn get_webview_ptr() -> Option<*mut std::ffi::c_void> {
     WK_PTR.get().map(|&p| p as *mut std::ffi::c_void)
 }
 
+#[cfg(target_os = "android")]
+static ANDROID_EVAL: OnceLock<Box<dyn Fn(&str) + Send + Sync>> = OnceLock::new();
+
+#[cfg(target_os = "android")]
+pub fn set_android_eval(f: Box<dyn Fn(&str) + Send + Sync>) {
+    ANDROID_EVAL.set(f).ok();
+}
+
+#[cfg(target_os = "android")]
+fn eval_in_webview(js: &str) {
+    if let Some(f) = ANDROID_EVAL.get() {
+        f(js);
+    }
+}
+
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 type CookieChangeCallback = unsafe extern "C" fn(
     domain: *const std::os::raw::c_char,
@@ -238,8 +253,10 @@ pub fn inject_pop_to_webview(k_pop_b64: &str) {
 
     #[cfg(target_os = "android")]
     {
-        let _ = k_pop_b64;
-        // Android PoP injection uses Tauri's webview eval at the command layer
+        let js = include_str!("pop_seed.js")
+            .replace("__K_POP__", k_pop_b64)
+            .replace("__DEVICE_ID__", crate::pop::TAURI_DEVICE_ID);
+        eval_in_webview(&js);
     }
 
     #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "android")))]
@@ -256,6 +273,13 @@ pub fn remove_pop_from_webview() {
                 ellul_remove_pop_user_scripts(ptr);
             }
         }
+    }
+
+    #[cfg(target_os = "android")]
+    {
+        eval_in_webview(
+            "try{var r=indexedDB.open('sovereign-shield',2);r.onsuccess=function(){var db=r.result;try{var tx=db.transaction('session-keys','readwrite');tx.objectStore('session-keys').clear();}catch(e){};};}catch(e){}"
+        );
     }
 }
 

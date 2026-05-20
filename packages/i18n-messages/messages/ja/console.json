@@ -483,6 +483,22 @@
         "title": "サーバーをハイバーネート中",
         "saving": "ワークスペースを保存中...",
         "subtitle": "データを安全に保存しています。通常は 30〜60 秒で完了します。"
+      },
+      "localProvisioning": {
+        "title": "デバイスをセットアップ中",
+        "wait": "初回セットアップです。しばらくお待ちください。",
+        "checking": "セットアップ状況を確認中...",
+        "downloading": "環境をダウンロード中...",
+        "verifying": "整合性を検証中...",
+        "extracting": "環境を展開中...",
+        "initializing": "サービスを初期化中...",
+        "starting": "ワークスペースを起動中...",
+        "health": "サービスの起動を待機中...",
+        "ready": "準備完了",
+        "failed": "セットアップに失敗しました",
+        "failedTitle": "セットアップ失敗",
+        "retry": "再試行",
+        "back": "戻る"
       }
     },
     "appGrid": {
@@ -922,6 +938,15 @@
       "rollbackExpires": "このスナップショットの有効期限: {date}。",
       "rollbackButton": "サーバーをロールバック",
       "copiedToClipboard": "クリップボードにコピーしました",
+      "resetWorkspace": "ワークスペースをリセット",
+      "resetWorkspaceSubtitle": "すべてのプロジェクト、シークレット、データベースを削除します",
+      "resetWorkspaceButton": "ワークスペースをリセット",
+      "resetWorkspaceDialogTitle": "ワークスペースをリセットしますか？",
+      "resetWorkspaceDialogDescription": "すべてのプロジェクト、シークレット、データベースデータが完全に削除されます。デバイスの設定とアカウントはそのまま残ります。",
+      "resetWorkspaceConfirmLabel": "確認のため RESET と入力してください：",
+      "resetWorkspaceSuccess": "ワークスペースのリセットに成功しました",
+      "resetWorkspaceError": "ワークスペースのリセットに失敗しました",
+      "resetting": "リセット中...",
       "health": {
         "ok": "正常",
         "degraded": "劣化",

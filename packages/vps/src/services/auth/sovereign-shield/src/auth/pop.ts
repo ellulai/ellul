@@ -58,13 +58,22 @@ export interface Session {
 let checkNonceStmt: ReturnType<typeof db.prepare> | null = null;
 let insertNonceStmt: ReturnType<typeof db.prepare> | null = null;
 let cleanupNoncesStmt: ReturnType<typeof db.prepare> | null = null;
+let deviceBindingKeysStmt: ReturnType<typeof db.prepare> | null = null;
 
 function initStatements() {
   if (!checkNonceStmt) {
     checkNonceStmt = db.prepare('SELECT 1 FROM pop_nonces WHERE nonce_key = ?');
     insertNonceStmt = db.prepare('INSERT OR IGNORE INTO pop_nonces (nonce_key, expires_at) VALUES (?, ?)');
     cleanupNoncesStmt = db.prepare('DELETE FROM pop_nonces WHERE expires_at < ?');
+    deviceBindingKeysStmt = db.prepare('SELECT pop_hmac_key FROM device_bindings WHERE session_id = ?');
   }
+}
+
+function getDeviceBindingKeys(sessionId: string): string[] {
+  initStatements();
+  return (deviceBindingKeysStmt!.all(sessionId) as { pop_hmac_key: string }[])
+    .map(r => r.pop_hmac_key)
+    .filter(Boolean);
 }
 
 /**
@@ -177,15 +186,29 @@ export async function verifyRequestPoP(
   const payload = timestamp + '|' + method + '|' + path + '|' + bodyHash + '|' + nonce;
 
   // Verify using HMAC-SHA256 (PQC session MAC)
-  const valid = await verifyPopSignature(popKey, payload, signature);
+  let valid = await verifyPopSignature(popKey, payload, signature);
   if (!valid) {
-    dbg('pop', 'reject_signature_invalid', {
-      sidShort, method, path, bodyHashShort: bodyHash.slice(0, 12), bodyLen: rawBody?.length ?? 0,
-    });
-    return { valid: false, reason: 'pop_signature_invalid' };
+    // Session-level key mismatch — try per-device binding keys (cross-origin
+    // iframes bind independently and may hold a different ML-KEM-derived key).
+    const deviceKeys = getDeviceBindingKeys(session.id);
+    for (const dk of deviceKeys) {
+      if (dk !== popKey && await verifyPopSignature(dk, payload, signature)) {
+        valid = true;
+        dbg('pop', 'verified_via_device_binding', { sidShort, method, path });
+        break;
+      }
+    }
+    if (!valid) {
+      dbg('pop', 'reject_signature_invalid', {
+        sidShort, method, path, bodyHashShort: bodyHash.slice(0, 12), bodyLen: rawBody?.length ?? 0,
+        deviceBindingsChecked: deviceKeys.length,
+      });
+      return { valid: false, reason: 'pop_signature_invalid' };
+    }
+  } else {
+    dbg('pop', 'verified', { sidShort, method, path });
   }
 
-  dbg('pop', 'verified', { sidShort, method, path });
   return { valid: true };
 }
 
@@ -279,14 +302,26 @@ export async function verifyForwardAuthPoP(
   const method = forwardedMethod.toUpperCase();
   const payload = timestamp + '|' + method + '|' + path + '|' + bodyHash + '|' + nonce;
 
-  const valid = await verifyPopSignature(popKey, payload, signature);
+  let valid = await verifyPopSignature(popKey, payload, signature);
   if (!valid) {
-    dbg('pop_fa', 'reject_signature_invalid', {
-      sidShort, method, path, bodyHashShort: bodyHash.slice(0, 12),
-    });
-    return { valid: false, reason: 'pop_signature_invalid' };
+    const deviceKeys = getDeviceBindingKeys(session.id);
+    for (const dk of deviceKeys) {
+      if (dk !== popKey && await verifyPopSignature(dk, payload, signature)) {
+        valid = true;
+        dbg('pop_fa', 'verified_via_device_binding', { sidShort, method, path });
+        break;
+      }
+    }
+    if (!valid) {
+      dbg('pop_fa', 'reject_signature_invalid', {
+        sidShort, method, path, bodyHashShort: bodyHash.slice(0, 12),
+        deviceBindingsChecked: deviceKeys.length,
+      });
+      return { valid: false, reason: 'pop_signature_invalid' };
+    }
+  } else {
+    dbg('pop_fa', 'verified', { sidShort, method, path });
   }
-  dbg('pop_fa', 'verified', { sidShort, method, path });
   return { valid: true };
 }
 

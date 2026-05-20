@@ -1,6 +1,8 @@
 package ai.ellul.plugins.shield
 
+import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import androidx.credentials.CredentialManager
@@ -190,6 +192,24 @@ class ShieldPlugin(private val activity: android.app.Activity) : Plugin(activity
             } catch (e: Exception) {
                 invoke.reject("Passkey register failed: ${e.message}")
             }
+        }
+    }
+
+    @Command
+    fun openUrl(invoke: Invoke) {
+        val args = invoke.getArgs()
+        val url = args.getString("url")
+        if (url.isNullOrEmpty()) {
+            invoke.reject("Missing url argument")
+            return
+        }
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            activity.startActivity(intent)
+            invoke.resolve()
+        } catch (e: Exception) {
+            invoke.reject("Open URL failed: ${e.message}")
         }
     }
 

@@ -26,7 +26,7 @@ import {
   type Product,
 } from "@/lib/tier-utils";
 import { isContextVisible } from "@/lib/feature-flags";
-import { getCodeApiUrl } from "@/lib/domains";
+import { getCodeApiUrl, isLocalServer, resolveServerDomain } from "@/lib/domains";
 import { toast } from "sonner";
 import * as kb from "@/lib/keybindings";
 import { useWorkspaceConfig } from "@/hooks/useWorkspaceConfig";
@@ -334,7 +334,30 @@ function DashboardContent({
 
   const [showServerSettings, setShowServerSettings] = useState(false);
 
-  const serverDomain = server.domain || `${server.ipAddress.replace(/\./g, "-")}.sslip.io`;
+  const isLocal = isLocalServer(server);
+  const serverDomain = resolveServerDomain(server);
+
+  const handleResetWorkspace = useCallback(async () => {
+    let ok = false;
+    try {
+      const ti = (window as any).__TAURI_INTERNALS__;
+      if (ti?.invoke) {
+        await ti.invoke("plugin:proot|proot_workspace_reset");
+        ok = true;
+      }
+    } catch { /* Tauri not available or command not wired — fall through */ }
+
+    if (!ok) {
+      const res = await fetch(`https://${serverDomain}/_auth/workspace/reset`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error(`Reset failed: ${res.status}`);
+    }
+
+    await refreshApps();
+  }, [serverDomain, refreshApps]);
   const selectedAppName = selectedAppInfo?.name || null;
 
   // Context mode
@@ -376,10 +399,20 @@ function DashboardContent({
   })();
 
   // Handle app selection from Overview. Encode each path segment so nested
-  const handleSelectApp = (appDir: string) => {
+  const handleSelectApp = useCallback((appDir: string) => {
     const encoded = appDir.split("/").map(encodeURIComponent).join("/");
     router.push(`/dashboard/app/${encoded}`);
-  };
+  }, [router]);
+
+  // Local mode: skip overview, navigate directly into the workspace
+  useEffect(() => {
+    if (!isLocal || appsLoading || sandboxes.length === 0) return;
+    if (mainView === "overview") {
+      const first = sandboxes[0]!;
+      const dir = first.apps.length === 1 ? first.apps[0]!.directory : first.id;
+      handleSelectApp(dir);
+    }
+  }, [isLocal, appsLoading, sandboxes, mainView, handleSelectApp]);
 
   // Handle back to Overview
   const handleBackToOverview = useCallback(() => {
@@ -604,7 +637,7 @@ function DashboardContent({
           appContext={appContext}
           visibleContexts={visibleContexts}
           onContextChange={handleContextChange}
-          onBackToOverview={handleBackToOverview}
+          onBackToOverview={isLocal ? undefined : handleBackToOverview}
           onShowServerSettings={() => setShowServerSettings(true)}
           allServers={allServers}
           activeServerId={activeServerId}
@@ -715,6 +748,7 @@ function DashboardContent({
             serverDomain={serverDomain}
             securityTier={server.securityTier}
             product={server.product}
+            isLocal={isLocal}
           />
         ) : (
           <div className="flex-1 flex flex-col min-h-0">
@@ -757,8 +791,8 @@ function DashboardContent({
               onUpgrade={onUpgrade}
               onBackToOverview={handleBackToOverview}
               integrationGroups={integrationGroups}
-              deleteSandbox={deleteSandbox}
-              isDeletingSandbox={isDeletingSandbox}
+              deleteSandbox={isLocal ? undefined : deleteSandbox}
+              isDeletingSandbox={isLocal ? undefined : isDeletingSandbox}
             />
           </div>
         )}
@@ -813,6 +847,7 @@ function DashboardContent({
           onSetAgentUpdateMode={onSetAgentUpdateMode}
           isSettingAgentUpdateMode={isSettingAgentUpdateMode}
           onUpgrade={onUpgrade}
+          onResetWorkspace={isLocal ? handleResetWorkspace : undefined}
         />
       )}
     </div>
@@ -822,8 +857,7 @@ function DashboardContent({
 // ── Outer wrapper: providers ────────────────────────────────────────────
 
 export function MobileDashboardLayout(props: MobileDashboardLayoutProps) {
-  const serverDomain =
-    props.server.domain || `${props.server.ipAddress.replace(/\./g, "-")}.sslip.io`;
+  const serverDomain = resolveServerDomain(props.server);
 
   // When view prop is provided (route-controlled), layout.tsx provides the providers
   if (props.view) {

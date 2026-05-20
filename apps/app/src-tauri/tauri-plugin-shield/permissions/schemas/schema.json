@@ -607,6 +607,18 @@
           "markdownDescription": "Denies the shield_open_auth_sheet command without any pre-configured scope."
         },
         {
+          "description": "Enables the shield_open_url command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-open-url",
+          "markdownDescription": "Enables the shield_open_url command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_open_url command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-open-url",
+          "markdownDescription": "Denies the shield_open_url command without any pre-configured scope."
+        },
+        {
           "description": "Enables the shield_operator_bind command without any pre-configured scope.",
           "type": "string",
           "const": "allow-shield-operator-bind",

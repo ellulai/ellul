@@ -38,6 +38,7 @@ import { VpsUpdateBanner } from "../VpsUpdateBanner";
 import { AgentUpdateBanner } from "../AgentUpdateBanner";
 import { BuildAttestationBadge } from "../BuildAttestationBadge";
 import type { ServerStatus } from "@/contexts/DashboardContext";
+import { isLocalServer } from "@/lib/domains";
 import { toast } from "sonner";
 
 const PLAN_DISPLAY: Record<string, { capacity: string; label: string }> = {
@@ -81,6 +82,7 @@ interface TabHomeProps {
   onSetAgentUpdateMode?: (mode: "auto" | "manual") => void;
   isSettingAgentUpdateMode?: boolean;
   onUpgrade?: () => void;
+  onResetWorkspace?: () => Promise<void>;
   // Render only a specific section of the settings. Omit to render all.
   section?: "server" | "billing";
 }
@@ -101,6 +103,7 @@ export function TabHome({
   onSetAgentUpdateMode,
   isSettingAgentUpdateMode,
   onUpgrade,
+  onResetWorkspace,
   section,
 }: TabHomeProps) {
   const t = useTranslations("console.tabHome");
@@ -109,6 +112,9 @@ export function TabHome({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRebuildDialog, setShowRebuildDialog] = useState(false);
   const [showRollbackDialog, setShowRollbackDialog] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
 
   // Block destructive actions during active operations
   const isOperationActive = ["upgrading", "downgrading", "waking", "hibernating", "creating", "provisioning"].includes(server.state);
@@ -146,6 +152,7 @@ export function TabHome({
     uptime: getUptime(server.createdAt),
   };
 
+  const isLocal = isLocalServer(server);
   const showServer = !section || section === "server";
   const showBilling = !section || section === "billing";
 
@@ -154,10 +161,10 @@ export function TabHome({
       {/* Main Content */}
       <div className="p-4 space-y-5">
         {/* Update Banner — shown when VPS is missing newer features */}
-        {showServer && <VpsUpdateBanner />}
+        {showServer && !isLocal && <VpsUpdateBanner />}
 
         {/* Agent manifest self-update — pending manifest + mode badge + Update Now. */}
-        {showServer && agentUpdate && (
+        {showServer && !isLocal && agentUpdate && (
           <AgentUpdateBanner
             agentUpdate={agentUpdate}
             onUpdateServer={onUpdateServer}
@@ -210,7 +217,8 @@ export function TabHome({
                 </div>
               </div>
 
-              {/* IP Address */}
+              {/* IP Address — hidden on local (always localhost) */}
+              {!isLocal && (
               <div>
                 <label className="text-[11px] font-medium text-cream/60 uppercase tracking-wider">
                   {t("ipAddress")}
@@ -233,6 +241,7 @@ export function TabHome({
                   </Button>
                 </div>
               </div>
+              )}
 
               {/* Region */}
               {server.region && (
@@ -290,8 +299,8 @@ export function TabHome({
           </section>
         )}
 
-        {/* ─── Billing (Plan & Tier) ─── */}
-        {showBilling && (
+        {/* ─── Billing (Plan & Tier) — hidden on local proot ─── */}
+        {showBilling && !isLocal && (
           <section id="settings-billing" className="rounded-xl border border-cream/[0.06] bg-cream/[0.02] overflow-hidden">
             <div className="px-4 py-3 border-b border-cream/[0.04]">
               <h3 className="text-sm font-medium text-cream">{t("billingTitle")}</h3>
@@ -319,8 +328,8 @@ export function TabHome({
           </section>
         )}
 
-        {/* Rollback Recovery — contextual, shows only when available */}
-        {showServer && onRollbackServer && (
+        {/* Rollback Recovery — contextual, cloud VPS only */}
+        {showServer && !isLocal && onRollbackServer && (
           <section className="rounded-xl border border-cream/[0.06] bg-cream/[0.02] overflow-hidden">
             <div className="px-4 py-3 border-b border-cream/[0.04]">
               <h3 className="text-sm font-medium text-cream">{t("updateRecovery")}</h3>
@@ -352,8 +361,8 @@ export function TabHome({
           </section>
         )}
 
-        {/* ─── Environment Lock ─── */}
-        {showServer && (
+        {/* ─── Environment Lock — hidden on local proot ─── */}
+        {showServer && !isLocal && (
           <div id="settings-security">
             <WebLockCard serverId={server.id} serverDomain={serverDomain} serverIp={server.ipAddress} onUpgrade={onUpgrade} volumeSecurityMode={server.volumeSecurityMode} product={server.product} />
           </div>
@@ -366,8 +375,30 @@ export function TabHome({
           </div>
         )}
 
-        {/* ─── Danger Zone ─── */}
-        {showServer && <section id="settings-danger" className="rounded-xl border border-terra/20 bg-terra/[0.03] overflow-hidden">
+        {/* ─── Reset Workspace (local only) ─── */}
+        {showServer && isLocal && (
+          <section id="settings-reset" className="rounded-xl border border-terra/20 bg-terra/[0.03] overflow-hidden">
+            <div className="px-4 py-3 border-b border-terra/10">
+              <h3 className="text-sm font-medium text-terra">{t("resetWorkspace")}</h3>
+              <p className="text-[10px] text-cream/45 mt-0.5">{t("resetWorkspaceSubtitle")}</p>
+            </div>
+            <div className="p-4">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full border-terra/20 text-terra hover:bg-terra/10 hover:text-terra text-xs"
+                onClick={() => setShowResetDialog(true)}
+                disabled={isResetting}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-2" />
+                {t("resetWorkspaceButton")}
+              </Button>
+            </div>
+          </section>
+        )}
+
+        {/* ─── Danger Zone — hidden on local proot (managed via app lifecycle) ─── */}
+        {showServer && !isLocal && <section id="settings-danger" className="rounded-xl border border-terra/20 bg-terra/[0.03] overflow-hidden">
           <div className="px-4 py-3 border-b border-terra/10">
             <h3 className="text-sm font-medium text-terra">{t("dangerZone")}</h3>
             <p className="text-[10px] text-cream/45 mt-0.5">{t("dangerSubtitle")}</p>
@@ -516,6 +547,54 @@ export function TabHome({
               >
                 {isRollingBack ? <Spinner size="sm" delay={300} className="mr-2" /> : <History className="h-4 w-4 mr-2" />}
                 {isRollingBack ? t("rollingBack") : t("rollbackButton")}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Reset Workspace Dialog (local only) */}
+        <Dialog open={showResetDialog} onOpenChange={(open) => { setShowResetDialog(open); if (!open) setResetConfirmText(""); }}>
+          <DialogContent className="bg-card border-border text-cream">
+            <DialogHeader>
+              <DialogTitle className="text-terra">{t("resetWorkspaceDialogTitle")}</DialogTitle>
+              <DialogDescription className="text-cream/60">
+                {t("resetWorkspaceDialogDescription")}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-2">
+              <p className="text-xs text-cream/60 mb-2">{t("resetWorkspaceConfirmLabel")}</p>
+              <input
+                type="text"
+                value={resetConfirmText}
+                onChange={(e) => setResetConfirmText(e.target.value)}
+                placeholder="RESET"
+                className="w-full px-3 py-2 text-sm bg-ink border border-border rounded-lg text-cream placeholder:text-cream/30 focus:outline-none focus:border-terra/40"
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setShowResetDialog(false); setResetConfirmText(""); }}>
+                {t("cancel")}
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!onResetWorkspace) return;
+                  setIsResetting(true);
+                  try {
+                    await onResetWorkspace();
+                    toast.success(t("resetWorkspaceSuccess"));
+                    setShowResetDialog(false);
+                    setResetConfirmText("");
+                  } catch (err) {
+                    toast.error(t("resetWorkspaceError"));
+                  } finally {
+                    setIsResetting(false);
+                  }
+                }}
+                disabled={resetConfirmText !== "RESET" || isResetting || !onResetWorkspace}
+                className="bg-terra hover:bg-terra/80"
+              >
+                {isResetting ? <Spinner size="sm" delay={300} className="mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                {isResetting ? t("resetting") : t("resetWorkspaceButton")}
               </Button>
             </DialogFooter>
           </DialogContent>

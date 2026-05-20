@@ -32,12 +32,17 @@ fn is_internal_navigation(url: &url::Url) -> bool {
 
 
 fn resolve_start_url(cfg: &config::AppConfig) -> tauri::WebviewUrl {
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+
     match cfg.mode {
         config::AppMode::Cloud => {
-            let ts = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs();
+            let dashboard = format!("{}/dashboard?_cb={}", config::console_url(), ts);
+            tauri::WebviewUrl::External(dashboard.parse().unwrap())
+        }
+        _ if cfg!(target_os = "android") => {
             let dashboard = format!("{}/dashboard?_cb={}", config::console_url(), ts);
             tauri::WebviewUrl::External(dashboard.parse().unwrap())
         }
@@ -46,9 +51,15 @@ fn resolve_start_url(cfg: &config::AppConfig) -> tauri::WebviewUrl {
 }
 
 #[tauri::command]
-fn open_external(app: tauri::AppHandle, url: String) -> Result<(), String> {
-    use tauri_plugin_shell::ShellExt;
-    app.shell().open(&url, None).map_err(|e| e.to_string())
+fn open_external(_app: tauri::AppHandle, url: String) -> Result<(), String> {
+    #[cfg(target_os = "android")]
+    {
+        tauri_plugin_shield::storage::android_open_url(&url).map_err(|e| e.to_string())
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        open::that(&url).map_err(|e| e.to_string())
+    }
 }
 
 #[tauri::command]
@@ -184,6 +195,11 @@ pub fn run() {
             let init_script = format!(
                 r#"window.__ELLUL_APP_CONFIG__ = {cfg};
 window.__IS_ELLUL_TAURI__ = true;
+if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) {{
+  window.__TAURI_INTERNALS__.invoke('get_app_mode').then(function(c) {{
+    if (c) window.__ELLUL_APP_CONFIG__ = c;
+  }}).catch(function() {{}});
+}}
 (function() {{
   if (!navigator.serviceWorker) return;
   navigator.serviceWorker.getRegistrations().then(function(regs) {{

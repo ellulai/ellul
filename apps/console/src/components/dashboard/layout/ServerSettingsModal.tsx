@@ -40,6 +40,7 @@ export function ServerSettingsModal({
   onSetAgentUpdateMode,
   isSettingAgentUpdateMode,
   onUpgrade,
+  onResetWorkspace,
 }: ServerSettingsModalProps) {
   const t = useTranslations("console.serverSettings");
   const vh = useVisualViewport();
@@ -113,6 +114,7 @@ export function ServerSettingsModal({
               onSetAgentUpdateMode={onSetAgentUpdateMode}
               isSettingAgentUpdateMode={isSettingAgentUpdateMode}
               onUpgrade={onUpgrade}
+              onResetWorkspace={onResetWorkspace}
               section="server"
             />
           )}

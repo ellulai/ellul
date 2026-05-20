@@ -686,6 +686,32 @@ Denies the shield_open_auth_sheet command without any pre-configured scope.
 <tr>
 <td>
 
+`shield:allow-shield-open-url`
+
+</td>
+<td>
+
+Enables the shield_open_url command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`shield:deny-shield-open-url`
+
+</td>
+<td>
+
+Denies the shield_open_url command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `shield:allow-shield-operator-bind`
 
 </td>

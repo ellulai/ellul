@@ -28,6 +28,7 @@ mod android {
         fn cookie_set(&self, url: &str, cookie: &str) -> Result<(), Error>;
         fn cookie_clear(&self, url: &str, name: &str) -> Result<(), Error>;
         fn cookie_scan(&self, url: &str, cookie_name: &str) -> Result<Option<String>, Error>;
+        fn open_url(&self, url: &str) -> Result<(), Error>;
     }
 
     struct Bridge<R: tauri::Runtime> {
@@ -147,6 +148,16 @@ mod android {
                 )
                 .map_err(|e| Error::Other(format!("Android cookie scan: {e}")))?;
             Ok(resp.value)
+        }
+
+        fn open_url(&self, url: &str) -> Result<(), Error> {
+            self.handle
+                .run_mobile_plugin::<serde_json::Value>(
+                    "openUrl",
+                    serde_json::json!({ "url": url }),
+                )
+                .map_err(|e| Error::Other(format!("Android open URL: {e}")))?;
+            Ok(())
         }
     }
 
@@ -272,4 +283,9 @@ pub fn android_cookie_clear(url: &str, name: &str) -> Result<(), Error> {
 #[cfg(target_os = "android")]
 pub fn android_cookie_scan(url: &str, cookie_name: &str) -> Result<Option<String>, Error> {
     android::backend()?.cookie_scan(url, cookie_name)
+}
+
+#[cfg(target_os = "android")]
+pub fn android_open_url(url: &str) -> Result<(), Error> {
+    android::backend()?.open_url(url)
 }

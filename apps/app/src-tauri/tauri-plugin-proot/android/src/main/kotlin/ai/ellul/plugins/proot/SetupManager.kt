@@ -614,6 +614,13 @@ class SetupManager(private val context: Context) {
         File(vaultDir, "etc/ellul/deployment-model").writeText("localhost")
         File(vaultDir, "etc/ellul/security-tier").writeText("standard")
         File(vaultDir, "etc/ellul/domain").writeText("localhost")
+        File(vaultDir, "etc/ellul/rp-id").writeText("localhost")
+        File(vaultDir, "etc/ellul/console-origin").writeText("https://localhost:8443")
+        File(vaultDir, "etc/ellul/platform-zone").writeText("localhost")
+        File(vaultDir, "etc/ellul/app-zone").writeText("localhost")
+        File(vaultDir, "etc/ellul/allowed-origins").writeText("https://localhost:8443")
+        File(vaultDir, "etc/ellul/dev-domain").writeText("localhost")
+        File(vaultDir, "etc/ellul/preview-origins.json").writeText("""{"origins":["https://localhost:8443"],"patterns":[]}""")
 
         val vaultKey = ByteArray(32).also { SecureRandom().nextBytes(it) }
         val vaultKeyHex = vaultKey.joinToString("") { "%02x".format(it) }

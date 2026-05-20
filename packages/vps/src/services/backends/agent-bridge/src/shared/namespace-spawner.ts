@@ -33,6 +33,7 @@ import { randomBytes } from "crypto";
 import { writeFileSync, unlinkSync } from "fs";
 
 import { logEvent } from "./event-log";
+import { capabilities } from "@vps/shared/platform";
 
 export const NAMESPACE_PROJECT_ENV = "ELLUL_NS_PROJECT";
 
@@ -317,6 +318,24 @@ export const NamespaceChildProcessSpawnerLive = Layer.effect(
         ) as unknown as Effect.Effect<never, PlatformError.PlatformError, never>;
       }
       if (project === NAMESPACE_HOST_SENTINEL) {
+        if (!capabilities.namespaces) {
+          logEvent("ns.spawner.hostDirectBypass", {
+            command: shape.command,
+            cwd: shape.cwd,
+            ...argSummary,
+          });
+          return inner.spawn(command).pipe(
+            Effect.tapError((cause) =>
+              Effect.sync(() =>
+                logEvent("ns.spawner.hostDirectBypassError", {
+                  command: shape.command,
+                  cause: String(cause),
+                }),
+              ),
+            ),
+          ) as ReturnType<typeof inner.spawn>;
+        }
+
         const hostRouting = readScopeRouting(command);
         if (hostRouting === "malformed") {
           logEvent("ns.spawner.malformedScopeRouting", {
@@ -436,6 +455,26 @@ export const NamespaceChildProcessSpawnerLive = Layer.effect(
             description: `${NAMESPACE_PROJECT_ENV}='${project}' must match /^sbx-[a-z0-9]{7}$/`,
           }),
         ) as unknown as Effect.Effect<never, PlatformError.PlatformError, never>;
+      }
+
+      if (!capabilities.namespaces) {
+        logEvent("ns.spawner.directBypass", {
+          project,
+          command: shape.command,
+          cwd: shape.cwd,
+          ...argSummary,
+        });
+        return inner.spawn(command).pipe(
+          Effect.tapError((cause) =>
+            Effect.sync(() =>
+              logEvent("ns.spawner.directBypassError", {
+                project,
+                command: shape.command,
+                cause: String(cause),
+              }),
+            ),
+          ),
+        ) as ReturnType<typeof inner.spawn>;
       }
 
       const routing = readScopeRouting(command);

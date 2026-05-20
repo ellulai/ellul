@@ -270,16 +270,11 @@ function RealAppsListProvider({ children, serverDomain, securityTier: _securityT
   const fetchSeqRef = useRef(0);
 
   const fetchSandboxes = useCallback(async (forceRefresh = false): Promise<ApiSandbox[]> => {
-    console.error("[apps-list] fetchSandboxes: force=%s status=%s codeApiUrl=%s", forceRefresh, serverStatus, codeApiUrl);
-    if (isVpsUnreachable(serverStatus)) {
-      console.error("[apps-list] fetchSandboxes: VPS unreachable, returning cached");
-      return sandboxes;
-    }
+    if (isVpsUnreachable(serverStatus)) return sandboxes;
 
     if (!forceRefresh) {
       const cached = appsCache.get(codeApiUrl);
       if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
-        console.error("[apps-list] fetchSandboxes: cache hit, %d sandboxes", cached.sandboxes.length);
         setSandboxes(cached.sandboxes);
         setActive(cached.active);
         setError(null);
@@ -289,14 +284,11 @@ function RealAppsListProvider({ children, serverDomain, securityTier: _securityT
 
     const seq = ++fetchSeqRef.current;
     try {
-      console.error("[apps-list] fetchSandboxes: calling fetchWithCodeToken...");
       const res = await fetchWithCodeToken(`${codeApiUrl}/api/apps`, { credentials: "include" });
-      console.error("[apps-list] fetchSandboxes: response status=%d", res.status);
       if (!res.ok) throw new Error("Failed to fetch sandboxes");
       const data = await res.json() as { sandboxes?: ApiSandbox[]; active?: ApiActiveSelection };
       const fetchedSandboxes = data.sandboxes ?? [];
       const fetchedActive = data.active ?? EMPTY_ACTIVE;
-      console.error("[apps-list] fetchSandboxes: got %d sandboxes", fetchedSandboxes.length);
 
       if (seq !== fetchSeqRef.current) return fetchedSandboxes;
 
@@ -311,7 +303,6 @@ function RealAppsListProvider({ children, serverDomain, securityTier: _securityT
       setError(null);
       return fetchedSandboxes;
     } catch (e) {
-      console.error("[apps-list] fetchSandboxes ERROR: %s", e instanceof Error ? e.message : String(e));
       if (seq !== fetchSeqRef.current) return [];
       if (e instanceof AuthenticationError) {
         setError(t("authFailed"));
@@ -535,17 +526,12 @@ function RealAppsListProvider({ children, serverDomain, securityTier: _securityT
   );
 
   useEffect(() => {
-    console.error("[apps-list] init effect: initialized=%s status=%s", hasInitializedRef.current, serverStatus);
     if (hasInitializedRef.current) {
       setIsLoading(false);
       return;
     }
-    if (isVpsUnreachable(serverStatus)) {
-      console.error("[apps-list] init effect: VPS unreachable, skipping");
-      return;
-    }
+    if (isVpsUnreachable(serverStatus)) return;
     hasInitializedRef.current = true;
-    console.error("[apps-list] init effect: → calling refresh()");
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverStatus]);
@@ -556,7 +542,6 @@ function RealAppsListProvider({ children, serverDomain, securityTier: _securityT
     const prev = prevCodeTokenRef.current;
     prevCodeTokenRef.current = codeToken;
     if (codeToken && !prev && hasInitializedRef.current && sandboxes.length === 0) {
-      console.error("[apps-list] codeToken appeared (was null) → retrying fetch");
       appsCache.delete(codeApiUrl);
       refresh();
     }

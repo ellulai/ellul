@@ -56,6 +56,7 @@ import fs from 'fs';
 import path from 'path';
 import { SANDBOX_ID_RE } from '@ellul.ai/types';
 import { SVC_HOME, SERVER_ID_FILE, SHIELD_DATA_DIR } from '../../config';
+import { isValidProjectOwner } from '@vps/shared/platform';
 
 // Lazy-loaded ML-DSA-65 (post-quantum signature verification)
 let _ml_dsa65: typeof import("@noble/post-quantum/ml-dsa.js").ml_dsa65 | null = null;
@@ -448,7 +449,7 @@ function countProjects(): number {
       const fullPath = path.join(PROJECTS_DIR, entry);
       try {
         const stat = fs.statSync(fullPath);
-        if (!stat.isDirectory() || stat.uid !== 0) continue;
+        if (!stat.isDirectory() || !isValidProjectOwner(stat)) continue;
         // Hard invariant: only fully-created sandboxes count toward the
         // entitlement cap. Partial-create dirs without ellul.json are
         // either in-flight (the grace window) or in line for the orphan

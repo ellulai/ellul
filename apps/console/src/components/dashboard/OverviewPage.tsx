@@ -77,6 +77,7 @@ interface OverviewPageProps {
   // Forwarded to the Create Sandbox modal so its git flow knows whether to
   securityTier?: "standard" | "web_locked" | "private_locked";
   product?: string;
+  isLocal?: boolean;
 }
 
 export function OverviewPage({
@@ -88,6 +89,7 @@ export function OverviewPage({
   serverDomain,
   securityTier,
   product,
+  isLocal,
 }: OverviewPageProps) {
   const t = useTranslations("console.overview");
   const { deleteSandbox, isDeletingSandbox } = useAppsList();
@@ -195,13 +197,15 @@ export function OverviewPage({
               {t("sandboxCount", { count: sandboxes.length })}
             </p>
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-ink bg-sodium rounded-lg shadow-neon-bright transition-all"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            {t("newSandbox")}
-          </button>
+          {!isLocal && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-ink bg-sodium rounded-lg shadow-neon-bright transition-all"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {t("newSandbox")}
+            </button>
+          )}
         </div>
 
         {sandboxes.length > 0 && (

@@ -13,6 +13,7 @@ import { parseCookies } from '../utils/cookie';
 import { logAuditEvent } from '../application/audit/Audit';
 import { dbg } from '../application/audit/DebugLog';
 import { verifyProjectTokenDetailed, STS_EXPIRED_CODE, STS_INVALID_CODE } from '../application/platform/Sts';
+import { IS_ANDROID } from '@vps/shared/platform';
 
 // ── Route classification ──────────────────────────────────────────────────
 
@@ -83,6 +84,9 @@ function classifyRoute(path: string): RoutePolicy {
   }
   if (path.startsWith('/_auth/pop/')) {
     return { type: AuthType.AUTH_FLOW, reason: 'pop_binding' };
+  }
+  if (path === '/_auth/chat') {
+    return { type: AuthType.AUTH_FLOW, reason: 'chat_iframe_entry' };
   }
   if (path === '/_auth/schema') {
     return { type: AuthType.PUBLIC, reason: 'schema_discovery' };
@@ -250,8 +254,12 @@ export const tierGateMiddleware = createMiddleware(async (c, next) => {
         (secFetchSite === 'same-origin' || secFetchSite === 'same-site' || secFetchSite === 'none');
       const isStaticAssetUrl = /\.(css|js|map|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/i.test(path);
 
+      // Without a PoP SW, only the JS fetch wrapper signs (same-origin only).
+      // Cross-origin requests and requests before session-pop.js init can't
+      // carry PoP headers at all — degrade to cookie-only rather than hard-reject.
+      const hasAnyPopHeader = !!(c.req.header('x-pop-timestamp') || c.req.header('x-pop-signature'));
       const skipPoP = isPopSetup || isConsoleInboxStream ||
-        (!hasSw && (isGenuineNavigation || isStaticAssetUrl));
+        (!hasSw && (isGenuineNavigation || isStaticAssetUrl || !hasAnyPopHeader));
 
       if (!skipPoP) {
         dbg('gate', 'pop_required', {
@@ -293,6 +301,13 @@ export const tierGateMiddleware = createMiddleware(async (c, next) => {
     } else {
       dbg('gate', 'pop_not_bound_yet', { sessionIdShort: sessionId.slice(0, 8) });
     }
+  } else if (IS_ANDROID) {
+    dbg('gate', 'android_local_pass', { path, method, tier });
+    c.set('tierGateAuth', {
+      tier: 'standard' as const,
+      userId: 'local',
+      jwtId: 'local',
+    });
   } else {
     // Standard tier: JWT
     const jwt = verifyJwtToken(c.req);

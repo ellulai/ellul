@@ -10,7 +10,7 @@ import { OperatorKeyProvider } from "@/contexts/OperatorKeyContext";
 import { VpsBridgeProvider, useVpsBridge } from "@/lib/vps-bridge";
 import { VpsCapabilitiesProvider } from "@/providers/VpsCapabilitiesProvider";
 import { RealtimeProvider } from "@/providers/realtime-provider";
-import { getCodeApiUrl } from "@/lib/domains";
+import { getCodeApiUrl, isLocalServer, resolveServerDomain } from "@/lib/domains";
 import { isTauriApp } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -92,7 +92,8 @@ export function DashboardProviders({
   mutations,
 }: DashboardProvidersProps) {
   const server = effectiveServerStatus.server!;
-  const serverDomain = server.domain ?? `${server.ipAddress}.nip.io`;
+  const isLocal = isLocalServer(server);
+  const serverDomain = resolveServerDomain(server);
 
   const dashboardContext: DashboardContextValue = {
     serverStatus: effectiveServerStatus,
