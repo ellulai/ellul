@@ -372,7 +372,9 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
             return;
           }
           if (isTauriApp()) {
-            setNeedsVpsAuth(true);
+            // No SW in cross-origin iframe is expected — server accepts cookie-only auth
+            setNeedsVpsAuth(false);
+            setSessionExpired(false);
             setReady(true);
             return;
           }
