@@ -70,7 +70,16 @@ pub async fn shield_native_credential_create(
         .await
         .map_err(Error::HttpError)
     }
-    #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows")))]
+    #[cfg(target_os = "android")]
+    {
+        let options_json = serde_json::to_string(&options)
+            .map_err(|e| Error::HttpError(format!("serialize options: {e}")))?;
+        let response_json = crate::storage::android_passkey_register(&options_json)?;
+        let result: serde_json::Value = serde_json::from_str(&response_json)
+            .map_err(|e| Error::HttpError(format!("parse attestation: {e}")))?;
+        return Ok(result);
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows", target_os = "android")))]
     Err(Error::HttpError("Native passkey not available on this platform".into()))
 }
 
@@ -465,12 +474,21 @@ async fn shield_passkey_register_impl(
         .map_err(Error::HttpError)?
     };
 
-    #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows")))]
+    #[cfg(target_os = "android")]
+    let attestation_result: serde_json::Value = {
+        let options_json = serde_json::to_string(&options)
+            .map_err(|e| Error::HttpError(format!("serialize options: {e}")))?;
+        let response_json = crate::storage::android_passkey_register(&options_json)?;
+        serde_json::from_str(&response_json)
+            .map_err(|e| Error::HttpError(format!("parse attestation: {e}")))?
+    };
+
+    #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows", target_os = "android")))]
     return Err(Error::HttpError(
         "Native passkey registration not available on this platform.".into(),
     ));
 
-    #[cfg(any(target_os = "macos", target_os = "ios", target_os = "windows"))]
+    #[cfg(any(target_os = "macos", target_os = "ios", target_os = "windows", target_os = "android"))]
     {
         let base_url = format!("https://{server_domain}");
         let verify_body = serde_json::json!({ "attestation": attestation_result, "name": name, "prfEnabled": false });
