@@ -90,10 +90,7 @@ impl ShieldHttpClient {
     ) -> Result<serde_json::Value, Error> {
         let (url, cookie, k_pop, pop_bound) = {
             let guard = session.0.read().await;
-            let sess = guard.as_ref().ok_or_else(|| {
-                eprintln!("[shield-http] {method} {path} → NoSession (no session in state)");
-                Error::NoSession
-            })?;
+            let sess = guard.as_ref().ok_or(Error::NoSession)?;
             (
                 format!("https://{}{path}", sess.server_domain),
                 sess.session_cookie.clone(),
@@ -101,8 +98,6 @@ impl ShieldHttpClient {
                 sess.pop_bound,
             )
         };
-
-        eprintln!("[shield-http] → {method} {path} pop={pop_bound} cookie={}...", &cookie[..cookie.len().min(40)]);
 
         let mut builder = match method {
             "GET" => self.client.get(&url),
@@ -152,11 +147,9 @@ impl ShieldHttpClient {
                 Some(e) => e.to_string(),
                 None => format!("HTTP {status}"),
             };
-            eprintln!("[shield-http] ← {method} {path} FAIL {status}: {err_msg}");
             return Err(Error::HttpError(err_msg));
         }
 
-        eprintln!("[shield-http] ← {method} {path} OK {status}");
         res.json()
             .await
             .map_err(|e| Error::HttpError(format!("JSON parse: {e}")))

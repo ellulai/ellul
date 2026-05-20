@@ -9,8 +9,8 @@ mod http;
 mod operator;
 #[cfg(any(target_os = "macos", target_os = "ios", target_os = "windows"))]
 mod passkey;
-mod pop;
-mod session;
+pub mod pop;
+pub mod session;
 mod storage;
 pub mod webview_cookie;
 

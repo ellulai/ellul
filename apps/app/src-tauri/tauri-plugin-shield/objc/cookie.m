@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
 
-#if TARGET_OS_OSX
+#if TARGET_OS_OSX || TARGET_OS_IOS
 #import <WebKit/WebKit.h>
 
 // Callback type: Rust function called when __Host-shield_session changes
@@ -152,6 +152,30 @@ void ellul_observe_cookie_changes(void *wk_webview_ptr,
         _observer.callbackCtx = ctx;
         [store addObserver:_observer];
         NSLog(@"[ellul-cookie] observer registered");
+    });
+}
+
+void ellul_scan_existing_session(void *wk_webview_ptr,
+                                  EllulCookieChangeCallback callback,
+                                  void *ctx) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        WKWebView *webview = (__bridge WKWebView *)wk_webview_ptr;
+        WKHTTPCookieStore *store = webview.configuration.websiteDataStore.httpCookieStore;
+        [store getAllCookies:^(NSArray<NSHTTPCookie *> *cookies) {
+            for (NSHTTPCookie *c in cookies) {
+                if ([c.name isEqualToString:@"__Host-shield_session"] &&
+                    [c.domain hasSuffix:@"-srv.ellul.ai"]) {
+                    NSLog(@"[ellul-cookie] scan: found existing session for %@ val=%@...",
+                          c.domain,
+                          [c.value substringToIndex:MIN(c.value.length, 16)]);
+                    const char *d = [c.domain UTF8String];
+                    const char *v = [c.value UTF8String];
+                    callback(d, v, ctx);
+                    return;
+                }
+            }
+            NSLog(@"[ellul-cookie] scan: no existing __Host-shield_session found");
+        }];
     });
 }
 

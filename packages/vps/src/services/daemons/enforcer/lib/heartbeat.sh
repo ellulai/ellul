@@ -131,167 +131,12 @@ signed_api_request() {
   curl "${SA_CURL_ARGS[@]}" "$@" 2>/dev/null
 }
 
-# Main heartbeat function
-# Phase 4: One-way heartbeat. VPS sends telemetry, response body is DISCARDED.
-# All operational commands now route through the passkey-authenticated bridge.
-# A compromised API cannot inject any data, commands, or credentials into the VPS.
-heartbeat() {
-  local TOKEN=$(get_token)
-  [ -z "$TOKEN" ] && { log "Error: ELLUL_AI_TOKEN not set"; return 1; }
-  local ACTIVE_SESSIONS=$(get_active_sessions)
-  local RAM_USAGE=$(get_ram_usage)
-  local CPU_USAGE=$(get_cpu_usage)
-  local DISK_USAGE=$(get_disk_usage "/" 2>/dev/null || echo "0")
-  local DISK_PG_USAGE=$(get_disk_usage "/var/lib/postgresql" 2>/dev/null || echo "$DISK_USAGE")
-  local DEPLOYED_APPS=$(get_deployed_apps)
-  local SSH_KEY_COUNT=$(get_ssh_key_count)
-  local OPEN_PORTS=$(get_active_ports)
-  local CURRENT_TAG=$(cat "$AGENT_VERSION_FILE" 2>/dev/null | tr -d '\n')
-  # Read local settings (VPS source of truth)
-  local SETTINGS_FILE="/etc/ellul/shield-data/settings.json"
-  local LOCAL_TERMINAL=$(jq -r '.terminalEnabled // true' "$SETTINGS_FILE" 2>/dev/null || echo "true")
-  local LOCAL_SSH=$(jq -r '.sshEnabled // false' "$SETTINGS_FILE" 2>/dev/null || echo "false")
-  # Cryptographic audit chain head (Phase 4, Step 16: tamper-evident audit trail)
-  local CHAIN_HEAD=$(cat /etc/ellul/shield-data/audit-chain-head 2>/dev/null || echo '{"seq":0,"hash":"genesis"}')
-  # Agent telemetry
-  local AGENT_STATUS=$(get_agent_status)
-  # Boot validation failures (sent once, deleted after successful delivery)
-  local BOOT_FAILURES_JSON="null"
-  if [ -f /etc/ellul/boot-failures ]; then
-    BOOT_FAILURES_JSON=$(cat /etc/ellul/boot-failures | jq -R -s 'split("\n") | map(select(. != ""))' 2>/dev/null || echo "null")
-  fi
-  # PG recovery events (sent once, deleted after successful delivery)
-  local PG_RECOVERY_JSON="null"
-  if [ -f /etc/ellul/pg-recovery-events ]; then
-    PG_RECOVERY_JSON=$(cat /etc/ellul/pg-recovery-events | jq -R -s '[split("\n") | .[] | select(. != "") | fromjson]' 2>/dev/null || echo "null")
-  fi
-  local KR_VER=2
-  if [ -f "$COMMAND_SIGNING_PUBKEY_FILE" ]; then
-    KR_VER=$(jq -r '.version // 2' "$COMMAND_SIGNING_PUBKEY_FILE" 2>/dev/null)
-  fi
-  local PAYLOAD=$(jq -n \
-    --argjson activeSessions "$ACTIVE_SESSIONS" \
-    --argjson deployments "$DEPLOYED_APPS" \
-    --arg ramUsage "$RAM_USAGE" \
-    --arg cpuUsage "$CPU_USAGE" \
-    --arg diskUsage "$DISK_USAGE" \
-    --arg diskPgUsage "$DISK_PG_USAGE" \
-    --arg securityTier "$(detect_security_tier)" \
-    --arg sshKeyCount "$SSH_KEY_COUNT" \
-    --arg openPorts "$OPEN_PORTS" \
-    --arg currentTag "${CURRENT_TAG:-}" \
-    --arg localTerminal "$LOCAL_TERMINAL" \
-    --arg localSsh "$LOCAL_SSH" \
-    --argjson auditChainHead "$CHAIN_HEAD" \
-    --argjson agentStatus "$AGENT_STATUS" \
-    --argjson bootValidationFailures "$BOOT_FAILURES_JSON" \
-    --argjson pgRecoveryEvents "$PG_RECOVERY_JSON" \
-    --argjson securityViolations "$SECURITY_VIOLATION_COUNT" \
-    --argjson securityCritical "$SECURITY_CRITICAL_COUNT" \
-    --argjson securityWarning "$SECURITY_WARNING_COUNT" \
-    --argjson securityDegraded "$([ "$SECURITY_DEGRADED" = true ] && echo true || echo false)" \
-    --argjson keyringVersion "$KR_VER" \
-    '{activeSessions: $activeSessions, deployments: $deployments, ramUsage: ($ramUsage | tonumber), cpuUsage: ($cpuUsage | tonumber), diskUsage: ($diskUsage | tonumber), diskPgUsage: ($diskPgUsage | tonumber), securityTier: $securityTier, sshKeyCount: ($sshKeyCount | tonumber), open_ports: ($openPorts | split(",") | map(select(. != "") | tonumber)), currentTag: $currentTag, secretsLocal: true, localTerminalEnabled: ($localTerminal == "true"), localSshEnabled: ($localSsh == "true"), auditChainHead: $auditChainHead, agentStatus: $agentStatus, bootValidationFailures: $bootValidationFailures, pgRecoveryEvents: $pgRecoveryEvents, securityViolations: $securityViolations, securityCritical: $securityCritical, securityWarning: $securityWarning, securityDegraded: $securityDegraded, keyringVersion: $keyringVersion}')
-
-  # ── Heartbeat payload dedup ──────────────────────────────────────────
-  # `deployments` and `agentStatus` are the largest fields in the
-  # heartbeat (seen in production at 4-8 KB total when an active VPS
-  # has apps + agents). They rarely change between ticks (deployment
-  # events are rare; agent status churns on tool calls). With a 10 s
-  # heartbeat cadence, sending them every tick burns ~3 KB/s × 60 s ×
-  # 60 min × 24 h = ~15 GB/month per VPS — which is exactly what
-  # exhausted the Neon transfer quota on 2026-04-26.
-  #
-  # The fix: compute a SHA-256 hash over the two volatile-large fields.
-  # If it matches the previously-sent hash AND we haven't yet hit the
-  # forced-resync interval (every 60th tick = ~10 min), strip those
-  # fields from the payload before send. The API's parsing code is
-  # already shaped for partial heartbeats — `if (Array.isArray(body.deployments))`
-  # gates each consumer — so omission means "unchanged from last seen,"
-  # the DB row keeps its prior value, the Cloudflare reconciler does
-  # nothing, and the heartbeat shrinks to ~500 B.
-  #
-  # The forced resync every 10 min protects against API-side state loss
-  # (Cloud Run revision restart, DB row reset, etc.). Even if a VPS's
-  # local state is unchanged, the API will see a full deployment list
-  # at least every 10 min, so any drift converges within that window.
-  local STATE_HASH_FILE="/var/lib/ellul/heartbeat-state-hash"
-  local STATE_TICK_FILE="/var/lib/ellul/heartbeat-tick"
-  local FULL_RESYNC_INTERVAL_TICKS=60
-  mkdir -p /var/lib/ellul 2>/dev/null
-  local CURRENT_STATE_HASH=$(printf '%s|%s' "$DEPLOYED_APPS" "$AGENT_STATUS" | sha256sum | cut -d' ' -f1)
-  local PREVIOUS_STATE_HASH=$(cat "$STATE_HASH_FILE" 2>/dev/null | tr -d '[:space:]' || echo "")
-  local TICK_COUNT=$(cat "$STATE_TICK_FILE" 2>/dev/null | tr -d '[:space:]' || echo "0")
-  case "$TICK_COUNT" in (*[!0-9]*|"") TICK_COUNT=0 ;; esac
-  local SEND_FULL_STATE="false"
-  if [ "$CURRENT_STATE_HASH" != "$PREVIOUS_STATE_HASH" ]; then
-    SEND_FULL_STATE="true"
-  elif [ "$TICK_COUNT" -ge "$FULL_RESYNC_INTERVAL_TICKS" ]; then
-    SEND_FULL_STATE="true"
-  fi
-  if [ "$SEND_FULL_STATE" = "true" ]; then
-    printf '%s' "$CURRENT_STATE_HASH" > "$STATE_HASH_FILE" 2>/dev/null || true
-    printf '0' > "$STATE_TICK_FILE" 2>/dev/null || true
-  else
-    PAYLOAD=$(printf '%s' "$PAYLOAD" | jq -c 'del(.deployments) | del(.agentStatus)' 2>/dev/null || echo "$PAYLOAD")
-    printf '%s' "$((TICK_COUNT + 1))" > "$STATE_TICK_FILE" 2>/dev/null || true
-  fi
-  # `stateHash` is always sent so the API can correlate dedup'd
-  # heartbeats with their full-state predecessor in audit logs.
-  PAYLOAD=$(printf '%s' "$PAYLOAD" | jq -c --arg sh "$CURRENT_STATE_HASH" '. + {stateHash: $sh}' 2>/dev/null || echo "$PAYLOAD")
-
-  # Ed25519 signature (Phase 4: asymmetric auth)
-  compute_heartbeat_signature
-
-  # POST telemetry, discard response body entirely (-o /dev/null)
-  # Only capture HTTP status code -- even a compromised API response is never read
-  local HTTP_CODE=$(heartbeat_curl "$API_URL/api/servers/heartbeat" "$PAYLOAD")
-
-  if [ "$HTTP_CODE" = "200" ]; then
-    HEARTBEAT_FAILURES=0
-    # Clear boot failures after successful delivery
-    rm -f /etc/ellul/boot-failures
-    # Clear PG recovery events after successful delivery
-    rm -f /etc/ellul/pg-recovery-events
-    # Poll and execute pending commands after successful heartbeat
-    poll_and_execute_commands
-    # Pull desired-state entitlement manifest (304 on cache hit — cheap)
-    fetch_entitlement_if_stale
-    # Pull + apply agent manifest (304 on cache hit — cheap). When
-    # auto-update is off, this stages bundles and reports pending
-    # without flipping symlinks. The apply-pending-update DIRECT
-    # command handles the operator-triggered flip.
-    sync_agent_bundle
-  else
-    HEARTBEAT_FAILURES=$((HEARTBEAT_FAILURES + 1))
-    log "Heartbeat failed (HTTP $HTTP_CODE), failure count: $HEARTBEAT_FAILURES"
-  fi
-
-  # VPS-driven enforcement: reads LOCAL state only, never API response
-  local TERMINAL_ENABLED=$(jq -r '.terminalEnabled // "true"' "$SETTINGS_FILE" 2>/dev/null || echo "true")
-  local SSH_ENABLED=$(jq -r '.sshEnabled // "false"' "$SETTINGS_FILE" 2>/dev/null || echo "false")
-  enforce_settings "$TERMINAL_ENABLED" "$SSH_ENABLED"
-  enforce_features
-  enforce_caddy_permissions
-  check_security_invariants
-  # Locale reconciler — pulls sovereign-shield's intent file into the
-  # root-owned system source of truth + /etc/environment. Filesystem
-  # mediated so the heartbeat one-way invariant stays intact.
-  apply_pending_locale
-  # If env secrets were remediated, services were restarted and the enforcer
-  # itself needs a restart to purge stale secrets from its process environment.
-  # Defer to end of heartbeat so the current cycle's report reaches the API.
-  if [ "${DEFERRED_ENFORCER_RESTART:-}" = "true" ]; then
-    DEFERRED_ENFORCER_RESTART=false
-    log "SECURITY: deferred enforcer self-restart to purge stale env secrets"
-    exec systemctl restart ellul-enforcer
-  fi
-  ensure_cors_headers
-  ensure_gateway_host_rewrite
-  ensure_gateway_origin
-}
-
-# Raw heartbeat with full processing - writes local status for WebSocket broadcast
+# Main heartbeat — event-driven push with local enforcement every tick.
+# Collects telemetry locally every 10s but only pushes to the API when
+# state actually changes or a forced resync timer fires (every 60 ticks
+# = ~10 min). Local enforcement runs unconditionally every tick.
+# SIGUSR1 from the API (via file-api) sets WAKEUP=1 in the main loop,
+# which forces an immediate push regardless of delta.
 heartbeat_raw() {
   local TOKEN=$(get_token)
   [ -z "$TOKEN" ] && { log "Error: ELLUL_AI_TOKEN not set"; return 1; }
@@ -302,21 +147,11 @@ heartbeat_raw() {
   local SSH_KEY_COUNT=$(get_ssh_key_count)
   local OPEN_PORTS=$(get_active_ports)
   local CURRENT_TAG=$(cat "$AGENT_VERSION_FILE" 2>/dev/null | tr -d '\n')
-  # Read local settings (VPS source of truth)
   local SETTINGS_FILE="/etc/ellul/shield-data/settings.json"
   local LOCAL_TERMINAL=$(jq -r '.terminalEnabled // true' "$SETTINGS_FILE" 2>/dev/null || echo "true")
   local LOCAL_SSH=$(jq -r '.sshEnabled // false' "$SETTINGS_FILE" 2>/dev/null || echo "false")
-  # Cryptographic audit chain head (Phase 4, Step 16: tamper-evident audit trail)
   local CHAIN_HEAD=$(cat /etc/ellul/shield-data/audit-chain-head 2>/dev/null || echo '{"seq":0,"hash":"genesis"}')
-  # Agent telemetry
   local AGENT_STATUS=$(get_agent_status)
-  # Chain-mismatch telemetry: the most recent manifest the enforcer
-  # *tried* to install but rejected due to a broken previousVersion
-  # chain. Written atomically by agent_sync_chain_check, cleared on
-  # any accepted manifest. Making this visible in the heartbeat means
-  # release.mjs can surface "chain deadlock — run chain-reset" in the
-  # canonical deploy output instead of waiting the full verify timeout
-  # and then auto-rolling-back (which makes the deadlock worse).
   local CHAIN_REJECTION="null"
   if [ -f /run/ellul-agent-sync-chain-rejection ]; then
     CHAIN_REJECTION=$(cat /run/ellul-agent-sync-chain-rejection 2>/dev/null)
@@ -326,12 +161,14 @@ heartbeat_raw() {
   if [ -f "$COMMAND_SIGNING_PUBKEY_FILE" ]; then
     KR_VER=$(jq -r '.version // 2' "$COMMAND_SIGNING_PUBKEY_FILE" 2>/dev/null)
   fi
+  local SEC_TIER=$(detect_security_tier)
+  local SEC_DEGRADED_BOOL=$([ "$SECURITY_DEGRADED" = true ] && echo true || echo false)
   local PAYLOAD=$(jq -n \
     --argjson activeSessions "$ACTIVE_SESSIONS" \
     --argjson deployments "$DEPLOYED_APPS" \
     --arg ramUsage "$RAM_USAGE" \
     --arg cpuUsage "$CPU_USAGE" \
-    --arg securityTier "$(detect_security_tier)" \
+    --arg securityTier "$SEC_TIER" \
     --arg sshKeyCount "$SSH_KEY_COUNT" \
     --arg openPorts "$OPEN_PORTS" \
     --arg currentTag "${CURRENT_TAG:-}" \
@@ -343,18 +180,45 @@ heartbeat_raw() {
     --argjson securityViolations "$SECURITY_VIOLATION_COUNT" \
     --argjson securityCritical "$SECURITY_CRITICAL_COUNT" \
     --argjson securityWarning "$SECURITY_WARNING_COUNT" \
-    --argjson securityDegraded "$([ "$SECURITY_DEGRADED" = true ] && echo true || echo false)" \
+    --argjson securityDegraded "$SEC_DEGRADED_BOOL" \
     --argjson keyringVersion "$KR_VER" \
     '{activeSessions: $activeSessions, deployments: $deployments, ramUsage: ($ramUsage | tonumber), cpuUsage: ($cpuUsage | tonumber), securityTier: $securityTier, sshKeyCount: ($sshKeyCount | tonumber), open_ports: ($openPorts | split(",") | map(select(. != "") | tonumber)), currentTag: $currentTag, secretsLocal: true, localTerminalEnabled: ($localTerminal == "true"), localSshEnabled: ($localSsh == "true"), auditChainHead: $auditChainHead, agentStatus: $agentStatus, chainRejection: $chainRejection, securityViolations: $securityViolations, securityCritical: $securityCritical, securityWarning: $securityWarning, securityDegraded: $securityDegraded, keyringVersion: $keyringVersion}')
 
-  # Ed25519 signature (Phase 4: asymmetric auth)
-  compute_heartbeat_signature
+  # ── Delta detection: only push to API when state actually changes ────
+  # Quantize CPU/RAM to 5% buckets so gradual drift does not trigger
+  # pushes. Everything else is hashed verbatim — port changes,
+  # deployments, agent status, security tier, settings all produce an
+  # immediate push.
+  local _HB_DIR="/var/lib/ellul"
+  mkdir -p "$_HB_DIR" 2>/dev/null
+  local _CPU_Q=$(( $(printf '%.0f' "$CPU_USAGE") / 5 * 5 ))
+  local _RAM_Q=$(( $(printf '%.0f' "$RAM_USAGE") / 5 * 5 ))
+  local _DELTA_INPUT="${_CPU_Q}|${_RAM_Q}|${OPEN_PORTS}|${DEPLOYED_APPS}|${AGENT_STATUS}|${LOCAL_TERMINAL}|${LOCAL_SSH}|${SEC_TIER}|${SSH_KEY_COUNT}|${CURRENT_TAG:-}|${CHAIN_HEAD}|${CHAIN_REJECTION}|${KR_VER}|${SECURITY_VIOLATION_COUNT:-0}|${SECURITY_CRITICAL_COUNT:-0}|${SECURITY_WARNING_COUNT:-0}|${SEC_DEGRADED_BOOL}"
+  local _CUR_HASH=$(printf '%s' "$_DELTA_INPUT" | sha256sum | cut -d' ' -f1)
+  local _PREV_HASH=$(cat "$_HB_DIR/delta-hash" 2>/dev/null | tr -d '[:space:]' || echo "")
+  local _TICK=$(cat "$_HB_DIR/delta-tick" 2>/dev/null | tr -d '[:space:]' || echo "0")
+  case "$_TICK" in (*[!0-9]*|"") _TICK=0 ;; esac
 
-  # POST telemetry, discard response body entirely
-  local HTTP_CODE=$(heartbeat_curl "$API_URL/api/servers/heartbeat" "$PAYLOAD")
+  local _SHOULD_PUSH="false"
+  local _PUSH_REASON=""
+  if [ "$_CUR_HASH" != "$_PREV_HASH" ]; then
+    _SHOULD_PUSH="true"
+    _PUSH_REASON="state_changed"
+  elif [ "$_TICK" -ge "$FULL_RESYNC_INTERVAL_TICKS" ]; then
+    _SHOULD_PUSH="true"
+    _PUSH_REASON="forced_resync"
+  elif [ "${WAKEUP:-0}" -eq 1 ]; then
+    _SHOULD_PUSH="true"
+    _PUSH_REASON="sigusr1_push"
+  elif [ "${HEARTBEAT_FAILURES:-0}" -gt 0 ]; then
+    _SHOULD_PUSH="true"
+    _PUSH_REASON="retry_after_failure"
+  elif [ -f /etc/ellul/boot-failures ] || [ -f /etc/ellul/pg-recovery-events ]; then
+    _SHOULD_PUSH="true"
+    _PUSH_REASON="pending_events"
+  fi
 
-  # VPS-driven enforcement MUST run regardless of heartbeat success/failure.
-  # Moving this before the HTTP status check prevents SSH lockout when API is unreachable.
+  # ── Local enforcement runs every tick regardless of push decision ────
   local TERMINAL_ENABLED=$(jq -r '.terminalEnabled // "true"' "$SETTINGS_FILE" 2>/dev/null || echo "true")
   local SSH_ENABLED=$(jq -r '.sshEnabled // "false"' "$SETTINGS_FILE" 2>/dev/null || echo "false")
   enforce_settings "$TERMINAL_ENABLED" "$SSH_ENABLED"
@@ -370,29 +234,42 @@ heartbeat_raw() {
   ensure_gateway_host_rewrite
   ensure_gateway_origin
 
+  # ── Write local status every tick (WebSocket broadcast, no API call) ─
+  write_local_status "$CPU_USAGE" "$RAM_USAGE" "$ACTIVE_SESSIONS" "$TERMINAL_ENABLED" "$SSH_ENABLED"
+
+  if [ "$_SHOULD_PUSH" = "false" ]; then
+    printf '%s' "$((_TICK + 1))" > "$_HB_DIR/delta-tick" 2>/dev/null || true
+    LOG_SHIP_COUNTER=$((${LOG_SHIP_COUNTER:-0} + 1))
+    if [ $LOG_SHIP_COUNTER -ge 5 ]; then
+      LOG_SHIP_COUNTER=0
+      ship_logs &
+    fi
+    return 0
+  fi
+
+  # ── Push to API ─────────────────────────────────────────────────────
+  compute_heartbeat_signature
+  local HTTP_CODE=$(heartbeat_curl "$API_URL/api/servers/heartbeat" "$PAYLOAD")
+
   if [ "$HTTP_CODE" = "200" ]; then
     HEARTBEAT_FAILURES=0
-    # Poll and execute pending commands after successful heartbeat.
-    # If commands were processed (return 0), set flag for command-burst mode:
-    # the main loop will skip the 30s sleep and poll again immediately.
+    printf '%s' "$_CUR_HASH" > "$_HB_DIR/delta-hash" 2>/dev/null || true
+    printf '0' > "$_HB_DIR/delta-tick" 2>/dev/null || true
+    rm -f /etc/ellul/boot-failures
+    rm -f /etc/ellul/pg-recovery-events
     COMMANDS_PROCESSED=false
     if poll_and_execute_commands; then
       COMMANDS_PROCESSED=true
     fi
-    # Pull desired-state entitlement manifest (304 on cache hit — cheap)
     fetch_entitlement_if_stale
-    # Pull + apply agent manifest (304 on cache hit — cheap)
     sync_agent_bundle
   else
     HEARTBEAT_FAILURES=$((HEARTBEAT_FAILURES + 1))
-    log "Heartbeat failed (HTTP $HTTP_CODE), failure count: $HEARTBEAT_FAILURES"
+    printf '%s' "$((_TICK + 1))" > "$_HB_DIR/delta-tick" 2>/dev/null || true
+    log "Heartbeat push failed (HTTP $HTTP_CODE, reason=$_PUSH_REASON), failure count: $HEARTBEAT_FAILURES"
     return 1
   fi
 
-  # Write local status for WebSocket broadcast (only on successful heartbeat)
-  write_local_status "$CPU_USAGE" "$RAM_USAGE" "$ACTIVE_SESSIONS" "$TERMINAL_ENABLED" "$SSH_ENABLED"
-
-  # Ship logs every 5th heartbeat cycle (~2.5 min)
   LOG_SHIP_COUNTER=$((${LOG_SHIP_COUNTER:-0} + 1))
   if [ $LOG_SHIP_COUNTER -ge 5 ]; then
     LOG_SHIP_COUNTER=0

@@ -14,12 +14,7 @@ export async function derivePrfKey(saltLabel: string): Promise<Uint8Array> {
     await crypto.subtle.digest("SHA-256", new TextEncoder().encode(saltLabel)),
   );
 
-  const tauri = isTauriApp();
-  console.error("[passy-prf] derivePrfKey: isTauriApp=%s saltLabel=%s TAURI_INTERNALS=%s IS_ELLUL_TAURI=%s",
-    tauri, saltLabel,
-    typeof window !== "undefined" && "__TAURI_INTERNALS__" in window,
-    typeof window !== "undefined" && !!(window as any).__IS_ELLUL_TAURI__);
-  if (tauri) {
+  if (isTauriApp()) {
     return derivePrfKeyTauri(saltBytes);
   }
 
@@ -69,14 +64,12 @@ export async function derivePrfKey(saltLabel: string): Promise<Uint8Array> {
 }
 
 async function derivePrfKeyTauri(saltBytes: Uint8Array): Promise<Uint8Array> {
-  console.error("[passy-prf] derivePrfKeyTauri: entering native path");
   const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
   if (!invoke) throw new Error("Tauri runtime not available");
 
   const challenge = new Uint8Array(32);
   crypto.getRandomValues(challenge);
 
-  console.error("[passy-prf] derivePrfKeyTauri: calling shield_native_credential_get_prf");
   const result = (await invoke(
     "plugin:shield|shield_native_credential_get_prf",
     {
@@ -86,7 +79,6 @@ async function derivePrfKeyTauri(saltBytes: Uint8Array): Promise<Uint8Array> {
       prfSaltB64: bufferToBase64URL(saltBytes),
     },
   )) as { id?: string; prfFirst?: string };
-  console.error("[passy-prf] derivePrfKeyTauri: result id=%s prfFirst=%s", result.id?.slice(0, 8), result.prfFirst ? "present" : "absent");
 
   if (!result.prfFirst) {
     throw new Error(

@@ -37,7 +37,6 @@ pub struct ShieldFetchResponse {
 pub async fn shield_native_credential_create(
     options_json: String,
 ) -> Result<serde_json::Value, Error> {
-    eprintln!("[shield] native_credential_create: parsing options...");
     let options: serde_json::Value = serde_json::from_str(&options_json)
         .map_err(|e| Error::HttpError(format!("bad options JSON: {e}")))?;
 
@@ -62,7 +61,6 @@ pub async fn shield_native_credential_create(
         .and_then(|v| v.get("userVerification"))
         .and_then(|v| v.as_str());
 
-    eprintln!("[shield] native_credential_create: calling ASAuthorizationController rp_id={rp_id} user={user_name}");
     #[cfg(any(target_os = "macos", target_os = "ios", target_os = "windows"))]
     {
         crate::passkey::register(
@@ -70,7 +68,7 @@ pub async fn shield_native_credential_create(
             None, uv,
         )
         .await
-        .map_err(|e| { eprintln!("[shield] native_credential_create FAILED: {e}"); Error::HttpError(e) })
+        .map_err(Error::HttpError)
     }
     #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows")))]
     Err(Error::HttpError("Native passkey not available on this platform".into()))
@@ -109,7 +107,6 @@ pub async fn shield_native_credential_get_prf(
     user_verification: Option<String>,
     prf_salt_b64: String,
 ) -> Result<serde_json::Value, Error> {
-    eprintln!("[shield-prf] native_credential_get_prf called rp_id={rp_id}");
     #[cfg(any(target_os = "macos", target_os = "ios", target_os = "windows"))]
     {
         let challenge = base64::engine::general_purpose::URL_SAFE_NO_PAD
@@ -140,13 +137,11 @@ pub async fn shield_open_auth_sheet(
     callback_scheme: Option<String>,
 ) -> Result<serde_json::Value, Error> {
     let scheme = callback_scheme.as_deref().unwrap_or("ellul-auth");
-    eprintln!("[shield] open_auth_sheet url={url} scheme={scheme}");
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     {
         let callback_url = crate::passkey::web_auth_session(&url, scheme)
             .await
             .map_err(Error::HttpError)?;
-        eprintln!("[shield] open_auth_sheet completed callback={callback_url}");
         Ok(serde_json::json!({ "callbackUrl": callback_url }))
     }
     #[cfg(not(any(target_os = "macos", target_os = "ios")))]
@@ -182,6 +177,7 @@ pub async fn shield_set_session(
     )
     .await?;
     session.set_k_pop(result.k_pop).await;
+    pop::persist_k_pop(&result.k_pop);
 
     crate::webview_cookie::inject_cookies_for_session(&cookie_header, &server_domain);
     let k_pop_b64 = base64::engine::general_purpose::STANDARD.encode(result.k_pop);
@@ -196,6 +192,7 @@ pub async fn shield_clear_session(
     operator: State<'_, OperatorState>,
 ) -> Result<(), Error> {
     crate::webview_cookie::remove_pop_from_webview();
+    pop::clear_persisted_k_pop();
     if let Some(domain) = session.server_domain().await {
         operator::clear_keys(&domain)?;
     }
@@ -261,6 +258,7 @@ pub async fn shield_login_verify(
             .await;
         let result = pop::perform_mlkem_bind(http.raw(), &base_url, &cookie_header).await?;
         session.set_k_pop(result.k_pop).await;
+    pop::persist_k_pop(&result.k_pop);
         let k_pop_b64 = base64::engine::general_purpose::STANDARD.encode(result.k_pop);
         crate::webview_cookie::inject_pop_to_webview(&k_pop_b64);
     }
@@ -294,17 +292,10 @@ pub async fn shield_passkey_login(
                 Ok(info) => {
                     let alive = info.get("active").and_then(|v| v.as_bool()).unwrap_or(false);
                     if alive {
-                        eprintln!(
-                            "[shield] passkey_login SKIPPED — cooldown ({}s, server confirmed alive)",
-                            now_secs.saturating_sub(last_ok)
-                        );
                         return Ok(serde_json::json!({"skipped": true, "reason": "cooldown"}));
                     }
-                    eprintln!("[shield] passkey_login cooldown — server says NOT alive, proceeding");
                 }
-                Err(e) => {
-                    eprintln!("[shield] passkey_login cooldown — server check failed: {e}, proceeding");
-                }
+                Err(_) => {}
             }
         }
     }
@@ -318,7 +309,6 @@ pub async fn shield_passkey_login(
         )
         .is_err()
     {
-        eprintln!("[shield] passkey_login SKIPPED — already in progress");
         return Err(Error::Other("Passkey login already in progress".into()));
     }
     struct ResetGuard;
@@ -328,7 +318,6 @@ pub async fn shield_passkey_login(
         }
     }
     let _guard = ResetGuard;
-    eprintln!("[shield] passkey_login START domain={server_domain}");
     let base_url = format!("https://{server_domain}");
 
     // 1. Get WebAuthn options from VPS
@@ -416,11 +405,12 @@ pub async fn shield_passkey_login(
             cookie_header
         };
         session.set_k_pop(result.k_pop).await;
+    pop::persist_k_pop(&result.k_pop);
 
         crate::webview_cookie::inject_cookies_for_session(&final_cookie, &server_domain);
         let k_pop_b64 = base64::engine::general_purpose::STANDARD.encode(result.k_pop);
         crate::webview_cookie::inject_pop_to_webview(&k_pop_b64);
-        #[cfg(target_os = "macos")]
+        #[cfg(any(target_os = "macos", target_os = "ios"))]
         crate::webview_cookie::start_cookie_observer(&session);
     }
 
@@ -429,7 +419,6 @@ pub async fn shield_passkey_login(
         .unwrap_or_default()
         .as_secs();
     PASSKEY_LOGIN_LAST_OK.store(ok_ts, std::sync::atomic::Ordering::SeqCst);
-    eprintln!("[shield] passkey_login OK — cooldown armed for {PASSKEY_LOGIN_COOLDOWN_SECS}s");
     Ok(body)
 }
 
@@ -439,13 +428,9 @@ async fn shield_passkey_register_impl(
     server_domain: String,
     name: String,
 ) -> Result<serde_json::Value, Error> {
-    eprintln!("[shield] passkey_register_impl START domain={server_domain} name={name}");
-
-    eprintln!("[shield] passkey_register_impl: fetching register options (authenticated)...");
     let resp = http
         .post(session, "/_auth/register/options", &serde_json::json!({ "name": name }))
         .await?;
-    eprintln!("[shield] passkey_register_impl: options OK");
 
     let options = resp.get("options").unwrap_or(&resp);
     let challenge_b64 = options["challenge"]
@@ -470,18 +455,14 @@ async fn shield_passkey_register_impl(
         .and_then(|v| v.get("userVerification"))
         .and_then(|v| v.as_str());
 
-    eprintln!("[shield] passkey_register_impl: calling native ASAuthorizationController rp_id={rp_id} user={user_name}");
     #[cfg(any(target_os = "macos", target_os = "ios", target_os = "windows"))]
     let attestation_result = {
-        match crate::passkey::register(
+        crate::passkey::register(
             &challenge, rp_id, rp_name, &user_id, user_name, user_display,
             attestation, uv,
         )
         .await
-        {
-            Ok(v) => { eprintln!("[shield] passkey_register_impl: native register OK"); v }
-            Err(e) => { eprintln!("[shield] passkey_register_impl: native register FAILED: {e}"); return Err(Error::HttpError(e)); }
-        }
+        .map_err(Error::HttpError)?
     };
 
     #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows")))]
@@ -489,7 +470,6 @@ async fn shield_passkey_register_impl(
         "Native passkey registration not available on this platform.".into(),
     ));
 
-    eprintln!("[shield] passkey_register_impl: verifying attestation with VPS...");
     let base_url = format!("https://{server_domain}");
     let verify_body = serde_json::json!({ "attestation": attestation_result, "name": name, "prfEnabled": false });
 
@@ -508,10 +488,8 @@ async fn shield_passkey_register_impl(
     let status = res.status();
     let cookie = extract_session_cookie(&res);
     let body: serde_json::Value = res.json().await.unwrap_or_default();
-    eprintln!("[shield] passkey_register_impl: verify status={status}");
     if !status.is_success() {
         let e = body["error"].as_str().unwrap_or("verify failed").to_string();
-        eprintln!("[shield] passkey_register_impl: verify FAILED: {e}");
         return Err(Error::HttpError(e));
     }
 
@@ -519,7 +497,7 @@ async fn shield_passkey_register_impl(
         session.set(server_domain.clone(), cookie_header.clone()).await;
         let result = pop::perform_mlkem_bind(http.raw(), &base_url, &cookie_header).await?;
         session.set_k_pop(result.k_pop).await;
-        eprintln!("[shield] passkey_register_impl: session + PoP bind OK");
+    pop::persist_k_pop(&result.k_pop);
     }
 
     Ok(body)
@@ -587,6 +565,7 @@ pub async fn shield_register_verify(
             .await;
         let result = pop::perform_mlkem_bind(http.raw(), &base_url, &cookie_header).await?;
         session.set_k_pop(result.k_pop).await;
+    pop::persist_k_pop(&result.k_pop);
     }
 
     Ok(resp)
@@ -689,6 +668,7 @@ pub async fn shield_web_auth_login(
             .await;
         let result = pop::perform_mlkem_bind(http.raw(), &base_url, &cookie_header).await?;
         session.set_k_pop(result.k_pop).await;
+    pop::persist_k_pop(&result.k_pop);
     }
 
     Ok(body)
@@ -703,8 +683,8 @@ pub async fn shield_web_auth_register(
     console_url: String,
 ) -> Result<serde_json::Value, Error> {
     // Delegate directly to native ASAuthorizationController passkey + PoP
-    eprintln!("[shield] web_auth_register → delegating to native passkey_register domain={server_domain}");
-    let _ = console_url; // not needed for native path
+    let _ = console_url;
+
     shield_passkey_register_impl(&session, &http, server_domain, name).await
 }
 
@@ -1172,7 +1152,6 @@ pub async fn shield_fetch(
     path: String,
     body: Option<serde_json::Value>,
 ) -> Result<serde_json::Value, Error> {
-    eprintln!("[shield] shield_fetch called method={method} path={path}");
     let m = method.to_uppercase();
     match m.as_str() {
         "GET" => http.get(&session, &path).await,
@@ -1266,7 +1245,6 @@ pub async fn shield_fetch(
 // ── JS console log forwarder ──
 
 #[command]
-pub async fn shield_js_log(message: String) -> Result<(), Error> {
-    eprintln!("[js] {message}");
+pub async fn shield_js_log(_message: String) -> Result<(), Error> {
     Ok(())
 }

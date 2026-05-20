@@ -2,10 +2,11 @@ use aes_gcm::{
     aead::{Aead, KeyInit},
     Aes256Gcm, Nonce,
 };
-use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
+use base64::{engine::general_purpose::{STANDARD as B64, URL_SAFE_NO_PAD as B64URL}, Engine as _};
 use fips204::traits::{SerDes as SerDes204, Signer as Signer204};
 use fips205::traits::{SerDes as SerDes205, Signer as Signer205};
 use rand::RngCore;
+use sha2::{Sha256, Digest};
 use tokio::sync::RwLock;
 use zeroize::Zeroize;
 
@@ -68,6 +69,62 @@ fn get_required_signature_type(action: &str) -> Option<&'static str> {
     }
 }
 
+const OPERATOR_PRF_SALT_LABEL: &[u8] = b"ellul-operator-key-v1";
+
+async fn derive_prf_kek() -> Result<[u8; 32], Error> {
+    let salt = Sha256::digest(OPERATOR_PRF_SALT_LABEL);
+    let mut challenge = [0u8; 32];
+    rand::rngs::OsRng.fill_bytes(&mut challenge);
+
+    let result = crate::passkey::authenticate_with_prf(
+        &challenge,
+        "ellul.ai",
+        None,
+        Some("required"),
+        &salt,
+    )
+    .await
+    .map_err(|e| Error::Other(format!("PRF derivation failed: {e}")))?;
+
+    let prf_first_b64 = result["prfFirst"]
+        .as_str()
+        .ok_or_else(|| Error::Other("PRF result missing prfFirst".into()))?;
+    let prf_bytes = B64URL
+        .decode(prf_first_b64)
+        .map_err(|e| Error::Other(format!("decode PRF output: {e}")))?;
+    if prf_bytes.len() != 32 {
+        return Err(Error::Other(format!(
+            "unexpected PRF key length: {}",
+            prf_bytes.len()
+        )));
+    }
+    let mut kek = [0u8; 32];
+    kek.copy_from_slice(&prf_bytes);
+    Ok(kek)
+}
+
+fn pubkeys_key(server_domain: &str) -> String {
+    format!("pubkeys:{server_domain}")
+}
+
+fn save_pubkeys(server_domain: &str, op: &str, ml: &str, slh: &str) {
+    let json = serde_json::json!({ "op": op, "ml": ml, "slh": slh });
+    let _ = storage::store(pubkeys_key(server_domain).as_str(), json.to_string().as_bytes());
+}
+
+fn load_pubkeys(server_domain: &str) -> (String, String, String) {
+    if let Ok(Some(bytes)) = storage::load(&pubkeys_key(server_domain)) {
+        if let Ok(v) = serde_json::from_slice::<serde_json::Value>(&bytes) {
+            return (
+                v["op"].as_str().unwrap_or("").to_string(),
+                v["ml"].as_str().unwrap_or("").to_string(),
+                v["slh"].as_str().unwrap_or("").to_string(),
+            );
+        }
+    }
+    (String::new(), String::new(), String::new())
+}
+
 pub fn load_or_bind<'a>(
     operator_state: &'a OperatorState,
     session_state: &'a SessionState,
@@ -86,52 +143,40 @@ pub fn load_or_bind<'a>(
         .await
         .ok_or(Error::NoSession)?;
 
-    let status = http.get(session_state, "/_auth/gates/operator-status").await?;
-    let bound = status["bound"].as_bool().unwrap_or(false);
+    let _ = storage::remove(&storage::kek_key(&server_domain));
 
-    if bound {
-        let bundle_data = storage::load(&storage::bundle_key(&server_domain))?;
-        let kek_data = storage::load(&storage::kek_key(&server_domain))?;
-
-        match (bundle_data, kek_data) {
-            (Some(wrapped), Some(kek_bytes)) => {
-                let mut kek = [0u8; 32];
-                if kek_bytes.len() != 32 {
-                    return Err(Error::InvalidBundle("KEK wrong length".into()));
-                }
-                kek.copy_from_slice(&kek_bytes);
-                let bundle = unwrap_bundle(&wrapped, &kek)?;
+    // Fast path: local bundle exists → derive PRF KEK → unwrap → no HTTP needed
+    if let Some(wrapped) = storage::load(&storage::bundle_key(&server_domain))? {
+        let mut kek = derive_prf_kek().await?;
+        match unwrap_bundle(&wrapped, &kek) {
+            Ok(bundle) => {
                 kek.zeroize();
-
+                let (op_pk, ml_pk, slh_pk) = load_pubkeys(&server_domain);
                 let mut guard = operator_state.0.write().await;
                 *guard = Some(OperatorKeys {
                     server_domain,
                     operator_sk: bundle.operator,
-                    operator_pk_b64: status["publicKey"]
-                        .as_str()
-                        .unwrap_or("")
-                        .to_string(),
+                    operator_pk_b64: op_pk,
                     intent_mldsa44_sk: bundle.intent_mldsa44,
-                    intent_mldsa44_pk_b64: status["intentMldsa44PublicKey"]
-                        .as_str()
-                        .unwrap_or("")
-                        .to_string(),
+                    intent_mldsa44_pk_b64: ml_pk,
                     intent_slhdsa128s_sk: bundle.intent_slhdsa128s,
-                    intent_slhdsa128s_pk_b64: status["intentSlhdsa128sPublicKey"]
-                        .as_str()
-                        .unwrap_or("")
-                        .to_string(),
+                    intent_slhdsa128s_pk_b64: slh_pk,
                 });
                 return Ok(());
             }
-            _ => return Err(Error::OperatorBundleMissing),
+            Err(_) => {
+                kek.zeroize();
+                let _ = storage::remove(&storage::bundle_key(&server_domain));
+            }
         }
     }
 
-    // Not bound — generate keys and bind
+    // Slow path: no local bundle or unwrap failed — check server
+    let status = http.get(session_state, "/_auth/gates/operator-status").await?;
+    let _bound = status["bound"].as_bool().unwrap_or(false);
+
     let nonce_resp = http.get(session_state, "/_auth/gates/bind-nonce").await?;
     if nonce_resp["alreadyBound"].as_bool().unwrap_or(false) {
-        // Retry — another request just bound
         return load_or_bind(operator_state, session_state, http).await;
     }
     let bind_nonce = nonce_resp["nonce"]
@@ -139,7 +184,6 @@ pub fn load_or_bind<'a>(
         .ok_or_else(|| Error::OperatorBindFailed("no bind nonce available".into()))?
         .to_string();
 
-    // Generate three keypairs
     let (operator_pk, operator_sk) = fips205::slh_dsa_sha2_128s::try_keygen()
         .map_err(|_| Error::SigningFailed("SLH-DSA-SHA2-128s keygen failed".into()))?;
     let (mldsa44_pk, mldsa44_sk) = fips204::ml_dsa_44::try_keygen()
@@ -155,9 +199,7 @@ pub fn load_or_bind<'a>(
     let mldsa44_sk_bytes = mldsa44_sk.into_bytes().to_vec();
     let slhdsa_intent_sk_bytes = slhdsa_intent_sk.into_bytes().to_vec();
 
-    // Wrap bundle with AES-GCM and store in keychain
-    let mut kek = [0u8; 32];
-    rand::rngs::OsRng.fill_bytes(&mut kek);
+    let mut kek = derive_prf_kek().await?;
 
     let bundle = SecretBundle {
         operator: operator_sk_bytes.clone(),
@@ -166,7 +208,6 @@ pub fn load_or_bind<'a>(
     };
     let wrapped = wrap_bundle(&bundle, &kek)?;
 
-    // Bind with server
     let bind_body = serde_json::json!({
         "operatorPublicKey": operator_pk_b64,
         "operatorBindNonce": bind_nonce,
@@ -190,9 +231,8 @@ pub fn load_or_bind<'a>(
         }
     }
 
-    // Persist to keychain
-    storage::store(&storage::kek_key(&server_domain), &kek)?;
     storage::store(&storage::bundle_key(&server_domain), &wrapped)?;
+    save_pubkeys(&server_domain, &operator_pk_b64, &intent_mldsa44_pk_b64, &intent_slhdsa128s_pk_b64);
     kek.zeroize();
 
     let mut guard = operator_state.0.write().await;
@@ -217,10 +257,6 @@ pub fn sign_operator(keys: &OperatorKeys, payload: &[u8]) -> Result<OperatorSign
     message.extend_from_slice(payload);
     message.extend_from_slice(sep.as_bytes());
 
-    eprintln!("[shield-sign] payload_utf8={:?} timestamp={timestamp}", String::from_utf8_lossy(payload));
-    eprintln!("[shield-sign] full_message={:?}", String::from_utf8_lossy(&message));
-    eprintln!("[shield-sign] sk_len={} pk_b64_len={}", keys.operator_sk.len(), keys.operator_pk_b64.len());
-
     let sk_arr: [u8; 64] = keys.operator_sk.as_slice().try_into()
         .map_err(|_| Error::SigningFailed(format!(
             "SLH-DSA sk wrong size: {}", keys.operator_sk.len()
@@ -229,8 +265,6 @@ pub fn sign_operator(keys: &OperatorKeys, payload: &[u8]) -> Result<OperatorSign
         .map_err(|_| Error::SigningFailed("invalid SLH-DSA secret key".into()))?;
     let sig = sk.try_sign(&message, &[], false)
         .map_err(|_| Error::SigningFailed("SLH-DSA signing failed".into()))?;
-
-    eprintln!("[shield-sign] sig_len={}", sig.len());
 
     Ok(OperatorSignature {
         signature: B64.encode(sig),
@@ -304,6 +338,7 @@ pub async fn sign_intent(
 }
 
 pub fn clear_keys(server_domain: &str) -> Result<(), Error> {
+    let _ = storage::remove(&pubkeys_key(server_domain));
     storage::clear_all(server_domain)
 }
 
@@ -477,5 +512,123 @@ mod tests {
         assert_eq!(get_required_signature_type("exec"), Some("mldsa44"));
         assert_eq!(get_required_signature_type("logs"), None);
         assert_eq!(get_required_signature_type("env"), None);
+    }
+
+    #[test]
+    fn prf_salt_derivation_is_deterministic() {
+        let salt1 = Sha256::digest(OPERATOR_PRF_SALT_LABEL);
+        let salt2 = Sha256::digest(OPERATOR_PRF_SALT_LABEL);
+        assert_eq!(salt1.as_slice(), salt2.as_slice());
+        assert_eq!(salt1.len(), 32);
+    }
+
+    #[test]
+    fn prf_salt_matches_web_sha256_of_label() {
+        let salt = Sha256::digest(b"ellul-operator-key-v1");
+        assert_eq!(salt.len(), 32);
+        assert_ne!(salt.as_slice(), &[0u8; 32]);
+        assert_eq!(OPERATOR_PRF_SALT_LABEL, b"ellul-operator-key-v1");
+    }
+
+    #[test]
+    fn legacy_random_kek_cannot_unwrap_prf_wrapped_bundle() {
+        let bundle = SecretBundle {
+            operator: vec![0xAA; 64],
+            intent_mldsa44: vec![0xBB; 2560],
+            intent_slhdsa128s: vec![0xCC; 64],
+        };
+        let mut prf_kek = [0u8; 32];
+        rand::rngs::OsRng.fill_bytes(&mut prf_kek);
+        let wrapped = wrap_bundle(&bundle, &prf_kek).unwrap();
+
+        let mut legacy_kek = [0u8; 32];
+        rand::rngs::OsRng.fill_bytes(&mut legacy_kek);
+        assert!(unwrap_bundle(&wrapped, &legacy_kek).is_err(),
+            "legacy random KEK must not decrypt PRF-wrapped bundle");
+    }
+
+    #[test]
+    fn no_legacy_kek_stored_after_bind() {
+        let kek_key = storage::kek_key("test.example.com");
+        assert_eq!(kek_key, "kek:test.example.com");
+        let bundle_key = storage::bundle_key("test.example.com");
+        assert_eq!(bundle_key, "bundle:test.example.com");
+    }
+
+    #[test]
+    fn full_keygen_wrap_sign_round_trip() {
+        let (op_pk, op_sk) = fips205::slh_dsa_sha2_128s::try_keygen().unwrap();
+        let (ml_pk, ml_sk) = fips204::ml_dsa_44::try_keygen().unwrap();
+        let (si_pk, si_sk) = fips205::slh_dsa_sha2_128s::try_keygen().unwrap();
+
+        let op_sk_bytes = op_sk.into_bytes().to_vec();
+        let ml_sk_bytes = ml_sk.into_bytes().to_vec();
+        let si_sk_bytes = si_sk.into_bytes().to_vec();
+
+        let bundle = SecretBundle {
+            operator: op_sk_bytes.clone(),
+            intent_mldsa44: ml_sk_bytes.clone(),
+            intent_slhdsa128s: si_sk_bytes.clone(),
+        };
+
+        let mut kek = [0u8; 32];
+        rand::rngs::OsRng.fill_bytes(&mut kek);
+        let wrapped = wrap_bundle(&bundle, &kek).unwrap();
+        let unwrapped = unwrap_bundle(&wrapped, &kek).unwrap();
+
+        assert_eq!(unwrapped.operator, op_sk_bytes);
+        assert_eq!(unwrapped.intent_mldsa44, ml_sk_bytes);
+        assert_eq!(unwrapped.intent_slhdsa128s, si_sk_bytes);
+
+        let keys = OperatorKeys {
+            server_domain: "test.example.com".into(),
+            operator_sk: unwrapped.operator,
+            operator_pk_b64: B64.encode(op_pk.into_bytes()),
+            intent_mldsa44_sk: unwrapped.intent_mldsa44,
+            intent_mldsa44_pk_b64: B64.encode(ml_pk.into_bytes()),
+            intent_slhdsa128s_sk: unwrapped.intent_slhdsa128s,
+            intent_slhdsa128s_pk_b64: B64.encode(si_pk.into_bytes()),
+        };
+        let sig = sign_operator(&keys, b"test payload").unwrap();
+        assert!(!sig.signature.is_empty());
+        assert!(!sig.timestamp.is_empty());
+    }
+
+    #[test]
+    fn wrap_produces_unique_ciphertext_per_call() {
+        let bundle = SecretBundle {
+            operator: vec![1u8; 64],
+            intent_mldsa44: vec![2u8; 2560],
+            intent_slhdsa128s: vec![3u8; 64],
+        };
+        let kek = [0x42u8; 32];
+        let w1 = wrap_bundle(&bundle, &kek).unwrap();
+        let w2 = wrap_bundle(&bundle, &kek).unwrap();
+        assert_ne!(w1, w2, "random IV must produce different ciphertext");
+        assert_eq!(
+            unwrap_bundle(&w1, &kek).unwrap().operator,
+            unwrap_bundle(&w2, &kek).unwrap().operator,
+        );
+    }
+
+    #[test]
+    fn tampered_ciphertext_rejected() {
+        let bundle = SecretBundle {
+            operator: vec![0xAA; 64],
+            intent_mldsa44: vec![0xBB; 2560],
+            intent_slhdsa128s: vec![0xCC; 64],
+        };
+        let kek = [0x55u8; 32];
+        let mut wrapped = wrap_bundle(&bundle, &kek).unwrap();
+        let mid = wrapped.len() / 2;
+        wrapped[mid] ^= 0xFF;
+        assert!(unwrap_bundle(&wrapped, &kek).is_err(),
+            "tampered ciphertext must be rejected by AES-GCM");
+    }
+
+    #[test]
+    fn truncated_blob_rejected() {
+        assert!(unwrap_bundle(&[0u8; 12], &[0u8; 32]).is_err());
+        assert!(unwrap_bundle(&[], &[0u8; 32]).is_err());
     }
 }

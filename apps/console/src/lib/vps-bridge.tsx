@@ -23,65 +23,6 @@ import type {
 
 const SHARED_RP_ID = process.env.NEXT_PUBLIC_WEBAUTHN_RP_ID!;
 
-// ── Debug overlay (persists across navigations via sessionStorage) ──
-const _DBG_KEY = "__vps_bridge_dbg__";
-function _loadLines(): string[] {
-  try { return JSON.parse(sessionStorage.getItem(_DBG_KEY) || "[]"); } catch { return []; }
-}
-const _debugLines: string[] = typeof window !== "undefined" ? _loadLines() : [];
-let _debugListeners: Array<() => void> = [];
-function dbg(tag: string, msg: string) {
-  const ts = new Date().toISOString().slice(11, 23);
-  const line = `${ts} [${tag}] ${msg}`;
-  console.error(`[VpsBridge] ${line}`);
-  _debugLines.push(line);
-  if (_debugLines.length > 300) _debugLines.splice(0, _debugLines.length - 300);
-  try { sessionStorage.setItem(_DBG_KEY, JSON.stringify(_debugLines)); } catch {}
-  for (const fn of _debugListeners) fn();
-}
-if (typeof window !== "undefined") dbg("init", `page=${location.pathname} ua=${navigator.userAgent.slice(0, 80)}`);
-function useDebugLog() {
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const fn = () => setTick((t) => t + 1);
-    _debugListeners.push(fn);
-    return () => { _debugListeners = _debugListeners.filter((f) => f !== fn); };
-  }, []);
-  return _debugLines;
-}
-function DebugOverlay() {
-  const lines = useDebugLog();
-  const ref = useRef<HTMLDivElement>(null);
-  const [collapsed, setCollapsed] = useState(false);
-  useEffect(() => { ref.current?.scrollTo(0, ref.current.scrollHeight); }, [lines.length]);
-  if (lines.length === 0) return null;
-  return (
-    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 99999 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", background: "rgba(0,0,0,0.95)", borderTop: "1px solid rgba(255,255,255,0.15)", padding: "2px 10px", fontSize: "10px", color: "rgba(255,255,255,0.6)" }}>
-        <span>VPS Bridge Debug ({lines.length} lines)</span>
-        <span style={{ display: "flex", gap: "8px" }}>
-          <button onClick={() => { _debugLines.length = 0; try { sessionStorage.removeItem(_DBG_KEY); } catch {} }} style={{ color: "#f88", background: "none", border: "none", cursor: "pointer", fontSize: "10px" }}>clear</button>
-          <button onClick={() => setCollapsed(!collapsed)} style={{ color: "#8ff", background: "none", border: "none", cursor: "pointer", fontSize: "10px" }}>{collapsed ? "expand" : "collapse"}</button>
-        </span>
-      </div>
-      {!collapsed && (
-        <div
-          ref={ref}
-          style={{
-            maxHeight: "35vh", overflowY: "auto",
-            background: "rgba(0,0,0,0.92)",
-            padding: "4px 10px", fontFamily: "monospace", fontSize: "10px",
-            lineHeight: "1.5", color: "rgba(255,255,255,0.8)", whiteSpace: "pre-wrap",
-            wordBreak: "break-all",
-          }}
-        >
-          {lines.map((l, i) => <div key={i}>{l}</div>)}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // A handle to a specific iframe instance. `generation` increments on each
 // iframe mount; pending requests bound to a stale generation are rejected on
 // detach instead of racing a fresh bridge or hanging forever.
@@ -123,12 +64,9 @@ interface VpsBridgeProviderProps {
 // graph. Rules of Hooks holds because no hook is called conditionally inside
 // a single component body.
 export function VpsBridgeProvider(props: VpsBridgeProviderProps) {
-  const tauri = isTauriApp();
-  const hasTauriInternals = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-  dbg("dispatch", `isTauriApp=${tauri} __TAURI_INTERNALS__=${hasTauriInternals} securityTier=${props.securityTier ?? "undefined"} hostname=${props.hostname} MOCK_MODE=${MOCK_MODE}`);
-  if (MOCK_MODE) { dbg("dispatch", "→ MockVpsBridgeProvider"); return <MockVpsBridgeProvider>{props.children}</MockVpsBridgeProvider>; }
-  dbg("dispatch", `→ RealVpsBridgeProvider (tauri=${tauri}, tier=${props.securityTier})`);
-  return <><RealVpsBridgeProvider hostname={props.hostname}>{props.children}</RealVpsBridgeProvider><DebugOverlay /></>;
+  if (MOCK_MODE) return <MockVpsBridgeProvider>{props.children}</MockVpsBridgeProvider>;
+  if (isTauriApp()) return <TauriVpsBridgeProvider hostname={props.hostname}>{props.children}</TauriVpsBridgeProvider>;
+  return <RealVpsBridgeProvider hostname={props.hostname}>{props.children}</RealVpsBridgeProvider>;
 }
 
 function MockVpsBridgeProvider({ children }: { children: ReactNode }) {
@@ -208,44 +146,44 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
   const [needsVpsAuth, setNeedsVpsAuth] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
 
-  dbg("tauri", `mount hostname=${hostname}`);
-
-  // Check session on mount
   useEffect(() => {
-    dbg("tauri", "shield_check_session → calling...");
-    tauriInvoke<{ hasSession: boolean }>("shield_check_session")
+    let cancelled = false;
+    const check = () => tauriInvoke<{ hasSession: boolean }>("shield_check_session");
+    check()
       .then((res) => {
-        dbg("tauri", `shield_check_session → hasSession=${res.hasSession}`);
-        if (!res.hasSession) setNeedsVpsAuth(true);
-        setReady(true);
+        if (cancelled) return;
+        if (res.hasSession) { setReady(true); return; }
+        setTimeout(() => {
+          if (cancelled) return;
+          check().then((r) => {
+            if (cancelled) return;
+            if (!r.hasSession) setNeedsVpsAuth(true);
+            setReady(true);
+          }).catch(() => { if (!cancelled) { setNeedsVpsAuth(true); setReady(true); } });
+        }, 600);
       })
       .catch((e) => {
-        dbg("tauri", `shield_check_session ERROR: ${String(e)}`);
+        if (cancelled) return;
         setError(String(e));
         setNeedsVpsAuth(true);
         setReady(true);
       });
+    return () => { cancelled = true; };
   }, [hostname]);
 
-  // Session keepalive: refresh 5 min before expiry
   useEffect(() => {
     if (!ready || needsVpsAuth) return;
-    dbg("tauri", "keepalive: scheduling...");
     let timer: ReturnType<typeof setTimeout>;
 
     const schedule = () => {
       tauriInvoke<{ active: boolean; expiresAt?: number }>("shield_session_info")
         .then((info) => {
-          dbg("tauri", `session_info → active=${info.active}, expiresAt=${info.expiresAt}`);
           if (!info.active || !info.expiresAt) return;
           const msUntilExpiry = info.expiresAt * 1000 - Date.now();
           const refreshIn = Math.max(msUntilExpiry - 5 * 60 * 1000, 10_000);
-          dbg("tauri", `keepalive: refreshIn=${Math.round(refreshIn / 1000)}s`);
           timer = setTimeout(() => {
-            dbg("tauri", "shield_session_keepalive → calling...");
             tauriInvoke<{ alive: boolean }>("shield_session_keepalive")
               .then((res) => {
-                dbg("tauri", `shield_session_keepalive → alive=${res.alive}`);
                 if (!res.alive) {
                   setNeedsVpsAuth(true);
                   setSessionExpired(true);
@@ -253,27 +191,23 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
                   schedule();
                 }
               })
-              .catch((e) => {
-                dbg("tauri", `shield_session_keepalive ERROR: ${e}`);
+              .catch(() => {
                 setNeedsVpsAuth(true);
                 setSessionExpired(true);
               });
           }, refreshIn);
         })
-        .catch((e) => { dbg("tauri", `session_info ERROR: ${e}`); });
+        .catch(() => {});
     };
 
     schedule();
     return () => clearTimeout(timer);
   }, [ready, needsVpsAuth]);
 
-  // Re-check session when app returns to foreground
   useEffect(() => {
     const handler = () => {
       if (document.visibilityState === "visible" && ready && !needsVpsAuth) {
-        dbg("tauri", "visibility → visible, re-checking session...");
         tauriInvoke<{ hasSession: boolean }>("shield_check_session").then((res) => {
-          dbg("tauri", `visibility re-check → hasSession=${res.hasSession}`);
           if (!res.hasSession) {
             setNeedsVpsAuth(true);
             setSessionExpired(true);
@@ -287,21 +221,12 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
 
   const send = useCallback(<T = unknown,>(type: string, data: Record<string, unknown> = {}): Promise<T> => {
     const cmd = TAURI_COMMAND_MAP[type];
-    if (!cmd) {
-      dbg("tauri", `send(${type}) → UNKNOWN, no mapping`);
-      return Promise.reject(new Error(`Unknown bridge message: ${type}`));
-    }
-    dbg("tauri", `send(${type}) → ${cmd}`);
-    return tauriInvoke<T>(cmd, data).then((res) => {
-      dbg("tauri", `send(${type}) → OK`);
-      return res;
-    }).catch((e) => {
+    if (!cmd) return Promise.reject(new Error(`Unknown bridge message: ${type}`));
+    return tauriInvoke<T>(cmd, data).catch((e) => {
       const msg = String(e);
-      dbg("tauri", `send(${type}) ERROR: ${msg}`);
       if (msg.includes("No active session") || msg.includes("NoSession") ||
           msg.includes("Authentication required") || msg.includes("401") ||
           msg.includes("Unauthorized")) {
-        dbg("tauri", `send(${type}) → auth failure detected, setting needsVpsAuth=true`);
         setNeedsVpsAuth(true);
       }
       throw e instanceof Error ? e : new Error(msg);
@@ -328,38 +253,26 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
   }, [ready, error, hostname]);
 
   const authenticateNative = useCallback(async (): Promise<void> => {
-    dbg("tauri", `authenticateNative called — native passkey on ${hostname}`);
-    try {
-      const result = await tauriInvoke<Record<string, unknown>>("shield_passkey_login", {
-        serverDomain: hostname,
-      });
-      dbg("tauri", `authenticateNative OK: ${JSON.stringify(result).slice(0, 200)}`);
-      setNeedsVpsAuth(false);
-      setSessionExpired(false);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      dbg("tauri", `authenticateNative FAILED: ${msg}`);
-      throw e;
-    }
+    await tauriInvoke<Record<string, unknown>>("shield_passkey_login", {
+      serverDomain: hostname,
+    });
+    setNeedsVpsAuth(false);
+    setSessionExpired(false);
   }, [hostname]);
 
   const registerNative = useCallback(async (name: string): Promise<unknown> => {
-    dbg("tauri", `registerNative called name=${name}`);
     return tauriInvoke("shield_passkey_register", { serverDomain: hostname, name });
   }, [hostname]);
 
   const reauthenticate = useCallback(async (): Promise<void> => {
-    dbg("tauri", "reauthenticate called → delegating to authenticateNative");
     await authenticateNative();
   }, [authenticateNative]);
 
   const signalAuthNeeded = useCallback(() => {
-    dbg("tauri", "signalAuthNeeded called");
     setNeedsVpsAuth(true);
   }, []);
 
   const reload = useCallback(() => {
-    dbg("tauri", "reload called → clearing session");
     setReady(false);
     setError(null);
     setNeedsVpsAuth(false);
@@ -369,21 +282,12 @@ function TauriVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) 
       .finally(() => {
         tauriInvoke<{ hasSession: boolean }>("shield_check_session")
           .then((res) => {
-            dbg("tauri", `reload check_session → hasSession=${res.hasSession}`);
             if (!res.hasSession) setNeedsVpsAuth(true);
             setReady(true);
           })
-          .catch((e) => { dbg("tauri", `reload check_session ERROR: ${e}`); setError(String(e)); });
+          .catch((e) => { setError(String(e)); });
       });
   }, []);
-
-  // No auto-trigger for Tauri — WebAuthn requires user gesture (click).
-  // The AuthWall button calls reauthenticate → authenticateNative on click.
-  useEffect(() => {
-    if (ready && needsVpsAuth) {
-      dbg("tauri", "state: ready=true needsVpsAuth=true — waiting for user to click Login with Passkey");
-    }
-  }, [ready, needsVpsAuth]);
 
   return (
     <VpsBridgeContext.Provider
@@ -417,8 +321,6 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
   const [needsVpsAuth, setNeedsVpsAuth] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [bridgeKey, setBridgeKey] = useState(0);
-
-  dbg("real", `mount hostname=${hostname}, isTauri=${isTauriApp()}, bridgeKey=${bridgeKey}`);
 
   const generationRef = useRef(0);
   const handleRef = useRef<BridgeHandle | null>(null);
@@ -547,48 +449,33 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
   }, []);
 
   const authenticateNative = useCallback(async (): Promise<void> => {
-    dbg("real", `authenticateNative called, isTauri=${isTauriApp()}`);
     if (isTauriApp()) {
-      dbg("real", "authenticateNative → native shield_passkey_login");
-      try {
-        await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
-        dbg("real", "authenticateNative → passkey login OK, reloading bridge");
-        setNeedsVpsAuth(false);
-        setSessionExpired(false);
-        setReady(false);
-        handleRef.current = null;
-        setBridgeKey((k) => k + 1);
-        return new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => { dbg("real", "authenticateNative → TIMEOUT waiting for bridge"); reject(new Error("Auth timeout")); }, 30_000);
-          const check = setInterval(() => {
-            if (handleRef.current) {
-              clearInterval(check);
-              clearTimeout(timeout);
-              dbg("real", "authenticateNative → bridge re-ready after passkey login");
-              resolve();
-            }
-          }, 100);
-        });
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        dbg("real", `authenticateNative → passkey login FAILED: ${msg}`);
-        throw e;
-      }
+      await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
+      setNeedsVpsAuth(false);
+      setSessionExpired(false);
+      setReady(false);
+      handleRef.current = null;
+      setBridgeKey((k) => k + 1);
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("Auth timeout")), 30_000);
+        const check = setInterval(() => {
+          if (handleRef.current) {
+            clearInterval(check);
+            clearTimeout(timeout);
+            resolve();
+          }
+        }, 100);
+      });
     }
-    dbg("real", "authenticateNative → WebAuthn flow: get_auth_options...");
     const options = await send<PublicKeyCredentialRequestOptionsJSON>("get_auth_options");
-    dbg("real", "authenticateNative → startAuthentication...");
     const assertion = await startAuthentication({ optionsJSON: options });
-    dbg("real", "authenticateNative → verify_auth...");
     await send("verify_auth", { assertion });
-    dbg("real", "authenticateNative → waiting for bridge ready...");
     return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => { dbg("real", "authenticateNative → TIMEOUT"); reject(new Error("Auth timeout")); }, 30_000);
+      const timeout = setTimeout(() => reject(new Error("Auth timeout")), 30_000);
       const check = setInterval(() => {
         if (handleRef.current) {
           clearInterval(check);
           clearTimeout(timeout);
-          dbg("real", "authenticateNative → bridge ready, done");
           resolve();
         }
       }, 100);
@@ -596,7 +483,6 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
   }, [send, hostname]);
 
   const registerNative = useCallback(async (name: string): Promise<unknown> => {
-    dbg("real", `registerNative name=${name}`);
     const { options } = await send<{ options: PublicKeyCredentialCreationOptionsJSON }>("get_registration_options", { name });
     const attestation = await startRegistration({ optionsJSON: options });
     const extResults = attestation.clientExtensionResults as Record<string, unknown> | undefined;
@@ -605,12 +491,10 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
   }, [send]);
 
   const reauthenticate = useCallback(async (): Promise<void> => {
-    dbg("real", "reauthenticate → delegating to authenticateNative");
     await authenticateNative();
   }, [authenticateNative]);
 
   const triggerReauth = useCallback(() => {
-    dbg("real", `triggerReauth visible=${document.visibilityState}`);
     if (document.visibilityState === "visible") {
       setSessionExpired(false);
       (async () => {
@@ -622,14 +506,12 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
               `https://${hostname}`,
             );
           } catch {}
-        } catch (e) {
-          dbg("real", `triggerReauth FAILED: ${e}`);
+        } catch {
           setSessionExpired(true);
           setNeedsVpsAuth(true);
         }
       })();
     } else {
-      dbg("real", "triggerReauth → not visible, setting expired");
       setSessionExpired(true);
       setNeedsVpsAuth(true);
     }
@@ -651,10 +533,8 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
   const autoAuthAttempted = useRef(false);
   useEffect(() => {
     if (ready && needsVpsAuth && !autoAuthAttempted.current) {
-      dbg("real", "auto-auth: triggering (ready + needsVpsAuth)");
       autoAuthAttempted.current = true;
-      authenticateNative().catch((e) => {
-        dbg("real", `auto-auth FAILED: ${e}`);
+      authenticateNative().catch(() => {
         setNeedsVpsAuth(true);
       });
     }
@@ -667,17 +547,13 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
     const handler = (event: MessageEvent) => {
       if (event.origin !== `https://${hostname}`) return;
       const { type, requestId: reqId, ...data } = event.data;
-      dbg("real", `msg: type=${type} reqId=${reqId ?? "-"} keys=${Object.keys(data).join(",")}`);
 
       if (type === "bridge_ready") {
-        dbg("real", `bridge_ready: pop=${data.pop} error=${data.error ?? "none"}`);
         if (data.pop === false) {
           if (data.error === "No session" || data.error === "Invalid session" || data.error === "Authentication required") {
             const sovereignCode = sessionStorage.getItem("sovereign-exchange-code");
-            dbg("real", `bridge_ready: no session, sovereignCode=${sovereignCode ? "present" : "absent"}`);
             const win = iframeRef.current?.contentWindow;
             if (sovereignCode && win) {
-              dbg("real", "bridge_ready: exchanging sovereign code");
               sessionStorage.removeItem("sovereign-exchange-code");
               try {
                 win.postMessage(
@@ -687,29 +563,23 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
               } catch {}
               return;
             }
-            dbg("real", "bridge_ready: → needsVpsAuth=true (no session)");
             setNeedsVpsAuth(true);
             setReady(true);
             return;
           }
           if (data.error?.includes('Device key missing') || data.error?.includes('re-authentication required')) {
-            dbg("real", `bridge_ready: → needsVpsAuth=true (${data.error})`);
             setNeedsVpsAuth(true);
             setReady(true);
             return;
           }
           if (isTauriApp()) {
-            dbg("real", `bridge_ready: Tauri PoP failed → needsVpsAuth=true (${data.error})`);
             setNeedsVpsAuth(true);
             setReady(true);
             return;
           }
-          dbg("real", `bridge_ready: PoP init FAILED: ${data.error}`);
-          console.error('[VpsBridge] PoP initialization failed:', data.error);
           setError('Security initialization failed. Please refresh the page.');
           return;
         }
-        dbg("real", "bridge_ready: PoP OK → ready");
         setNeedsVpsAuth(false);
         setSessionExpired(false);
         setReady(true);
@@ -722,10 +592,9 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
         return;
       }
 
-      if (type === "passkey_required") { dbg("real", "passkey_required received"); return; }
+      if (type === "passkey_required") return;
 
       if (type === "session_expired" || type === "session_revoked" || type === "auth_required") {
-        dbg("real", `${type} received → triggerReauth`);
         triggerReauthRef.current();
         return;
       }
@@ -737,11 +606,9 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
         if (data.success === false) {
           const errMsg = typeof data.error === 'string' ? data.error
             : data.error ? JSON.stringify(data.error) : "Request failed";
-          dbg("real", `response reqId=${reqId} FAILED: ${errMsg}`);
           if (errMsg === "Authentication required") setNeedsVpsAuth(true);
           reject(new Error(errMsg));
         } else {
-          dbg("real", `response reqId=${reqId} OK`);
           resolve(data);
         }
       }
@@ -750,7 +617,6 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
       if (!needsAuthRef.current) return;
-      dbg("real", "visibility → visible + needsAuth → retrying auth");
       setNeedsVpsAuth(false);
       setSessionExpired(false);
       (async () => {

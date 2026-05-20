@@ -24,6 +24,10 @@ mod android {
         fn del(&self, key: &str) -> Result<(), Error>;
         fn passkey_authenticate(&self, request_json: &str) -> Result<String, Error>;
         fn passkey_register(&self, request_json: &str) -> Result<String, Error>;
+        fn cookie_get(&self, url: &str) -> Result<Option<String>, Error>;
+        fn cookie_set(&self, url: &str, cookie: &str) -> Result<(), Error>;
+        fn cookie_clear(&self, url: &str, name: &str) -> Result<(), Error>;
+        fn cookie_scan(&self, url: &str, cookie_name: &str) -> Result<Option<String>, Error>;
     }
 
     struct Bridge<R: tauri::Runtime> {
@@ -96,6 +100,53 @@ mod android {
                 )
                 .map_err(|e| Error::Other(format!("Android passkey register: {e}")))?;
             Ok(resp.response_json)
+        }
+
+        fn cookie_get(&self, url: &str) -> Result<Option<String>, Error> {
+            #[derive(serde::Deserialize)]
+            struct Resp {
+                cookies: Option<String>,
+            }
+            let resp: Resp = self
+                .handle
+                .run_mobile_plugin("cookieGet", serde_json::json!({ "url": url }))
+                .map_err(|e| Error::Other(format!("Android cookie get: {e}")))?;
+            Ok(resp.cookies)
+        }
+
+        fn cookie_set(&self, url: &str, cookie: &str) -> Result<(), Error> {
+            self.handle
+                .run_mobile_plugin::<serde_json::Value>(
+                    "cookieSet",
+                    serde_json::json!({ "url": url, "cookie": cookie }),
+                )
+                .map_err(|e| Error::Other(format!("Android cookie set: {e}")))?;
+            Ok(())
+        }
+
+        fn cookie_clear(&self, url: &str, name: &str) -> Result<(), Error> {
+            self.handle
+                .run_mobile_plugin::<serde_json::Value>(
+                    "cookieClear",
+                    serde_json::json!({ "url": url, "name": name }),
+                )
+                .map_err(|e| Error::Other(format!("Android cookie clear: {e}")))?;
+            Ok(())
+        }
+
+        fn cookie_scan(&self, url: &str, cookie_name: &str) -> Result<Option<String>, Error> {
+            #[derive(serde::Deserialize)]
+            struct Resp {
+                value: Option<String>,
+            }
+            let resp: Resp = self
+                .handle
+                .run_mobile_plugin(
+                    "cookieScan",
+                    serde_json::json!({ "url": url, "cookieName": cookie_name }),
+                )
+                .map_err(|e| Error::Other(format!("Android cookie scan: {e}")))?;
+            Ok(resp.value)
         }
     }
 
@@ -201,4 +252,24 @@ pub fn clear_all(server_domain: &str) -> Result<(), Error> {
     remove(&kek_key(server_domain))?;
     remove(&bundle_key(server_domain))?;
     Ok(())
+}
+
+#[cfg(target_os = "android")]
+pub fn android_cookie_get(url: &str) -> Result<Option<String>, Error> {
+    android::backend()?.cookie_get(url)
+}
+
+#[cfg(target_os = "android")]
+pub fn android_cookie_set(url: &str, cookie: &str) -> Result<(), Error> {
+    android::backend()?.cookie_set(url, cookie)
+}
+
+#[cfg(target_os = "android")]
+pub fn android_cookie_clear(url: &str, name: &str) -> Result<(), Error> {
+    android::backend()?.cookie_clear(url, name)
+}
+
+#[cfg(target_os = "android")]
+pub fn android_cookie_scan(url: &str, cookie_name: &str) -> Result<Option<String>, Error> {
+    android::backend()?.cookie_scan(url, cookie_name)
 }

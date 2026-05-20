@@ -9,8 +9,6 @@ use tauri::{
 
 mod config;
 
-const LOCAL_URL: &str = "https://localhost:8443";
-
 fn is_marketing_site(url: &url::Url) -> bool {
     let host = url.host_str().unwrap_or("");
     (host == "ellul.ai" || host == "www.ellul.ai") && !host.contains("console.")
@@ -48,9 +46,9 @@ fn resolve_start_url(cfg: &config::AppConfig) -> tauri::WebviewUrl {
 }
 
 #[tauri::command]
-fn open_external(url: String) -> Result<(), String> {
-    eprintln!("[ellul] open_external: {}", url);
-    open::that(&url).map_err(|e| e.to_string())
+fn open_external(app: tauri::AppHandle, url: String) -> Result<(), String> {
+    use tauri_plugin_shell::ShellExt;
+    app.shell().open(&url, None).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -97,8 +95,6 @@ async fn poll_connect(connect_id: String) -> Result<ConnectPollResult, String> {
         "{}/api/auth/native/connect-poll?connect_id={}",
         api_url, connect_id
     );
-    eprintln!("[ellul] poll_connect: {}", url);
-
     let resp = reqwest::get(&url).await.map_err(|e| e.to_string())?;
     if !resp.status().is_success() {
         return Ok(ConnectPollResult {
@@ -159,7 +155,6 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_native_auth::init())
         .plugin(tauri_plugin_shield::init())
-        .plugin(tauri_plugin_proot::init())
         .invoke_handler(tauri::generate_handler![
             open_external,
             get_app_mode,
@@ -170,18 +165,18 @@ pub fn run() {
         ]);
 
     #[cfg(desktop)]
-    let builder = builder.plugin(tauri_plugin_global_shortcut::Builder::new().build());
+    let builder = builder
+        .plugin(tauri_plugin_proot::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build());
 
     builder
         .setup(|app| {
             let data_dir = app.path().app_data_dir().expect("no app data dir");
-            eprintln!("[ellul] data_dir: {:?}", data_dir);
+            tauri_plugin_shield::pop::init_persistence(&data_dir);
             let cfg_state = config::ConfigState::load(data_dir);
-            let cfg = cfg_state.get();
-            eprintln!("[ellul] config: {:?}", cfg);
 
+            let cfg = cfg_state.get();
             let url = resolve_start_url(&cfg);
-            eprintln!("[ellul] start_url: {:?}", url);
 
             app.manage(cfg_state);
 
@@ -189,7 +184,6 @@ pub fn run() {
             let init_script = format!(
                 r#"window.__ELLUL_APP_CONFIG__ = {cfg};
 window.__IS_ELLUL_TAURI__ = true;
-// Nuke service workers + force one reload to bypass cached JS
 (function() {{
   if (!navigator.serviceWorker) return;
   navigator.serviceWorker.getRegistrations().then(function(regs) {{
@@ -202,37 +196,15 @@ window.__IS_ELLUL_TAURI__ = true;
     }}
   }});
 }})();
-// If session-expired flag is set, hide cloudDomain so dashboard shows connect screen
 if (sessionStorage.getItem('ellul_needs_reconnect')) {{
   delete window.__ELLUL_APP_CONFIG__.cloudDomain;
   sessionStorage.removeItem('ellul_needs_reconnect');
 }}
-// Forward JS console to Rust stderr via Tauri IPC
-(function() {{
-  var _log = console.log, _err = console.error, _warn = console.warn;
-  function fwd(level, args) {{
-    try {{
-      var msg = '[' + level + '] ' + Array.prototype.slice.call(args).map(function(a) {{
-        return typeof a === 'object' ? JSON.stringify(a) : String(a);
-      }}).join(' ');
-      if (window.__TAURI_INTERNALS__) {{
-        window.__TAURI_INTERNALS__.invoke('plugin:shield|shield_js_log', {{ message: msg }});
-      }}
-    }} catch(e) {{}}
-  }}
-  console.log = function() {{ fwd('log', arguments); _log.apply(console, arguments); }};
-  console.error = function() {{ fwd('err', arguments); _err.apply(console, arguments); }};
-  console.warn = function() {{ fwd('warn', arguments); _warn.apply(console, arguments); }};
-}})();
-// Polyfill PublicKeyCredential so browserSupportsWebAuthn() passes in WKWebView
 if (!window.PublicKeyCredential) {{
   window.PublicKeyCredential = function() {{}};
   window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable = function() {{ return Promise.resolve(true); }};
   window.PublicKeyCredential.isConditionalMediationAvailable = function() {{ return Promise.resolve(false); }};
 }}
-// Intercept navigator.credentials.get with PRF → redirect to Tauri native.
-// MUST check __TAURI_INTERNALS__ at CALL TIME (not setup time) because
-// Tauri's IPC bridge may inject after this script runs.
 (function() {{
   function b64url(buf) {{
     var b = '';
@@ -256,7 +228,6 @@ if (!window.PublicKeyCredential) {{
       var pk = opts && opts.publicKey;
       var hasPrf = pk && pk.extensions && pk.extensions.prf;
       if (!hasPrf || !ti || !ti.invoke) return origGet(opts);
-      console.error('[ellul-prf-native] intercepted credentials.get with PRF — using Tauri native');
       var saltBytes = pk.extensions.prf.eval && pk.extensions.prf.eval.first;
       if (!saltBytes) return origGet(opts);
       var challenge = new Uint8Array(32);
@@ -267,7 +238,6 @@ if (!window.PublicKeyCredential) {{
         userVerification: pk.userVerification || 'required',
         prfSaltB64: b64url(saltBytes),
       }}).then(function(result) {{
-        console.error('[ellul-prf-native] native PRF result: id=' + (result.id || '').substring(0, 8) + ' prfFirst=' + (result.prfFirst ? 'present' : 'absent'));
         if (!result.prfFirst) throw new Error('PRF extension did not return a result. Requires macOS 15+ / iOS 18+.');
         var prfBytes = b64urlDecode(result.prfFirst);
         var credIdBytes = result.id ? b64urlDecode(result.id) : new Uint8Array(0);
@@ -294,7 +264,6 @@ if (!window.PublicKeyCredential) {{
       url = urlStr;
     }}
     if ((window.__TAURI_INTERNALS__ || window.__IS_ELLUL_TAURI__) && urlStr.indexOf('/encryption/authenticate/options') !== -1) {{
-      console.error('[ellul-prf-native] intercepting /encryption/authenticate/options → returning synthetic challenge');
       var ch = new Uint8Array(32); crypto.getRandomValues(ch);
       var b = ''; for (var j = 0; j < ch.length; j++) b += String.fromCharCode(ch[j]);
       var chB64 = btoa(b).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -307,36 +276,9 @@ if (!window.PublicKeyCredential) {{
       }});
       return Promise.resolve(new Response(body, {{ status: 200, headers: {{ 'Content-Type': 'application/json' }} }}));
     }}
-    var creds = (opts && opts.credentials) || 'same-origin';
-    var isAuth = urlStr.indexOf('/_auth/') !== -1 || urlStr.indexOf('.ellul.ai') !== -1;
-    if (isAuth) {{
-      console.log('[ellul-fetch] → ' + urlStr.substring(0, 160) + ' creds=' + creds);
-    }}
-    return _fetch.call(this, url, opts).then(function(resp) {{
-      if (isAuth) {{
-        var tag = resp.ok ? 'OK' : 'FAIL';
-        console.log('[ellul-fetch] ← ' + resp.status + ' ' + tag + ' ' + urlStr.substring(0, 120));
-        if (!resp.ok) {{
-          resp.clone().text().then(function(body) {{
-            console.error('[ellul-fetch] body=' + body.substring(0, 300));
-          }});
-        }}
-      }}
-      return resp;
-    }}, function(err) {{
-      if (isAuth) {{
-        console.error('[ellul-fetch] NETWORK/CORS err=' + String(err) + ' url=' + urlStr.substring(0, 120));
-      }}
-      throw err;
-    }});
+    return _fetch.call(this, url, opts);
   }};
-  setTimeout(function() {{
-    console.log('[ellul-cookie-js] document.cookie=' + document.cookie.substring(0, 200));
-    console.log('[ellul-cookie-js] location=' + window.location.href);
-  }}, 2000);
 }})();
-// Strip _shield_code from iframe src — Tauri injects session cookie directly,
-// so the exchange code creates a duplicate session that evicts the reqwest one.
 (function() {{
   var desc = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'src');
   if (!desc || !desc.set) return;
@@ -347,9 +289,7 @@ if (!window.PublicKeyCredential) {{
     var u;
     try {{ u = new URL(v); }} catch(e) {{ return v; }}
     u.searchParams.delete('_shield_code');
-    var clean = u.toString();
-    console.log('[ellul-iframe] stripped _shield_code → ' + clean.substring(0, 120));
-    return clean;
+    return u.toString();
   }}
   Object.defineProperty(HTMLIFrameElement.prototype, 'src', {{
     set: function(v) {{ return origSet.call(this, stripCode(v)); }},
@@ -374,61 +314,16 @@ if (!window.PublicKeyCredential) {{
                     .title("ellul")
                     .inner_size(1280.0, 860.0)
                     .min_inner_size(375.0, 600.0)
-                    .initialization_script(&init_script)
-                    .on_page_load(|webview, payload| {
-                        let url = payload.url().to_string();
-                        let event = match payload.event() {
-                            tauri::webview::PageLoadEvent::Started => "started",
-                            tauri::webview::PageLoadEvent::Finished => "finished",
-                            _ => "unknown",
-                        };
-                        if url.contains("console.ellul.ai") {
-                            eprintln!("[ellul-diag] page {event}: {}", &url[..url.len().min(80)]);
-                        }
-                        if matches!(payload.event(), tauri::webview::PageLoadEvent::Finished) && url.contains("console.ellul.ai") {
-                            let wv = webview.clone();
-                            std::thread::spawn(move || {
-                                std::thread::sleep(std::time::Duration::from_millis(500));
-                                let result = wv.eval(
-                                    "try { \
-                                        var ti = typeof window.__TAURI_INTERNALS__ !== 'undefined' && window.__TAURI_INTERNALS__ !== null; \
-                                        var ie = typeof window.__IS_ELLUL_TAURI__ !== 'undefined' && !!window.__IS_ELLUL_TAURI__; \
-                                        var cfg = typeof window.__ELLUL_APP_CONFIG__ !== 'undefined'; \
-                                        localStorage.setItem('_ellul_diag', JSON.stringify({ti:ti,ie:ie,cfg:cfg,t:Date.now()})); \
-                                        var msg = '[ellul-diag] main-frame: TAURI_INTERNALS=' + ti + ' IS_ELLUL_TAURI=' + ie + ' APP_CONFIG=' + cfg; \
-                                        if (window.__TAURI_INTERNALS__) { \
-                                            window.__TAURI_INTERNALS__.invoke('plugin:shield|shield_js_log', {message: msg}); \
-                                        } \
-                                    } catch(e) { localStorage.setItem('_ellul_diag', 'ERROR:' + e.message); }"
-                                );
-                                eprintln!("[ellul-diag] eval result: {:?}", result);
-                                // Read back localStorage after another delay
-                                std::thread::sleep(std::time::Duration::from_millis(200));
-                                let _ = wv.eval(
-                                    "try { \
-                                        var d = localStorage.getItem('_ellul_diag'); \
-                                        if (window.__TAURI_INTERNALS__) { \
-                                            window.__TAURI_INTERNALS__.invoke('plugin:shield|shield_js_log', {message: '[ellul-diag] localStorage: ' + d}); \
-                                        } else if (d) { \
-                                            fetch('https://console.ellul.ai/__ellul_diag__?' + encodeURIComponent(d)).catch(function(){}); \
-                                        } \
-                                    } catch(e) {}"
-                                );
-                            });
-                        }
-                    });
+                    .initialization_script(&init_script);
 
             #[cfg(desktop)]
             {
                 let nav_handle = app.handle().clone();
                 builder = builder.on_navigation(move |url| {
-                    eprintln!("[ellul-nav] {}", url.as_str());
                     if url.path() == "/sign-in" && url.host_str().map_or(false, |h| h.contains("console.")) {
-                        eprintln!("[ellul-nav] BLOCKED /sign-in redirect — VPS session needs passkey re-auth, not platform sign-in");
                         return false;
                     }
                     if is_marketing_site(url) {
-                        eprintln!("[ellul-nav] BLOCKED marketing site — triggering reconnect");
                         if let Some(win) = nav_handle.get_webview_window("main") {
                             let _ = win.eval(
                                 "sessionStorage.setItem('ellul_needs_reconnect','1'); window.location.reload();"
@@ -437,7 +332,6 @@ if (!window.PublicKeyCredential) {{
                         return false;
                     }
                     if !is_internal_navigation(url) {
-                        eprintln!("[ellul-nav] BLOCKED external — opening in browser");
                         let _ = open::that(url.as_str());
                         return false;
                     }
@@ -447,17 +341,22 @@ if (!window.PublicKeyCredential) {{
 
             let win = builder.build()?;
 
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "ios"))]
             {
+                use tauri::Manager;
+                let session_state = app.state::<tauri_plugin_shield::session::SessionState>();
+                let session_ref: &tauri_plugin_shield::session::SessionState = &session_state;
                 let _ = win.with_webview(|wv| {
                     let ptr = wv.inner() as *mut std::ffi::c_void;
                     tauri_plugin_shield::webview_cookie::set_webview_ptr(ptr);
                     tauri_plugin_shield::webview_cookie::disable_itp();
+                    tauri_plugin_shield::webview_cookie::inject_console_bridge();
+                    tauri_plugin_shield::pop::restore_pop_seed_if_available();
                     tauri_plugin_shield::webview_cookie::clear_http_cache_and_reload();
-                    eprintln!("[ellul] WKWebView pointer stored, ITP disabled, cache clear+reload queued");
                 });
+                tauri_plugin_shield::webview_cookie::start_cookie_observer(session_ref);
             }
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "ios")))]
             let _ = &win;
 
             #[cfg(desktop)]
@@ -573,7 +472,7 @@ fn setup_desktop(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
             }
         }
     }) {
-        eprintln!("[ellul.ai] Failed to register shortcut: {}", e);
+        let _ = e;
     }
 
     if let Err(e) = app.global_shortcut().on_shortcut("CmdOrCtrl+Shift+Alt+D", {
@@ -589,7 +488,7 @@ fn setup_desktop(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
             }
         }
     }) {
-        eprintln!("[ellul.ai] Failed to register shortcut: {}", e);
+        let _ = e;
     }
 
     let status_item_clone = status_item.clone();

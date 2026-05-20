@@ -10,6 +10,11 @@
 // Callback signature: (json_result, error_message, is_cancelled, context)
 typedef void (*EllulPasskeyCallback)(const char *json, const char *error, int cancelled, void *ctx);
 
+static BOOL ellul_os_at_least(int major, int minor) {
+    NSOperatingSystemVersion v = {major, minor, 0};
+    return [[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:v];
+}
+
 // ── Base64URL helpers ────────────────────────────────────────────
 
 static NSData *b64url_decode(NSString *input) {
@@ -75,7 +80,7 @@ API_AVAILABLE(macos(13.0), ios(16.0))
         if (a.userID) response[@"userHandle"] = b64url_encode(a.userID);
         result[@"response"] = response;
 
-        if (@available(macOS 15.0, iOS 18.0, *)) {
+        if (ellul_os_at_least(15, 0)) {
             ASAuthorizationPublicKeyCredentialPRFAssertionOutput *prfOutput = a.prf;
             if (prfOutput) {
                 if (prfOutput.first) {
@@ -154,7 +159,7 @@ static ASAuthorizationController *activeController API_AVAILABLE(macos(13.0), io
 // ── Public C API ─────────────────────────────────────────────────
 
 int ellul_passkey_available(void) {
-    if (@available(macOS 13.0, iOS 16.0, *)) {
+    if (ellul_os_at_least(13, 0)) {
         return 1;
     }
     return 0;
@@ -168,7 +173,7 @@ void ellul_passkey_authenticate(
     EllulPasskeyCallback callback,
     void *ctx
 ) {
-    if (@available(macOS 13.0, iOS 16.0, *)) {
+    if (ellul_os_at_least(13, 0)) {
         NSData *challengeData = [NSData dataWithBytes:challenge length:challenge_len];
         NSString *rpId = [NSString stringWithUTF8String:rp_id];
 
@@ -236,7 +241,7 @@ void ellul_passkey_authenticate(
             [controller performRequests];
         });
     } else {
-        callback(NULL, "macOS 13+ / iOS 16+ required", 0, ctx);
+        callback(NULL, "macOS 13+ required", 0, ctx);
     }
 }
 
@@ -249,7 +254,7 @@ void ellul_passkey_authenticate_prf(
     EllulPasskeyCallback callback,
     void *ctx
 ) {
-    if (@available(macOS 15.0, iOS 18.0, *)) {
+    if (ellul_os_at_least(15, 0)) {
         NSData *challengeData = [NSData dataWithBytes:challenge length:challenge_len];
         NSString *rpId = [NSString stringWithUTF8String:rp_id];
 
@@ -315,7 +320,7 @@ void ellul_passkey_authenticate_prf(
             [controller performRequests];
         });
     } else {
-        callback(NULL, "PRF requires macOS 15+ / iOS 18+", 0, ctx);
+        callback(NULL, "PRF requires macOS 15+", 0, ctx);
     }
 }
 
@@ -331,7 +336,7 @@ void ellul_passkey_register(
     EllulPasskeyCallback callback,
     void *ctx
 ) {
-    if (@available(macOS 13.0, iOS 16.0, *)) {
+    if (ellul_os_at_least(13, 0)) {
         NSData *challengeData = [NSData dataWithBytes:challenge length:challenge_len];
         NSString *rpIdStr = [NSString stringWithUTF8String:rp_id];
         NSData *userIdData = [NSData dataWithBytes:user_id length:user_id_len];
@@ -371,12 +376,12 @@ void ellul_passkey_register(
             [controller performRequests];
         });
     } else {
-        callback(NULL, "macOS 13+ / iOS 16+ required", 0, ctx);
+        callback(NULL, "macOS 13+ required", 0, ctx);
     }
 }
 
 void ellul_passkey_cancel(void) {
-    if (@available(macOS 13.0, iOS 16.0, *)) {
+    if (ellul_os_at_least(13, 0)) {
         if (activeController) {
             [activeController cancel];
         }
@@ -414,7 +419,7 @@ void ellul_web_auth_session(
     EllulWebAuthCallback callback,
     void *ctx
 ) {
-    if (@available(macOS 12.0, iOS 15.0, *)) {
+    if (ellul_os_at_least(12, 0)) {
         NSURL *url = [NSURL URLWithString:[NSString stringWithUTF8String:url_str]];
         NSString *scheme = [NSString stringWithUTF8String:callback_scheme];
 
@@ -444,6 +449,6 @@ void ellul_web_auth_session(
             [session start];
         });
     } else {
-        callback(NULL, "ASWebAuthenticationSession requires macOS 12+ / iOS 15+", 0, ctx);
+        callback(NULL, "ASWebAuthenticationSession requires macOS 12+", 0, ctx);
     }
 }

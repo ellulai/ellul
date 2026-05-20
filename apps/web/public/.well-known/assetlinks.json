@@ -7,7 +7,9 @@
     "target": {
       "namespace": "android_app",
       "package_name": "ai.ellul.console",
-      "sha256_cert_fingerprints": []
+      "sha256_cert_fingerprints": [
+        "30:14:46:2D:DF:C2:3C:BA:D7:13:4B:A1:93:AC:6A:09:34:78:9D:9E:29:5E:70:AE:CC:50:E5:2C:66:9A:18:2B"
+      ]
     }
   }
 ]

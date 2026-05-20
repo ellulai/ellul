@@ -359,8 +359,8 @@ export function TabHome({
           </div>
         )}
 
-        {/* ─── Tunnel (Android BYOS only) ─── */}
-        {showServer && (
+        {/* ─── Tunnel (local proot Android only — hidden for cloud VPS) ─── */}
+        {showServer && !server.domain && (
           <div id="settings-tunnel">
             <TunnelCard />
           </div>

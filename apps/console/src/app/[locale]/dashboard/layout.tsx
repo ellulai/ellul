@@ -36,26 +36,25 @@ const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL!;
 const CONSOLE_URL = process.env.NEXT_PUBLIC_CONSOLE_URL || "https://console.ellul.ai";
 const TAURI_API_URL = CONSOLE_URL.replace("console.", "api.");
 
-function TauriConnectScreen() {
-  const [status, setStatus] = useState<"idle" | "waiting" | "establishing">("idle");
+const CONNECT_STORAGE_KEY = "ellul_pending_connect_id";
 
-  const handleConnect = async () => {
+function TauriConnectScreen() {
+  const [status, setStatus] = useState<"idle" | "waiting" | "establishing">(() => {
+    if (typeof window !== "undefined" && localStorage.getItem(CONNECT_STORAGE_KEY)) return "waiting";
+    return "idle";
+  });
+
+  const pollForConnect = useCallback(async (connectId: string) => {
     const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
     if (!invoke) return;
-    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-    let connectId = "";
-    for (let i = 0; i < 32; i++) connectId += chars[Math.floor(Math.random() * chars.length)];
-    const connectUrl = `${CONSOLE_URL}/connect?connect_id=${connectId}`;
-    try {
-      await invoke("open_external", { url: connectUrl });
-    } catch { return; }
-    setStatus("waiting");
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 200; i++) {
       await new Promise((r) => setTimeout(r, 3000));
+      if (!localStorage.getItem(CONNECT_STORAGE_KEY)) return;
       try {
         const data = await invoke("poll_connect", { connectId });
         if (data.status === "complete" && data.code) {
           setStatus("establishing");
+          localStorage.removeItem(CONNECT_STORAGE_KEY);
           const domain = data.hasServer ? data.serverDomain : null;
           await invoke("set_app_mode", { mode: "cloud", cloudDomain: domain });
           const establishUrl = `${TAURI_API_URL}/api/auth/native/session/establish?code=${encodeURIComponent(data.code)}&redirect=${encodeURIComponent(CONSOLE_URL + "/dashboard")}`;
@@ -64,7 +63,38 @@ function TauriConnectScreen() {
         }
       } catch {}
     }
+    localStorage.removeItem(CONNECT_STORAGE_KEY);
     setStatus("idle");
+  }, []);
+
+  useEffect(() => {
+    const pendingId = localStorage.getItem(CONNECT_STORAGE_KEY);
+    if (pendingId) pollForConnect(pendingId);
+  }, [pollForConnect]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        const pendingId = localStorage.getItem(CONNECT_STORAGE_KEY);
+        if (pendingId) {
+          setStatus("waiting");
+          pollForConnect(pendingId);
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [pollForConnect]);
+
+  const handleConnect = async () => {
+    const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+    if (!invoke) return;
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let connectId = "";
+    for (let i = 0; i < 32; i++) connectId += chars[Math.floor(Math.random() * chars.length)];
+    localStorage.setItem(CONNECT_STORAGE_KEY, connectId);
+    const connectUrl = `${CONSOLE_URL}/connect?connect_id=${connectId}`;
+    window.location.href = connectUrl;
   };
 
   return (

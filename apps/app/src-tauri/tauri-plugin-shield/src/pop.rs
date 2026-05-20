@@ -12,6 +12,41 @@ type HmacSha256 = Hmac<Sha256>;
 
 pub const TAURI_DEVICE_ID: &str = "00000000000000007461757269617070";
 
+static K_POP_PATH: std::sync::OnceLock<std::path::PathBuf> = std::sync::OnceLock::new();
+
+pub fn init_persistence(data_dir: &std::path::Path) {
+    let path = data_dir.join("k_pop.bin");
+    K_POP_PATH.set(path).ok();
+}
+
+pub fn persist_k_pop(k_pop: &[u8; 32]) {
+    if let Some(path) = K_POP_PATH.get() {
+        let _ = std::fs::write(path, k_pop);
+    }
+}
+
+pub fn load_persisted_k_pop() -> Option<[u8; 32]> {
+    let path = K_POP_PATH.get()?;
+    let data = std::fs::read(path).ok()?;
+    if data.len() != 32 { return None; }
+    let mut k: [u8; 32] = [0; 32];
+    k.copy_from_slice(&data);
+    Some(k)
+}
+
+pub fn clear_persisted_k_pop() {
+    if let Some(path) = K_POP_PATH.get() {
+        let _ = std::fs::remove_file(path);
+    }
+}
+
+pub fn restore_pop_seed_if_available() {
+    if let Some(k_pop) = load_persisted_k_pop() {
+        let k_pop_b64 = B64.encode(k_pop);
+        crate::webview_cookie::inject_pop_to_webview(&k_pop_b64);
+    }
+}
+
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct PopHeaders {
     pub timestamp: String,

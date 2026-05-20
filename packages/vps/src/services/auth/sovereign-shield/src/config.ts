@@ -26,6 +26,12 @@ export function getServiceUser(): string {
 export const SVC_USER = getServiceUser();
 export const SVC_HOME = `/home/${SVC_USER}`;
 
+// Android APK signing key hashes (base64url SHA-256) — must match assetlinks.json fingerprints.
+// Android Credential Manager sends these as WebAuthn origins during passkey ceremonies.
+const ANDROID_APK_KEY_HASHES = [
+  "MBRGLd_CPLrXE0uhk6xqCTR4nZ4pXnCuzFDlLGaaGCs", // debug keystore
+];
+
 // Internal service token for authenticating internal API calls. Generated
 // fresh on each sovereign-shield start; per-service tokens are derived via HMAC.
 export const INTERNAL_TOKEN_PATH = "/run/shield/internal.token";
@@ -212,6 +218,11 @@ export function readAllowedOrigins(): string[] {
   // Native app passkey: ASAuthorizationController sets origin to https://{rpId}
   origins.push(`https://${SHARED_RP_ID}`);
 
+  // Android Credential Manager: origin is android:apk-key-hash:<base64url-sha256>
+  for (const hash of ANDROID_APK_KEY_HASHES) {
+    origins.push(`android:apk-key-hash:${hash}`);
+  }
+
   return origins;
 }
 
@@ -238,6 +249,7 @@ export function readCustomDomain(): string | null {
 export function readDevDomain(): string {
   return readRequiredFile("/etc/ellul/dev-domain", "dev-preview domain");
 }
+
 
 /**
  * Preview origins manifest — source of truth for domains/patterns the

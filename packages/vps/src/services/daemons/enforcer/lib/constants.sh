@@ -21,6 +21,7 @@ SOVEREIGN_KEYS_LOCK="/etc/ellul/shield-data/.sovereign-keys"
 OWNER_LOCK_FILE="/etc/ellul/owner.lock"
 HEARTBEAT_FAILURE_FILE="/etc/ellul/.heartbeat-failures"
 HEARTBEAT_INTERVAL=10
+FULL_RESYNC_INTERVAL_TICKS=60
 ENFORCER_PID_FILE="/run/ellul-enforcer.pid"
 
 # ─── Agent Manifest Self-Update System ──────────────────────
