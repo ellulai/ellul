@@ -87,3 +87,6 @@ seo-audit-report.json
 # Local scratch / audit work products (knip dumps, depcheck dumps, ad-hoc
 # notes that informed a committed proposal but aren't themselves canonical)
 scratch/
+apps/app/src-tauri/permissions/
+apps/app/src-tauri/tauri-plugin-shield/android/.tauri/
+apps/app/src-tauri/tauri-plugin-shield/android/build/

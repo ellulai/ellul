@@ -10,8 +10,8 @@ import BRIDGE_HTML from '../static/bridge-page.html';
 import { db } from '../database';
 import { SSH_AUTH_KEYS_PATH, PLATFORM_ZONE } from '../config';
 import { getDeviceFingerprint, getClientIp } from '../auth/fingerprint';
-import { validateSession, refreshSession, setSessionCookie, createSessionExchangeCode, createJwtExchangeCode } from '../auth/session';
-import { verifyJwtToken } from '../auth/jwt';
+import { createSession, validateSession, refreshSession, setSessionCookie, createSessionExchangeCode, createJwtExchangeCode } from '../auth/session';
+import { verifyJwtToken, createJwtToken } from '../auth/jwt';
 import { logAuditEvent } from '../application/audit/Audit';
 import { checkApiRateLimit } from '../application/platform/RateLimiter';
 import {
@@ -2147,6 +2147,7 @@ export function registerBridgeRoutes(app: Hono, hostname: string): void {
     tool_provider_set:   { m: 'POST', p: '/_auth/bridge/features/tool-provider', b: d => ({ tool: d.tool, provider: d.provider }) },
     connector_save_key:  { m: 'POST', p: '/_auth/bridge/features/connector-key', b: d => ({ provider: d.provider, apiKey: d.apiKey }) },
     connector_remove_key: { m: 'POST', p: '/_auth/bridge/features/connector-key-remove', b: d => ({ provider: d.provider }) },
+    inject_token:        { m: 'GET', p: '/_auth/bridge/session', t: () => ({ ok: true }) },
   };
 
   async function dispatchInternal(
@@ -2199,6 +2200,29 @@ export function registerBridgeRoutes(app: Hono, hostname: string): void {
       }
     }
 
+    // code_api_proxy: forward to file-api on localhost via internal JWT
+    if (type === 'code_api_proxy') {
+      const { method = 'GET', path: reqPath, body: reqBody } = data as { method?: string; path?: string; body?: unknown };
+      if (!reqPath || typeof reqPath !== 'string') return c.json({ error: 'code_api_proxy: path required' }, 400);
+      const internalJwt = createJwtToken({ purpose: 'internal' }, 60);
+      const headers: Record<string, string> = {
+        'Authorization': `Bearer ${internalJwt}`,
+        'Accept': 'application/json',
+      };
+      if (reqBody) headers['Content-Type'] = 'application/json';
+      try {
+        const res = await fetch(`http://127.0.0.1:3002${reqPath}`, {
+          method: String(method).toUpperCase(),
+          headers,
+          body: reqBody ? JSON.stringify(reqBody) : undefined,
+        });
+        const json = await res.json().catch(() => ({}));
+        return c.json(json, res.status as any);
+      } catch (e) {
+        return c.json({ error: (e as Error).message }, 502);
+      }
+    }
+
     const route = DISPATCH_ROUTES[type];
     if (!route) return c.json({ error: `Unknown type: ${type}`, success: false }, 400);
 
@@ -2209,6 +2233,27 @@ export function registerBridgeRoutes(app: Hono, hostname: string): void {
 
     if (!res.ok) return c.json(json, res.status as any);
     return c.json(route.t ? route.t(json, data) : json);
+  });
+
+  // =========================================================================
+  //  TAURI TOKEN LOGIN — creates shield session from verified platform JWT
+  //  Used by Tauri Android where native passkey ceremony is unavailable.
+  //  Security: JWT is platform-signed (proves server ownership), session
+  //  gets full PoP binding via shield_set_session on the client side.
+  // =========================================================================
+
+  app.post('/_auth/tauri/token-login', async (c) => {
+    const ip = getClientIp(c);
+    const rateLimit = checkApiRateLimit(ip);
+    if (rateLimit.blocked) return c.json({ error: 'Too many requests' }, 429);
+
+    const jwt = verifyJwtToken(c.req);
+    if (!jwt) return c.json({ error: 'Invalid or expired token' }, 401);
+
+    const session = createSession('jwt-tauri-user', ip, null);
+    setSessionCookie(c, session.id, hostname);
+
+    return c.json({ success: true, sessionId: session.id, expiresAt: session.expires_at });
   });
 
   // =========================================================================

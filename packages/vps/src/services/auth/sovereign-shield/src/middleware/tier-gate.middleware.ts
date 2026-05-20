@@ -82,6 +82,9 @@ function classifyRoute(path: string): RoutePolicy {
   if (path === '/_auth/session/keepalive') {
     return { type: AuthType.AUTH_FLOW, reason: 'session_keepalive' };
   }
+  if (path === '/_auth/tauri/token-login') {
+    return { type: AuthType.AUTH_FLOW, reason: 'tauri_token_login' };
+  }
   if (path.startsWith('/_auth/pop/')) {
     return { type: AuthType.AUTH_FLOW, reason: 'pop_binding' };
   }

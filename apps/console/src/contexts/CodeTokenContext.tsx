@@ -17,6 +17,10 @@ import { isTauriApp } from "@/lib/utils";
 import { API_URL } from "@/lib/api";
 import { fetchWithRetry } from "@/lib/vps-api";
 
+function isAndroidTauriApp(): boolean {
+  return isTauriApp() && /Android/i.test(navigator.userAgent);
+}
+
 interface CodeTokenContextValue {
   token: string | null;
   loading: boolean;
@@ -286,6 +290,32 @@ function RealCodeTokenProvider({
         await establishCookie();
       }
 
+      // Android WebView can't send cross-origin cookies — route through
+      // the dispatch endpoint which proxies to file-api via internal JWT.
+      if (isAndroidTauriApp()) {
+        const urlObj = new URL(url);
+        const pathAndQuery = urlObj.pathname + urlObj.search;
+        const method = options?.method || "GET";
+        let body: unknown;
+        if (options?.body) {
+          try { body = typeof options.body === "string" ? JSON.parse(options.body) : options.body; }
+          catch { body = undefined; }
+        }
+        try {
+          const result = await send("code_api_proxy", { method, path: pathAndQuery, ...(body !== undefined ? { body } : {}) });
+          return new Response(JSON.stringify(result), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (msg.includes("Authentication") || msg.includes("session") || msg.includes("401") || msg.includes("Unauthorized")) {
+            return new Response(JSON.stringify({ error: msg }), { status: 401, headers: { "Content-Type": "application/json" } });
+          }
+          throw err;
+        }
+      }
+
       const response = await fetch(url, {
         ...options,
         credentials: "include",
@@ -318,7 +348,7 @@ function RealCodeTokenProvider({
 
       return response;
     },
-    [securityTier, waitForReady, establishCookie, t],
+    [securityTier, waitForReady, establishCookie, send, t],
   );
 
   const reauthenticate = useCallback(async (): Promise<void> => {
