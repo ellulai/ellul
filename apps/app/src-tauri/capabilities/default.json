@@ -74,6 +74,8 @@
     "shield:allow-shield-intent-nonce",
     "shield:allow-shield-create-signed-ws-url",
     "shield:allow-shield-fetch",
+    "shield:allow-shield-get-tier",
+    "shield:allow-shield-token-login",
     "shield:allow-shield-js-log",
     "shield:allow-shield-open-url",
     "proot:allow-proot-start",

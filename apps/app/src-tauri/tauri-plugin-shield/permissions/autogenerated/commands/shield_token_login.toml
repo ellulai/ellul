@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-shield-token-login"
+description = "Enables the shield_token_login command without any pre-configured scope."
+commands.allow = ["shield_token_login"]
+
+[[permission]]
+identifier = "deny-shield-token-login"
+description = "Denies the shield_token_login command without any pre-configured scope."
+commands.deny = ["shield_token_login"]

@@ -708,6 +708,95 @@ pub async fn shield_web_auth_register(
     shield_passkey_register_impl(&session, &http, server_domain, name).await
 }
 
+#[command(rename_all = "camelCase")]
+pub async fn shield_get_tier(
+    http: State<'_, ShieldHttpClient>,
+    server_domain: String,
+) -> Result<serde_json::Value, Error> {
+    let url = format!("https://{server_domain}/_auth/bridge/tier");
+    eprintln!("[shield_get_tier] GET {url}");
+    let res = http
+        .raw()
+        .get(&url)
+        .header("Accept", "application/json")
+        .send()
+        .await
+        .map_err(|e| {
+            eprintln!("[shield_get_tier] request error: {e}");
+            Error::HttpError(e.to_string())
+        })?;
+    let status = res.status();
+    eprintln!("[shield_get_tier] status={status}");
+    let body: serde_json::Value = res.json().await.map_err(|e| {
+        eprintln!("[shield_get_tier] json parse error: {e}");
+        Error::HttpError(format!("JSON parse: {e}"))
+    })?;
+    eprintln!("[shield_get_tier] body={body}");
+    Ok(body)
+}
+
+#[command(rename_all = "camelCase")]
+pub async fn shield_token_login(
+    session: State<'_, SessionState>,
+    http: State<'_, ShieldHttpClient>,
+    server_domain: String,
+    jwt: String,
+) -> Result<serde_json::Value, Error> {
+    let url = format!("https://{server_domain}/_auth/tauri/token-login");
+    eprintln!("[shield_token_login] POST {url}");
+    let res = http
+        .raw()
+        .post(&url)
+        .header("Authorization", format!("Bearer {jwt}"))
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json")
+        .send()
+        .await
+        .map_err(|e| {
+            eprintln!("[shield_token_login] request error: {e}");
+            Error::HttpError(e.to_string())
+        })?;
+
+    let status = res.status();
+    eprintln!("[shield_token_login] status={status}");
+    let session_cookie = extract_session_cookie(&res);
+    let body: serde_json::Value = res
+        .json()
+        .await
+        .map_err(|e| {
+            eprintln!("[shield_token_login] json parse error: {e}");
+            Error::HttpError(format!("JSON parse: {e}"))
+        })?;
+    eprintln!("[shield_token_login] body={body}");
+
+    if !status.is_success() {
+        let err = body["error"].as_str().unwrap_or("token login failed");
+        eprintln!("[shield_token_login] FAILED: {err}");
+        return Err(Error::HttpError(err.to_string()));
+    }
+
+    if let Some(sid) = body["sessionId"].as_str() {
+        let cookie_header = session_cookie
+            .unwrap_or_else(|| format!("__Host-shield_session={sid}"));
+        session.set(server_domain.clone(), cookie_header.clone()).await;
+
+        let result = pop::perform_mlkem_bind(
+            http.raw(),
+            &format!("https://{server_domain}"),
+            &cookie_header,
+        )
+        .await?;
+        session.set_k_pop(result.k_pop).await;
+        pop::persist_k_pop(&result.k_pop);
+
+        crate::webview_cookie::inject_cookies_for_session(&cookie_header, &server_domain);
+        let k_pop_b64 = base64::engine::general_purpose::STANDARD.encode(result.k_pop);
+        crate::webview_cookie::inject_pop_to_webview(&k_pop_b64);
+    }
+
+    Ok(body)
+}
+
 #[command]
 pub async fn shield_session_info(
     session: State<'_, SessionState>,

@@ -452,6 +452,32 @@ Denies the shield_get_terminal_token command without any pre-configured scope.
 <tr>
 <td>
 
+`shield:allow-shield-get-tier`
+
+</td>
+<td>
+
+Enables the shield_get_tier command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`shield:deny-shield-get-tier`
+
+</td>
+<td>
+
+Denies the shield_get_tier command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `shield:allow-shield-intent-nonce`
 
 </td>
@@ -1121,6 +1147,32 @@ Enables the shield_set_session command without any pre-configured scope.
 <td>
 
 Denies the shield_set_session command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`shield:allow-shield-token-login`
+
+</td>
+<td>
+
+Enables the shield_token_login command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`shield:deny-shield-token-login`
+
+</td>
+<td>
+
+Denies the shield_token_login command without any pre-configured scope.
 
 </td>
 </tr>

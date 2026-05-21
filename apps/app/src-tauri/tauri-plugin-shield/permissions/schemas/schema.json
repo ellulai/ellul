@@ -499,6 +499,18 @@
           "markdownDescription": "Denies the shield_get_terminal_token command without any pre-configured scope."
         },
         {
+          "description": "Enables the shield_get_tier command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-get-tier",
+          "markdownDescription": "Enables the shield_get_tier command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_get_tier command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-get-tier",
+          "markdownDescription": "Denies the shield_get_tier command without any pre-configured scope."
+        },
+        {
           "description": "Enables the shield_intent_nonce command without any pre-configured scope.",
           "type": "string",
           "const": "allow-shield-intent-nonce",
@@ -809,6 +821,18 @@
           "type": "string",
           "const": "deny-shield-set-session",
           "markdownDescription": "Denies the shield_set_session command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the shield_token_login command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-shield-token-login",
+          "markdownDescription": "Enables the shield_token_login command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the shield_token_login command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-shield-token-login",
+          "markdownDescription": "Denies the shield_token_login command without any pre-configured scope."
         },
         {
           "description": "Enables the shield_tool_permission_reset command without any pre-configured scope.",

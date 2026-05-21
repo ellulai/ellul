@@ -68,28 +68,26 @@ async function tauriInvoke<T = unknown>(cmd: string, args?: Record<string, unkno
 // ── Tier-aware native auth (shared by all Tauri platforms) ──
 
 async function performTauriAuth(hostname: string): Promise<void> {
-  let tier: string | undefined;
-  try {
-    const tierBody = await tauriInvoke<{ tier?: string }>("shield_get_tier", { serverDomain: hostname });
-    tier = tierBody.tier;
-  } catch {}
+  const tierBody = await tauriInvoke<{ tier?: string }>("shield_get_tier", { serverDomain: hostname });
+  const tier = tierBody.tier;
 
-  if (tier === "standard") {
-    const serverId = localStorage.getItem("ellul-active-server");
-    if (!serverId) throw new Error("No active server");
-    const tokenRes = await fetch(`${API_URL}/api/servers/${serverId}/terminal/token`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (!tokenRes.ok) throw new Error("Failed to get terminal token");
-    const tokenData = await tokenRes.json() as { terminal?: { token?: string } };
-    const jwt = tokenData.terminal?.token;
-    if (!jwt) throw new Error("No token in response");
-    await tauriInvoke("shield_token_login", { serverDomain: hostname, jwt });
-  } else {
+  if (tier !== "standard") {
     await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
+    return;
   }
+
+  const serverId = localStorage.getItem("ellul-active-server");
+  if (!serverId) throw new Error("No active server");
+  const tokenRes = await fetch(`${API_URL}/api/servers/${serverId}/terminal/token`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!tokenRes.ok) throw new Error("Failed to get terminal token");
+  const tokenData = await tokenRes.json() as { terminal?: { token?: string } };
+  const jwt = tokenData.terminal?.token;
+  if (!jwt) throw new Error("No token in response");
+  await tauriInvoke("shield_token_login", { serverDomain: hostname, jwt });
 }
 
 // ── Mock bridge ──

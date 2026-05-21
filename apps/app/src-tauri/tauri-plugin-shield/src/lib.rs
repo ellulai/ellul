@@ -34,6 +34,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::shield_web_auth_register,
             commands::shield_register_options,
             commands::shield_register_verify,
+            commands::shield_get_tier,
+            commands::shield_token_login,
             commands::shield_session_info,
             commands::shield_logout,
             commands::shield_session_keepalive,
