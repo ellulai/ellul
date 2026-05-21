@@ -26,13 +26,10 @@ import type {
   BridgeResponse,
 } from "@ellul.ai/vps/auth/bridge-contracts";
 
-// A handle to a specific iframe instance. `generation` increments on each
-// iframe mount; pending requests bound to a stale generation are rejected on
-// detach instead of racing a fresh bridge or hanging forever.
-export interface BridgeHandle {
-  readonly contentWindow: Window;
-  readonly hostname: string;
-  readonly generation: number;
+interface BridgeHandle {
+  contentWindow: Window;
+  hostname: string;
+  generation: number;
 }
 
 interface VpsBridgeState {
@@ -40,13 +37,7 @@ interface VpsBridgeState {
   error: string | null;
   needsVpsAuth: boolean;
   sessionExpired: boolean;
-  send: {
-    <K extends BridgeMessageType>(type: K, data?: Record<string, unknown>): Promise<BridgeResponse<K>>;
-    <T = unknown>(type: string, data?: Record<string, unknown>): Promise<T>;
-  };
-  // Resolves only when the bridge is fully usable (ready + iframe attached).
-  // The returned handle pins the contentWindow at the time of acquisition so
-  // callers don't have to re-check refs before sending.
+  send: <T = unknown>(type: string, data?: Record<string, unknown>) => Promise<T>;
   waitForReady: () => Promise<BridgeHandle>;
   reauthenticate: () => Promise<void>;
   signalAuthNeeded: () => void;
@@ -63,22 +54,51 @@ interface VpsBridgeProviderProps {
   securityTier?: "standard" | "web_locked" | "private_locked";
 }
 
-// Top-level dispatch: each branch is a sibling component with its own hook
-// graph. Rules of Hooks holds because no hook is called conditionally inside
-// a single component body.
 export function VpsBridgeProvider(props: VpsBridgeProviderProps) {
   if (MOCK_MODE) return <MockVpsBridgeProvider>{props.children}</MockVpsBridgeProvider>;
-  if (isAndroidTauriApp()) return <TauriVpsBridgeProvider hostname={props.hostname}>{props.children}</TauriVpsBridgeProvider>;
-  return <RealVpsBridgeProvider hostname={props.hostname}>{props.children}</RealVpsBridgeProvider>;
+  return <BridgeProvider hostname={props.hostname}>{props.children}</BridgeProvider>;
 }
 
+// ── Tauri IPC helper ──
+
+async function tauriInvoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  return (window as any).__TAURI_INTERNALS__.invoke(`plugin:shield|${cmd}`, args) as Promise<T>;
+}
+
+// ── Tier-aware native auth (shared by all Tauri platforms) ──
+
+async function performTauriAuth(hostname: string): Promise<void> {
+  let tier: string | undefined;
+  try {
+    const tierBody = await tauriInvoke<{ tier?: string }>("shield_get_tier", { serverDomain: hostname });
+    tier = tierBody.tier;
+  } catch {}
+
+  if (tier === "standard") {
+    const serverId = localStorage.getItem("ellul-active-server");
+    if (!serverId) throw new Error("No active server");
+    const tokenRes = await fetch(`${API_URL}/api/servers/${serverId}/terminal/token`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!tokenRes.ok) throw new Error("Failed to get terminal token");
+    const tokenData = await tokenRes.json() as { terminal?: { token?: string } };
+    const jwt = tokenData.terminal?.token;
+    if (!jwt) throw new Error("No token in response");
+    await tauriInvoke("shield_token_login", { serverDomain: hostname, jwt });
+  } else {
+    await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
+  }
+}
+
+// ── Mock bridge ──
+
 function MockVpsBridgeProvider({ children }: { children: ReactNode }) {
-  const send = useCallback(async <T = unknown,>(type: string): Promise<T> => {
-    await new Promise((r) => setTimeout(r, 50 + Math.random() * 100));
-    const response = mockVpsBridgeResponses[type];
-    if (response !== undefined) return response as T;
-    console.warn(`[mock-mode] Unmatched bridge call: ${type}`);
-    return {} as T;
+  const send = useCallback(async <T = unknown,>(type: string, data: Record<string, unknown> = {}): Promise<T> => {
+    const handler = mockVpsBridgeResponses[type as BridgeMessageType];
+    if (!handler) throw new Error(`Unknown bridge message type: ${type}`);
+    return (handler as (data: Record<string, unknown>) => unknown)(data) as T;
   }, []);
 
   const handle: BridgeHandle = {
@@ -88,10 +108,7 @@ function MockVpsBridgeProvider({ children }: { children: ReactNode }) {
   };
 
   const value: VpsBridgeState = {
-    ready: true,
-    error: null,
-    needsVpsAuth: false,
-    sessionExpired: false,
+    ready: true, error: null, needsVpsAuth: false, sessionExpired: false,
     send,
     waitForReady: async () => handle,
     reauthenticate: async () => {},
@@ -101,233 +118,14 @@ function MockVpsBridgeProvider({ children }: { children: ReactNode }) {
     registerNative: async () => ({}),
   };
 
-  return (
-    <VpsBridgeContext.Provider value={value}>
-      {children}
-    </VpsBridgeContext.Provider>
-  );
+  return <VpsBridgeContext.Provider value={value}>{children}</VpsBridgeContext.Provider>;
 }
 
-async function tauriInvoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  return (window as any).__TAURI_INTERNALS__.invoke(`plugin:shield|${cmd}`, args) as Promise<T>;
-}
+// ── Unified bridge provider ──
+// Android: shield_fetch dispatch (no iframe). Web + Tauri macOS: iframe postMessage.
 
-// ── Native bridge (Android Tauri — no iframe, uses shield_fetch dispatch) ──
-
-function TauriVpsBridgeProvider({ hostname, children }: { hostname: string; children: ReactNode }) {
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [needsVpsAuth, setNeedsVpsAuth] = useState(false);
-  const [sessionExpired, setSessionExpired] = useState(false);
-
-  const readyRef = useRef(false);
-  const errorRef = useRef<string | null>(null);
-  useEffect(() => { readyRef.current = ready; }, [ready]);
-  useEffect(() => { errorRef.current = error; }, [error]);
-
-  type ReadyWaiter = { resolve: (h: BridgeHandle) => void; reject: (err: Error) => void };
-  const readyCallbacks = useRef<ReadyWaiter[]>([]);
-
-  const dummyHandle = useRef<BridgeHandle>({
-    contentWindow: typeof window !== "undefined" ? window : ({} as Window),
-    hostname,
-    generation: 0,
-  });
-
-  useEffect(() => {
-    if (!ready || error) return;
-    const waiters = readyCallbacks.current;
-    readyCallbacks.current = [];
-    for (const w of waiters) w.resolve(dummyHandle.current);
-  }, [ready, error]);
-
-  useEffect(() => {
-    if (!error) return;
-    const waiters = readyCallbacks.current;
-    readyCallbacks.current = [];
-    const err = new Error(error);
-    for (const w of waiters) w.reject(err);
-  }, [error]);
-
-  const waitForReady = useCallback((): Promise<BridgeHandle> => {
-    if (readyRef.current && !errorRef.current) return Promise.resolve(dummyHandle.current);
-    if (errorRef.current) return Promise.reject(new Error(errorRef.current));
-    return new Promise<BridgeHandle>((resolve, reject) => {
-      readyCallbacks.current.push({ resolve, reject });
-    });
-  }, []);
-
-  const send = useCallback(<T = unknown,>(type: string, data: Record<string, unknown> = {}): Promise<T> => {
-    return (async () => {
-      await waitForReady();
-      try {
-        return await tauriInvoke<T>("shield_fetch", {
-          method: "POST",
-          path: "/_auth/bridge/dispatch",
-          body: { type, ...data },
-        });
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg === "Authentication required" || msg.includes("No session") || msg.includes("Invalid session")) {
-          setNeedsVpsAuth(true);
-        }
-        throw err;
-      }
-    })();
-  }, [waitForReady]);
-
-  const checkSession = useCallback(async () => {
-    try {
-      const result = await tauriInvoke<{ valid?: boolean }>("shield_fetch", {
-        method: "GET",
-        path: "/_auth/bridge/session",
-      });
-      console.log("[checkSession] result:", JSON.stringify(result));
-      if (result.valid) {
-        setNeedsVpsAuth(false);
-        setSessionExpired(false);
-        setReady(true);
-      } else {
-        console.log("[checkSession] invalid → needsVpsAuth");
-        setNeedsVpsAuth(true);
-        setReady(true);
-      }
-    } catch (e) {
-      console.error("[checkSession] error:", e);
-      setNeedsVpsAuth(true);
-      setReady(true);
-    }
-  }, []);
-
-  useEffect(() => { checkSession(); }, [checkSession]);
-
-  const signalAuthNeeded = useCallback(() => { setNeedsVpsAuth(true); }, []);
-
-  const reload = useCallback(() => {
-    setReady(false);
-    setError(null);
-    setNeedsVpsAuth(false);
-    setSessionExpired(false);
-    const waiters = readyCallbacks.current;
-    readyCallbacks.current = [];
-    const err = new Error("Bridge reloading");
-    for (const w of waiters) w.reject(err);
-    checkSession();
-  }, [checkSession]);
-
-  const authenticateNative = useCallback(async (): Promise<void> => {
-    console.log("[authNative] start, hostname:", hostname);
-    let tier: string | undefined;
-    try {
-      const tierBody = await tauriInvoke<{ tier?: string }>("shield_get_tier", { serverDomain: hostname });
-      console.log("[authNative] tier body:", JSON.stringify(tierBody));
-      tier = tierBody.tier;
-    } catch (e) {
-      console.error("[authNative] tier fetch error:", e);
-    }
-
-    if (tier === "standard") {
-      console.log("[authNative] standard tier → token-login path");
-      const serverId = localStorage.getItem("ellul-active-server");
-      console.log("[authNative] serverId:", serverId);
-      if (!serverId) throw new Error("No active server");
-      const tokenRes = await fetch(`${API_URL}/api/servers/${serverId}/terminal/token`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
-      console.log("[authNative] terminal/token status:", tokenRes.status);
-      if (!tokenRes.ok) {
-        const errText = await tokenRes.text().catch(() => "");
-        console.error("[authNative] terminal/token failed:", errText);
-        throw new Error("Failed to get terminal token");
-      }
-      const tokenData = await tokenRes.json() as { terminal?: { token?: string } };
-      const jwt = tokenData.terminal?.token;
-      console.log("[authNative] jwt present:", !!jwt);
-      if (!jwt) throw new Error("No token in response");
-
-      await tauriInvoke("shield_token_login", { serverDomain: hostname, jwt });
-      console.log("[authNative] shield_token_login done");
-    } else {
-      console.log("[authNative] tier:", tier, "→ passkey path");
-      await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
-    }
-
-    console.log("[authNative] success");
-    setNeedsVpsAuth(false);
-    setSessionExpired(false);
-    setReady(true);
-  }, [hostname]);
-
-  const registerNative = useCallback(async (name: string): Promise<unknown> => {
-    return tauriInvoke("shield_passkey_register", { serverDomain: hostname, name });
-  }, [hostname]);
-
-  const reauthenticate = useCallback(async (): Promise<void> => {
-    await authenticateNative();
-  }, [authenticateNative]);
-
-  const autoAuthAttempted = useRef(false);
-  useEffect(() => {
-    if (ready && needsVpsAuth && !autoAuthAttempted.current) {
-      autoAuthAttempted.current = true;
-      console.log("[autoAuth] triggering authenticateNative");
-      authenticateNative().catch((e) => {
-        console.error("[autoAuth] authenticateNative failed:", e);
-        setNeedsVpsAuth(true);
-      });
-    }
-    if (!needsVpsAuth) autoAuthAttempted.current = false;
-  }, [ready, needsVpsAuth, authenticateNative]);
-
-  const needsAuthRef = useRef(false);
-  useEffect(() => { needsAuthRef.current = needsVpsAuth || sessionExpired; }, [needsVpsAuth, sessionExpired]);
-
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState !== "visible" || !needsAuthRef.current) return;
-      setNeedsVpsAuth(false);
-      setSessionExpired(false);
-      authenticateNative().catch(() => { setNeedsVpsAuth(true); });
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [authenticateNative]);
-
-  useEffect(() => {
-    let lastAlive: boolean | null = null;
-    return onSessionStatus((signal) => {
-      if (signal.alive) { lastAlive = true; return; }
-      if (lastAlive !== true) return;
-      lastAlive = false;
-      if (document.visibilityState === "visible") {
-        setSessionExpired(false);
-        authenticateNative().catch(() => {
-          setSessionExpired(true);
-          setNeedsVpsAuth(true);
-        });
-      } else {
-        setSessionExpired(true);
-        setNeedsVpsAuth(true);
-      }
-    });
-  }, [authenticateNative]);
-
-  return (
-    <VpsBridgeContext.Provider value={{
-      ready, error, needsVpsAuth, sessionExpired, send,
-      waitForReady, reauthenticate, signalAuthNeeded, reload,
-      authenticateNative, registerNative,
-    }}>
-      {children}
-    </VpsBridgeContext.Provider>
-  );
-}
-
-// ── Iframe bridge (web + Tauri macOS) ──
-
-function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
+function BridgeProvider({ hostname, children }: { hostname: string; children: ReactNode }) {
+  const android = isAndroidTauriApp();
   const queryClient = useQueryClient();
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
@@ -349,15 +147,21 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
   const readyCallbacks = useRef<ReadyWaiter[]>([]);
 
   const needsAuthRef = useRef(false);
-  useEffect(() => {
-    needsAuthRef.current = needsVpsAuth || sessionExpired;
-  }, [needsVpsAuth, sessionExpired]);
-
+  useEffect(() => { needsAuthRef.current = needsVpsAuth || sessionExpired; }, [needsVpsAuth, sessionExpired]);
   useEffect(() => { errorRef.current = error; }, [error]);
 
-  // Iframe lifecycle observed via ref callback — runs synchronously with the
-  // actual DOM transition, so we never see a window that's about to detach.
+  // ── Android: dummy handle (no iframe) ──
+
+  const dummyHandle = useRef<BridgeHandle>({
+    contentWindow: typeof window !== "undefined" ? window : ({} as Window),
+    hostname,
+    generation: 0,
+  });
+
+  // ── Iframe lifecycle (web + macOS only) ──
+
   const setIframeNode = useCallback((node: HTMLIFrameElement | null) => {
+    if (android) return;
     if (node === iframeRef.current) return;
     if (!node) {
       const stale = generationRef.current;
@@ -375,24 +179,29 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
     }
     generationRef.current += 1;
     iframeRef.current = node;
-  }, []);
+  }, [android]);
 
-  // Publish handle and drain ready-waiters once both signals hold at the
-  // same instant. Without this conjunction the two have raced for years.
+  // Publish handle once iframe signals ready (web/macOS)
   useEffect(() => {
+    if (android) return;
     if (!ready) return;
     const win = iframeRef.current?.contentWindow ?? null;
     if (!win) return;
-    const handle: BridgeHandle = {
-      contentWindow: win,
-      hostname,
-      generation: generationRef.current,
-    };
+    const handle: BridgeHandle = { contentWindow: win, hostname, generation: generationRef.current };
     handleRef.current = handle;
     const waiters = readyCallbacks.current;
     readyCallbacks.current = [];
     for (const w of waiters) w.resolve(handle);
-  }, [ready, hostname]);
+  }, [android, ready, hostname]);
+
+  // Drain ready waiters on Android (no iframe to wait for)
+  useEffect(() => {
+    if (!android) return;
+    if (!ready || error) return;
+    const waiters = readyCallbacks.current;
+    readyCallbacks.current = [];
+    for (const w of waiters) w.resolve(dummyHandle.current);
+  }, [android, ready, error]);
 
   useEffect(() => {
     if (!error) return;
@@ -403,15 +212,38 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
   }, [error]);
 
   const waitForReady = useCallback((): Promise<BridgeHandle> => {
-    if (handleRef.current) return Promise.resolve(handleRef.current);
+    if (android) {
+      if (ready && !errorRef.current) return Promise.resolve(dummyHandle.current);
+    } else {
+      if (handleRef.current) return Promise.resolve(handleRef.current);
+    }
     if (errorRef.current) return Promise.reject(new Error(errorRef.current));
     return new Promise<BridgeHandle>((resolve, reject) => {
       readyCallbacks.current.push({ resolve, reject });
     });
-  }, []);
+  }, [android, ready]);
+
+  // ── send: single dispatch, transport varies ──
 
   const send = useCallback(<T = unknown,>(type: string, data: Record<string, unknown> = {}): Promise<T> => {
     return (async () => {
+      if (android) {
+        await waitForReady();
+        try {
+          return await tauriInvoke<T>("shield_fetch", {
+            method: "POST",
+            path: "/_auth/bridge/dispatch",
+            body: { type, ...data },
+          });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (msg === "Authentication required" || msg.includes("No session") || msg.includes("Invalid session")) {
+            setNeedsVpsAuth(true);
+          }
+          throw err;
+        }
+      }
+
       const handle = await waitForReady();
       return new Promise<T>((resolve, reject) => {
         const id = String(++requestId.current);
@@ -420,18 +252,13 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
           reject,
           generation: handle.generation,
         });
-
         try {
-          handle.contentWindow.postMessage(
-            { type, requestId: id, ...data },
-            `https://${handle.hostname}`,
-          );
+          handle.contentWindow.postMessage({ type, requestId: id, ...data }, `https://${handle.hostname}`);
         } catch (e) {
           pendingRequests.current.delete(id);
           reject(e instanceof Error ? e : new Error(String(e)));
           return;
         }
-
         setTimeout(() => {
           if (pendingRequests.current.has(id)) {
             pendingRequests.current.delete(id);
@@ -440,85 +267,93 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
         }, 60_000);
       });
     })();
-  }, [waitForReady]);
+  }, [android, waitForReady]);
 
-  const signalAuthNeeded = useCallback(() => {
-    setNeedsVpsAuth(true);
-  }, []);
+  // ── Session bootstrap ──
+
+  const checkSession = useCallback(async () => {
+    if (android) {
+      try {
+        const result = await tauriInvoke<{ valid?: boolean }>("shield_fetch", {
+          method: "GET",
+          path: "/_auth/bridge/session",
+        });
+        if (result.valid) {
+          setNeedsVpsAuth(false);
+          setSessionExpired(false);
+          setReady(true);
+        } else {
+          setNeedsVpsAuth(true);
+          setReady(true);
+        }
+      } catch {
+        setNeedsVpsAuth(true);
+        setReady(true);
+      }
+    }
+    // Web/macOS: session checked by iframe bridge_ready message
+  }, [android]);
+
+  useEffect(() => { if (android) checkSession(); }, [android, checkSession]);
+
+  const signalAuthNeeded = useCallback(() => { setNeedsVpsAuth(true); }, []);
 
   const reload = useCallback(() => {
     setReady(false);
     setError(null);
     setNeedsVpsAuth(false);
     setSessionExpired(false);
-    handleRef.current = null;
-    const err = new Error("Bridge reloading");
-    for (const [id, req] of pendingRequests.current) {
-      pendingRequests.current.delete(id);
-      req.reject(err);
+    if (android) {
+      const waiters = readyCallbacks.current;
+      readyCallbacks.current = [];
+      const err = new Error("Bridge reloading");
+      for (const w of waiters) w.reject(err);
+      checkSession();
+    } else {
+      handleRef.current = null;
+      const err = new Error("Bridge reloading");
+      for (const [id, req] of pendingRequests.current) {
+        pendingRequests.current.delete(id);
+        req.reject(err);
+      }
+      const waiters = readyCallbacks.current;
+      readyCallbacks.current = [];
+      for (const w of waiters) w.reject(err);
+      setBridgeKey((k) => k + 1);
     }
-    const waiters = readyCallbacks.current;
-    readyCallbacks.current = [];
-    for (const w of waiters) w.reject(err);
-    setBridgeKey((k) => k + 1);
-  }, []);
+  }, [android, checkSession]);
+
+  // ── Auth ceremonies (shared) ──
 
   const authenticateNative = useCallback(async (): Promise<void> => {
     if (isTauriApp()) {
-      console.log("[authNative:desktop] start, hostname:", hostname);
-      let tier: string | undefined;
-      try {
-        const tierBody = await tauriInvoke<{ tier?: string }>("shield_get_tier", { serverDomain: hostname });
-        console.log("[authNative:desktop] tier body:", JSON.stringify(tierBody));
-        tier = tierBody.tier;
-      } catch (e) {
-        console.error("[authNative:desktop] tier fetch error:", e);
-      }
+      await performTauriAuth(hostname);
 
-      if (tier === "standard") {
-        console.log("[authNative:desktop] standard tier → token-login path");
-        const serverId = localStorage.getItem("ellul-active-server");
-        console.log("[authNative:desktop] serverId:", serverId);
-        if (!serverId) throw new Error("No active server");
-        const tokenRes = await fetch(`${API_URL}/api/servers/${serverId}/terminal/token`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
+      if (!android) {
+        setNeedsVpsAuth(false);
+        setSessionExpired(false);
+        setReady(false);
+        handleRef.current = null;
+        setBridgeKey((k) => k + 1);
+        return new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error("Auth timeout")), 30_000);
+          const check = setInterval(() => {
+            if (handleRef.current) {
+              clearInterval(check);
+              clearTimeout(timeout);
+              resolve();
+            }
+          }, 100);
         });
-        console.log("[authNative:desktop] terminal/token status:", tokenRes.status);
-        if (!tokenRes.ok) {
-          const errText = await tokenRes.text().catch(() => "");
-          console.error("[authNative:desktop] terminal/token failed:", errText);
-          throw new Error("Failed to get terminal token");
-        }
-        const tokenData = await tokenRes.json() as { terminal?: { token?: string } };
-        const jwt = tokenData.terminal?.token;
-        console.log("[authNative:desktop] jwt present:", !!jwt);
-        if (!jwt) throw new Error("No token in response");
-
-        await tauriInvoke("shield_token_login", { serverDomain: hostname, jwt });
-        console.log("[authNative:desktop] shield_token_login done");
-      } else {
-        console.log("[authNative:desktop] tier:", tier, "→ passkey path");
-        await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
       }
 
       setNeedsVpsAuth(false);
       setSessionExpired(false);
-      setReady(false);
-      handleRef.current = null;
-      setBridgeKey((k) => k + 1);
-      return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error("Auth timeout")), 30_000);
-        const check = setInterval(() => {
-          if (handleRef.current) {
-            clearInterval(check);
-            clearTimeout(timeout);
-            resolve();
-          }
-        }, 100);
-      });
+      setReady(true);
+      return;
     }
+
+    // Web passkey flow
     const options = await send<PublicKeyCredentialRequestOptionsJSON>("get_auth_options");
     const assertion = await startAuthentication({ optionsJSON: options });
     await send("verify_auth", { assertion });
@@ -532,7 +367,7 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
         }
       }, 100);
     });
-  }, [send, hostname]);
+  }, [android, send, hostname]);
 
   const registerNative = useCallback(async (name: string): Promise<unknown> => {
     if (isTauriApp()) {
@@ -549,18 +384,22 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
     await authenticateNative();
   }, [authenticateNative]);
 
+  // ── Auto-auth + visibility + session status (shared) ──
+
   const triggerReauth = useCallback(() => {
     if (document.visibilityState === "visible") {
       setSessionExpired(false);
       (async () => {
         try {
           await authenticateNative();
-          try {
-            handleRef.current?.contentWindow.postMessage(
-              { type: "auth_completed", success: true },
-              `https://${hostname}`,
-            );
-          } catch {}
+          if (!android) {
+            try {
+              iframeRef.current?.contentWindow?.postMessage(
+                { type: "auth_completed", success: true },
+                `https://${hostname}`,
+              );
+            } catch {}
+          }
         } catch {
           setSessionExpired(true);
           setNeedsVpsAuth(true);
@@ -570,7 +409,7 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
       setSessionExpired(true);
       setNeedsVpsAuth(true);
     }
-  }, [authenticateNative, hostname]);
+  }, [android, authenticateNative, hostname]);
 
   const triggerReauthRef = useRef(triggerReauth);
   useEffect(() => { triggerReauthRef.current = triggerReauth; }, [triggerReauth]);
@@ -589,16 +428,26 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
   useEffect(() => {
     if (ready && needsVpsAuth && !autoAuthAttempted.current) {
       autoAuthAttempted.current = true;
-      authenticateNative().catch(() => {
-        setNeedsVpsAuth(true);
-      });
+      authenticateNative().catch(() => { setNeedsVpsAuth(true); });
     }
-    if (!needsVpsAuth) {
-      autoAuthAttempted.current = false;
-    }
+    if (!needsVpsAuth) autoAuthAttempted.current = false;
   }, [ready, needsVpsAuth, authenticateNative]);
 
+  // ── Iframe message handler (web + macOS only) ──
+
   useEffect(() => {
+    if (android) {
+      // Android: visibility reauth only
+      const onVisible = () => {
+        if (document.visibilityState !== "visible" || !needsAuthRef.current) return;
+        setNeedsVpsAuth(false);
+        setSessionExpired(false);
+        authenticateNative().catch(() => { setNeedsVpsAuth(true); });
+      };
+      document.addEventListener("visibilitychange", onVisible);
+      return () => document.removeEventListener("visibilitychange", onVisible);
+    }
+
     const handler = (event: MessageEvent) => {
       if (event.origin !== `https://${hostname}`) return;
       const { type, requestId: reqId, ...data } = event.data;
@@ -611,10 +460,7 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
             if (sovereignCode && win) {
               sessionStorage.removeItem("sovereign-exchange-code");
               try {
-                win.postMessage(
-                  { type: "exchange_session", exchangeCode: sovereignCode },
-                  `https://${hostname}`,
-                );
+                win.postMessage({ type: "exchange_session", exchangeCode: sovereignCode }, `https://${hostname}`);
               } catch {}
               return;
             }
@@ -628,7 +474,6 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
             return;
           }
           if (isTauriApp()) {
-            // No SW in cross-origin iframe is expected — server accepts cookie-only auth
             setNeedsVpsAuth(false);
             setSessionExpired(false);
             setReady(true);
@@ -659,7 +504,6 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
       if (reqId && pendingRequests.current.has(reqId)) {
         const { resolve, reject } = pendingRequests.current.get(reqId)!;
         pendingRequests.current.delete(reqId);
-
         if (data.success === false) {
           const errMsg = typeof data.error === 'string' ? data.error
             : data.error ? JSON.stringify(data.error) : "Request failed";
@@ -672,8 +516,7 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
     };
 
     const onVisible = () => {
-      if (document.visibilityState !== "visible") return;
-      if (!needsAuthRef.current) return;
+      if (document.visibilityState !== "visible" || !needsAuthRef.current) return;
       setNeedsVpsAuth(false);
       setSessionExpired(false);
       (async () => {
@@ -697,18 +540,20 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
       window.removeEventListener("message", handler);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [hostname, queryClient, authenticateNative]);
+  }, [android, hostname, queryClient, authenticateNative]);
 
   return (
     <VpsBridgeContext.Provider value={{ ready, error, needsVpsAuth, sessionExpired, send, waitForReady, reauthenticate, signalAuthNeeded, reload, authenticateNative, registerNative }}>
-      <iframe
-        key={bridgeKey}
-        ref={setIframeNode}
-        src={`https://${hostname}/_auth/bridge`}
-        style={{ display: "none" }}
-        title="VPS Auth Bridge"
-        allow="publickey-credentials-create *; publickey-credentials-get *"
-      />
+      {!android && (
+        <iframe
+          key={bridgeKey}
+          ref={setIframeNode}
+          src={`https://${hostname}/_auth/bridge`}
+          style={{ display: "none" }}
+          title="VPS Auth Bridge"
+          allow="publickey-credentials-create *; publickey-credentials-get *"
+        />
+      )}
       {children}
     </VpsBridgeContext.Provider>
   );

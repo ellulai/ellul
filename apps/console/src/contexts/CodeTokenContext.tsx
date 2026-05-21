@@ -144,7 +144,7 @@ function RealCodeTokenProvider({
 
         if (securityTier !== "standard") {
           await waitForReady();
-          const result = await send("get_code_session");
+          const result = await send<{ codeSessionId: string; expiresAt: number }>("get_code_session");
           codeSessionId = result.codeSessionId;
           expiresAt = result.expiresAt;
         } else {
