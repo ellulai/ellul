@@ -16,6 +16,7 @@ import type { PublicKeyCredentialCreationOptionsJSON, PublicKeyCredentialRequest
 import { MOCK_MODE, mockVpsBridgeResponses } from "@/lib/mock-data";
 import { onSessionStatus } from "@/lib/session-events";
 import { isTauriApp } from "@/lib/utils";
+import { API_URL } from "@/lib/api";
 
 function isAndroidTauriApp(): boolean {
   return isTauriApp() && /Android/i.test(navigator.userAgent);
@@ -212,7 +213,42 @@ function TauriVpsBridgeProvider({ hostname, children }: { hostname: string; chil
   }, [checkSession]);
 
   const authenticateNative = useCallback(async (): Promise<void> => {
-    await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
+    let tier: string | undefined;
+    try {
+      const tierRes = await fetch(`https://${hostname}/_auth/bridge/tier`, { credentials: "include" });
+      const tierBody = await tierRes.json().catch(() => ({})) as { tier?: string };
+      tier = tierBody.tier;
+    } catch {}
+
+    if (tier === "standard") {
+      const serverId = localStorage.getItem("ellul-active-server");
+      if (!serverId) throw new Error("No active server");
+      const tokenRes = await fetch(`${API_URL}/api/servers/${serverId}/terminal/token`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!tokenRes.ok) throw new Error("Failed to get terminal token");
+      const tokenData = await tokenRes.json() as { terminal?: { token?: string } };
+      const jwt = tokenData.terminal?.token;
+      if (!jwt) throw new Error("No token in response");
+
+      const loginRes = await fetch(`https://${hostname}/_auth/tauri/token-login`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" },
+      });
+      if (!loginRes.ok) throw new Error("Token login failed");
+      const loginData = await loginRes.json() as { sessionId?: string };
+      if (loginData.sessionId) {
+        await tauriInvoke("shield_set_session", {
+          serverDomain: hostname,
+          sessionCookie: loginData.sessionId,
+        });
+      }
+    } else {
+      await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
+    }
+
     setNeedsVpsAuth(false);
     setSessionExpired(false);
     setReady(true);
@@ -419,7 +455,41 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
 
   const authenticateNative = useCallback(async (): Promise<void> => {
     if (isTauriApp()) {
-      await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
+      let tier: string | undefined;
+      try {
+        const tierRes = await fetch(`https://${hostname}/_auth/bridge/tier`, { credentials: "include" });
+        const tierBody = await tierRes.json().catch(() => ({})) as { tier?: string };
+        tier = tierBody.tier;
+      } catch {}
+
+      if (tier === "standard") {
+        const serverId = localStorage.getItem("ellul-active-server");
+        if (!serverId) throw new Error("No active server");
+        const tokenRes = await fetch(`${API_URL}/api/servers/${serverId}/terminal/token`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!tokenRes.ok) throw new Error("Failed to get terminal token");
+        const tokenData = await tokenRes.json() as { terminal?: { token?: string } };
+        const jwt = tokenData.terminal?.token;
+        if (!jwt) throw new Error("No token in response");
+        const loginRes = await fetch(`https://${hostname}/_auth/tauri/token-login`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" },
+        });
+        if (!loginRes.ok) throw new Error("Token login failed");
+        const loginData = await loginRes.json() as { sessionId?: string };
+        if (loginData.sessionId) {
+          await tauriInvoke("shield_set_session", {
+            serverDomain: hostname,
+            sessionCookie: loginData.sessionId,
+          });
+        }
+      } else {
+        await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
+      }
+
       setNeedsVpsAuth(false);
       setSessionExpired(false);
       setReady(false);

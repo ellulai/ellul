@@ -65,6 +65,9 @@ const SHIELD_DIRECT_PATHS = [
   // Wake-enforcer: server-to-server SIGUSR1 push from API (Cloud Run).
   // Auth: server ID in body (UUID, unguessable). SIGUSR1 is harmless.
   "/_auth/wake-enforcer",
+  "/_auth/tauri/token-login",
+  "/_auth/upgrade-to-web-locked",
+  "/_auth/upgrade-to-web-locked/verify",
 ];
 
 // Routes behind forward_auth gate to sovereign-shield

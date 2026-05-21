@@ -1,6 +1,6 @@
 {
   "name": "@ellul.ai/core-runtime-bundle",
-  "version": "0.1.2",
+  "version": "0.1.5",
   "private": true,
   "description": "Version tracking for the grouped core-runtime agent manifest component (file-api + agent-bridge + watchdog + term-proxy). Bump the version here when any of the four change — scripts/build-agent-bundles.mjs reads this semver to decide whether to publish a new core-runtime tarball to the agent manifest system.",
   "license": "BUSL-1.1"
