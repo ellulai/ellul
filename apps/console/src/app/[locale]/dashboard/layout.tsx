@@ -39,24 +39,29 @@ const TAURI_API_URL = CONSOLE_URL.replace("console.", "api.");
 
 const CONNECT_STORAGE_KEY = "ellul_pending_connect_id";
 
-const LOCAL_SERVER_STATUS: ServerStatus = {
-  state: "running",
-  plan: "free",
-  hasActiveSubscription: false,
-  server: {
-    id: "local",
-    ipAddress: "127.0.0.1",
-    domain: null,
-    createdAt: new Date().toISOString(),
-    performanceStatus: "good",
-    size: "local",
-    terminalEnabled: true,
-    sshEnabled: false,
-    securityTier: "standard",
-    serverPlan: "free",
-    product: "self_hosted",
-  },
-};
+function buildLocalServerStatus(
+  health: Array<{ name: string; healthy: boolean }> | null,
+): ServerStatus {
+  const allHealthy = !!health?.length && health.every((s) => s.healthy);
+  return {
+    state: allHealthy ? "running" : "provisioning",
+    plan: "free",
+    hasActiveSubscription: false,
+    server: {
+      id: "local",
+      ipAddress: "127.0.0.1",
+      domain: null,
+      createdAt: new Date().toISOString(),
+      performanceStatus: allHealthy ? "good" : "struggling",
+      size: "local",
+      terminalEnabled: true,
+      sshEnabled: false,
+      securityTier: "standard",
+      serverPlan: "free",
+      product: "self_hosted",
+    },
+  };
+}
 
 type LocalStage = "checking" | "downloading" | "verifying" | "extracting" | "initializing" | "starting" | "health" | "ready" | "failed";
 
@@ -653,6 +658,25 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     if (firstId) updateActiveServer(firstId);
   }, [allServers, activeServerId, updateActiveServer]);
 
+  // ── Local proot health polling ──
+
+  const [localHealth, setLocalHealth] = useState<Array<{ name: string; healthy: boolean }> | null>(null);
+
+  useEffect(() => {
+    if (!isLocalMode) return;
+    const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+    if (!invoke) return;
+    let cancelled = false;
+    const poll = () => {
+      invoke("plugin:proot|proot_health")
+        .then((h: Array<{ name: string; healthy: boolean }>) => { if (!cancelled) setLocalHealth(h); })
+        .catch(() => {});
+    };
+    poll();
+    const interval = setInterval(poll, 10_000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [isLocalMode]);
+
   const hasServer = !!serverStatus?.server || isLocalMode;
   const { isConnected: sseConnected } = useServerEvents({
     enabled: !MOCK_MODE && !isLocalMode && !!session && hasServer && !!activeServerId,
@@ -660,7 +684,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   });
   sseConnectedRef.current = sseConnected;
 
-  const effectiveServerStatus = MOCK_MODE ? mockServerStatus : isLocalMode ? LOCAL_SERVER_STATUS : serverStatus;
+  const effectiveServerStatus = MOCK_MODE ? mockServerStatus : isLocalMode ? buildLocalServerStatus(localHealth) : serverStatus;
   const effectiveIsStatusLoading = MOCK_MODE ? false : isLocalMode ? false : isStatusLoading;
 
   // ── Mutations ──
@@ -762,6 +786,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (
       MOCK_MODE ||
+      isLocalMode ||
       !terminalServerId ||
       !terminalEnabled ||
       activeServerTier !== "standard"
@@ -789,7 +814,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   useBackgroundPersistence();
 
   const { sessionInfo, forceRefresh: refreshHeartbeat } = useBrowserHeartbeat(
-    MOCK_MODE
+    MOCK_MODE || isLocalMode
       ? null
       : effectiveServerStatus?.state === "running"
         ? (effectiveServerStatus?.server?.id ?? null)

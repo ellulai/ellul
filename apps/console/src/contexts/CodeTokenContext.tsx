@@ -53,50 +53,7 @@ interface CodeTokenProviderProps {
 // patterns inside a single component body — Rules of Hooks holds trivially.
 export function CodeTokenProvider(props: CodeTokenProviderProps) {
   if (MOCK_MODE) return <MockCodeTokenProvider>{props.children}</MockCodeTokenProvider>;
-  if (props.srvUrl?.includes("localhost")) return <LocalCodeTokenProvider>{props.children}</LocalCodeTokenProvider>;
   return <RealCodeTokenProvider {...props}>{props.children}</RealCodeTokenProvider>;
-}
-
-function LocalCodeTokenProvider({ children }: { children: ReactNode }) {
-  const fetchWithCodeToken = useCallback(
-    async (url: string, options?: RequestInit): Promise<Response> => {
-      if (isAndroidTauriApp()) {
-        const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
-        if (invoke) {
-          const urlObj = new URL(url);
-          const result = await invoke("plugin:proot|proot_fetch", {
-            method: options?.method || "GET",
-            path: urlObj.pathname + urlObj.search,
-            body: options?.body ? (typeof options.body === "string" ? options.body : JSON.stringify(options.body)) : null,
-            port: 3002,
-          }) as { status: number; body: string; content_type: string };
-          return new Response(result.body, {
-            status: result.status,
-            headers: { "Content-Type": result.content_type || "application/json" },
-          });
-        }
-      }
-      return fetch(url, { ...options, credentials: "include" });
-    },
-    [],
-  );
-
-  const value: CodeTokenContextValue = {
-    token: "local",
-    loading: false,
-    error: null,
-    codeSessionId: null,
-    sessionExpiresAt: Date.now() + 86400000,
-    refresh: async () => "local",
-    fetchWithCodeToken,
-    reauthenticate: async () => {},
-  };
-
-  return (
-    <CodeTokenContext.Provider value={value}>
-      {children}
-    </CodeTokenContext.Provider>
-  );
 }
 
 function MockCodeTokenProvider({ children }: { children: ReactNode }) {
@@ -159,7 +116,18 @@ function RealCodeTokenProvider({
         let codeSessionId: string;
         let expiresAt: number;
 
-        if (securityTier !== "standard") {
+        const isLocalProot = srvUrl?.includes("localhost");
+
+        if (isLocalProot) {
+          cookieEstablishedRef.current = true;
+          lastEstablishTimeRef.current = Date.now();
+          sessionExpiresRef.current = Date.now() + 86400000;
+          setActiveCodeSessionId("proot-local");
+          setActiveSessionExpiresAt(Date.now() + 86400000);
+          setToken("proot-internal");
+          setError(null);
+          return;
+        } else if (securityTier !== "standard") {
           await waitForReady();
           const result = await send<{ codeSessionId: string; expiresAt: number }>("get_code_session");
           codeSessionId = result.codeSessionId;
@@ -177,8 +145,6 @@ function RealCodeTokenProvider({
           const jwt = tokenData.terminal?.token;
           if (!jwt) throw new Error(t("noPlatformJwt"));
 
-          // Inject JWT into the bridge iframe so it can authorize
-          // standard-tier requests (native apps lack cross-origin cookies).
           jwtRef.current = jwt;
           send("inject_token", { jwt }).catch(() => {});
 
@@ -313,6 +279,32 @@ function RealCodeTokenProvider({
         const urlObj = new URL(url);
         const pathAndQuery = urlObj.pathname + urlObj.search;
         const method = options?.method || "GET";
+
+        const hdrs = options?.headers;
+        const acceptVal = hdrs instanceof Headers
+          ? hdrs.get("Accept")
+          : typeof hdrs === "object" && hdrs !== null
+            ? (hdrs as Record<string, string>)["Accept"] ?? (hdrs as Record<string, string>).accept
+            : undefined;
+
+        // SSE / streaming: call proot_fetch directly and return the raw
+        // body so ReadableStream consumers (createSandboxStream) can parse
+        // SSE frames.  The code_api_proxy path would JSON.stringify the
+        // text, mangling newlines the SSE parser needs.
+        if (acceptVal === "text/event-stream" && !(options?.body instanceof FormData)) {
+          const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+          if (!invoke) throw new AuthenticationError("Tauri not available");
+          const bodyStr = typeof options?.body === "string" ? options.body
+            : options?.body ? JSON.stringify(options.body) : null;
+          const result = await invoke("plugin:proot|proot_fetch", {
+            method, path: pathAndQuery, body: bodyStr, port: 3002,
+          }) as { status: number; body: string; content_type: string };
+          return new Response(result.body, {
+            status: result.status,
+            headers: { "Content-Type": result.content_type || "text/event-stream" },
+          });
+        }
+
         let body: unknown;
         if (options?.body) {
           try { body = typeof options.body === "string" ? JSON.parse(options.body) : options.body; }

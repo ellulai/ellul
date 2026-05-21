@@ -6,6 +6,30 @@ use tauri::command;
 use crate::error::Error;
 use crate::health;
 
+fn mint_internal_jwt(jwt_secret: &str) -> String {
+    use base64::Engine;
+    use hmac::{Hmac, Mac};
+    use sha2::Sha256;
+
+    let header = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .encode(r#"{"alg":"HS256","typ":"JWT"}"#);
+
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let payload_json = format!(r#"{{"purpose":"internal","iat":{now},"exp":{}}}"#, now + 60);
+    let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(&payload_json);
+
+    let sign_input = format!("{header}.{payload}");
+    let mut mac =
+        Hmac::<Sha256>::new_from_slice(jwt_secret.as_bytes()).expect("HMAC key");
+    mac.update(sign_input.as_bytes());
+    let sig = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(mac.finalize().into_bytes());
+
+    format!("{sign_input}.{sig}")
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProotStatus {
     pub running: bool,
@@ -349,6 +373,17 @@ pub async fn proot_update_cancel() -> Result<(), Error> {
     Err(Error::NotAvailable)
 }
 
+#[command]
+pub async fn proot_migration_export_file() -> Result<MigrationExportResult, Error> {
+    #[cfg(target_os = "android")]
+    {
+        let val = crate::bridge::call("migrationExportFile", json!({}))?;
+        return serde_json::from_value(val).map_err(|e| Error::ProotFailed(e.to_string()));
+    }
+    #[cfg(not(target_os = "android"))]
+    Err(Error::NotAvailable)
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProotFetchResponse {
     pub status: u16,
@@ -356,13 +391,42 @@ pub struct ProotFetchResponse {
     pub content_type: String,
 }
 
+fn decode_chunked(raw: &str) -> String {
+    let mut result = String::new();
+    let mut remaining = raw;
+    loop {
+        let remaining_trimmed = remaining.trim_start_matches("\r\n");
+        let (size_line, rest) = match remaining_trimmed.split_once("\r\n") {
+            Some(pair) => pair,
+            None => break,
+        };
+        let size = match usize::from_str_radix(size_line.trim(), 16) {
+            Ok(s) => s,
+            Err(_) => break,
+        };
+        if size == 0 {
+            break;
+        }
+        if rest.len() >= size {
+            result.push_str(&rest[..size]);
+            remaining = &rest[size..];
+        } else {
+            result.push_str(rest);
+            break;
+        }
+    }
+    result
+}
+
 #[command]
-pub async fn proot_fetch(
+pub async fn proot_fetch<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     method: String,
     path: String,
     body: Option<String>,
     port: Option<u16>,
 ) -> Result<ProotFetchResponse, Error> {
+    use tauri::Manager;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use tokio::net::TcpStream;
     use tokio::time::{timeout, Duration};
@@ -375,10 +439,24 @@ pub async fn proot_fetch(
         .map_err(|_| Error::ProotFailed("connection timeout".into()))?
         .map_err(|e| Error::ProotFailed(format!("connect failed: {e}")))?;
 
+    let auth_header = app
+        .path()
+        .app_data_dir()
+        .ok()
+        .and_then(|d| {
+            std::fs::read_to_string(d.join("vault/etc/ellul/jwt-secret"))
+                .or_else(|_| std::fs::read_to_string(d.join("rootfs/etc/ellul/jwt-secret")))
+                .ok()
+        })
+        .map(|secret| format!("Authorization: Bearer {}\r\n", mint_internal_jwt(secret.trim())));
+
     let body_bytes = body.as_deref().unwrap_or("");
     let mut req = format!(
         "{method} {path} HTTP/1.1\r\nHost: 127.0.0.1:{target_port}\r\nConnection: close\r\n"
     );
+    if let Some(ref auth) = auth_header {
+        req.push_str(auth);
+    }
     if !body_bytes.is_empty() {
         req.push_str(&format!(
             "Content-Type: application/json\r\nContent-Length: {}\r\n",
@@ -428,20 +506,19 @@ pub async fn proot_fetch(
         .map(|l| l.splitn(2, ':').nth(1).unwrap_or("").trim().to_string())
         .unwrap_or_default();
 
+    let is_chunked = head
+        .lines()
+        .any(|l| l.to_lowercase().starts_with("transfer-encoding:") && l.to_lowercase().contains("chunked"));
+
+    let decoded_body = if is_chunked {
+        decode_chunked(body_content)
+    } else {
+        body_content.to_string()
+    };
+
     Ok(ProotFetchResponse {
         status,
-        body: body_content.to_string(),
+        body: decoded_body,
         content_type,
     })
-}
-
-#[command]
-pub async fn proot_migration_export_file() -> Result<MigrationExportResult, Error> {
-    #[cfg(target_os = "android")]
-    {
-        let val = crate::bridge::call("migrationExportFile", json!({}))?;
-        return serde_json::from_value(val).map_err(|e| Error::ProotFailed(e.to_string()));
-    }
-    #[cfg(not(target_os = "android"))]
-    Err(Error::NotAvailable)
 }

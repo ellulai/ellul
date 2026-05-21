@@ -4,5 +4,5 @@
  * without triggering a circular dependency through the gate's runtime imports.
  */
 
-export type Product = 'cloud_platform' | 'cloud_sandbox' | 'shield_proxy';
+export type Product = 'cloud_platform' | 'cloud_sandbox' | 'shield_proxy' | 'byos';
 export type BillingTier = 'free' | 'paid';

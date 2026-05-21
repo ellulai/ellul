@@ -10,6 +10,32 @@
 <tr>
 <td>
 
+`shield:allow-shield-byos-token`
+
+</td>
+<td>
+
+Enables the shield_byos_token command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`shield:deny-shield-byos-token`
+
+</td>
+<td>
+
+Denies the shield_byos_token command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `shield:allow-shield-check-session`
 
 </td>

@@ -139,7 +139,7 @@ export function DashboardProviders({
       serverId={server.id}
       srvUrl={`https://${serverDomain}`}
     >
-      <VpsCapabilitiesProvider hostname={isLocal ? null : serverDomain} serverStatus={effectiveServerStatus.state}>
+      <VpsCapabilitiesProvider hostname={serverDomain} serverStatus={effectiveServerStatus.state} isLocal={isLocal}>
         <RealtimeProvider
           serverDomain={serverDomain}
           securityTier={server.securityTier}
@@ -164,7 +164,7 @@ export function DashboardProviders({
   return (
     <DashboardContext.Provider value={dashboardContext}>
       <VpsBridgeProvider hostname={serverDomain} securityTier={server.securityTier} isLocal={isLocal}>
-        {isLocal ? innerStack : <TauriReauthWall hostname={serverDomain}>{innerStack}</TauriReauthWall>}
+        <TauriReauthWall hostname={serverDomain}>{innerStack}</TauriReauthWall>
       </VpsBridgeProvider>
     </DashboardContext.Provider>
   );

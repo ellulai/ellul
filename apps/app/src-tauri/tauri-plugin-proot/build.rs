@@ -19,6 +19,7 @@ const COMMANDS: &[&str] = &[
     "proot_update_get_settings",
     "proot_update_set_settings",
     "proot_migration_export_file",
+    "proot_fetch",
 ];
 
 fn main() {

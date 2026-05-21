@@ -38,7 +38,7 @@ export type { Product, BillingTier };
 const PRODUCT_FILE = '/etc/ellul/product';
 const BILLING_TIER_FILE = '/etc/ellul/billing-tier';
 
-const VALID_PRODUCTS = new Set<Product>(['cloud_platform', 'cloud_sandbox', 'shield_proxy']);
+const VALID_PRODUCTS = new Set<Product>(['cloud_platform', 'cloud_sandbox', 'shield_proxy', 'byos']);
 const VALID_TIERS = new Set<BillingTier>(['free', 'paid']);
 
 /**
@@ -103,6 +103,6 @@ export const PRODUCT: Product = resolveProduct();
 export const BILLING_TIER: BillingTier = resolveBillingTier();
 
 /** The active middleware — engine selected at boot, immutable for process lifetime. */
-export const productGateMiddleware = PRODUCT === 'cloud_platform'
-  ? createProductPermissiveEngine(BILLING_TIER)
+export const productGateMiddleware = PRODUCT === 'cloud_platform' || PRODUCT === 'byos'
+  ? createProductPermissiveEngine(BILLING_TIER, PRODUCT)
   : createProductRestrictiveEngine(PRODUCT, BILLING_TIER);

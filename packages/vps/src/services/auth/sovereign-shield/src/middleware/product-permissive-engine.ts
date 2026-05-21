@@ -18,12 +18,11 @@ import type { Product, BillingTier } from './product-types';
  * Create the permissive engine middleware for cloud_platform.
  * Passes through all requests except deploy on free billing tier.
  */
-export function createProductPermissiveEngine(billingTier: BillingTier) {
+export function createProductPermissiveEngine(billingTier: BillingTier, product: Product = 'cloud_platform') {
   return createMiddleware(async (c, next) => {
-    c.set('product', 'cloud_platform' as Product);
+    c.set('product', product);
     c.set('billingTier', billingTier);
 
-    // cloud_platform still gates deploy behind paid billing tier
     if (billingTier !== 'paid' &&
         c.req.path === '/api/workflow/expose' &&
         c.req.method === 'POST') {

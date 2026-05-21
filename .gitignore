@@ -90,3 +90,8 @@ scratch/
 apps/app/src-tauri/permissions/
 apps/app/src-tauri/tauri-plugin-shield/android/.tauri/
 apps/app/src-tauri/tauri-plugin-shield/android/build/
+apps/app/src-tauri/tauri-plugin-proot/android/.tauri/
+apps/app/src-tauri/tauri-plugin-proot/android/build/
+apps/app/src-tauri/tauri-plugin-proot/android/src/main/jniLibs/
+apps/app/src-tauri/tauri-plugin-proot/android/src/main/assets/
+apps/app/src-tauri/tauri-plugin-proot/assets/proot/
