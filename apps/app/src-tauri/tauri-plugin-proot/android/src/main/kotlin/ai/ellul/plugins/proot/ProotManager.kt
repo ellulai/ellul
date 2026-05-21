@@ -26,48 +26,22 @@ class ProotManager(private val context: Context) {
     private val vaultDir = File(appDir, "vault")
     private val projectsDir: File =
         File(context.getExternalFilesDir(null) ?: appDir, "projects")
-    private val prootBin = File(appDir, "proot")
+    private val prootBin = File(context.applicationInfo.nativeLibraryDir, "libproot.so")
     private val logDir = File(appDir, "logs")
 
     fun extractProotBinary() {
-        val versionFile = File(appDir, "proot.version")
-        val currentVersion = getAppVersionCode()
-
-        if (prootBin.exists() && prootBin.canExecute() && versionFile.exists()) {
-            if (versionFile.readText().trim() == currentVersion) return
-            Log.i(TAG, "APK updated — re-extracting proot binary")
-        }
-
-        try {
-            context.assets.open("proot/arm64-v8a/proot").use { input ->
-                prootBin.outputStream().use { output ->
-                    input.copyTo(output)
-                }
-            }
-            prootBin.setExecutable(true, true)
-            versionFile.writeText(currentVersion)
-            Log.i(TAG, "Extracted proot binary (version $currentVersion)")
-        } catch (e: IOException) {
+        if (!prootBin.exists()) {
             throw RuntimeException(
-                "proot binary not found in plugin assets — " +
-                    "build with scripts/build-proot-arm64.sh first",
-                e
+                "proot binary not found at ${prootBin.absolutePath} — " +
+                    "ensure libproot.so is in jniLibs/arm64-v8a/"
             )
         }
-    }
-
-    private fun getAppVersionCode(): String {
-        return try {
-            val info = context.packageManager.getPackageInfo(context.packageName, 0)
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                info.longVersionCode.toString()
-            } else {
-                @Suppress("DEPRECATION")
-                info.versionCode.toString()
-            }
-        } catch (_: Exception) {
-            "unknown"
+        if (!prootBin.canExecute()) {
+            throw RuntimeException(
+                "proot binary at ${prootBin.absolutePath} is not executable"
+            )
         }
+        Log.i(TAG, "Using proot binary from nativeLibraryDir: ${prootBin.absolutePath}")
     }
 
     fun start() {
@@ -93,15 +67,24 @@ class ProotManager(private val context: Context) {
             )
         }
 
+        val prootTmpDir = File(appDir, "proot-tmp")
         vaultDir.mkdirs()
         projectsDir.mkdirs()
         logDir.mkdirs()
+        prootTmpDir.mkdirs()
 
         ShieldVaultKeyStore.writeToVault(context, vaultDir)
 
-        val cmd = buildProotCommand()
-        val env = buildEnvironment()
+        val nativeLibDir = context.applicationInfo.nativeLibraryDir
+        val loaderPath = "$nativeLibDir/libproot-loader.so"
 
+        val cmd = buildProotCommand()
+        val env = buildEnvironment() +
+            ("PROOT_TMP_DIR" to prootTmpDir.absolutePath) +
+            ("PROOT_LOADER" to loaderPath)
+
+        Log.i(TAG, "PROOT_TMP_DIR=${prootTmpDir.absolutePath} exists=${prootTmpDir.exists()}")
+        Log.i(TAG, "PROOT_LOADER=$loaderPath exists=${File(loaderPath).exists()}")
         Log.i(TAG, "Starting proot: ${cmd.joinToString(" ")}")
 
         val pb = ProcessBuilder(cmd)
@@ -155,16 +138,21 @@ class ProotManager(private val context: Context) {
         "/usr/local/bin/ellul-engine-android"
     )
 
-    private fun buildEnvironment(): Map<String, String> = mapOf(
-        "HOME" to "/home/dev",
-        "USER" to "dev",
-        "PATH" to "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-        "LANG" to "C.UTF-8",
-        "TERM" to "xterm-256color",
-        "NODE_ENV" to "production",
-        "ELLUL_PLATFORM" to "android",
-        "ELLUL_HIGH_PORTS" to "1",
-    )
+    private fun buildEnvironment(): Map<String, String> {
+        val tmpDir = File(appDir, "proot-tmp")
+        tmpDir.mkdirs()
+        return mapOf(
+            "HOME" to "/home/dev",
+            "USER" to "dev",
+            "PATH" to "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "LANG" to "C.UTF-8",
+            "TERM" to "xterm-256color",
+            "NODE_ENV" to "production",
+            "ELLUL_PLATFORM" to "android",
+            "ELLUL_HIGH_PORTS" to "1",
+            "PROOT_TMP_DIR" to tmpDir.absolutePath,
+        )
+    }
 
     private fun startLogStreaming(process: Process) {
         val stdoutLog = File(logDir, "proot-stdout.log")

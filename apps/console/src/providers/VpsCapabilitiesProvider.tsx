@@ -8,12 +8,11 @@ import { MOCK_MODE } from "@/lib/mock-data";
 export const VpsCapabilitiesContext = createContext<VpsCapabilities | null>(null);
 
 interface VpsCapabilitiesProviderProps {
-  hostname: string;
+  hostname: string | null;
   serverStatus?: string | null;
   children: React.ReactNode;
 }
 
-// Provides VPS capabilities to all dashboard components.
 export function VpsCapabilitiesProvider({ hostname, serverStatus, children }: VpsCapabilitiesProviderProps) {
   const { data: caps } = useVpsCapabilities(
     MOCK_MODE ? null : hostname,

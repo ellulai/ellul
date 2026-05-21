@@ -1,0 +1,48 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:2:1-15:12
+INJECTED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:2:1-15:12
+	package
+		INJECTED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:2:11-69
+uses-permission#android.permission.FOREGROUND_SERVICE
+ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:3:5-77
+	android:name
+		ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:3:22-74
+uses-permission#android.permission.FOREGROUND_SERVICE_SPECIAL_USE
+ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:4:5-89
+	android:name
+		ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:4:22-86
+uses-permission#android.permission.WAKE_LOCK
+ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:5:5-68
+	android:name
+		ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:5:22-65
+uses-permission#android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:6:5-95
+	android:name
+		ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:6:22-92
+uses-permission#android.permission.ACCESS_NETWORK_STATE
+ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:7:5-79
+	android:name
+		ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:7:22-76
+application
+ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:9:5-14:19
+	android:networkSecurityConfig
+		ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:9:18-78
+service#ai.ellul.plugins.proot.ProotService
+ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:10:9-13:40
+	android:exported
+		ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:13:13-37
+	android:foregroundServiceType
+		ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:12:13-55
+	android:name
+		ADDED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml:11:13-63
+uses-sdk
+INJECTED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml
+INJECTED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /Users/joeet/Documents/ellul.ai/apps/app/src-tauri/tauri-plugin-proot/android/src/main/AndroidManifest.xml

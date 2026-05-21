@@ -218,6 +218,110 @@ Denies the proot_switch_to_local command without any pre-configured scope.
 <tr>
 <td>
 
+`proot:allow-proot-tunnel-get-config`
+
+</td>
+<td>
+
+Enables the proot_tunnel_get_config command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:deny-proot-tunnel-get-config`
+
+</td>
+<td>
+
+Denies the proot_tunnel_get_config command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:allow-proot-tunnel-set-auth`
+
+</td>
+<td>
+
+Enables the proot_tunnel_set_auth command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:deny-proot-tunnel-set-auth`
+
+</td>
+<td>
+
+Denies the proot_tunnel_set_auth command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:allow-proot-tunnel-set-auto-expose`
+
+</td>
+<td>
+
+Enables the proot_tunnel_set_auto_expose command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:deny-proot-tunnel-set-auto-expose`
+
+</td>
+<td>
+
+Denies the proot_tunnel_set_auto_expose command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:allow-proot-tunnel-set-subdomain`
+
+</td>
+<td>
+
+Enables the proot_tunnel_set_subdomain command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:deny-proot-tunnel-set-subdomain`
+
+</td>
+<td>
+
+Denies the proot_tunnel_set_subdomain command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `proot:allow-proot-tunnel-start`
 
 </td>

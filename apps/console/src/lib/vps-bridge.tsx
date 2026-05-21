@@ -52,10 +52,11 @@ interface VpsBridgeProviderProps {
   hostname: string;
   children: ReactNode;
   securityTier?: "standard" | "web_locked" | "private_locked";
+  isLocal?: boolean;
 }
 
 export function VpsBridgeProvider(props: VpsBridgeProviderProps) {
-  if (MOCK_MODE) return <MockVpsBridgeProvider>{props.children}</MockVpsBridgeProvider>;
+  if (MOCK_MODE || props.isLocal) return <MockVpsBridgeProvider>{props.children}</MockVpsBridgeProvider>;
   return <BridgeProvider hostname={props.hostname}>{props.children}</BridgeProvider>;
 }
 

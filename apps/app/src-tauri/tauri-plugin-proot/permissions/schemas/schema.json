@@ -391,6 +391,54 @@
           "markdownDescription": "Denies the proot_switch_to_local command without any pre-configured scope."
         },
         {
+          "description": "Enables the proot_tunnel_get_config command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-proot-tunnel-get-config",
+          "markdownDescription": "Enables the proot_tunnel_get_config command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the proot_tunnel_get_config command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-proot-tunnel-get-config",
+          "markdownDescription": "Denies the proot_tunnel_get_config command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the proot_tunnel_set_auth command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-proot-tunnel-set-auth",
+          "markdownDescription": "Enables the proot_tunnel_set_auth command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the proot_tunnel_set_auth command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-proot-tunnel-set-auth",
+          "markdownDescription": "Denies the proot_tunnel_set_auth command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the proot_tunnel_set_auto_expose command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-proot-tunnel-set-auto-expose",
+          "markdownDescription": "Enables the proot_tunnel_set_auto_expose command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the proot_tunnel_set_auto_expose command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-proot-tunnel-set-auto-expose",
+          "markdownDescription": "Denies the proot_tunnel_set_auto_expose command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the proot_tunnel_set_subdomain command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-proot-tunnel-set-subdomain",
+          "markdownDescription": "Enables the proot_tunnel_set_subdomain command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the proot_tunnel_set_subdomain command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-proot-tunnel-set-subdomain",
+          "markdownDescription": "Denies the proot_tunnel_set_subdomain command without any pre-configured scope."
+        },
+        {
           "description": "Enables the proot_tunnel_start command without any pre-configured scope.",
           "type": "string",
           "const": "allow-proot-tunnel-start",

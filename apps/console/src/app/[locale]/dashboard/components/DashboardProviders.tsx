@@ -80,7 +80,6 @@ function TauriReauthWall({ hostname, children }: { hostname: string; children: R
   );
 }
 
-// Wraps the active-server view with all provider layers:
 export function DashboardProviders({
   children,
   effectiveServerStatus,
@@ -111,7 +110,6 @@ export function DashboardProviders({
       : undefined,
     isRollingBack: mutations.rollbackServerMutation.isPending,
     snapshotExpiresAt: effectiveServerStatus.snapshot?.expiresAt,
-    // Agent manifest self-update. The "Update Now" button is surfaced
     agentUpdate: effectiveServerStatus.agentUpdate ?? null,
     onUpdateServer:
       effectiveServerStatus.agentUpdate?.pendingUpdateVersion != null
@@ -134,37 +132,39 @@ export function DashboardProviders({
       }),
   };
 
+  const innerStack = (
+    <CodeTokenProvider
+      securityTier={server.securityTier}
+      codeApiUrl={getCodeApiUrl(serverDomain)}
+      serverId={server.id}
+      srvUrl={`https://${serverDomain}`}
+    >
+      <VpsCapabilitiesProvider hostname={isLocal ? null : serverDomain} serverStatus={effectiveServerStatus.state}>
+        <RealtimeProvider
+          serverDomain={serverDomain}
+          securityTier={server.securityTier}
+          enabled={!isLocal}
+        >
+          <AppsListProvider
+            serverDomain={serverDomain}
+            securityTier={server.securityTier}
+            serverStatus={effectiveServerStatus.state}
+          >
+            <OperatorKeyProvider serverDomain={serverDomain} securityTier={server.securityTier}>
+              <PermissionInboxProvider serverDomain={serverDomain}>
+                {children}
+              </PermissionInboxProvider>
+            </OperatorKeyProvider>
+          </AppsListProvider>
+        </RealtimeProvider>
+      </VpsCapabilitiesProvider>
+    </CodeTokenProvider>
+  );
+
   return (
     <DashboardContext.Provider value={dashboardContext}>
-      <VpsBridgeProvider hostname={serverDomain} securityTier={server.securityTier}>
-        <TauriReauthWall hostname={serverDomain}>
-          <CodeTokenProvider
-            securityTier={server.securityTier}
-            codeApiUrl={getCodeApiUrl(serverDomain)}
-            serverId={server.id}
-            srvUrl={`https://${serverDomain}`}
-          >
-            <VpsCapabilitiesProvider hostname={serverDomain} serverStatus={effectiveServerStatus.state}>
-              <RealtimeProvider
-                serverDomain={serverDomain}
-                securityTier={server.securityTier}
-                enabled={true}
-              >
-                <AppsListProvider
-                  serverDomain={serverDomain}
-                  securityTier={server.securityTier}
-                  serverStatus={effectiveServerStatus.state}
-                >
-                  <OperatorKeyProvider serverDomain={serverDomain} securityTier={server.securityTier}>
-                    <PermissionInboxProvider serverDomain={serverDomain}>
-                      {children}
-                    </PermissionInboxProvider>
-                  </OperatorKeyProvider>
-                </AppsListProvider>
-              </RealtimeProvider>
-            </VpsCapabilitiesProvider>
-          </CodeTokenProvider>
-        </TauriReauthWall>
+      <VpsBridgeProvider hostname={serverDomain} securityTier={server.securityTier} isLocal={isLocal}>
+        {isLocal ? innerStack : <TauriReauthWall hostname={serverDomain}>{innerStack}</TauriReauthWall>}
       </VpsBridgeProvider>
     </DashboardContext.Provider>
   );

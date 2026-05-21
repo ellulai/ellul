@@ -50,7 +50,7 @@ class SetupManager(private val context: Context) {
 
     companion object {
         private const val TAG = "SetupManager"
-        private const val CDN_BASE = "https://cdn.ellul.ai/android"
+        private const val CDN_BASE = "https://cache.ellul.ai/android"
         private const val BUFFER_SIZE = 128 * 1024
         private const val CONNECT_TIMEOUT = 30_000
         private const val READ_TIMEOUT = 60_000
@@ -237,7 +237,8 @@ class SetupManager(private val context: Context) {
         val pubKey = MLDSAPublicKeyParameters(MLDSAParameters.ml_dsa_65, pkBytes)
         val verifier = MLDSASigner()
         verifier.init(false, pubKey)
-        if (!verifier.verifySignature(signingInput, sigBytes)) {
+        verifier.update(signingInput, 0, signingInput.size)
+        if (!verifier.verifySignature(sigBytes)) {
             throw SetupException(
                 "Manifest signature verification failed — possible tampering",
                 SetupStage.DOWNLOADING

@@ -54,6 +54,31 @@ const SERVICES: [ServiceDef; 5] = [
 ];
 
 pub async fn check_all() -> Vec<ServiceHealth> {
+    #[cfg(target_os = "android")]
+    {
+        if let Ok(val) = crate::bridge::call("getStatus", serde_json::json!({})) {
+            if let Some(services) = val.get("services").and_then(|s| s.as_array()) {
+                let all_healthy = services.iter().all(|s| {
+                    s.get("healthy").and_then(|h| h.as_bool()).unwrap_or(false)
+                });
+                if all_healthy && !services.is_empty() {
+                    return services
+                        .iter()
+                        .map(|s| ServiceHealth {
+                            name: s
+                                .get("name")
+                                .and_then(|n| n.as_str())
+                                .unwrap_or("unknown")
+                                .to_string(),
+                            healthy: true,
+                            latency_ms: Some(0),
+                        })
+                        .collect();
+                }
+            }
+        }
+    }
+
     let (r0, r1, r2, r3, r4) = tokio::join!(
         check_one(&SERVICES[0]),
         check_one(&SERVICES[1]),
