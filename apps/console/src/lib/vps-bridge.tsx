@@ -182,15 +182,18 @@ function TauriVpsBridgeProvider({ hostname, children }: { hostname: string; chil
         method: "GET",
         path: "/_auth/bridge/session",
       });
+      console.log("[checkSession] result:", JSON.stringify(result));
       if (result.valid) {
         setNeedsVpsAuth(false);
         setSessionExpired(false);
         setReady(true);
       } else {
+        console.log("[checkSession] invalid → needsVpsAuth");
         setNeedsVpsAuth(true);
         setReady(true);
       }
-    } catch {
+    } catch (e) {
+      console.error("[checkSession] error:", e);
       setNeedsVpsAuth(true);
       setReady(true);
     }
@@ -213,42 +216,64 @@ function TauriVpsBridgeProvider({ hostname, children }: { hostname: string; chil
   }, [checkSession]);
 
   const authenticateNative = useCallback(async (): Promise<void> => {
+    console.log("[authNative] start, hostname:", hostname);
     let tier: string | undefined;
     try {
       const tierRes = await fetch(`https://${hostname}/_auth/bridge/tier`, { credentials: "include" });
+      console.log("[authNative] tier status:", tierRes.status);
       const tierBody = await tierRes.json().catch(() => ({})) as { tier?: string };
+      console.log("[authNative] tier body:", JSON.stringify(tierBody));
       tier = tierBody.tier;
-    } catch {}
+    } catch (e) {
+      console.error("[authNative] tier fetch error:", e);
+    }
 
     if (tier === "standard") {
+      console.log("[authNative] standard tier → token-login path");
       const serverId = localStorage.getItem("ellul-active-server");
+      console.log("[authNative] serverId:", serverId);
       if (!serverId) throw new Error("No active server");
       const tokenRes = await fetch(`${API_URL}/api/servers/${serverId}/terminal/token`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
       });
-      if (!tokenRes.ok) throw new Error("Failed to get terminal token");
+      console.log("[authNative] terminal/token status:", tokenRes.status);
+      if (!tokenRes.ok) {
+        const errText = await tokenRes.text().catch(() => "");
+        console.error("[authNative] terminal/token failed:", errText);
+        throw new Error("Failed to get terminal token");
+      }
       const tokenData = await tokenRes.json() as { terminal?: { token?: string } };
       const jwt = tokenData.terminal?.token;
+      console.log("[authNative] jwt present:", !!jwt);
       if (!jwt) throw new Error("No token in response");
 
       const loginRes = await fetch(`https://${hostname}/_auth/tauri/token-login`, {
         method: "POST",
         headers: { Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" },
       });
-      if (!loginRes.ok) throw new Error("Token login failed");
+      console.log("[authNative] token-login status:", loginRes.status);
+      if (!loginRes.ok) {
+        const errText = await loginRes.text().catch(() => "");
+        console.error("[authNative] token-login failed:", errText);
+        throw new Error("Token login failed");
+      }
       const loginData = await loginRes.json() as { sessionId?: string };
+      console.log("[authNative] sessionId present:", !!loginData.sessionId);
       if (loginData.sessionId) {
         await tauriInvoke("shield_set_session", {
           serverDomain: hostname,
           sessionCookie: loginData.sessionId,
         });
+        console.log("[authNative] shield_set_session done");
       }
     } else {
+      console.log("[authNative] tier:", tier, "→ passkey path");
       await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
     }
 
+    console.log("[authNative] success");
     setNeedsVpsAuth(false);
     setSessionExpired(false);
     setReady(true);
@@ -266,7 +291,11 @@ function TauriVpsBridgeProvider({ hostname, children }: { hostname: string; chil
   useEffect(() => {
     if (ready && needsVpsAuth && !autoAuthAttempted.current) {
       autoAuthAttempted.current = true;
-      authenticateNative().catch(() => { setNeedsVpsAuth(true); });
+      console.log("[autoAuth] triggering authenticateNative");
+      authenticateNative().catch((e) => {
+        console.error("[autoAuth] authenticateNative failed:", e);
+        setNeedsVpsAuth(true);
+      });
     }
     if (!needsVpsAuth) autoAuthAttempted.current = false;
   }, [ready, needsVpsAuth, authenticateNative]);
@@ -455,38 +484,59 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
 
   const authenticateNative = useCallback(async (): Promise<void> => {
     if (isTauriApp()) {
+      console.log("[authNative:desktop] start, hostname:", hostname);
       let tier: string | undefined;
       try {
         const tierRes = await fetch(`https://${hostname}/_auth/bridge/tier`, { credentials: "include" });
+        console.log("[authNative:desktop] tier status:", tierRes.status);
         const tierBody = await tierRes.json().catch(() => ({})) as { tier?: string };
+        console.log("[authNative:desktop] tier body:", JSON.stringify(tierBody));
         tier = tierBody.tier;
-      } catch {}
+      } catch (e) {
+        console.error("[authNative:desktop] tier fetch error:", e);
+      }
 
       if (tier === "standard") {
+        console.log("[authNative:desktop] standard tier → token-login path");
         const serverId = localStorage.getItem("ellul-active-server");
+        console.log("[authNative:desktop] serverId:", serverId);
         if (!serverId) throw new Error("No active server");
         const tokenRes = await fetch(`${API_URL}/api/servers/${serverId}/terminal/token`, {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         });
-        if (!tokenRes.ok) throw new Error("Failed to get terminal token");
+        console.log("[authNative:desktop] terminal/token status:", tokenRes.status);
+        if (!tokenRes.ok) {
+          const errText = await tokenRes.text().catch(() => "");
+          console.error("[authNative:desktop] terminal/token failed:", errText);
+          throw new Error("Failed to get terminal token");
+        }
         const tokenData = await tokenRes.json() as { terminal?: { token?: string } };
         const jwt = tokenData.terminal?.token;
+        console.log("[authNative:desktop] jwt present:", !!jwt);
         if (!jwt) throw new Error("No token in response");
         const loginRes = await fetch(`https://${hostname}/_auth/tauri/token-login`, {
           method: "POST",
           headers: { Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" },
         });
-        if (!loginRes.ok) throw new Error("Token login failed");
+        console.log("[authNative:desktop] token-login status:", loginRes.status);
+        if (!loginRes.ok) {
+          const errText = await loginRes.text().catch(() => "");
+          console.error("[authNative:desktop] token-login failed:", errText);
+          throw new Error("Token login failed");
+        }
         const loginData = await loginRes.json() as { sessionId?: string };
+        console.log("[authNative:desktop] sessionId present:", !!loginData.sessionId);
         if (loginData.sessionId) {
           await tauriInvoke("shield_set_session", {
             serverDomain: hostname,
             sessionCookie: loginData.sessionId,
           });
+          console.log("[authNative:desktop] shield_set_session done");
         }
       } else {
+        console.log("[authNative:desktop] tier:", tier, "→ passkey path");
         await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
       }
 
