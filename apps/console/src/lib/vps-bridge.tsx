@@ -292,7 +292,19 @@ function BridgeProvider({ hostname, children }: { hostname: string; children: Re
     // Web/macOS: session checked by iframe bridge_ready message
   }, [android]);
 
-  useEffect(() => { if (android) checkSession(); }, [android, checkSession]);
+  useEffect(() => {
+    if (!android) return;
+    (async () => {
+      try {
+        await performTauriAuth(hostname);
+        setNeedsVpsAuth(false);
+        setSessionExpired(false);
+        setReady(true);
+      } catch {
+        checkSession();
+      }
+    })();
+  }, [android, hostname, checkSession]);
 
   const signalAuthNeeded = useCallback(() => { setNeedsVpsAuth(true); }, []);
 
