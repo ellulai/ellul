@@ -779,6 +779,7 @@ pub async fn shield_token_login(
         let cookie_header = session_cookie
             .unwrap_or_else(|| format!("__Host-shield_session={sid}"));
         session.set(server_domain.clone(), cookie_header.clone()).await;
+        session.set_jwt(jwt.clone()).await;
 
         let result = pop::perform_mlkem_bind(
             http.raw(),
@@ -1302,6 +1303,7 @@ pub async fn shield_fetch(
             let sess = guard.as_ref().ok_or(Error::NoSession)?;
             let url = format!("https://{}{path}", sess.server_domain);
             let cookie = sess.session_cookie.clone();
+            let jwt_token = sess.jwt.clone();
             let k_pop = sess.k_pop;
             let pop_bound = sess.pop_bound;
             drop(guard);
@@ -1316,6 +1318,9 @@ pub async fn shield_fetch(
                 .header("Accept", "application/json")
                 .header("Content-Type", "application/json")
                 .body(body_bytes.clone());
+            if let Some(ref jwt) = jwt_token {
+                builder = builder.header("Authorization", format!("Bearer {jwt}"));
+            }
             if pop_bound {
                 let headers = crate::pop::sign_request(&k_pop, &m, &path, Some(&body_bytes));
                 builder = builder
@@ -1343,6 +1348,7 @@ pub async fn shield_fetch(
             let sess = guard.as_ref().ok_or(Error::NoSession)?;
             let url = format!("https://{}{path}", sess.server_domain);
             let cookie = sess.session_cookie.clone();
+            let jwt_token = sess.jwt.clone();
             let k_pop = sess.k_pop;
             let pop_bound = sess.pop_bound;
             drop(guard);
@@ -1351,6 +1357,9 @@ pub async fn shield_fetch(
             let mut builder = http.raw().delete(&url)
                 .header("Cookie", &cookie)
                 .header("Accept", "application/json");
+            if let Some(ref jwt) = jwt_token {
+                builder = builder.header("Authorization", format!("Bearer {jwt}"));
+            }
             if let Some(ref b) = body_bytes {
                 builder = builder
                     .header("Content-Type", "application/json")

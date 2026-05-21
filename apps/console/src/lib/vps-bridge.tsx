@@ -228,6 +228,16 @@ function BridgeProvider({ hostname, children }: { hostname: string; children: Re
       if (android) {
         await waitForReady();
         try {
+          // Bypass dispatch for get_exchange_code: dispatchInternal on the
+          // VPS doesn't forward Authorization to inner routes, so standard-
+          // tier dispatch fails for endpoints that need JWT. Calling the
+          // endpoint directly lets shield_fetch's JWT reach the tier-gate.
+          if (type === "get_exchange_code") {
+            return await tauriInvoke<T>("shield_fetch", {
+              method: "POST",
+              path: "/_auth/bridge/exchange-code",
+            });
+          }
           return await tauriInvoke<T>("shield_fetch", {
             method: "POST",
             path: "/_auth/bridge/dispatch",

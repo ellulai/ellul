@@ -88,12 +88,13 @@ impl ShieldHttpClient {
         body: Option<&[u8]>,
         extra_headers: &[(&str, &str)],
     ) -> Result<serde_json::Value, Error> {
-        let (url, cookie, k_pop, pop_bound) = {
+        let (url, cookie, jwt_token, k_pop, pop_bound) = {
             let guard = session.0.read().await;
             let sess = guard.as_ref().ok_or(Error::NoSession)?;
             (
                 format!("https://{}{path}", sess.server_domain),
                 sess.session_cookie.clone(),
+                sess.jwt.clone(),
                 sess.k_pop,
                 sess.pop_bound,
             )
@@ -111,6 +112,9 @@ impl ShieldHttpClient {
         builder = builder
             .header("Cookie", &cookie)
             .header("Accept", "application/json");
+        if let Some(ref jwt) = jwt_token {
+            builder = builder.header("Authorization", format!("Bearer {jwt}"));
+        }
 
         if pop_bound {
             let headers = pop::sign_request(&k_pop, method, path, body);

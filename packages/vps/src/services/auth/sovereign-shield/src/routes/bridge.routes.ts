@@ -2161,6 +2161,8 @@ export function registerBridgeRoutes(app: Hono, hostname: string): void {
     const headers: Record<string, string> = {};
     const cookie = c.req.header('cookie');
     if (cookie) headers['Cookie'] = cookie;
+    const auth = c.req.header('authorization');
+    if (auth) headers['Authorization'] = auth;
     if (body) headers['Content-Type'] = 'application/json';
     for (const h of ['x-forwarded-for', 'x-real-ip', 'cf-connecting-ip', 'user-agent']) {
       const v = c.req.header(h);

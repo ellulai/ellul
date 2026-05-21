@@ -8,12 +8,16 @@ pub struct ShieldSession {
     pub pop_bound: bool,
     pub created_at: u64,
     pub expires_at: u64,
+    pub jwt: Option<String>,
 }
 
 impl Drop for ShieldSession {
     fn drop(&mut self) {
         self.k_pop.zeroize();
         self.session_cookie.zeroize();
+        if let Some(ref mut j) = self.jwt {
+            j.zeroize();
+        }
     }
 }
 
@@ -31,6 +35,7 @@ impl SessionState {
             pop_bound: false,
             created_at: now,
             expires_at: now + 4 * 3600, // SESSION_TTL_MS = 4h
+            jwt: None,
         });
     }
 
@@ -40,6 +45,17 @@ impl SessionState {
             session.k_pop = k_pop;
             session.pop_bound = true;
         }
+    }
+
+    pub async fn set_jwt(&self, jwt: String) {
+        let mut guard = self.0.write().await;
+        if let Some(session) = guard.as_mut() {
+            session.jwt = Some(jwt);
+        }
+    }
+
+    pub async fn jwt(&self) -> Option<String> {
+        self.0.read().await.as_ref().and_then(|s| s.jwt.clone())
     }
 
     pub async fn update_cookie(&self, new_cookie: String) {
