@@ -219,9 +219,7 @@ function TauriVpsBridgeProvider({ hostname, children }: { hostname: string; chil
     console.log("[authNative] start, hostname:", hostname);
     let tier: string | undefined;
     try {
-      const tierRes = await fetch(`https://${hostname}/_auth/bridge/tier`, { credentials: "include" });
-      console.log("[authNative] tier status:", tierRes.status);
-      const tierBody = await tierRes.json().catch(() => ({})) as { tier?: string };
+      const tierBody = await tauriInvoke<{ tier?: string }>("shield_get_tier", { serverDomain: hostname });
       console.log("[authNative] tier body:", JSON.stringify(tierBody));
       tier = tierBody.tier;
     } catch (e) {
@@ -249,25 +247,8 @@ function TauriVpsBridgeProvider({ hostname, children }: { hostname: string; chil
       console.log("[authNative] jwt present:", !!jwt);
       if (!jwt) throw new Error("No token in response");
 
-      const loginRes = await fetch(`https://${hostname}/_auth/tauri/token-login`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" },
-      });
-      console.log("[authNative] token-login status:", loginRes.status);
-      if (!loginRes.ok) {
-        const errText = await loginRes.text().catch(() => "");
-        console.error("[authNative] token-login failed:", errText);
-        throw new Error("Token login failed");
-      }
-      const loginData = await loginRes.json() as { sessionId?: string };
-      console.log("[authNative] sessionId present:", !!loginData.sessionId);
-      if (loginData.sessionId) {
-        await tauriInvoke("shield_set_session", {
-          serverDomain: hostname,
-          sessionCookie: loginData.sessionId,
-        });
-        console.log("[authNative] shield_set_session done");
-      }
+      await tauriInvoke("shield_token_login", { serverDomain: hostname, jwt });
+      console.log("[authNative] shield_token_login done");
     } else {
       console.log("[authNative] tier:", tier, "→ passkey path");
       await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
@@ -487,9 +468,7 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
       console.log("[authNative:desktop] start, hostname:", hostname);
       let tier: string | undefined;
       try {
-        const tierRes = await fetch(`https://${hostname}/_auth/bridge/tier`, { credentials: "include" });
-        console.log("[authNative:desktop] tier status:", tierRes.status);
-        const tierBody = await tierRes.json().catch(() => ({})) as { tier?: string };
+        const tierBody = await tauriInvoke<{ tier?: string }>("shield_get_tier", { serverDomain: hostname });
         console.log("[authNative:desktop] tier body:", JSON.stringify(tierBody));
         tier = tierBody.tier;
       } catch (e) {
@@ -516,25 +495,9 @@ function RealVpsBridgeProvider({ hostname, children }: VpsBridgeProviderProps) {
         const jwt = tokenData.terminal?.token;
         console.log("[authNative:desktop] jwt present:", !!jwt);
         if (!jwt) throw new Error("No token in response");
-        const loginRes = await fetch(`https://${hostname}/_auth/tauri/token-login`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" },
-        });
-        console.log("[authNative:desktop] token-login status:", loginRes.status);
-        if (!loginRes.ok) {
-          const errText = await loginRes.text().catch(() => "");
-          console.error("[authNative:desktop] token-login failed:", errText);
-          throw new Error("Token login failed");
-        }
-        const loginData = await loginRes.json() as { sessionId?: string };
-        console.log("[authNative:desktop] sessionId present:", !!loginData.sessionId);
-        if (loginData.sessionId) {
-          await tauriInvoke("shield_set_session", {
-            serverDomain: hostname,
-            sessionCookie: loginData.sessionId,
-          });
-          console.log("[authNative:desktop] shield_set_session done");
-        }
+
+        await tauriInvoke("shield_token_login", { serverDomain: hostname, jwt });
+        console.log("[authNative:desktop] shield_token_login done");
       } else {
         console.log("[authNative:desktop] tier:", tier, "→ passkey path");
         await tauriInvoke("shield_passkey_login", { serverDomain: hostname });
