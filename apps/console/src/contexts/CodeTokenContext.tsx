@@ -59,8 +59,25 @@ export function CodeTokenProvider(props: CodeTokenProviderProps) {
 
 function LocalCodeTokenProvider({ children }: { children: ReactNode }) {
   const fetchWithCodeToken = useCallback(
-    (url: string, options?: RequestInit) =>
-      fetch(url, { ...options, credentials: "include" }),
+    async (url: string, options?: RequestInit): Promise<Response> => {
+      if (isAndroidTauriApp()) {
+        const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+        if (invoke) {
+          const urlObj = new URL(url);
+          const result = await invoke("plugin:proot|proot_fetch", {
+            method: options?.method || "GET",
+            path: urlObj.pathname + urlObj.search,
+            body: options?.body ? (typeof options.body === "string" ? options.body : JSON.stringify(options.body)) : null,
+            port: 3002,
+          }) as { status: number; body: string; content_type: string };
+          return new Response(result.body, {
+            status: result.status,
+            headers: { "Content-Type": result.content_type || "application/json" },
+          });
+        }
+      }
+      return fetch(url, { ...options, credentials: "include" });
+    },
     [],
   );
 

@@ -532,11 +532,23 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           } catch {}
         }
         if (appConfig?.mode === "local") {
-          setIsLocalMode(true);
-          setSession({
-            user: { id: "local", name: "Local User", email: "local@localhost", emailVerified: true, image: null, createdAt: new Date(), updatedAt: new Date() },
-            session: { id: "local", userId: "local", token: "local", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date(), ipAddress: "127.0.0.1", userAgent: "" },
-          });
+          let prootRunning = false;
+          if (invoke) {
+            try {
+              const st = await invoke("plugin:proot|proot_status") as { running?: boolean };
+              prootRunning = st?.running === true;
+            } catch {}
+          }
+          if (prootRunning) {
+            setIsLocalMode(true);
+            setSession({
+              user: { id: "local", name: "Local User", email: "local@localhost", emailVerified: true, image: null, createdAt: new Date(), updatedAt: new Date() },
+              session: { id: "local", userId: "local", token: "local", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date(), ipAddress: "127.0.0.1", userAgent: "" },
+            });
+            setIsAuthLoading(false);
+            return;
+          }
+          setTauriNeedsConnect(true);
           setIsAuthLoading(false);
           return;
         }

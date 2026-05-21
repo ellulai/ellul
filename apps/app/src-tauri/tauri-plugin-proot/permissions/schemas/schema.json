@@ -295,6 +295,18 @@
       "type": "string",
       "oneOf": [
         {
+          "description": "Enables the proot_fetch command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-proot-fetch",
+          "markdownDescription": "Enables the proot_fetch command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the proot_fetch command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-proot-fetch",
+          "markdownDescription": "Denies the proot_fetch command without any pre-configured scope."
+        },
+        {
           "description": "Enables the proot_health command without any pre-configured scope.",
           "type": "string",
           "const": "allow-proot-health",

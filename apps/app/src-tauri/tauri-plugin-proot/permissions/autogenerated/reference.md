@@ -10,6 +10,32 @@
 <tr>
 <td>
 
+`proot:allow-proot-fetch`
+
+</td>
+<td>
+
+Enables the proot_fetch command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:deny-proot-fetch`
+
+</td>
+<td>
+
+Denies the proot_fetch command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `proot:allow-proot-health`
 
 </td>

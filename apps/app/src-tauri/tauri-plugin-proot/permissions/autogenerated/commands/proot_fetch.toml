@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-proot-fetch"
+description = "Enables the proot_fetch command without any pre-configured scope."
+commands.allow = ["proot_fetch"]
+
+[[permission]]
+identifier = "deny-proot-fetch"
+description = "Denies the proot_fetch command without any pre-configured scope."
+commands.deny = ["proot_fetch"]

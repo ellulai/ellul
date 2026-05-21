@@ -349,6 +349,92 @@ pub async fn proot_update_cancel() -> Result<(), Error> {
     Err(Error::NotAvailable)
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProotFetchResponse {
+    pub status: u16,
+    pub body: String,
+    pub content_type: String,
+}
+
+#[command]
+pub async fn proot_fetch(
+    method: String,
+    path: String,
+    body: Option<String>,
+    port: Option<u16>,
+) -> Result<ProotFetchResponse, Error> {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpStream;
+    use tokio::time::{timeout, Duration};
+
+    let target_port = port.unwrap_or(3002);
+    let addr = format!("127.0.0.1:{}", target_port);
+
+    let mut stream = timeout(Duration::from_secs(10), TcpStream::connect(&addr))
+        .await
+        .map_err(|_| Error::ProotFailed("connection timeout".into()))?
+        .map_err(|e| Error::ProotFailed(format!("connect failed: {e}")))?;
+
+    let body_bytes = body.as_deref().unwrap_or("");
+    let mut req = format!(
+        "{method} {path} HTTP/1.1\r\nHost: 127.0.0.1:{target_port}\r\nConnection: close\r\n"
+    );
+    if !body_bytes.is_empty() {
+        req.push_str(&format!(
+            "Content-Type: application/json\r\nContent-Length: {}\r\n",
+            body_bytes.len()
+        ));
+    }
+    req.push_str("Accept: */*\r\n\r\n");
+    if !body_bytes.is_empty() {
+        req.push_str(body_bytes);
+    }
+
+    stream
+        .write_all(req.as_bytes())
+        .await
+        .map_err(|e| Error::ProotFailed(format!("write failed: {e}")))?;
+
+    let mut buf = Vec::with_capacity(64 * 1024);
+    timeout(Duration::from_secs(120), async {
+        loop {
+            let mut chunk = [0u8; 8192];
+            match stream.read(&mut chunk).await {
+                Ok(0) => break,
+                Ok(n) => buf.extend_from_slice(&chunk[..n]),
+                Err(e) => return Err(Error::ProotFailed(format!("read failed: {e}"))),
+            }
+        }
+        Ok(())
+    })
+    .await
+    .map_err(|_| Error::ProotFailed("read timeout".into()))??;
+
+    let response_str = String::from_utf8_lossy(&buf);
+    let (head, body_content) = response_str
+        .split_once("\r\n\r\n")
+        .unwrap_or((&response_str, ""));
+
+    let status = head
+        .lines()
+        .next()
+        .and_then(|l| l.split_whitespace().nth(1))
+        .and_then(|s| s.parse::<u16>().ok())
+        .unwrap_or(500);
+
+    let content_type = head
+        .lines()
+        .find(|l| l.to_lowercase().starts_with("content-type:"))
+        .map(|l| l.splitn(2, ':').nth(1).unwrap_or("").trim().to_string())
+        .unwrap_or_default();
+
+    Ok(ProotFetchResponse {
+        status,
+        body: body_content.to_string(),
+        content_type,
+    })
+}
+
 #[command]
 pub async fn proot_migration_export_file() -> Result<MigrationExportResult, Error> {
     #[cfg(target_os = "android")]
