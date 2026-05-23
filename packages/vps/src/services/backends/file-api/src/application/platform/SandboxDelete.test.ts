@@ -28,15 +28,20 @@ import { _resetMetricsForTests, snapshot as metricsSnapshot } from '../preview/P
 import { _resetTrackingForTests } from '../preview/PreviewTracking';
 
 // Mock systemd layer — always reports inactive so drain + verify pass.
-vi.mock('../preview/PreviewUnits', () => ({
-  stopUnit: vi.fn(async (_directory: string) => {}),
-  unitStatus: vi.fn(async (_directory: string) => ({
-    ActiveState: 'inactive',
-    SubState: 'dead',
-    Result: 'success',
-    ExecMainStatus: '0',
-  })),
-  escapeInstance: (s: string) => s.replace(/-/g, '\\x2d').replace(/\//g, '-'),
+vi.mock('../preview/PreviewPlatform', () => ({
+  previewPlatform: {
+    stopUnit: vi.fn(async (_directory: string) => ({ ok: true })),
+    unitStatus: vi.fn(async (_directory: string) => ({
+      ActiveState: 'inactive',
+      SubState: 'dead',
+      Result: 'success',
+      ExecMainStatus: '0',
+      ActiveEnterTimestampMonotonic: 0,
+    })),
+    escapeInstance: (s: string) => s.replace(/-/g, '\\x2d').replace(/\//g, '-'),
+    clearFrameworkDropin: vi.fn(async () => ({ ok: true })),
+    resetFailed: vi.fn(async () => {}),
+  },
 }));
 
 const tmp = (): string => fs.mkdtempSync(path.join(os.tmpdir(), 'sandbox-delete-'));

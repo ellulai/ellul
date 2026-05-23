@@ -29,7 +29,7 @@ import { verifyPopSignature } from '../auth/pop';
 import { consumeExchangeCode } from '../auth/session';
 import { checkApiRateLimit } from '../application/platform/RateLimiter';
 import { logAuditEvent } from '../application/audit/Audit';
-import { parseCookies } from '../utils/cookie';
+import { parseCookies, codeSessionCookie } from '../utils/cookie';
 import { generateCspNonce, getCspHeader } from '../utils/csp';
 import type { CodeSessionResponse } from '../../../../../auth/bridge-contracts';
 
@@ -565,9 +565,8 @@ export function registerTokenRoutes(app: Hono): void {
       return c.json({ error: 'Code session expired' }, 401);
     }
 
-    // Set cookie on the code subdomain
     const maxAge = Math.floor((sessionData.expiresAt - Date.now()) / 1000);
-    c.header('Set-Cookie', `__Host-code_session=${codeSessionId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`);
+    c.header('Set-Cookie', codeSessionCookie(codeSessionId, maxAge));
 
     console.log('[shield] Code session cookie established for:', sessionData.credentialId?.substring(0, 8));
     return c.json({ established: true, expiresAt: sessionData.expiresAt });
@@ -1011,6 +1010,43 @@ export function registerTokenRoutes(app: Hono): void {
       operatorBindNonce,
     });
   });
+}
+
+/**
+ * Inline code-token validation — direct Map lookup, no HTTP self-call.
+ * Used by forward_auth handler to avoid self-referencing fetch deadlock in proot.
+ */
+export function validateCodeTokenInline(token: string): { valid: boolean; sessionId?: string; tier?: string; reason?: string } {
+  const tokenData = codeTokens.get(token);
+  if (!tokenData) return { valid: false, reason: 'token_not_found' };
+  codeTokens.delete(token);
+  if (tokenData.expiresAt < Date.now()) return { valid: false, reason: 'token_expired' };
+  return { valid: true, sessionId: tokenData.sessionId, tier: tokenData.tier };
+}
+
+/**
+ * Inline code-session validation — direct Map lookup, no HTTP self-call.
+ * Used by forward_auth handler to avoid self-referencing fetch deadlock in proot.
+ */
+export function validateCodeSessionInline(codeSessionId: string, requestIp?: string): { valid: boolean; credentialId?: string; tier?: string; reason?: string } {
+  const sessionData = codeSessions.get(codeSessionId);
+  if (!sessionData) return { valid: false, reason: 'session_not_found' };
+  if (sessionData.expiresAt < Date.now()) {
+    codeSessions.delete(codeSessionId);
+    return { valid: false, reason: 'session_expired' };
+  }
+  if (requestIp && sessionData.ip !== requestIp) {
+    import('../utils/ip-binding').then(({ ipBindingClass }) => {
+      if (ipBindingClass(sessionData.ip) !== ipBindingClass(requestIp)) {
+        console.log('[shield] Code session IP class mismatch:', {
+          expected: sessionData.ip, actual: requestIp,
+          expectedClass: ipBindingClass(sessionData.ip),
+          actualClass: ipBindingClass(requestIp),
+        });
+      }
+    }).catch(() => {});
+  }
+  return { valid: true, credentialId: sessionData.credentialId, tier: sessionData.tier };
 }
 
 /**

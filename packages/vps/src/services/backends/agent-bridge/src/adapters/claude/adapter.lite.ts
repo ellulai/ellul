@@ -51,6 +51,7 @@ import {
 } from "../../shared/serverSettings";
 import { ServerConfig } from "../../shared/config";
 import { logEvent, serializeError } from "../../shared/event-log";
+import { detectVersionSignal, emitVersionSignal } from "../../shared/adapterVersionDetector";
 import { claudeLaunchTrace } from "../../../../../shared/claude-launch-trace";
 import { mintLaunchEnv } from "./launch-env";
 import { readClaudeResumeState } from "./shared/session-store";
@@ -497,13 +498,19 @@ const makeClaudeLiteAdapter = Effect.fn("makeClaudeLiteAdapter")(function* (
       const turn = hot.currentTurn;
       if (turn) {
         const interrupted = turn.interrupted;
+        const stderrTail = hot.stderrChunks.join("");
+        const versionSignal = !interrupted && code !== null && code !== 0
+          ? detectVersionSignal("claude-code", stderrTail, code)
+          : null;
         const reason = interrupted
           ? "Process interrupted by user"
-          : signal === "SIGTERM" || signal === "SIGKILL"
-            ? `Process killed by ${signal}`
-            : code !== null && code !== 0
-              ? `Process exited with code ${code}`
-              : "Process exited before result block";
+          : versionSignal
+            ? "Claude Code needs an update — your server is updating automatically. Please retry in ~30 seconds."
+            : signal === "SIGTERM" || signal === "SIGKILL"
+              ? `Process killed by ${signal}`
+              : code !== null && code !== 0
+                ? `Process exited with code ${code}`
+                : "Process exited before result block";
         const synthetic = flushClaudeStreamOnAbort(reason);
         if (interrupted) synthetic.state = "interrupted";
         emitParsedEvent(synthetic, context, turn.id, "");
@@ -739,6 +746,10 @@ const makeClaudeLiteAdapter = Effect.fn("makeClaudeLiteAdapter")(function* (
             ? `/var/log/ellul/claude-spawn-${launchEnv.traceId}.log`
             : null,
       });
+      if (code !== 0 && stderrTail) {
+        const vs = detectVersionSignal("claude-code", stderrTail, code ?? undefined);
+        if (vs) emitVersionSignal(vs).catch(() => {});
+      }
     });
 
     logEvent("claudeLite.spawn.cold", {

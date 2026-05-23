@@ -3,6 +3,7 @@
 
 import { createContext, useEffect, useState } from "react";
 import { useVpsCapabilities, type VpsCapabilities } from "@/hooks/useVpsCapabilities";
+import { hasTauriInvoke, localFetch } from "@/lib/local-fetch";
 import { MOCK_MODE } from "@/lib/mock-data";
 
 export const VpsCapabilitiesContext = createContext<VpsCapabilities | null>(null);
@@ -24,17 +25,17 @@ export function VpsCapabilitiesProvider({ hostname, serverStatus, isLocal, child
 
   useEffect(() => {
     if (!isLocal || serverStatus !== "running") return;
-    const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
-    if (!invoke) return;
     let cancelled = false;
-    invoke("plugin:proot|proot_fetch", {
-      method: "GET",
-      path: "/_auth/capabilities",
-      port: 3005,
-    }).then((result: { status: number; body: string }) => {
-      if (cancelled || result.status !== 200) return;
-      try { setLocalCaps(JSON.parse(result.body)); } catch {}
-    }).catch(() => {});
+    if (hasTauriInvoke()) {
+      localFetch("GET", "/_auth/capabilities")
+        .then((r) => { if (!cancelled && r.status === 200) try { setLocalCaps(JSON.parse(r.body)); } catch {} })
+        .catch(() => {});
+    } else {
+      fetch("http://localhost/_auth/capabilities", { credentials: "include" })
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => { if (!cancelled && data) setLocalCaps(data); })
+        .catch(() => {});
+    }
     return () => { cancelled = true; };
   }, [isLocal, serverStatus]);
 

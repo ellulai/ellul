@@ -2295,6 +2295,13 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                         pingedAgentVersion: string | null;
                         lacksCapabilities: string[];
                     };
+                    adapterUpdates: {
+                        [x: string]: {
+                            installedVersion: string;
+                            targetVersion: string | null;
+                            status: "current" | "updating" | "updated" | "failed";
+                        };
+                    } | undefined;
                 }[];
                 server: null;
                 plan: string;
@@ -2388,6 +2395,13 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                         pingedAgentVersion: string | null;
                         lacksCapabilities: string[];
                     };
+                    adapterUpdates: {
+                        [x: string]: {
+                            installedVersion: string;
+                            targetVersion: string | null;
+                            status: "current" | "updating" | "updated" | "failed";
+                        };
+                    } | undefined;
                 }[];
                 hasActiveSubscription: boolean;
                 aiQuota?: {
@@ -2472,6 +2486,13 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     pingedAgentVersion: string | null;
                     lacksCapabilities: string[];
                 };
+                adapterUpdates: {
+                    [x: string]: {
+                        installedVersion: string;
+                        targetVersion: string | null;
+                        status: "current" | "updating" | "updated" | "failed";
+                    };
+                } | undefined;
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
@@ -2590,6 +2611,13 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     pingedAgentVersion: string | null;
                     lacksCapabilities: string[];
                 };
+                adapterUpdates: {
+                    [x: string]: {
+                        installedVersion: string;
+                        targetVersion: string | null;
+                        status: "current" | "updating" | "updated" | "failed";
+                    };
+                } | undefined;
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
@@ -6114,6 +6142,9 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {};
             output: {
                 ok: true;
+                adapterVersions: {} | {
+                    [x: string]: string;
+                };
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
@@ -6369,6 +6400,88 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             };
             output: {
                 success: true;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+}, "/api/servers"> | import("hono/types").MergeSchemaPath<{
+    "/:id/adapter-version-signal": {
+        $post: {
+            input: {
+                json: {
+                    adapter: string;
+                    installedVersion: string;
+                    errorPattern: string;
+                    signalType: "version-block" | "api-deprecation" | "binary-missing" | "sdk-drift";
+                    stderrSample?: string | undefined;
+                    exitCode?: number | undefined;
+                };
+            } & {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                json: {
+                    adapter: string;
+                    installedVersion: string;
+                    errorPattern: string;
+                    signalType: "version-block" | "api-deprecation" | "binary-missing" | "sdk-drift";
+                    stderrSample?: string | undefined;
+                    exitCode?: number | undefined;
+                };
+            } & {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                shouldUpdate: boolean;
+                targetVersion: string | null;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/:id/adapter-versions": {
+        $get: {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: null;
+            outputFormat: "body";
+            status: 304;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 401;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                versions: {
+                    [x: string]: string;
+                };
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
@@ -8130,6 +8243,15 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
     };
+} & {
+    "/provision-payload": {
+        $get: {
+            input: {};
+            output: string;
+            outputFormat: "body";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
 }, "/api/byos"> | import("hono/types").MergeSchemaPath<{
     "/current": {
         $get: {
@@ -9477,6 +9599,81 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         };
     };
 }, "/api/admin/platform"> | import("hono/types").MergeSchemaPath<{
+    "/": {
+        $get: {
+            input: {};
+            output: never;
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/:adapter/force-update": {
+        $post: {
+            input: {
+                json: {
+                    version: string;
+                };
+            } & {
+                param: {
+                    adapter: string;
+                };
+            };
+            output: {
+                updatedServers: number;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/:adapter/rollback": {
+        $post: {
+            input: {
+                param: {
+                    adapter: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {
+                param: {
+                    adapter: string;
+                };
+            };
+            output: {
+                rolledBackTo: string | null;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/:adapter/set-version": {
+        $post: {
+            input: {
+                json: {
+                    version: string;
+                };
+            } & {
+                param: {
+                    adapter: string;
+                };
+            };
+            output: {
+                ok: true;
+                adapter: string;
+                version: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+}, "/api/admin/adapter-versions"> | import("hono/types").MergeSchemaPath<{
     "/custom-domains": {
         $get: {
             input: {};
@@ -9652,7 +9849,78 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
     };
-}, "/api/admin"> | import("hono/types").MergeSchemaPath<import("hono/types").BlankSchema | import("hono/types").MergeSchemaPath<{
+}, "/api/admin"> | import("hono/types").MergeSchemaPath<{
+    "/:shortId": {
+        $post: {
+            input: {
+                param: {
+                    shortId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {
+                param: {
+                    shortId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 429;
+        } | {
+            input: {
+                param: {
+                    shortId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    shortId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 409;
+        } | {
+            input: {
+                param: {
+                    shortId: string;
+                };
+            };
+            output: {
+                status: string;
+                serverId: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        } | {
+            input: {
+                param: {
+                    shortId: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 500;
+        };
+    };
+}, "/api/wake"> | import("hono/types").MergeSchemaPath<import("hono/types").BlankSchema | import("hono/types").MergeSchemaPath<{
     "/custom-hostname-status": {
         $post: {
             input: {};

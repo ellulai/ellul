@@ -1152,6 +1152,150 @@ bootstrap_nsd_manifest_files() {
   fi
 }
 
+# ── Reactive adapter version sync ─────────────────────────────────────
+# Reads target versions from the heartbeat response body (written to
+# /run/ellul-heartbeat-body by heartbeat_curl). For each adapter,
+# compares installed vs target and updates if stale.
+# Replaces the individual self_heal_*_binary functions for adapters
+# that have DB-managed versions.
+
+update_single_adapter() {
+  local adapter="$1" version="$2"
+  local svc_user="${SVC_USER:-dev}"
+
+  case "$adapter" in
+    claude-code)
+      local installed
+      installed=$(runuser -l "$svc_user" -c 'claude --version 2>/dev/null' | head -1 | tr -d '[:space:]')
+      [ "$installed" = "$version" ] && return 0
+      log "agent-sync: updating claude-code $installed → $version"
+      runuser -l "$svc_user" -c "npm install -g @anthropic-ai/claude-code@$version" >/dev/null 2>&1
+      ;;
+    codex)
+      local installed
+      installed=$(runuser -l "$svc_user" -c 'codex --version 2>/dev/null' | head -1 | tr -d '[:space:]')
+      [ "$installed" = "$version" ] && return 0
+      log "agent-sync: updating codex $installed → $version"
+      runuser -l "$svc_user" -c "npm install -g @openai/codex@$version" >/dev/null 2>&1
+      ;;
+    opencode)
+      local target=/usr/local/libexec/ellul/opencode
+      if [ -x "$target" ]; then
+        local cache_file=/run/ellul-opencode-ver-cache
+        local bin_mtime installed
+        bin_mtime=$(stat -c '%Y' "$target" 2>/dev/null || echo 0)
+        if [ -f "$cache_file" ]; then
+          local cached_mtime cached_ver
+          read -r cached_mtime cached_ver < "$cache_file" 2>/dev/null || true
+          if [ "$cached_mtime" = "$bin_mtime" ] && [ -n "$cached_ver" ]; then
+            installed="$cached_ver"
+          fi
+        fi
+        if [ -z "${installed:-}" ]; then
+          local probe_tmp=/tmp/ellul-probe-cache
+          mkdir -p "$probe_tmp" 2>/dev/null || true
+          installed=$(TMPDIR="$probe_tmp" NODE_OPTIONS="--jitless" "$target" --version 2>/dev/null | head -1 | tr -d '[:space:]')
+          [ -n "$installed" ] && echo "$bin_mtime $installed" > "$cache_file"
+        fi
+        [ "$installed" = "$version" ] && return 0
+      fi
+      log "agent-sync: updating opencode ${installed:-missing} → $version"
+      local oc_arch
+      case "$(uname -m)" in
+        aarch64|arm64) oc_arch="linux-arm64" ;;
+        *)             oc_arch="linux-x64" ;;
+      esac
+      local oc_url="https://github.com/anomalyco/opencode/releases/download/v${version}/opencode-${oc_arch}.tar.gz"
+      local oc_tmp
+      oc_tmp=$(mktemp -d /tmp/ellul-oc-XXXXXX)
+      if ! curl -fsSL --retry 3 --connect-timeout 15 --max-time 120 "$oc_url" -o "$oc_tmp/archive.tar.gz" 2>/dev/null; then
+        rm -rf "$oc_tmp"
+        return 1
+      fi
+      tar xzf "$oc_tmp/archive.tar.gz" -C "$oc_tmp" 2>/dev/null || { rm -rf "$oc_tmp"; return 1; }
+      local oc_bin
+      oc_bin=$(find "$oc_tmp" -name "opencode" -type f -executable 2>/dev/null | head -1)
+      [ -z "$oc_bin" ] && oc_bin="$oc_tmp/opencode"
+      if [ ! -f "$oc_bin" ]; then rm -rf "$oc_tmp"; return 1; fi
+      mkdir -p "$(dirname "$target")" 2>/dev/null || true
+      cp "$oc_bin" "$target.new" && chmod 755 "$target.new" && mv -f "$target.new" "$target"
+      rm -rf "$oc_tmp"
+      rm -f /run/ellul-opencode-ver-cache 2>/dev/null || true
+      pkill -f 'opencode serve' 2>/dev/null || true
+      ;;
+    cursor)
+      local cursor_target=/usr/local/bin/cursor-agent
+      local cursor_installed=""
+      if [ -x "$cursor_target" ]; then
+        cursor_installed=$("$cursor_target" --version 2>/dev/null | head -1 | tr -d '[:space:]')
+        [ "$cursor_installed" = "$version" ] && return 0
+      fi
+      log "agent-sync: updating cursor ${cursor_installed:-missing} → $version"
+      local cursor_arch
+      case "$(uname -m)" in
+        aarch64|arm64) cursor_arch="arm64" ;;
+        *)             cursor_arch="x64" ;;
+      esac
+      local cursor_url="https://downloads.cursor.com/lab/${version}/linux/${cursor_arch}/agent-cli-package.tar.gz"
+      local cursor_tmp
+      cursor_tmp=$(mktemp -d /tmp/ellul-cursor-XXXXXX)
+      if ! curl -fsSL --retry 3 --connect-timeout 15 --max-time 120 "$cursor_url" -o "$cursor_tmp/archive.tar.gz" 2>/dev/null; then
+        rm -rf "$cursor_tmp"
+        return 1
+      fi
+      rm -rf /usr/local/lib/cursor-agent
+      mkdir -p /usr/local/lib/cursor-agent
+      tar -xzf "$cursor_tmp/archive.tar.gz" -C /usr/local/lib/cursor-agent --strip-components=1 2>/dev/null || { rm -rf "$cursor_tmp"; return 1; }
+      chmod +x /usr/local/lib/cursor-agent/cursor-agent
+      ln -sf /usr/local/lib/cursor-agent/cursor-agent /usr/local/bin/cursor-agent
+      rm -rf "$cursor_tmp"
+      ;;
+    grok)
+      local grok_target="/home/${svc_user}/.grok/bin/grok"
+      local grok_installed=""
+      if [ -x "$grok_target" ]; then
+        grok_installed=$(runuser -l "$svc_user" -c "$grok_target --version 2>/dev/null" | head -1 | tr -d '[:space:]')
+        [ "$grok_installed" = "$version" ] && return 0
+      fi
+      log "agent-sync: updating grok ${grok_installed:-missing} → $version"
+      runuser -l "$svc_user" -c "curl -fsSL https://x.ai/cli/install.sh | bash" >/dev/null 2>&1 || return 1
+      ;;
+    *)
+      log "agent-sync: unknown adapter $adapter"
+      return 1
+      ;;
+  esac
+}
+
+sync_adapter_versions() {
+  local body_file=/run/ellul-heartbeat-body
+  [ -f "$body_file" ] || return 0
+
+  local versions
+  versions=$(jq -r '.adapterVersions // empty' "$body_file" 2>/dev/null)
+  [ -n "$versions" ] && [ "$versions" != "null" ] || return 0
+
+  local adapter version
+  for adapter in $(echo "$versions" | jq -r 'keys[]' 2>/dev/null); do
+    version=$(echo "$versions" | jq -r --arg a "$adapter" '.[$a]' 2>/dev/null)
+    [ -n "$version" ] && [ "$version" != "null" ] || continue
+
+    local throttle_file="/run/ellul-adapter-heal-${adapter}"
+    local now
+    now=$(date +%s)
+    if [ -f "$throttle_file" ]; then
+      local last
+      last=$(cat "$throttle_file" 2>/dev/null || echo 0)
+      if [ "$((now - last))" -lt 300 ]; then
+        continue
+      fi
+    fi
+
+    echo "$now" > "$throttle_file"
+    update_single_adapter "$adapter" "$version" || true
+  done
+}
+
 # Compare the deployed opencode binary version against the
 # build-time-pinned EXPECTED_OPENCODE_VERSION. On drift, run
 # ellul-update-binary to download the matching binary. Drift between
@@ -2568,6 +2712,7 @@ sync_agent_bundle() {
   # Reconcile inside the manifest-applied path only fires on new
   # manifests, which is too rare to recover from a bad state.
   self_heal_namespaced
+  sync_adapter_versions
   self_heal_opencode_binary_version
   self_heal_cursor_agent_binary
   self_heal_grok_binary

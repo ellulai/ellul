@@ -53,6 +53,7 @@ import { DatabaseTables } from "./DatabaseTables";
 import { DatabaseSql } from "./DatabaseSql";
 import { DatabaseBin } from "./DatabaseBin";
 import { DatabaseSettings } from "./DatabaseSettings";
+import { getVpsApiUrl } from "@/lib/domains";
 
 // ── Public entry point ──
 
@@ -69,7 +70,7 @@ function DatabaseBrowserBridge({ serverDomain, sandboxId, externalTab }: { serve
 }
 
 function DatabaseBrowserDirect({ serverDomain, sandboxId, externalTab }: { serverDomain: string; sandboxId: string; externalTab?: DbTab }) {
-  const api = useDirectDbApi(`https://${serverDomain}`);
+  const api = useDirectDbApi(getVpsApiUrl(serverDomain));
   return <DatabaseBrowserInner serverDomain={serverDomain} sandboxId={sandboxId} api={api} externalTab={externalTab} />;
 }
 

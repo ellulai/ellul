@@ -79,11 +79,7 @@ function parseEnv(value: string | undefined | null): SecretEnvironment {
  */
 export function registerSecretsRoutes(app: Hono): void {
 
-  /**
-   * Return the VPS public key in PEM format.
-   * Derived from the RSA private key at /etc/ellul-bootstrap/node.key.
-   * Used by clients to encrypt secrets before sending to the VPS.
-   */
+  /** Return the VPS public key (PQC JSON or legacy PEM). */
   app.get('/_auth/secrets/public-key', async (c) => {
     const ip = getClientIp(c);
     const rateLimit = checkApiRateLimit(ip);
@@ -92,8 +88,16 @@ export function registerSecretsRoutes(app: Hono): void {
     }
 
     try {
-      const privatePem = fs.readFileSync('/etc/ellul-bootstrap/node.key', 'utf8');
-      const privateKey = crypto.createPrivateKey(privatePem);
+      const pubPath = '/etc/ellul-bootstrap/node.pub';
+      if (fs.existsSync(pubPath)) {
+        const pubRaw = fs.readFileSync(pubPath, 'utf8');
+        const pub = JSON.parse(pubRaw);
+        if (pub.version === 3 && pub.algorithm === 'X25519+ML-KEM-1024') {
+          return c.json({ publicKey: pubRaw.trim() });
+        }
+      }
+      const raw = fs.readFileSync('/etc/ellul-bootstrap/node.key', 'utf8');
+      const privateKey = crypto.createPrivateKey(raw);
       const publicKey = crypto.createPublicKey(privateKey);
       const publicKeyPem = publicKey.export({ type: 'spki', format: 'pem' }) as string;
       return c.json({ publicKey: publicKeyPem });

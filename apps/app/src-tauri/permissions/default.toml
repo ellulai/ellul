@@ -7,6 +7,9 @@ permissions = [
   "allow-get-platform-info",
   "allow-get-console-url",
   "allow-poll-connect",
+  "allow-lima-status",
+  "allow-lima-setup",
+  "allow-lima-health",
 ]
 
 [[permission]]
@@ -38,3 +41,18 @@ commands.allow = ["get_console_url"]
 identifier = "allow-poll-connect"
 description = "Poll connect status"
 commands.allow = ["poll_connect"]
+
+[[permission]]
+identifier = "allow-lima-status"
+description = "Check Lima VM status"
+commands.allow = ["lima_status"]
+
+[[permission]]
+identifier = "allow-lima-setup"
+description = "Create and provision Lima VM"
+commands.allow = ["lima_setup"]
+
+[[permission]]
+identifier = "allow-lima-health"
+description = "Poll Lima service health"
+commands.allow = ["lima_health"]

@@ -8,7 +8,7 @@ import fs from 'fs';
 import crypto from 'crypto';
 import BRIDGE_HTML from '../static/bridge-page.html';
 import { db } from '../database';
-import { SSH_AUTH_KEYS_PATH, PLATFORM_ZONE } from '../config';
+import { SSH_AUTH_KEYS_PATH, PLATFORM_ZONE, IS_LOCALHOST } from '../config';
 import { getDeviceFingerprint, getClientIp } from '../auth/fingerprint';
 import { createSession, validateSession, refreshSession, setSessionCookie, createSessionExchangeCode, createJwtExchangeCode } from '../auth/session';
 import { verifyJwtToken, createJwtToken } from '../auth/jwt';
@@ -202,6 +202,12 @@ export function registerBridgeRoutes(app: Hono, hostname: string): void {
     }
 
     return c.json({ code });
+  });
+
+  app.post('/_auth/byos/token', async (c) => {
+    if (!IS_LOCALHOST) return c.json({ error: 'Not available' }, 403);
+    const token = createJwtToken({ sub: 'byos-local' }, 86400 * 30);
+    return c.json({ token });
   });
 
   /**

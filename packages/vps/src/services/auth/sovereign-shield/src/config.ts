@@ -61,6 +61,20 @@ export const AI_PROXY_TOKEN_FILE = "/etc/ellul-bootstrap/ai-proxy-token";
 export const API_URL_FILE = "/etc/ellul/api-url";
 export const ORIGIN_TAG_FILE = "/etc/ellul/origin-tag";
 
+// Deployment model — read once at startup. Affects cookie security (no __Host-/Secure on localhost).
+export const DEPLOYMENT_MODEL_PATH = "/etc/ellul/deployment-model";
+const FIREWALL_MODE_PATH = "/etc/ellul/firewall-mode";
+function readDeploymentModel(): "proxied" | "direct" | "localhost" {
+  let raw = "";
+  try { raw = fs.readFileSync(DEPLOYMENT_MODEL_PATH, "utf8").trim(); } catch {}
+  if (!raw) try { raw = fs.readFileSync(FIREWALL_MODE_PATH, "utf8").trim(); } catch {}
+  if (raw === "localhost") return "localhost";
+  if (raw === "direct") return "direct";
+  return "proxied";
+}
+export const DEPLOYMENT_MODEL = readDeploymentModel();
+export const IS_LOCALHOST = DEPLOYMENT_MODEL === "localhost";
+
 // Service configuration
 export const PORT = 3005;
 export const RP_NAME = "ellul";

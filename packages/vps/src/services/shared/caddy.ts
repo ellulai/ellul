@@ -18,14 +18,11 @@
 import * as fs from 'fs';
 import * as http from 'http';
 
-const CADDY_ADMIN_SOCK = '/run/caddy/admin.sock';
+export const CADDY_ADMIN_SOCK = '/run/caddy/admin.sock';
 const CADDYFILE_PATH = '/etc/caddy/Caddyfile';
 const RELOAD_TIMEOUT_MS = 10_000;
+const IS_ANDROID = process.env.ELLUL_PLATFORM === 'android';
 
-/**
- * Reload Caddy by POSTing the Caddyfile to the admin API unix socket.
- * Resolves on success, rejects on HTTP 4xx/5xx, connection error, or timeout.
- */
 export function reloadCaddy(): Promise<void> {
   const caddyfile = fs.readFileSync(CADDYFILE_PATH, 'utf8');
   const body = Buffer.from(caddyfile, 'utf8');
@@ -38,11 +35,13 @@ export function reloadCaddy(): Promise<void> {
       (fn as Function)(val);
     };
 
+    const opts: http.RequestOptions = IS_ANDROID
+      ? { hostname: '127.0.0.1', port: 2019, path: '/load', method: 'POST' }
+      : { socketPath: CADDY_ADMIN_SOCK, path: '/load', method: 'POST' };
+
     const req = http.request(
       {
-        socketPath: CADDY_ADMIN_SOCK,
-        path: '/load',
-        method: 'POST',
+        ...opts,
         headers: {
           'Content-Type': 'text/caddyfile',
           'Content-Length': body.length,

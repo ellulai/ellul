@@ -41,6 +41,8 @@ import { useIntegrationGroups, type IntegrationGroup, type IntegrationGroupConne
 import { useToolPermissions, type ToolPermissionLevel } from "@/hooks/useToolPermissions";
 import { isContextVisible, isProviderVisible, isGateTypeVisible } from "@/lib/feature-flags";
 import type { ApiApp } from "@/contexts/AppsListContext";
+import { getVpsApiUrl, isLocalServer } from "@/lib/domains";
+import { useDashboard } from "@/contexts/DashboardContext";
 
 type SecurityTier = "standard" | "web_locked" | "private_locked";
 
@@ -570,7 +572,8 @@ function getConnectionCapabilities(
 function McpToolPermissionsCard({ serverId, app }: McpToolPermissionsCardProps) {
   const t = useTranslations("console.security");
   const sandboxId = app?.directory ?? null;
-  const { groups, isLoading } = useIntegrationGroups(serverId, sandboxId);
+  const server = useDashboard().serverStatus.server;
+  const { groups, isLoading } = useIntegrationGroups(serverId, sandboxId, server ? isLocalServer(server) : false);
   const { gatePerms } = useGatePermissions(app);
 
   // Filter to groups that have at least one agent-enabled connection
@@ -1042,7 +1045,7 @@ function VaultScopesCard({ serverDomain, project }: { serverDomain: string; proj
       setLoading(true);
       try {
         const res = await fetch(
-          `https://${serverDomain}/_auth/vault/scopes?project=${encodeURIComponent(project)}`,
+          `${getVpsApiUrl(serverDomain)}/_auth/vault/scopes?project=${encodeURIComponent(project)}`,
           { credentials: "include" },
         );
         if (res.ok && !cancelled) {

@@ -83,6 +83,18 @@ install_npm_tool "claude" "__NPM_CLAUDE_CODE__" || fail=1
 install_npm_tool "codex"  "__NPM_CODEX__"       || fail=1
 install_grok                                    || fail=1
 
+# Seed codex config if absent — ChatGPT OAuth auth needs a model that
+# supports it; the CLI default may pick an API-key-only model.
+CODEX_CFG="/home/${SVC_USER}/.codex/config.toml"
+if [ ! -f "$CODEX_CFG" ]; then
+  mkdir -p "$(dirname "$CODEX_CFG")"
+  cat > "$CODEX_CFG" <<'TOML'
+model = "gpt-5.4"
+TOML
+  chown "$SVC_USER:$SVC_USER" "$CODEX_CFG"
+  log "codex: seeded default config.toml"
+fi
+
 # Only mark "ready" when every tool is actually installed. Leaving the
 # flag unset on partial failure lets a later wake/boot retry the missing
 # tool instead of caching a broken state in the snapshot.

@@ -14,6 +14,7 @@ import { logAuditEvent } from '../application/audit/Audit';
 import { dbg } from '../application/audit/DebugLog';
 import { verifyProjectTokenDetailed, STS_EXPIRED_CODE, STS_INVALID_CODE } from '../application/platform/Sts';
 import { IS_ANDROID } from '@vps/shared/platform';
+import { IS_LOCALHOST } from '../config';
 
 // ── Route classification ──────────────────────────────────────────────────
 
@@ -93,6 +94,9 @@ function classifyRoute(path: string): RoutePolicy {
   }
   if (path === '/_auth/chat') {
     return { type: AuthType.AUTH_FLOW, reason: 'chat_iframe_entry' };
+  }
+  if (path === '/_auth/byos/token') {
+    return { type: AuthType.AUTH_FLOW, reason: 'byos_jwt_bootstrap' };
   }
   if (path === '/_auth/schema') {
     return { type: AuthType.PUBLIC, reason: 'schema_discovery' };
@@ -315,9 +319,30 @@ export const tierGateMiddleware = createMiddleware(async (c, next) => {
       jwtId: 'local',
     });
   } else {
-    // Standard tier: JWT
+    // Standard tier: JWT, or code_session on localhost
     const jwt = verifyJwtToken(c.req);
-    if (!jwt) {
+    if (jwt) {
+      dbg('gate', 'jwt_verified', { path, method, sub: jwt.sub, jti: jwt.jti });
+      c.set('tierGateAuth', {
+        tier: 'standard' as const,
+        userId: jwt.sub,
+        jwtId: jwt.jti,
+      });
+    } else if (IS_LOCALHOST) {
+      const cookies = parseCookies(c.req.header('cookie'));
+      const codeSessionId = cookies['__Host-code_session'] || cookies.code_session;
+      if (codeSessionId) {
+        dbg('gate', 'localhost_code_session', { path, method, sessionIdShort: codeSessionId.slice(0, 8) });
+        c.set('tierGateAuth', {
+          tier: 'standard' as const,
+          userId: 'code-session',
+          jwtId: codeSessionId.slice(0, 16),
+        });
+      } else {
+        dbg('gate', 'reject_no_jwt_no_code_session', { path, method, tier, ip });
+        return c.json({ error: 'Authentication required' }, 401);
+      }
+    } else {
       dbg('gate', 'reject_no_jwt', { path, method, tier, ip });
       logAuditEvent({
         type: 'tier_gate_denied',
@@ -326,13 +351,6 @@ export const tierGateMiddleware = createMiddleware(async (c, next) => {
       });
       return c.json({ error: 'Authentication required' }, 401);
     }
-    dbg('gate', 'jwt_verified', { path, method, sub: jwt.sub, jti: jwt.jti });
-
-    c.set('tierGateAuth', {
-      tier: 'standard' as const,
-      userId: jwt.sub,
-      jwtId: jwt.jti,
-    });
   }
 
   // ── STS token: optional X-STS-Token → c.get('stsProject') for provable project isolation ──

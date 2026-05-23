@@ -2,6 +2,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getVpsApiUrl } from "@/lib/domains";
 
 // --- Types ---
 
@@ -45,7 +46,7 @@ export interface VaultIndexStatus {
 // --- Fetch Helper ---
 
 async function vaultFetch(serverDomain: string, path: string, options?: RequestInit) {
-  const url = `https://${serverDomain}${path}`;
+  const url = `${getVpsApiUrl(serverDomain)}${path}`;
   const res = await fetch(url, { ...options, credentials: "include" });
   if (!res.ok) {
     const data = await res.json().catch(() => ({ error: "Request failed" }));

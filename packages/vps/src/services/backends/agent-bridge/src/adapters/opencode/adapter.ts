@@ -39,6 +39,7 @@ import {
   ProviderAdapterValidationError,
   type ProviderAdapterError,
 } from "../errors";
+import { detectVersionSignal, emitVersionSignal } from "../../shared/adapterVersionDetector";
 import {
   buildOpenCodePermissionRules,
   OpenCodeRuntime,
@@ -141,13 +142,23 @@ const toRequestError = (cause: OpenCodeRuntimeError): ProviderAdapterRequestErro
     cause: cause.cause,
   });
 
-const toProcessError = (threadId: ThreadId, cause: unknown): ProviderAdapterProcessError =>
-  new ProviderAdapterProcessError({
+const toProcessError = (threadId: ThreadId, cause: unknown): ProviderAdapterProcessError => {
+  const detail = OpenCodeRuntimeError.is(cause) ? cause.detail : openCodeRuntimeErrorDetail(cause);
+  let displayDetail = detail;
+  if (typeof detail === "string") {
+    const vs = detectVersionSignal("opencode", detail, undefined);
+    if (vs) {
+      emitVersionSignal(vs).catch(() => {});
+      displayDetail = "OpenCode needs an update — your server is updating automatically. Please retry in ~30 seconds.";
+    }
+  }
+  return new ProviderAdapterProcessError({
     provider: PROVIDER,
     threadId,
-    detail: OpenCodeRuntimeError.is(cause) ? cause.detail : openCodeRuntimeErrorDetail(cause),
+    detail: displayDetail,
     cause,
   });
+};
 
 function buildEventBase(input: {
   readonly threadId: ThreadId;

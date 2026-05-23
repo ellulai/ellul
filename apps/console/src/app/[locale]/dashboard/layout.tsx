@@ -39,10 +39,23 @@ const TAURI_API_URL = CONSOLE_URL.replace("console.", "api.");
 
 const CONNECT_STORAGE_KEY = "ellul_pending_connect_id";
 
+function getLocalEngine(): "proot" | "lima" | "unknown" {
+  const cfg = typeof window !== "undefined" ? (window as any).__ELLUL_APP_CONFIG__ : null;
+  if (cfg?.localEngine) return cfg.localEngine;
+  const info = typeof window !== "undefined" ? (window as any).__ELLUL_PLATFORM_INFO__ : null;
+  if (info?.localEngine) return info.localEngine;
+  if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) return "proot";
+  if (typeof navigator !== "undefined" && /Mac/i.test(navigator.platform)) return "lima";
+  return "unknown";
+}
+
 function buildLocalServerStatus(
   health: Array<{ name: string; healthy: boolean }> | null,
 ): ServerStatus {
-  const allHealthy = !!health?.length && health.every((s) => s.healthy);
+  const core = health?.filter((s) => ["sovereign-shield", "file-api", "agent-bridge"].includes(s.name));
+  const allHealthy = !!core?.length && core.every((s) => s.healthy);
+  const engine = getLocalEngine();
+  const isByos = engine === "lima";
   return {
     state: allHealthy ? "running" : "provisioning",
     plan: "free",
@@ -50,7 +63,7 @@ function buildLocalServerStatus(
     server: {
       id: "local",
       ipAddress: "127.0.0.1",
-      domain: null,
+      domain: "localhost",
       createdAt: new Date().toISOString(),
       performanceStatus: allHealthy ? "good" : "struggling",
       size: "local",
@@ -58,12 +71,12 @@ function buildLocalServerStatus(
       sshEnabled: false,
       securityTier: "standard",
       serverPlan: "free",
-      product: "self_hosted",
+      product: isByos ? "byos" : "self_hosted",
     },
   };
 }
 
-type LocalStage = "checking" | "downloading" | "verifying" | "extracting" | "initializing" | "starting" | "health" | "ready" | "failed";
+type LocalStage = "checking" | "downloading" | "verifying" | "extracting" | "initializing" | "starting" | "provisioning" | "health" | "ready" | "failed";
 
 const LOCAL_STAGE_KEYS: Record<LocalStage, string> = {
   checking: "checking",
@@ -72,6 +85,7 @@ const LOCAL_STAGE_KEYS: Record<LocalStage, string> = {
   extracting: "extracting",
   initializing: "initializing",
   starting: "starting",
+  provisioning: "provisioning",
   health: "health",
   ready: "ready",
   failed: "failed",
@@ -94,53 +108,81 @@ function LocalProvisioningScreen({ onBack, onComplete }: { onBack: () => void; o
     let cancelled = false;
     let eventUnlisten: (() => void) | null = null;
 
+    const engine = getLocalEngine();
+
+    const runProot = async () => {
+      const ti = (window as any).__TAURI_INTERNALS__;
+      if (ti?.transformCallback) {
+        try {
+          const handlerId = ti.transformCallback((event: { payload: { stage: string; percent: number } }) => {
+            if (cancelled) return;
+            const s = event.payload.stage?.toLowerCase() as LocalStage;
+            if (s && LOCAL_STAGE_KEYS[s]) { setStage(s); setProgress(event.payload.percent ?? 0); }
+          });
+          const unlistenId = await ti.invoke("plugin:event|listen", {
+            event: "proot://setup-progress",
+            target: { kind: "Any" },
+            handler: handlerId,
+          });
+          eventUnlisten = () => { try { ti.invoke("plugin:event|unlisten", { event: unlistenId }); } catch {} };
+        } catch {}
+      }
+
+      setStage("checking");
+      const status = await invoke("plugin:proot|proot_setup_status");
+      if (status?.complete !== true) {
+        setStage("downloading"); setProgress(0);
+        await invoke("plugin:proot|proot_setup_start");
+      }
+      if (cancelled) return;
+
+      setStage("starting"); setProgress(0);
+      await invoke("plugin:proot|proot_start");
+
+      setStage("health"); setProgress(0);
+      for (let i = 0; i < 60 && !cancelled; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        try {
+          const healthList = await invoke("plugin:proot|proot_health") as Array<{ name: string; healthy: boolean }>;
+          const coreServices = healthList.filter((s) => ["sovereign-shield", "file-api", "agent-bridge"].includes(s.name));
+          const allHealthy = coreServices.length > 0 && coreServices.every((s: { healthy: boolean }) => s.healthy);
+          setProgress(Math.min(Math.round(((i + 1) / 60) * 100), allHealthy ? 100 : 95));
+          if (allHealthy) break;
+        } catch {}
+      }
+    };
+
+    const runLima = async () => {
+      setStage("checking");
+      const st = await invoke("lima_status") as { installed: boolean; vmState: string; templateExists: boolean; provisioned: boolean };
+      if (!st.installed) throw new Error("Lima is not installed. Install with: brew install lima");
+      if (!st.templateExists) throw new Error("Lima template not found. Run the ellul installer first.");
+
+      if (st.vmState !== "running" || !st.provisioned) {
+        setStage("provisioning"); setProgress(0);
+        await invoke("lima_setup");
+        await invoke("plugin:shield|shield_reload_http");
+      }
+      if (cancelled) return;
+
+      setStage("health"); setProgress(0);
+      let allHealthy = false;
+      for (let i = 0; i < 90 && !cancelled; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        try {
+          const healthList = await invoke("lima_health") as Array<{ name: string; healthy: boolean }>;
+          allHealthy = healthList.length > 0 && healthList.every((s: { healthy: boolean }) => s.healthy);
+          setProgress(Math.min(Math.round(((i + 1) / 90) * 100), allHealthy ? 100 : 95));
+          if (allHealthy) break;
+        } catch {}
+      }
+      if (!allHealthy) throw new Error("Services did not become healthy within timeout");
+    };
+
     const run = async () => {
       try {
-        // Listen for setup-progress events from the Kotlin plugin
-        const ti = (window as any).__TAURI_INTERNALS__;
-        if (ti?.transformCallback) {
-          try {
-            const handlerId = ti.transformCallback((event: { payload: { stage: string; percent: number } }) => {
-              if (cancelled) return;
-              const s = event.payload.stage?.toLowerCase() as LocalStage;
-              if (s && LOCAL_STAGE_KEYS[s]) { setStage(s); setProgress(event.payload.percent ?? 0); }
-            });
-            const unlistenId = await ti.invoke("plugin:event|listen", {
-              event: "proot://setup-progress",
-              target: { kind: "Any" },
-              handler: handlerId,
-            });
-            eventUnlisten = () => { try { ti.invoke("plugin:event|unlisten", { event: unlistenId }); } catch {} };
-          } catch {}
-        }
-
-        // Check if already set up
-        setStage("checking");
-        const status = await invoke("plugin:proot|proot_setup_status");
-        const isComplete = status?.complete === true;
-
-        if (!isComplete) {
-          setStage("downloading"); setProgress(0);
-          await invoke("plugin:proot|proot_setup_start");
-        }
-
-        if (cancelled) return;
-
-        // Start workspace
-        setStage("starting"); setProgress(0);
-        await invoke("plugin:proot|proot_start");
-
-        // Poll health until services are ready
-        setStage("health"); setProgress(0);
-        for (let i = 0; i < 60 && !cancelled; i++) {
-          await new Promise((r) => setTimeout(r, 2000));
-          try {
-            const healthList = await invoke("plugin:proot|proot_health") as Array<{ name: string; healthy: boolean }>;
-            const allHealthy = healthList.length > 0 && healthList.every((s: { healthy: boolean }) => s.healthy);
-            setProgress(Math.min(Math.round(((i + 1) / 60) * 100), allHealthy ? 100 : 95));
-            if (allHealthy) break;
-          } catch {}
-        }
+        if (engine === "lima") await runLima();
+        else await runProot();
 
         if (cancelled) return;
 
@@ -156,7 +198,7 @@ function LocalProvisioningScreen({ onBack, onComplete }: { onBack: () => void; o
     };
 
     run();
-    return () => { cancelled = true; eventUnlisten?.(); };
+    return () => { cancelled = true; startedRef.current = false; eventUnlisten?.(); };
   }, []);
 
   const handleRetry = () => {
@@ -175,7 +217,7 @@ function LocalProvisioningScreen({ onBack, onComplete }: { onBack: () => void; o
     try { return t(key as any); } catch { return stage; }
   }, [stage, t]);
 
-  const showProgress = stage === "downloading" || stage === "extracting" || stage === "health";
+  const showProgress = stage === "downloading" || stage === "extracting" || stage === "provisioning" || stage === "health";
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-10 bg-background/95 backdrop-blur-sm p-4">
@@ -393,7 +435,7 @@ function TauriSetupScreen({ onLocalReady }: { onLocalReady: () => void }) {
               </div>
               <div>
                 <div className="font-medium text-cream group-hover:text-sodium transition-colors">Free &mdash; On Device</div>
-                <div className="text-sm text-cream/50 mt-0.5">Run a full dev environment locally on your phone. No account needed.</div>
+                <div className="text-sm text-cream/50 mt-0.5">Run a full dev environment locally on your device. No account needed.</div>
               </div>
             </div>
           </button>
@@ -527,6 +569,24 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       return;
     }
     const checkSession = async () => {
+      const isBrowserLocal =
+        !isTauriApp() &&
+        typeof window !== "undefined" &&
+        window.location.hostname === "localhost";
+      if (isBrowserLocal) {
+        try {
+          const r = await fetch("http://localhost/health", { credentials: "include" });
+          if (r.ok) {
+            setIsLocalMode(true);
+            setSession({
+              user: { id: "local", name: "Local User", email: "local@localhost", emailVerified: true, image: null, createdAt: new Date(), updatedAt: new Date() },
+              session: { id: "local", userId: "local", token: "local", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date(), ipAddress: "127.0.0.1", userAgent: "" },
+            });
+            setIsAuthLoading(false);
+            return;
+          }
+        } catch {}
+      }
       if (isTauriApp()) {
         const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
         let appConfig = (window as any).__ELLUL_APP_CONFIG__;
@@ -537,14 +597,20 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           } catch {}
         }
         if (appConfig?.mode === "local") {
-          let prootRunning = false;
+          let localRunning = false;
+          const engine = getLocalEngine();
           if (invoke) {
             try {
-              const st = await invoke("plugin:proot|proot_status") as { running?: boolean };
-              prootRunning = st?.running === true;
+              if (engine === "lima") {
+                const st = await invoke("lima_status") as { vmState: string; provisioned: boolean };
+                localRunning = st?.vmState === "running" && st?.provisioned === true;
+              } else {
+                const st = await invoke("plugin:proot|proot_status") as { running?: boolean };
+                localRunning = st?.running === true;
+              }
             } catch {}
           }
-          if (prootRunning) {
+          if (localRunning) {
             setIsLocalMode(true);
             setSession({
               user: { id: "local", name: "Local User", email: "local@localhost", emailVerified: true, image: null, createdAt: new Date(), updatedAt: new Date() },
@@ -658,22 +724,45 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     if (firstId) updateActiveServer(firstId);
   }, [allServers, activeServerId, updateActiveServer]);
 
-  // ── Local proot health polling ──
+  // ── Local health polling ──
 
   const [localHealth, setLocalHealth] = useState<Array<{ name: string; healthy: boolean }> | null>(null);
 
   useEffect(() => {
     if (!isLocalMode) return;
-    const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
-    if (!invoke) return;
     let cancelled = false;
-    const poll = () => {
-      invoke("plugin:proot|proot_health")
-        .then((h: Array<{ name: string; healthy: boolean }>) => { if (!cancelled) setLocalHealth(h); })
-        .catch(() => {});
+    const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+    if (invoke) {
+      const engine = getLocalEngine();
+      const cmd = engine === "lima" ? "lima_health" : "plugin:proot|proot_health";
+      const poll = () => {
+        invoke(cmd)
+          .then((h: Array<{ name: string; healthy: boolean }>) => { if (!cancelled) setLocalHealth(h); })
+          .catch(() => {});
+      };
+      poll();
+      const interval = setInterval(poll, 10_000);
+      return () => { cancelled = true; clearInterval(interval); };
+    }
+    const pollBrowser = async () => {
+      try {
+        const r = await fetch("http://localhost/health", { credentials: "include", signal: AbortSignal.timeout(3000) });
+        const healthy = r.ok;
+        if (!cancelled) setLocalHealth([
+          { name: "sovereign-shield", healthy },
+          { name: "file-api", healthy },
+          { name: "agent-bridge", healthy },
+        ]);
+      } catch {
+        if (!cancelled) setLocalHealth([
+          { name: "sovereign-shield", healthy: false },
+          { name: "file-api", healthy: false },
+          { name: "agent-bridge", healthy: false },
+        ]);
+      }
     };
-    poll();
-    const interval = setInterval(poll, 10_000);
+    pollBrowser();
+    const interval = setInterval(pollBrowser, 10_000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [isLocalMode]);
 
@@ -698,6 +787,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     effectiveServerStatus,
     mutations.wakeServerMutation,
     mutations.triggerRapidPoll,
+    isLocalMode,
   );
 
   // ── Desktop integration ──
@@ -912,14 +1002,37 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   );
 }
 
+function TauriGate({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  if (!mounted) return <LoadingScreen message="Loading..." />;
+
+  if (isTauriApp()) {
+    const cfg = (window as any).__ELLUL_APP_CONFIG__;
+    if (!cfg || (cfg.mode !== "cloud" && cfg.mode !== "local")) {
+      return (
+        <TauriSetupScreen
+          onLocalReady={() => window.location.reload()}
+        />
+      );
+    }
+  }
+
+  return <>{children}</>;
+}
+
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={<LoadingScreen message="Loading dashboard..." />}>
-      <DashboardLayoutContent>{children}</DashboardLayoutContent>
-    </Suspense>
+    <TauriGate>
+      <Suspense fallback={<LoadingScreen message="Loading dashboard..." />}>
+        <DashboardLayoutContent>{children}</DashboardLayoutContent>
+      </Suspense>
+    </TauriGate>
   );
 }

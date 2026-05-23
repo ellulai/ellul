@@ -4,6 +4,9 @@ interface EllulConfig {
   platformZone: string;
   appZone: string;
   consoleOrigin: string;
+  wsOrigin?: string;
+  codeWsOrigin?: string;
+  codeWsPath?: string;
 }
 
 interface Window {

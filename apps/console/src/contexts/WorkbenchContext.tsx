@@ -332,19 +332,20 @@ export function WorkbenchProvider({ children, initialSidebarOpen = false }: Work
     (mode: "base" | "preview" | "deploy", project?: string | null) => {
       const client = contextModeClientRef.current;
       if (!client || !project) return;
-      const writeId = (contextModeWriteIdRef.current[project] ?? 0) + 1;
-      contextModeWriteIdRef.current[project] = writeId;
-      setProjectContextModes((prev) => ({ ...prev, [project]: mode }));
-      client.setContextMode(project, mode).catch((err) => {
+      const sandboxId = project.includes("/") ? project.split("/")[0] : project;
+      const writeId = (contextModeWriteIdRef.current[sandboxId] ?? 0) + 1;
+      contextModeWriteIdRef.current[sandboxId] = writeId;
+      setProjectContextModes((prev) => ({ ...prev, [sandboxId]: mode }));
+      client.setContextMode(sandboxId, mode).catch((err) => {
         // Latest-wins: a later write started or completed; its outcome —
         // not ours — represents the user's current intent.
-        if (contextModeWriteIdRef.current[project] !== writeId) return;
+        if (contextModeWriteIdRef.current[sandboxId] !== writeId) return;
         if (signalAuthIfNeeded(err)) return;
         console.error("[Workbench] setContextMode failed", err);
-        client.getContextMode(project)
+        client.getContextMode(sandboxId)
           .then(({ mode: actual }) => {
-            if (contextModeWriteIdRef.current[project] !== writeId) return;
-            setProjectContextModes((prev) => ({ ...prev, [project]: actual }));
+            if (contextModeWriteIdRef.current[sandboxId] !== writeId) return;
+            setProjectContextModes((prev) => ({ ...prev, [sandboxId]: actual }));
           })
           .catch((readErr) => {
             signalAuthIfNeeded(readErr);
@@ -357,9 +358,10 @@ export function WorkbenchProvider({ children, initialSidebarOpen = false }: Work
   const queryContextMode = useCallback((project?: string | null) => {
     const client = contextModeClientRef.current;
     if (!client || !project) return;
-    client.getContextMode(project)
+    const sandboxId = project.includes("/") ? project.split("/")[0] : project;
+    client.getContextMode(sandboxId)
       .then(({ mode }) =>
-        setProjectContextModes((prev) => ({ ...prev, [project]: mode })),
+        setProjectContextModes((prev) => ({ ...prev, [sandboxId]: mode })),
       )
       .catch((err) => {
         if (signalAuthIfNeeded(err)) return;

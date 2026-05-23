@@ -18,6 +18,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useVpsBridge } from "@/lib/vps-bridge";
+import { getVpsApiUrl } from "@/lib/domains";
 
 interface AuditLogViewerProps {
   serverDomain: string;
@@ -124,7 +125,7 @@ function AuditLogBridge({ serverDomain }: { serverDomain: string }) {
 // ── Direct fetch (standard tier) ──
 
 function AuditLogDirect({ serverDomain }: { serverDomain: string }) {
-  const vpsUrl = `https://${serverDomain}`;
+  const vpsUrl = getVpsApiUrl(serverDomain);
 
   const logsQuery = useQuery<{ logs: AuditLogEntry[] }>({
     queryKey: ["audit-log", serverDomain],

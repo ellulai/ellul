@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useRealtime, useRealtimeSubscribe, type RealtimeMessage } from "@/providers/realtime-provider";
 import { useVpsBridge } from "@/lib/vps-bridge";
+import { getVpsApiUrl } from "@/lib/domains";
 
 // ── Types ──
 
@@ -436,7 +437,7 @@ export function ObservabilityClaw({ serverDomain, securityTier }: {
   const [restartResult, setRestartResult] = useState<{ success: boolean; message: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const vpsUrl = `https://${serverDomain}`;
+  const vpsUrl = getVpsApiUrl(serverDomain);
   const useBridge = securityTier !== "standard";
 
   // ── Fetch ZeroClaw gateway health ──

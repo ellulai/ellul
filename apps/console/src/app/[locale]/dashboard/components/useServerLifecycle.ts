@@ -15,10 +15,11 @@ export function useServerLifecycle(
   effectiveServerStatus: ServerStatus | undefined,
   wakeServerMutation: { isPending: boolean; error: Error | null; mutate: () => void },
   triggerRapidPoll: () => void,
+  isLocal = false,
 ) {
   const queryClient = useQueryClient();
   const t = useTranslations("console");
-  const { getPrfKey, unlockVolume, isUnlocking } = useEncryptionPasskey();
+  const { getPrfKey, unlockVolume, isUnlocking } = useEncryptionPasskey({ enabled: !isLocal });
   const isVisible = useTabVisibility();
   const prfKeyRef = useRef<string | null>(null);
   const [unlockError, setUnlockError] = useState<string | null>(null);

@@ -44,6 +44,7 @@ import {
 import { resolveAttachmentPath } from "../../shared/attachmentStore";
 import { ServerConfig } from "../../shared/config";
 import { ServerSettingsService } from "../../shared/serverSettings";
+import { detectVersionSignal, emitVersionSignal } from "../../shared/adapterVersionDetector";
 import {
   CodexResumeCursorSchema,
   CodexSessionRuntimeThreadIdMissingError,
@@ -1249,14 +1250,19 @@ function mapToRuntimeEvents(
 
   if (event.method === "process/stderr") {
     const message = event.message ?? "Codex process stderr";
+    const vs = detectVersionSignal("codex", message, undefined);
+    if (vs) emitVersionSignal(vs).catch(() => {});
     const isFatal = isFatalCodexProcessStderrMessage(message);
+    const displayMessage = vs
+      ? "Codex needs an update — your server is updating automatically. Please retry in ~30 seconds."
+      : message;
     return [
       isFatal
         ? {
             type: "runtime.error",
             ...runtimeEventBase(event, canonicalThreadId),
             payload: {
-              message,
+              message: displayMessage,
               class: "provider_error" as const,
               ...(event.payload !== undefined ? { detail: event.payload } : {}),
             },

@@ -54,6 +54,7 @@ import {
   type ProviderAdapterError,
 } from "../errors";
 import { acpPermissionOutcome, mapAcpToAdapterError } from "../cursor/acp/AcpAdapterSupport";
+import { detectVersionSignal, emitVersionSignal } from "../../shared/adapterVersionDetector";
 import { type AcpSessionHandle } from "../cursor/acp/AcpProjectRuntime";
 import { GrokAcpServerPool, type GrokCrashCallback } from "./server-pool";
 import {
@@ -332,6 +333,14 @@ function makeGrokAdapter(options?: GrokAdapterLiveOptions) {
           yield* Fiber.interrupt(ctx.notificationFiber);
         }
         sessions.delete(ctx.threadId);
+        let displayReason = reason;
+        if (typeof reason === "string") {
+          const vs = detectVersionSignal("grok", reason, undefined);
+          if (vs) {
+            emitVersionSignal(vs).catch(() => {});
+            displayReason = "Grok needs an update — your server is updating automatically. Please retry in ~30 seconds.";
+          }
+        }
         yield* offerRuntimeEvent({
           type: "runtime.error",
           ...(yield* makeEventStamp()),
@@ -339,7 +348,7 @@ function makeGrokAdapter(options?: GrokAdapterLiveOptions) {
           threadId: ctx.threadId,
           turnId: ctx.activeTurnId,
           payload: {
-            message: reason,
+            message: displayReason,
             class: "transport_error",
           },
         }).pipe(Effect.ignore);

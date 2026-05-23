@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { useVpsBridge } from "@/lib/vps-bridge";
+import { getVpsApiUrl } from "@/lib/domains";
 import {
   parseSandboxId,
   sandboxIdFromPath,
@@ -123,7 +124,7 @@ function CrossProjectDirect({
   currentSandboxId: SandboxId;
   otherSandboxIds: SandboxId[];
 }) {
-  const vpsUrl = `https://${serverDomain}`;
+  const vpsUrl = getVpsApiUrl(serverDomain);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery<{ rules: AccessRule[] }>({

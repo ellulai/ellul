@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "use-intl";
 import { ChevronDown, ChevronRight, ChevronLeft, FileUp, Loader2, MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
+import { Select, SelectTrigger, SelectValue, SelectPopup, SelectItem } from "./ui/select";
 import { ClaudeLogo, GrokLogo, OpenAILogo, CursorLogo, ZeroClawLogo, OpenCodeLogo } from "@shared/ui/ai-logos";
 import { cn, randomUUID } from "@shared/utils";
 import { useAgentAuth } from "./hooks/useAgentAuth";
@@ -13,6 +14,7 @@ import { useProviderStatuses } from "./hooks/useProviderStatuses";
 import { ActionsDropdown } from "./components/ActionsDropdown";
 import type { ResolvedAction } from "@ellul.ai/types";
 import { listenForMessages, sendToParent } from "@shared/postMessage";
+import { getBridgeWsUrl } from "@shared/security";
 import { useLocale } from "@shared/i18n/useLocale";
 import { applyTheme } from "@shared/theme";
 import type {
@@ -134,7 +136,7 @@ declare const SESSION_POP: {
 } | undefined;
 
 // Thread picker sessions — same shape as the console ThreadPicker. Decorated
-const SESSION_DISPLAY = [
+const _ALL_SESSION_DISPLAY = [
   { id: "claw", label: "ZeroClaw", color: "#2563EB", icon: ZeroClawLogo },
   { id: "opencode", label: "OpenCode", color: "#B7B1B1", icon: OpenCodeLogo },
   { id: "claude", label: "Claude", color: "#DE7356", icon: ClaudeLogo },
@@ -143,10 +145,60 @@ const SESSION_DISPLAY = [
   { id: "grok", label: "Grok Build", color: "#FFFFFF", icon: GrokLogo },
 ] as const;
 
-// New-thread picker — subset of SESSION_DISPLAY, excludes retired providers.
+const _DISABLED = new Set(window.__ELLUL_CONFIG__?.disabledSessions ?? []);
+const _DISABLED_PROVIDERS = new Set(
+  [..._DISABLED].map((s) => providerForSession(s)).filter((p): p is ProviderKind => p !== null),
+);
+const SESSION_DISPLAY = _DISABLED.size > 0
+  ? _ALL_SESSION_DISPLAY.filter((s) => !_DISABLED.has(s.id))
+  : [..._ALL_SESSION_DISPLAY];
+
 const THREAD_SESSIONS = SESSION_DISPLAY;
 
-const SESSION_MAP = Object.fromEntries(SESSION_DISPLAY.map((s) => [s.id, s]));
+const SESSION_MAP = Object.fromEntries(_ALL_SESSION_DISPLAY.map((s) => [s.id, s]));
+
+function AdapterPicker({
+  value,
+  onChange,
+  size = "xs",
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  size?: "xs" | "sm";
+  className?: string;
+}) {
+  const handleChange = useCallback((v: string | null) => { if (v) onChange(v); }, [onChange]);
+  const session = SESSION_MAP[value];
+  const Icon = session?.icon;
+  return (
+    <Select value={value} onValueChange={handleChange}>
+      <SelectTrigger size={size} variant="ghost" className={className}>
+        {Icon && session ? (
+          <span className="flex items-center gap-1.5 truncate">
+            <Icon className={cn("shrink-0", size === "xs" ? "w-3 h-3" : "w-3.5 h-3.5")} style={{ color: session.color }} />
+            <span className="truncate text-xs font-medium" style={{ color: session.color }}>{session.label}</span>
+          </span>
+        ) : (
+          <SelectValue placeholder="Adapter" />
+        )}
+      </SelectTrigger>
+      <SelectPopup>
+        {THREAD_SESSIONS.map((s) => {
+          const SIcon = s.icon;
+          return (
+            <SelectItem key={s.id} value={s.id}>
+              <span className="flex items-center gap-2">
+                <SIcon className="w-3.5 h-3.5 shrink-0" style={{ color: s.color }} />
+                <span style={{ color: s.color }}>{s.label}</span>
+              </span>
+            </SelectItem>
+          );
+        })}
+      </SelectPopup>
+    </Select>
+  );
+}
 
 /** Format a timestamp as a relative time string ("5 minutes ago" /
  *  "5分前") for recent values, or as a locale-aware absolute date for
@@ -198,7 +250,8 @@ function ThreadItem({
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(thread.title || "");
 
-  const session = SESSION_MAP[thread.lastSession];
+  const effectiveSessionId = _DISABLED.has(thread.lastSession ?? "") ? SESSION_DISPLAY[0]?.id ?? "opencode" : thread.lastSession;
+  const session = SESSION_MAP[effectiveSessionId];
   const sColor = session?.color || "#94a3b8";
   const SIcon = session?.icon || ClaudeLogo;
 
@@ -397,7 +450,8 @@ export function App() {
 
   const restoreSessionFromThread = useCallback((thread: { lastSession?: string | null }) => {
     if (thread.lastSession) {
-      const s = thread.lastSession === "main" ? "opencode" : thread.lastSession;
+      let s = thread.lastSession === "main" ? "opencode" : thread.lastSession;
+      if (_DISABLED.has(s)) s = preferredSessionRef.current;
       setCurrentSession(s as SessionId);
     }
   }, []);
@@ -413,7 +467,7 @@ export function App() {
     return s?.desktopViewMode === 'focus' ? 'focus' : 'studio';
   });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [showSidebarNewMenu, setShowSidebarNewMenu] = useState(false);
+  const [selectedAdapter, setSelectedAdapter] = useState<string>(THREAD_SESSIONS.find((s) => s.id === "opencode")?.id ?? THREAD_SESSIONS[0]?.id ?? "opencode");
   const [threadScopeMode, setThreadScopeMode] = useState<"scoped" | "all">("all");
   const threadScopeModeRef = useRef<"scoped" | "all">("all");
   const activeThreadIdRef = useRef<string | null>(null);
@@ -473,9 +527,15 @@ export function App() {
   const RECONNECT_MAX_DELAY_MS = 30_000;
 
   const {
-    providers: liveProviderStatuses,
+    providers: _rawProviderStatuses,
     refresh: refreshProviderStatuses,
   } = useProviderStatuses(wsRpcRef, wsEpoch);
+  const liveProviderStatuses = useMemo(
+    () => _DISABLED_PROVIDERS.size > 0
+      ? _rawProviderStatuses.filter((p) => !_DISABLED_PROVIDERS.has(p.provider))
+      : _rawProviderStatuses,
+    [_rawProviderStatuses],
+  );
   const [isRefreshingProvider, setIsRefreshingProvider] = useState(false);
   const [authModalProvider, setAuthModalProvider] = useState<ProviderKind | null>(null);
   const [verifyingAuthProvider, setVerifyingAuthProvider] = useState<ProviderKind | null>(null);
@@ -609,7 +669,7 @@ export function App() {
     }
     setAuthError(null);
 
-    const wsUrl = `wss://${location.host}/ws?_agent_token=${encodeURIComponent(result.token)}`;
+    const wsUrl = getBridgeWsUrl(result.token);
 
     try {
       const client = createWsRpcClient({ url: wsUrl });
@@ -852,7 +912,6 @@ export function App() {
           break;
         }
         case "set_session":
-          // Do NOT send switch_session or setCurrentSession here: the active thread's
           if (msg.session) {
             preferredSessionRef.current = msg.session as SessionId;
           }
@@ -1799,24 +1858,16 @@ export function App() {
                 <h2 className="text-base font-semibold text-cream">{tChat("threads.heading")}</h2>
                 <span className="text-xs text-cream/45">{threads.length}</span>
               </div>
-              {/* Session buttons for quick thread creation */}
+              {/* Adapter picker + new thread */}
               <div className="flex items-center gap-2 w-full">
-                {THREAD_SESSIONS.map((session) => {
-                  const Icon = session.icon;
-                  return (
-                    <button
-                      key={session.id}
-                      onClick={() => handleCreateThread(session.id)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-cream/10 hover:bg-cream/10 transition-colors"
-                      title={tChat("thread.newThreadOf", { provider: session.label })}
-                    >
-                      <Icon className="w-4 h-4 hidden sm:block" style={{ color: session.color }} />
-                      <span className="text-xs font-medium" style={{ color: session.color }}>
-                        {session.label}
-                      </span>
-                    </button>
-                  );
-                })}
+                <AdapterPicker value={selectedAdapter} onChange={setSelectedAdapter} size="sm" className="flex-1 min-w-0" />
+                <button
+                  onClick={() => handleCreateThread(selectedAdapter)}
+                  className="shrink-0 p-2 rounded-lg border border-cream/10 hover:bg-cream/10 transition-colors text-cream/60 hover:text-cream"
+                  title={tChat("threads.newThread")}
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
@@ -1915,36 +1966,15 @@ export function App() {
                   <span className="text-sm font-medium text-cream">{tChat("threads.heading")}</span>
                   <span className="text-[10px] text-cream/45">{threads.length}</span>
                 </div>
-                <div className="flex items-center gap-0.5">
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowSidebarNewMenu(!showSidebarNewMenu)}
-                      className="p-1.5 rounded-lg hover:bg-cream/10 text-cream/60 hover:text-cream transition-colors"
-                      title={tChat("threads.newThread")}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                    {showSidebarNewMenu && (
-                      <>
-                        <div className="fixed inset-0 z-10" onClick={() => setShowSidebarNewMenu(false)} />
-                        <div className="absolute left-0 top-full mt-1 z-20 bg-card border border-cream/10 rounded-lg shadow-lg py-1 min-w-[130px]">
-                          {THREAD_SESSIONS.map((s) => {
-                            const Icon = s.icon;
-                            return (
-                              <button
-                                key={s.id}
-                                onClick={() => { handleCreateThread(s.id); setShowSidebarNewMenu(false); }}
-                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-cream/10 transition-colors"
-                              >
-                                <Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
-                                <span className="text-cream/75">{s.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                <div className="flex items-center gap-1">
+                  <AdapterPicker value={selectedAdapter} onChange={setSelectedAdapter} size="xs" />
+                  <button
+                    onClick={() => handleCreateThread(selectedAdapter)}
+                    className="p-1.5 rounded-lg hover:bg-cream/10 text-cream/60 hover:text-cream transition-colors"
+                    title={tChat("threads.newThread")}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={() => setSidebarCollapsed(true)}
                     className="p-1.5 rounded-lg hover:bg-cream/10 text-cream/60 hover:text-cream transition-colors"

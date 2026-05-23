@@ -36,6 +36,7 @@ import { getRuntimeTierLabel, isDedicatedRuntime } from "@/lib/tier-utils";
 import { TierSelector } from "../TierSelector";
 import { VpsUpdateBanner } from "../VpsUpdateBanner";
 import { AgentUpdateBanner } from "../AgentUpdateBanner";
+import { AdapterUpdateBanner } from "../AdapterUpdateBanner";
 import { BuildAttestationBadge } from "../BuildAttestationBadge";
 import type { ServerStatus } from "@/contexts/DashboardContext";
 import { isLocalServer } from "@/lib/domains";
@@ -77,6 +78,7 @@ interface TabHomeProps {
   // Pre-rebuild snapshot expiry (used by the rebuild-rollback dialog). Independent of agent manifest.
   snapshotExpiresAt?: string | null;
   agentUpdate?: ServerStatus["agentUpdate"];
+  adapterUpdates?: ServerStatus["adapterUpdates"];
   onUpdateServer?: () => void;
   isUpdating?: boolean;
   onSetAgentUpdateMode?: (mode: "auto" | "manual") => void;
@@ -98,6 +100,7 @@ export function TabHome({
   isRollingBack,
   snapshotExpiresAt,
   agentUpdate,
+  adapterUpdates,
   onUpdateServer,
   isUpdating,
   onSetAgentUpdateMode,
@@ -173,6 +176,11 @@ export function TabHome({
             isSettingMode={isSettingAgentUpdateMode}
             isOperationActive={isOperationActive}
           />
+        )}
+
+        {/* Adapter version updates (CLI tool auto-update banners) */}
+        {showServer && adapterUpdates && Object.keys(adapterUpdates).length > 0 && (
+          <AdapterUpdateBanner adapterUpdates={adapterUpdates} />
         )}
 
         {/* ─── General (Server info) ─── */}
@@ -299,7 +307,7 @@ export function TabHome({
           </section>
         )}
 
-        {/* ─── Billing (Plan & Tier) — hidden on local proot ─── */}
+        {/* ─── Billing (Plan & Tier) — hidden in local mode ─── */}
         {showBilling && !isLocal && (
           <section id="settings-billing" className="rounded-xl border border-cream/[0.06] bg-cream/[0.02] overflow-hidden">
             <div className="px-4 py-3 border-b border-cream/[0.04]">
@@ -361,14 +369,14 @@ export function TabHome({
           </section>
         )}
 
-        {/* ─── Environment Lock — hidden on local proot ─── */}
+        {/* ─── Environment Lock — hidden in local mode ─── */}
         {showServer && !isLocal && (
           <div id="settings-security">
             <WebLockCard serverId={server.id} serverDomain={serverDomain} serverIp={server.ipAddress} onUpgrade={onUpgrade} volumeSecurityMode={server.volumeSecurityMode} product={server.product} />
           </div>
         )}
 
-        {/* ─── Tunnel (local proot Android only — hidden for cloud VPS) ─── */}
+        {/* ─── Tunnel (Android only — hidden for cloud VPS) ─── */}
         {showServer && !server.domain && (
           <div id="settings-tunnel">
             <TunnelCard />
@@ -397,7 +405,7 @@ export function TabHome({
           </section>
         )}
 
-        {/* ─── Danger Zone — hidden on local proot (managed via app lifecycle) ─── */}
+        {/* ─── Danger Zone — hidden in local mode ─── */}
         {showServer && !isLocal && <section id="settings-danger" className="rounded-xl border border-terra/20 bg-terra/[0.03] overflow-hidden">
           <div className="px-4 py-3 border-b border-terra/10">
             <h3 className="text-sm font-medium text-terra">{t("dangerZone")}</h3>

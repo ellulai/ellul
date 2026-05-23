@@ -37,6 +37,7 @@ export interface UseWorkspaceConfigOptions {
   sendContextMode: (mode: string, app: string | null) => void;
   selectedApp: string | null;
   capabilities?: string[];
+  isLocal?: boolean;
 }
 
 // ─── Return type ──────────────────────────────────────────────────────────
@@ -94,6 +95,7 @@ export function useWorkspaceConfig(options: UseWorkspaceConfigOptions): Workspac
     sendContextMode,
     selectedApp,
     capabilities,
+    isLocal,
   } = options;
 
   // 1. Static registry - created once
@@ -103,9 +105,8 @@ export function useWorkspaceConfig(options: UseWorkspaceConfigOptions): Workspac
   const [localConfig, setLocalConfig] = useState<WorkspaceConfigV1 | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch per-sandbox config from API when serverId or sandboxId changes
   useEffect(() => {
-    if (!sandboxId) {
+    if (!sandboxId || isLocal) {
       setLocalConfig(null);
       return;
     }
@@ -137,7 +138,7 @@ export function useWorkspaceConfig(options: UseWorkspaceConfigOptions): Workspac
     return () => {
       cancelled = true;
     };
-  }, [serverId, sandboxId]);
+  }, [serverId, sandboxId, isLocal]);
 
   // 3. Resolve workspace state (pure, deterministic)
   const resolveInput: ResolveInput = useMemo(
@@ -188,7 +189,7 @@ export function useWorkspaceConfig(options: UseWorkspaceConfigOptions): Workspac
   // Debounced save function - persists to per-sandbox endpoint
   const scheduleSave = useCallback(
     (config: WorkspaceConfigV1) => {
-      if (!sandboxId) return;
+      if (!sandboxId || isLocal) return;
       if (saveTimerRef.current !== null) {
         clearTimeout(saveTimerRef.current);
       }

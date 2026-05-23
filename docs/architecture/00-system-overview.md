@@ -22,6 +22,14 @@ The single-tenant Linux machine. Runs the customer's code, AI agent, and all enf
 
 Critical property: **VPS does not trust API responses.** Heartbeat responses are discarded; commands flow as separately-signed envelopes through a queue, validated locally with ML-DSA-65.
 
+### 3b. Sandbox plane (Daytona orchestration layer)
+
+An alternative runtime: Kata micro-VM sandboxes on dedicated bare-metal. Same service stack as VPS (Caddy, Shield, file-api, agent-bridge, enforcer), but provisioned in <5s via Daytona SDK instead of 2-5 min via cloud-init.
+
+The sandbox plane adds one new layer: **compute hosts** (dedicated bare-metal) running a route-manager daemon that does L4 SNI routing to individual sandboxes. Host never sees plaintext — raw TCP passthrough.
+
+See [../daytona/00-overview.md](../daytona/00-overview.md).
+
 ## How a request flows
 
 A user types `https://abc12345-srv.ellul.ai/api/file?path=README.md` in their browser:

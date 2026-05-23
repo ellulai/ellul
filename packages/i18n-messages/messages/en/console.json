@@ -493,6 +493,7 @@
         "extracting": "Extracting environment...",
         "initializing": "Initializing services...",
         "starting": "Starting workspace...",
+        "provisioning": "Provisioning environment...",
         "health": "Waiting for services...",
         "ready": "Ready",
         "failed": "Setup failed",

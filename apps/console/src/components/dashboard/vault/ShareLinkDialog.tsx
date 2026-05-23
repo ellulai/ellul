@@ -13,6 +13,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { getVpsApiUrl } from "@/lib/domains";
 
 interface ShareLinkDialogProps {
   open: boolean;
@@ -53,7 +54,7 @@ export function ShareLinkDialog({
   const createLink = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`https://${serverDomain}/_auth/vault/share-links`, {
+      const res = await fetch(`${getVpsApiUrl(serverDomain)}/_auth/vault/share-links`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -74,7 +75,7 @@ export function ShareLinkDialog({
       const token = data.link?.token;
       if (token) {
         setCreatedLink(
-          `https://${serverDomain}/_auth/vault/share-links/${token}?project=${encodeURIComponent(project)}`,
+          `${getVpsApiUrl(serverDomain)}/_auth/vault/share-links/${token}?project=${encodeURIComponent(project)}`,
         );
       }
     } catch (err) {

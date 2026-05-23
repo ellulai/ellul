@@ -4,7 +4,8 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Terminal, X, Minus } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, isTauriApp } from "@/lib/utils";
+import { getIframeBaseUrl } from "@/lib/domains";
 
 const MIN_HEIGHT = 180;
 const MAX_HEIGHT_RATIO = 0.75;
@@ -68,7 +69,7 @@ export function TerminalDrawer({ serverDomain, open, onToggle }: TerminalDrawerP
 
   if (!open) return null;
 
-  const termUrl = `https://${serverDomain}/_term/main/`;
+  const termUrl = `${getIframeBaseUrl(serverDomain, isTauriApp())}/_term/main/`;
 
   return (
     <div

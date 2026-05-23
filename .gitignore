@@ -15,6 +15,9 @@ out
 # on every publish. Never committed.
 artifacts/
 
+# Daytona image build context (transient, created by build.sh)
+infrastructure/daytona/.build-context/
+
 # Claude Code runtime state
 .claude/
 

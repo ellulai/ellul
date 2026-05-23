@@ -57,6 +57,7 @@ export default function DashboardOverviewPage() {
       isRollingBack={isRollingBack}
       snapshotExpiresAt={snapshotExpiresAt}
       agentUpdate={agentUpdate}
+      adapterUpdates={serverStatus.adapterUpdates}
       onUpdateServer={onUpdateServer}
       isUpdating={isUpdating}
       onSetAgentUpdateMode={onSetAgentUpdateMode}

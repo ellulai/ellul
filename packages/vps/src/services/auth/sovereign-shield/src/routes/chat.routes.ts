@@ -20,7 +20,7 @@ import type { Hono } from 'hono';
 import chatHtml from '@ellul.ai/vps-ui/chat';
 import { ALL_LOCALES, DEFAULT_LOCALE } from '@ellul.ai/i18n-consts/locales';
 import { readSettings, applyTierOverrides } from '../application/platform/Settings';
-import { CONSOLE_ORIGIN } from '../config';
+import { CONSOLE_ORIGIN, IS_LOCALHOST } from '../config';
 
 /**
  * Locales the VPS UI knows how to render — single source of truth in
@@ -150,7 +150,7 @@ export function registerChatRoutes(app: Hono): void {
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data:",
       "font-src 'self' data:",
-      "connect-src 'self' wss:",
+      `connect-src 'self' wss:${IS_LOCALHOST ? " ws:" : ""}`,
       `frame-ancestors 'self' ${CONSOLE_ORIGIN}`,
       "base-uri 'self'",
       "form-action 'none'",

@@ -68,15 +68,13 @@ if (!model || !mainDomain || !codeDomain || !devDomain) {
   process.exit(1);
 }
 
-const VALID_MODELS = ["proxied", "direct", "cloudflare", "gateway"];
+const VALID_MODELS = ["proxied", "direct", "cloudflare", "gateway", "localhost"];
 if (!VALID_MODELS.includes(model)) {
   process.stderr.write(`Invalid model: ${model}. Must be one of: ${VALID_MODELS.join(", ")}.\n`);
   process.exit(1);
 }
 
 const deploymentModel: VpsDeploymentModel = normalizeDeploymentModel(model);
-
-const platform = (args["platform"] || "linux") as "linux" | "macos";
 
 // Read origin tag from disk — written by enforcer on every heartbeat.
 // Missing on first boot (before enforcer runs); caddy-gen omits origin hostname.
@@ -93,7 +91,6 @@ const content = generateCaddyfileContent({
   appZone: readRequiredFileSync(APP_ZONE_FILE),
   consoleOrigin: readRequiredFileSync(CONSOLE_ORIGIN_FILE),
   customDomain: readOptionalFileSync(CUSTOM_DOMAIN_FILE),
-  platform,
   originTag,
 });
 

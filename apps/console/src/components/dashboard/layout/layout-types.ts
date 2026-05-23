@@ -221,6 +221,7 @@ export interface ServerSettingsModalProps {
   isRollingBack?: boolean;
   snapshotExpiresAt?: string | null;
   agentUpdate?: ServerStatus["agentUpdate"];
+  adapterUpdates?: ServerStatus["adapterUpdates"];
   onUpdateServer?: () => void;
   isUpdating?: boolean;
   onSetAgentUpdateMode?: (mode: "auto" | "manual") => void;

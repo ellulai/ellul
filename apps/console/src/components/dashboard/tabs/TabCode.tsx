@@ -5,9 +5,10 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { Spinner } from "@/components/ui/spinner";
 import { useUserLocale } from "@/lib/use-user-locale";
-import { getCodeDomain, isValidServerOrigin } from "@/lib/domains";
+import { getCodeDomain, getIframeBaseUrl, isValidServerOrigin } from "@/lib/domains";
 import { useCodeToken } from "@/contexts/CodeTokenContext";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { isTauriApp } from "@/lib/utils";
 import type { ApiApp } from "@/contexts/AppsListContext";
 
 type AppInfo = ApiApp;
@@ -57,6 +58,7 @@ export function TabCode({
   const t = useTranslations("console.tabEditor");
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const codeDomain = getCodeDomain(serverDomain);
+  const codeOrigin = getIframeBaseUrl(serverDomain, isTauriApp());
   const directory = selectedDirectory || app.directory;
   // Capture the user-pref locale at MOUNT only — runtime locale flips
   // propagate via postMessage (set_locale) so the iframe doesn't re-mount
@@ -71,7 +73,7 @@ export function TabCode({
 
   const sendToIframe = useCallback((msg: Record<string, unknown>) => {
     if (!iframeReady.current) return;
-    iframeRef.current?.contentWindow?.postMessage(msg, `https://${codeDomain}`);
+    iframeRef.current?.contentWindow?.postMessage(msg, codeOrigin);
   }, [codeDomain]);
 
   const isReady = !!token && !loading;
@@ -82,7 +84,7 @@ export function TabCode({
       try {
         iframeRef.current.contentWindow?.postMessage(
           { type: "auth_complete" },
-          `https://${codeDomain}`
+          codeOrigin
         );
       } catch { /* iframe not yet loaded on codeDomain — will get config on "ready" */ }
     }
@@ -210,7 +212,7 @@ export function TabCode({
       </div>
       <iframe
         ref={iframeRef}
-        src={`https://${codeDomain}/browser?app=${encodeURIComponent(directory)}&embedded=true&parentOrigin=${encodeURIComponent(window.location.origin)}&locale=${encodeURIComponent(initialLocaleRef.current)}`}
+        src={`${codeOrigin}/browser?app=${encodeURIComponent(directory)}&embedded=true&parentOrigin=${encodeURIComponent(window.location.origin)}&locale=${encodeURIComponent(initialLocaleRef.current)}`}
         className="w-full flex-1 border-0"
         allow="clipboard-read; clipboard-write"
         title={t("iframeTitle")}

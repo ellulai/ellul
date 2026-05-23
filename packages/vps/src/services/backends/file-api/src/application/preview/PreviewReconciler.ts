@@ -4,7 +4,6 @@
 // Preview reconciler — the push-based safety net.
 // technically still below the idle threshold. "Never get near
 
-import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -41,7 +40,7 @@ function isInstallOomBlocked(directory: string): boolean {
   }
 }
 
-import { listActive, stopUnit, escapeInstance } from './PreviewUnits';
+import { previewPlatform } from './PreviewPlatform';
 import {
   listTracked,
   lruOrder,
@@ -117,11 +116,7 @@ export async function reconcileOnce(log: ReconcilerLog): Promise<ReconcileReport
     const failed = listFailedPreviewUnits();
     for (const unit of failed) {
       try {
-        execSync(`sudo -n /usr/local/bin/ellul-preview-ctl reset-failed ${shEscape(unit.instance)}`, {
-          encoding: 'utf8',
-          timeout: 5000,
-          stdio: ['ignore', 'pipe', 'pipe'],
-        });
+        await previewPlatform.resetFailed(unit.instance);
         report.failedResetCount++;
         reconcilerMetrics.failedUnitsReset(1);
         log('info', 'reconciler: reset failed preview unit', {
@@ -142,7 +137,7 @@ export async function reconcileOnce(log: ReconcilerLog): Promise<ReconcileReport
   // ── 2. Observe activity on every active preview ────────────
   let active: string[] = [];
   try {
-    active = await listActive();
+    active = await previewPlatform.listActive();
     report.activeCount = active.length;
   } catch (err) {
     log('warn', 'reconciler: listActive failed — skipping observation', {
@@ -191,7 +186,7 @@ export async function reconcileOnce(log: ReconcilerLog): Promise<ReconcileReport
         lifecycleTransition({ directory: r.directory, next: 'stopping', force: true });
       } catch {}
       try {
-        await stopUnit(r.directory);
+        await previewPlatform.stopUnit(r.directory);
         recordStop(r.directory);
         try {
           lifecycleTransition({ directory: r.directory, next: 'cold', force: true });
@@ -242,7 +237,7 @@ export async function reconcileOnce(log: ReconcilerLog): Promise<ReconcileReport
         try {
           lifecycleTransition({ directory: victim.directory, next: 'stopping', force: true });
         } catch {}
-        await stopUnit(victim.directory, { mode: 'immediate' });
+        await previewPlatform.stopUnit(victim.directory, { mode: 'immediate' });
         recordStop(victim.directory);
         try {
           lifecycleTransition({ directory: victim.directory, next: 'cold', force: true });
@@ -400,30 +395,7 @@ interface FailedUnitSnapshot {
 }
 
 function listFailedPreviewUnits(): FailedUnitSnapshot[] {
-  // --plain, -t service, --state=failed keeps output terse. We include
-  let out: string;
-  try {
-    out = execSync(
-      'systemctl list-units --all --plain --no-legend --state=failed --type=service "ellul-preview@*"',
-      { encoding: 'utf8', timeout: 3000 },
-    );
-  } catch {
-    return [];
-  }
-  const units: FailedUnitSnapshot[] = [];
-  for (const line of out.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    // Format: UNIT LOAD ACTIVE SUB DESCRIPTION...
-    const parts = trimmed.split(/\s+/);
-    const unit = parts[0];
-    if (!unit || !unit.startsWith('ellul-preview@')) continue;
-    // Instance name between '@' and '.service'
-    const m = unit.match(/^ellul-preview@(.+?)\.service$/);
-    if (!m) continue;
-    units.push({ instance: m[1]!, result: parts[3] ?? 'failed' });
-  }
-  return units;
+  return previewPlatform.listFailedUnits();
 }
 
 function portFor(appDirectory: string): number | null {
@@ -465,14 +437,6 @@ function readMemoryPressure(): {
   }
 }
 
-// Tight shell-escape for instance names passed to preview-ctl.
-function shEscape(s: string): string {
-  // Instance strings are systemd-escaped already: [A-Za-z0-9._\\:@-]+
-  if (!/^[A-Za-z0-9._\\:@-]+$/.test(s)) {
-    throw new Error(`reconciler: refusing to pass unsafe instance to preview-ctl: ${s}`);
-  }
-  return `'${s}'`;
-}
 
 // Test helper.
 export function _resetReconcilerForTests(): void {
@@ -483,5 +447,3 @@ export function _resetReconcilerForTests(): void {
   backpressureStrikes.clear();
 }
 
-// Re-export for tests that want to drive manually.
-export { escapeInstance };

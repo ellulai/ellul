@@ -16,6 +16,8 @@ import type { PublicKeyCredentialCreationOptionsJSON, PublicKeyCredentialRequest
 import { MOCK_MODE, mockVpsBridgeResponses } from "@/lib/mock-data";
 import { onSessionStatus } from "@/lib/session-events";
 import { isTauriApp } from "@/lib/utils";
+import { isLocalDomain } from "@/lib/domains";
+import type { LocalFetchResult } from "@/lib/local-fetch";
 import { API_URL } from "@/lib/api";
 
 function isAndroidTauriApp(): boolean {
@@ -57,7 +59,7 @@ interface VpsBridgeProviderProps {
 
 export function VpsBridgeProvider(props: VpsBridgeProviderProps) {
   if (MOCK_MODE) return <MockVpsBridgeProvider>{props.children}</MockVpsBridgeProvider>;
-  if (props.isLocal) return <ProotBridgeProvider>{props.children}</ProotBridgeProvider>;
+  if (props.isLocal) return <LocalBridgeProvider>{props.children}</LocalBridgeProvider>;
   return <BridgeProvider hostname={props.hostname}>{props.children}</BridgeProvider>;
 }
 
@@ -68,7 +70,7 @@ async function tauriInvoke<T = unknown>(cmd: string, args?: Record<string, unkno
 }
 
 function isByosLocalhost(hostname: string): boolean {
-  return isTauriApp() && hostname.startsWith("localhost");
+  return isTauriApp() && isLocalDomain(hostname);
 }
 
 // ── Tier-aware native auth (shared by all Tauri platforms) ──
@@ -136,45 +138,103 @@ function MockVpsBridgeProvider({ children }: { children: ReactNode }) {
   return <VpsBridgeContext.Provider value={value}>{children}</VpsBridgeContext.Provider>;
 }
 
-// ── PRoot bridge provider ──
-// Local Android: all VPS requests go through proot_fetch → sovereign-shield dispatch.
-// Internal JWT auth is added by proot_fetch automatically.
+// ── Local bridge provider ──
+// BYOS / local mode: VPS requests go through Tauri IPC or direct HTTP to localhost.
 
-interface ProotFetchResult {
-  status: number;
-  body: string;
-  content_type: string;
-}
+function LocalBridgeProvider({ children }: { children: ReactNode }) {
+  const hasTauri = typeof window !== "undefined" && !!(window as any).__TAURI_INTERNALS__?.invoke;
+  const [ready, setReady] = useState(hasTauri);
+  const [error, setError] = useState<string | null>(null);
+  const jwtRef = useRef<string | null>(null);
 
-function ProotBridgeProvider({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    if (hasTauri) return;
+    (async () => {
+      try {
+        const r = await fetch("http://localhost/_auth/byos/token", { method: "POST" });
+        if (!r.ok) throw new Error(`BYOS token: ${r.status}`);
+        const { token } = await r.json() as { token: string };
+        jwtRef.current = token;
+        setReady(true);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to get BYOS token");
+      }
+    })();
+  }, [hasTauri]);
+
+  const authHeaders = useCallback((extra?: HeadersInit): Record<string, string> => {
+    const h: Record<string, string> = {};
+    if (extra) {
+      if (extra instanceof Headers) extra.forEach((v, k) => { h[k] = v; });
+      else if (Array.isArray(extra)) extra.forEach(([k, v]) => { h[k] = v; });
+      else Object.assign(h, extra);
+    }
+    if (jwtRef.current) h["Authorization"] = `Bearer ${jwtRef.current}`;
+    return h;
+  }, []);
+
   const send = useCallback(async <T = unknown,>(type: string, data: Record<string, unknown> = {}): Promise<T> => {
-    const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
-    if (!invoke) throw new Error("Tauri not available");
+    if (hasTauri) {
+      const invoke = (window as any).__TAURI_INTERNALS__.invoke;
+      if (type === "code_api_proxy") {
+        const { method = "GET", path, body } = data as { method?: string; path?: string; body?: unknown };
+        const result = await invoke("plugin:proot|proot_fetch", {
+          method: String(method).toUpperCase(),
+          path: path || "/",
+          body: body ? JSON.stringify(body) : null,
+          port: 3002,
+        }) as LocalFetchResult;
+        if (result.status >= 400) throw new Error(result.body || `HTTP ${result.status}`);
+        try { return JSON.parse(result.body) as T; } catch { return result.body as unknown as T; }
+      }
+      const result = await invoke("plugin:proot|proot_fetch", {
+        method: "POST",
+        path: "/_auth/bridge/dispatch",
+        body: JSON.stringify({ type, ...data }),
+        port: 3005,
+      }) as LocalFetchResult;
+      let parsed: any;
+      try { parsed = JSON.parse(result.body); } catch { parsed = { error: result.body }; }
+      if (result.status >= 400) throw new Error(parsed.error || `Dispatch failed: HTTP ${result.status}`);
+      return parsed as T;
+    }
+
+    if (type === "get_exchange_code") {
+      const r = await fetch("http://localhost/_auth/bridge/exchange-code", {
+        method: "POST",
+        headers: authHeaders(),
+        credentials: "include",
+      });
+      const text = await r.text();
+      if (r.status >= 400) throw new Error(text || `HTTP ${r.status}`);
+      try { return JSON.parse(text) as T; } catch { return text as unknown as T; }
+    }
 
     if (type === "code_api_proxy") {
       const { method = "GET", path, body } = data as { method?: string; path?: string; body?: unknown };
-      const result = await invoke("plugin:proot|proot_fetch", {
+      const r = await fetch(`http://localhost/api${path || "/"}`, {
         method: String(method).toUpperCase(),
-        path: path || "/",
-        body: body ? JSON.stringify(body) : null,
-        port: 3002,
-      }) as ProotFetchResult;
-      if (result.status >= 400) throw new Error(result.body || `HTTP ${result.status}`);
-      try { return JSON.parse(result.body) as T; } catch { return result.body as unknown as T; }
+        headers: authHeaders(body ? { "Content-Type": "application/json" } : undefined),
+        body: body ? JSON.stringify(body) : undefined,
+        credentials: "include",
+      });
+      const text = await r.text();
+      if (r.status >= 400) throw new Error(text || `HTTP ${r.status}`);
+      try { return JSON.parse(text) as T; } catch { return text as unknown as T; }
     }
 
-    const result = await invoke("plugin:proot|proot_fetch", {
+    const r = await fetch("http://localhost/_auth/bridge/dispatch", {
       method: "POST",
-      path: "/_auth/bridge/dispatch",
+      headers: authHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ type, ...data }),
-      port: 3005,
-    }) as ProotFetchResult;
-
+      credentials: "include",
+    });
+    const text = await r.text();
     let parsed: any;
-    try { parsed = JSON.parse(result.body); } catch { parsed = { error: result.body }; }
-    if (result.status >= 400) throw new Error(parsed.error || `Dispatch failed: HTTP ${result.status}`);
+    try { parsed = JSON.parse(text); } catch { parsed = { error: text }; }
+    if (r.status >= 400) throw new Error(parsed.error || `Dispatch failed: HTTP ${r.status}`);
     return parsed as T;
-  }, []);
+  }, [hasTauri, authHeaders]);
 
   const dummyHandle: BridgeHandle = {
     contentWindow: typeof window !== "undefined" ? window : ({} as Window),
@@ -183,8 +243,8 @@ function ProotBridgeProvider({ children }: { children: ReactNode }) {
   };
 
   const value: VpsBridgeState = {
-    ready: true,
-    error: null,
+    ready,
+    error,
     needsVpsAuth: false,
     sessionExpired: false,
     send,

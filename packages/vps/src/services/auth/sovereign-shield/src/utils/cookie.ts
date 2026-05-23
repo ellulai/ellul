@@ -72,3 +72,17 @@ export function createCookieHeader(name: string, value: string, options: CookieO
 export function deleteCookieHeader(name: string, path = '/'): string {
   return `${name}=; Path=${path}; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
 }
+
+import { IS_LOCALHOST } from '../config';
+
+export const CODE_SESSION_COOKIE = IS_LOCALHOST ? 'code_session' : '__Host-code_session';
+
+export function codeSessionCookie(sessionId: string, maxAge: number): string {
+  return createCookieHeader(CODE_SESSION_COOKIE, sessionId, {
+    httpOnly: true,
+    secure: !IS_LOCALHOST,
+    sameSite: 'Lax',
+    path: '/',
+    maxAge,
+  });
+}

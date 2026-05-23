@@ -12,7 +12,7 @@ import { useVpsBridge } from "@/lib/vps-bridge";
 import { useCodeToken } from "@/contexts/CodeTokenContext";
 import { isTauriApp } from "@/lib/utils";
 import { useWorkbenchOptional, type WorkbenchContextValue } from "@/contexts/WorkbenchContext";
-import { getCodeApiUrl, isValidServerOrigin } from "@/lib/domains";
+import { getCodeApiUrl, getIframeBaseUrl, isValidServerOrigin } from "@/lib/domains";
 import type { ApiApp } from "@/contexts/AppsListContext";
 
 type AppInfo = ApiApp;
@@ -104,7 +104,7 @@ export function TabEditor({
     // Native apps (Tauri/Electron): wait for JWT injection into the bridge
     // iframe before requesting the exchange code. Web browsers don't need
     // this — the bridge iframe has its own session via cookies.
-    if (isTauriApp() && !codeToken) return;
+    if (!codeToken) return;
     if (exchangeCodeFetchedRef.current) return;
     exchangeCodeFetchedRef.current = true;
 
@@ -149,10 +149,11 @@ export function TabEditor({
   // Send messages to the chat iframe. Guarded by chatReadyRef so calls before
   // the iframe finishes loading (about:blank → cross-origin) are dropped
   // rather than throwing a postMessage origin mismatch.
+  const chatOrigin = getIframeBaseUrl(serverDomain, isTauriApp());
   const sendToIframe = useCallback((msg: Record<string, unknown>) => {
     if (!chatReadyRef.current) return;
-    iframeRef.current?.contentWindow?.postMessage(msg, `https://${serverDomain}`);
-  }, [serverDomain]);
+    iframeRef.current?.contentWindow?.postMessage(msg, chatOrigin);
+  }, [chatOrigin]);
 
   useEffect(() => {
     if (workbench) workbench.chatIframeSendRef.current = sendToIframe;
@@ -178,7 +179,7 @@ export function TabEditor({
       try {
         iframeRef.current.contentWindow?.postMessage(
           { type: "auth_complete" },
-          `https://${serverDomain}`
+          chatOrigin
         );
       } catch { /* iframe not yet loaded */ }
     }
@@ -232,6 +233,8 @@ export function TabEditor({
         }
         case "ready":
           chatReadyRef.current = true;
+          clearTimeout(loadTimerRef.current);
+          setChatLoaded(true);
           sendToIframe({ type: "set_theme", mode: "dark" });
           if (wireDirectory) {
             sendToIframe({
@@ -343,22 +346,21 @@ export function TabEditor({
   // --- All hooks MUST be above early returns (React rules of hooks) ---
 
   const [chatLoaded, setChatLoaded] = useState(false);
-  const prevSrcRef = useRef<string | null>(null);
+  const [prevChatSrc, setPrevChatSrc] = useState<string | null>(null);
   const loadTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Build iframe src (may be null if exchange code not ready)
   const chatSrc = chatExchangeCode && chatExchangeCode !== "error"
-    ? `https://${serverDomain}/_auth/chat?_shield_code=${encodeURIComponent(chatExchangeCode)}&parentOrigin=${encodeURIComponent(window.location.origin)}&locale=${encodeURIComponent(initialLocaleRef.current)}`
+    ? `${chatOrigin}/_auth/chat?_shield_code=${encodeURIComponent(chatExchangeCode)}&parentOrigin=${encodeURIComponent(window.location.origin)}&locale=${encodeURIComponent(initialLocaleRef.current)}`
     : null;
 
-  // Reset loaded state when src changes (new exchange code, app switch)
   useEffect(() => {
-    if (chatSrc && chatSrc !== prevSrcRef.current) {
+    if (chatSrc && chatSrc !== prevChatSrc) {
       chatReadyRef.current = false;
       setChatLoaded(false);
-      prevSrcRef.current = chatSrc;
+      setPrevChatSrc(chatSrc);
     }
-  }, [chatSrc]);
+  }, [chatSrc, prevChatSrc]);
 
   // Fallback: 8s timeout in case onLoad never fires (network error, blocked)
   useEffect(() => {

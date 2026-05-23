@@ -35,6 +35,7 @@ export function ServerSettingsModal({
   isRollingBack,
   snapshotExpiresAt,
   agentUpdate,
+  adapterUpdates,
   onUpdateServer,
   isUpdating,
   onSetAgentUpdateMode,
@@ -109,6 +110,7 @@ export function ServerSettingsModal({
               isRollingBack={isRollingBack}
               snapshotExpiresAt={snapshotExpiresAt}
               agentUpdate={agentUpdate}
+              adapterUpdates={adapterUpdates}
               onUpdateServer={onUpdateServer}
               isUpdating={isUpdating}
               onSetAgentUpdateMode={onSetAgentUpdateMode}

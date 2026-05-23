@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { CheckCircle2, Circle, Shield, AlertCircle } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
+import { getVpsApiUrl } from "@/lib/domains";
 
 // Maximum time to wait for setup token after provisioning completes (ms).
 const TOKEN_TIMEOUT_MS = 90_000;
@@ -118,7 +119,7 @@ export function ShieldSetupFlow({
     }
 
     // Redirect to VPS setup page with setup token + localhost callback params
-    const vpsSetupUrl = new URL(`https://${serverDomain}/_auth/setup`);
+    const vpsSetupUrl = new URL(`${getVpsApiUrl(serverDomain)}/_auth/setup`);
     vpsSetupUrl.searchParams.set("token", setupToken);
     vpsSetupUrl.searchParams.set("callback", "localhost");
     vpsSetupUrl.searchParams.set("port", callbackPort);

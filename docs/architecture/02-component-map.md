@@ -29,7 +29,8 @@ Most engineering changes live in `apps/api/` (the control plane) and `apps/conso
 | `providers/security/` | Provider firewall profiles. |
 | `routes/` | Hono routes. `v1/`, `byos/`, `paperclip/`, `admin/`, `webhooks/`, `servers/`, `git/`, etc. |
 | `services/` | Business logic (server-state, gateway-kv, gateway-hostname, agent-manifest, billing). |
-| `engines/` | Server lifecycle engines: `ephemeral/` (hibernate/wake), `persistent/`, `shared/`. |
+| `engines/` | Server lifecycle engines: `ephemeral/` (hibernate/wake), `persistent/`, `daytona/` (sandbox), `shared/`. |
+| `orchestration/daytona/` | Daytona orchestration boundary: SDK client, provisioner (rate-guarded), scheduler (bin-pack), sandbox DB ops. |
 | `bridges/` | Terminal and protocol bridges. |
 | `cron/` | Background jobs: idle-manager, gateway-reconciler, cpu-monitor, bandwidth-monitor. |
 | `security/` | Auth, JWT, middleware, threat detection, audit, attestation, guards. |
@@ -127,6 +128,7 @@ For the full release flow see [operations/01-release-pipeline.md](../operations/
 
 | Path | Purpose |
 | --- | --- |
+| `infrastructure/host/` | Compute host infrastructure: `route-manager.ts` (L4 SNI daemon), `setup.sh` (host commissioning). |
 | `scripts/` | Release pipeline, build orchestration, KMS-signed manifest tooling. |
 | `dist/` | Build output (gitignored except for tracked subfolders). |
 | `artifacts/` | Release artefacts produced by `release.mjs`. Includes `last-publish.json`. |

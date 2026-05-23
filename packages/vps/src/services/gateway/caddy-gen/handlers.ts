@@ -52,6 +52,7 @@ const SHIELD_DIRECT_PATHS = [
   "/_auth/bridge/session",    // exact: session check
   "/_auth/code/redirect",     // exact: code session redirect
   "/_auth/code/session",      // exact: code session create (JWT auth, cross-origin)
+  "/_auth/code/establish",    // exact: code session cookie set (proot-establish proxy)
   "/_auth/terminal/authorize",// exact: terminal token (session auth, cross-origin)
   "/_auth/agent/authorize",   // exact: agent token (session auth, cross-origin)
   "/_auth/code/authorize",    // exact: code token (session auth, cross-origin)
@@ -66,8 +67,11 @@ const SHIELD_DIRECT_PATHS = [
   // Auth: server ID in body (UUID, unguessable). SIGUSR1 is harmless.
   "/_auth/wake-enforcer",
   "/_auth/tauri/token-login",
+  "/_auth/byos/token",
+  "/_auth/chat",
   "/_auth/upgrade-to-web-locked",
   "/_auth/upgrade-to-web-locked/verify",
+  "/health",
 ];
 
 // Routes behind forward_auth gate to sovereign-shield
@@ -79,6 +83,8 @@ interface AuthedRoute {
   streaming?: boolean;
   /** Use handle_path (strip prefix) instead of handle. */
   stripPrefix?: boolean;
+  /** Skip forward_auth — backend handles its own authentication (e.g. agent-bridge validates _agent_token). */
+  selfAuthed?: boolean;
 }
 
 // Build route list based on which services are provisioned.
@@ -103,7 +109,7 @@ function getAuthedRoutes(): AuthedRoute[] {
       { path: "/ttyd/*", backend: TERM_PROXY_PORT },
     ] as AuthedRoute[] : []),
     ...(hasAgentBridge ? [
-      { path: "/ws", backend: AGENT_BRIDGE_PORT, streaming: true },
+      { path: "/ws", backend: AGENT_BRIDGE_PORT, streaming: true, selfAuthed: true },
     ] as AuthedRoute[] : []),
     // Same-origin read-path for chat SPA: CF %2F normalization breaks PoP on -code paths.
     // forward_auth + resolveProjectDir enforce safety.
@@ -146,6 +152,7 @@ function forwardAuthBlock(depth: number, extraHeaders?: string[]): Lines {
     `forward_auth ${UPSTREAM_HOST}:${SHIELD_PORT} {`,
     `    uri /api/auth/session`,
     `    header_up Cookie {http.request.header.Cookie}`,
+    `    header_up Authorization {http.request.header.Authorization}`,
     `    header_up Accept {http.request.header.Accept}`,
     `    header_up X-PoP-Signature {http.request.header.X-PoP-Signature}`,
     `    header_up X-PoP-Timestamp {http.request.header.X-PoP-Timestamp}`,
@@ -166,7 +173,8 @@ function forwardAuthBlock(depth: number, extraHeaders?: string[]): Lines {
     `    header_up Sec-Fetch-Site {http.request.header.Sec-Fetch-Site}`,
     ...(extraHeaders ?? []).map(h => `    header_up ${h}`),
     `    header_up X-Forwarded-Uri {uri}`,
-    `    header_up X-Forwarded-Host {host}`,
+    `    header_up X-Forwarded-Host {http.request.hostport}`,
+    `    header_up X-Forwarded-Proto {scheme}`,
     `    header_up -X-Auth-User`,
     `    header_up -X-Auth-Tier`,
     `    header_up -X-Auth-Session`,
@@ -232,7 +240,9 @@ function authedRoute(route: AuthedRoute, consoleOrigin: string): Lines {
       ]
     : [`reverse_proxy ${UPSTREAM_HOST}:${route.backend}`];
 
-  if (route.cors) {
+  if (route.selfAuthed) {
+    lines.push(...indent(proxyBlock, 3));
+  } else if (route.cors) {
     lines.push(...corsPreflightBlock("cors", route.cors, 3, consoleOrigin));
     lines.push("");
     lines.push(...indent([`@notOptions not method OPTIONS`], 3));
@@ -259,6 +269,8 @@ export interface HandlerOptions {
   consoleOrigin: string;
   extraFrameAncestors?: string[];
   forceXForwardedHostRewrite?: boolean;
+  /** Merge @code + @main into path-based routing (localhost mode where both host matchers collide). */
+  singleHost?: boolean;
 }
 
 /** Build the `frame-ancestors` value: always 'self' + console + extras (dedup). */
@@ -300,13 +312,18 @@ export function generateCaddyHandlers(scope: "ai" | "app" | "all", opts: Handler
   }
 
   if (scope === "ai" || scope === "all") {
-    lines.push(...codeHandler(consoleOrigin, extraFrameAncestors));
-    lines.push(...mainHandler(consoleOrigin, extraFrameAncestors));
+    if (opts.singleHost) {
+      lines.push(...singleHostHandler(consoleOrigin, extraFrameAncestors));
+    } else {
+      lines.push(...codeHandler(consoleOrigin, extraFrameAncestors));
+      lines.push(...mainHandler(consoleOrigin, extraFrameAncestors));
+    }
   }
 
-  if (scope === "app" || scope === "all") {
+  if (scope === "app" || (scope === "all" && !opts.singleHost)) {
     // Per-app routes (host-matched handlers written by ellul-expose)
     // Also imports dev.caddy which is dynamically written by preview.service.ts
+    // For singleHost, the import is inside singleHostHandler before the catch-all.
     lines.push(...indent([`import /etc/caddy/app-routes.d/*.caddy`], 1));
   }
 
@@ -318,6 +335,136 @@ export function generateCaddyHandlers(scope: "ai" | "app" | "all", opts: Handler
   ], 1));
 
   return lines.join("\n");
+}
+
+// Single-host merged handler: path-based routing instead of host-based.
+// In localhost mode, @code and @main both match "host localhost" — @code always
+// wins, starving @main routes (/ws → agent-bridge, /terminal → term-proxy, etc.).
+// This handler merges both into one block with explicit path routing.
+function singleHostHandler(consoleOrigin: string, extraFrameAncestors?: string[]): Lines {
+  const csp = frameAncestorsDirective(consoleOrigin, extraFrameAncestors);
+  const lines: Lines = [
+    "",
+    ...indent([`@notAuthSH not path /_auth/*`], 1),
+    ...indent([`header @notAuthSH Content-Security-Policy "${csp}"`], 1),
+    "",
+  ];
+
+  // Shield direct auth endpoints — single combined matcher
+  const directPaths = SHIELD_DIRECT_PATHS.join(" ");
+  lines.push(...indent([`@shieldDirect path ${directPaths}`], 1));
+  lines.push(...indent([`handle @shieldDirect {`], 1));
+  lines.push(...corsPreflightBlock("options", SHIELD_CORS, 2, consoleOrigin));
+  lines.push("");
+  lines.push(...corsHeaders(SHIELD_CORS, 2, consoleOrigin));
+  lines.push(...indent([`reverse_proxy ${UPSTREAM_HOST}:${SHIELD_PORT} {`], 2));
+  lines.push(...stripCorsDownstream(3));
+  lines.push(...indent([`}`], 2));
+  lines.push(...indent([`}`], 1));
+  lines.push("");
+
+  // Shield gated auth catch-all
+  lines.push(...indent([`handle /_auth/* {`], 1));
+  lines.push(...corsPreflightBlock("options", SHIELD_CORS, 2, consoleOrigin));
+  lines.push("");
+  lines.push(...indent([`@notOptions not method OPTIONS`], 2));
+  lines.push(...indent([`handle @notOptions {`], 2));
+  lines.push(...corsHeaders(SHIELD_CORS, 3, consoleOrigin));
+  lines.push(...forwardAuthBlock(3));
+  lines.push(...indent([`reverse_proxy ${UPSTREAM_HOST}:${SHIELD_PORT} {`], 3));
+  lines.push(...indent([`flush_interval -1`], 4));
+  lines.push(...stripCorsDownstream(4));
+  lines.push(...indent([`}`], 3));
+  lines.push(...indent([`}`], 2));
+  lines.push(...indent([`}`], 1));
+  lines.push("");
+
+  // Authed backend routes (terminal, /ws → agent-bridge, app-integrations)
+  for (const route of getAuthedRoutes()) {
+    const directive = route.stripPrefix ? "handle_path" : "handle";
+    lines.push(...indent([`${directive} ${route.path} {`], 1));
+
+    const proxyBlock = route.streaming
+      ? [`reverse_proxy ${UPSTREAM_HOST}:${route.backend} {`, `    flush_interval -1`, `}`]
+      : [`reverse_proxy ${UPSTREAM_HOST}:${route.backend}`];
+
+    if (route.selfAuthed) {
+      lines.push(...indent(proxyBlock, 2));
+    } else if (route.cors) {
+      lines.push(...corsPreflightBlock("cors", route.cors, 2, consoleOrigin));
+      lines.push("");
+      lines.push(...indent([`@notOptions not method OPTIONS`], 2));
+      lines.push(...indent([`handle @notOptions {`], 2));
+      lines.push(...forwardAuthBlock(3));
+      lines.push(...indent([`header Access-Control-Allow-Origin "${consoleOrigin}"`], 3));
+      lines.push(...indent([`header Access-Control-Allow-Credentials "true"`], 3));
+      lines.push(...indent(proxyBlock, 3));
+      lines.push(...indent([`}`], 2));
+    } else {
+      lines.push(...forwardAuthBlock(2));
+      lines.push(...indent(proxyBlock, 2));
+    }
+
+    lines.push(...indent([`}`], 1));
+    lines.push("");
+  }
+
+  // Code browser WebSocket — /code-ws rewrites to /ws for file-api
+  // (main /ws is already claimed by agent-bridge above)
+  lines.push(...indent([`handle /code-ws {`], 1));
+  lines.push(...forwardAuthBlock(2, [
+    `X-Code-Token {http.request.header.X-Code-Token}`,
+  ]));
+  lines.push(...indent([`rewrite * /ws`], 2));
+  lines.push(...indent([`reverse_proxy ${UPSTREAM_HOST}:${FILE_API_PORT} {`], 2));
+  lines.push(...indent([`flush_interval -1`], 3));
+  lines.push(...indent([`}`], 2));
+  lines.push(...indent([`}`], 1));
+  lines.push("");
+
+  // In singleHost mode, the app-route's @dev host matcher steals all traffic.
+  // Explicit path handles for code-domain paths outrank host matchers.
+  for (const codePath of ["/browser", "/browser/*", "/api/*"]) {
+    lines.push(...indent([`handle ${codePath} {`], 1));
+    lines.push(...corsPreflightBlock("options", CODE_CORS, 2, consoleOrigin));
+    lines.push("");
+    lines.push(...indent([`@notOptions not method OPTIONS`], 2));
+    lines.push(...indent([`handle @notOptions {`], 2));
+    lines.push(...corsHeaders(CODE_CORS, 3, consoleOrigin));
+    lines.push(...forwardAuthBlock(3, [
+      `X-Requested-With {http.request.header.X-Requested-With}`,
+      `X-Code-Token {http.request.header.X-Code-Token}`,
+    ]));
+    lines.push(...indent([`reverse_proxy ${UPSTREAM_HOST}:${FILE_API_PORT}`], 3));
+    lines.push(...indent([`}`], 2));
+    lines.push(...indent([`}`], 1));
+    lines.push("");
+  }
+
+  // Per-agent gateway routes
+  lines.push(...indent([`import /etc/caddy/agents.d/*.caddy`], 1));
+  lines.push("");
+
+  // Dev preview + deployed app routes — MUST precede the catch-all
+  lines.push(...indent([`import /etc/caddy/app-routes.d/*.caddy`], 1));
+  lines.push("");
+
+  // Catch-all → forward_auth → file-api (code browser)
+  lines.push(...indent([`handle {`], 1));
+  lines.push(...corsPreflightBlock("options", CODE_CORS, 2, consoleOrigin));
+  lines.push("");
+  lines.push(...indent([`@notOptions not method OPTIONS`], 2));
+  lines.push(...indent([`handle @notOptions {`], 2));
+  lines.push(...corsHeaders(CODE_CORS, 3, consoleOrigin));
+  lines.push(...forwardAuthBlock(3, [
+    `X-Requested-With {http.request.header.X-Requested-With}`,
+    `X-Code-Token {http.request.header.X-Code-Token}`,
+  ]));
+  lines.push(...indent([`reverse_proxy ${UPSTREAM_HOST}:${FILE_API_PORT}`], 3));
+  lines.push(...indent([`}`], 2));
+  lines.push(...indent([`}`], 1));
+
+  return lines;
 }
 
 function codeHandler(consoleOrigin: string, extraFrameAncestors?: string[]): Lines {
@@ -378,7 +525,11 @@ export function generateInitialDevRoute(
   // matchers inside reverse_proxy's header_up directives, which would
   // collapse the scope and rewrite Origin on EVERY upstream request
   // (including user-app routes). The integration test catches regressions.
-  return `@dev host ${devDomain}
+  const isSingleHost = devDomain === "localhost";
+  const devMatcher = isSingleHost
+    ? `@dev {\n    host ${devDomain}\n    not path /browser /browser/* /api/*\n}`
+    : `@dev host ${devDomain}`;
+  return `${devMatcher}
 handle @dev {
     @notAuth not path /_auth/*
     header @notAuth Content-Security-Policy "${csp}"
@@ -401,7 +552,8 @@ handle @dev {
             header_up Sec-Fetch-Mode {http.request.header.Sec-Fetch-Mode}
             header_up Sec-Fetch-Site {http.request.header.Sec-Fetch-Site}
             header_up X-Forwarded-Uri {uri}
-            header_up X-Forwarded-Host {host}
+            header_up X-Forwarded-Host {http.request.header.Host}
+            header_up X-Forwarded-Proto {scheme}
             header_up -X-Auth-User
             header_up -X-Auth-Tier
             header_up -X-Auth-Session

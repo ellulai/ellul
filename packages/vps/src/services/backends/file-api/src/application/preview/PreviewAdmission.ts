@@ -24,7 +24,7 @@ import { readSpec, type PreviewMode } from '@vps/shared/preview-spec';
 import { probeWarmArtifact } from '@vps/shared/framework-artifacts';
 
 import { getAppPath } from '../../config';
-import { stopUnit, listActive } from './PreviewUnits';
+import { previewPlatform } from './PreviewPlatform';
 import { listTracked, idlenessMs, lruOrder, recordStop } from './PreviewTracking';
 import { readPressure, classifyMemoryPressure, isOomImminent } from './PreviewPressure';
 import { drainForAdmission } from './PreviewDrain';
@@ -79,6 +79,17 @@ export interface AdmissionSignals {
 
 // Snapshot system state relevant to admission. Pure read — no
 export function readAdmissionSignals(): AdmissionSignals {
+  if (!previewPlatform.hasCgroups) {
+    return {
+      activeCount: 0,
+      memAvailableMB: 8192,
+      swapFreeMB: 0,
+      swapTotalMB: 0,
+      physicalMB: 8192,
+      loadAvg1: 0,
+      nCPU: Math.max(1, os.cpus().length),
+    };
+  }
   let memAvailableMB = 0;
   let swapFreeMB = 0;
   let swapTotalMB = 0;
@@ -180,7 +191,7 @@ export async function evaluateAdmission(
 ): Promise<AdmissionOutcome> {
   const log = opts.log ?? (() => {});
   const signals = readAdmissionSignals();
-  const active = await listActive();
+  const active = await previewPlatform.listActive();
   signals.activeCount = active.length;
 
   // resource-v2 fast-fail gate: red mode + tier cap + framework-too-big are
@@ -374,7 +385,7 @@ export async function evaluateAdmission(
     });
 
     try {
-      await stopUnit(victim.directory, { mode: evictionMode });
+      await previewPlatform.stopUnit(victim.directory, { mode: evictionMode });
       recordStop(victim.directory);
     } catch (err) {
       log('error', 'admission: eviction stopUnit failed', {

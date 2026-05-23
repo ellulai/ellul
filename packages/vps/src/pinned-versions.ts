@@ -31,7 +31,7 @@ export const NPM_VERSIONS = {
   vercel: "50.37.3",
   wrangler: "4.78.0",
   "@anthropic-ai/claude-code": "2.1.116",
-  "@openai/codex": "0.117.0",
+  "@openai/codex": "0.133.0",
 } as const;
 
 /** Pin a package name to its version from NPM_VERSIONS */
@@ -187,8 +187,8 @@ export const BINARY_HASHES: Record<string, Record<string, string>> = {
     arm64: "2c699579165416eede4d2cfaf7d76ccd8f3b20f20f2e8b4abff6b5a6350fcdd7",
   },
   opencode: {
-    amd64: "2edfc17bad3ecba54ae1d9753cef9eca686fdd8a0b0f4b785f9209ee0fc8a6d2",
-    arm64: "304108f05063bd17ad6df62541b48e19980d8e36d5d507ae2ebf80920990c9a2",
+    amd64: "d985e99d7e22446b78fc78a35cfa0ef8b0feff05be5288c4a0e1c6837b7a29f8",
+    arm64: "faedc954ab549235a32f1bf10cb92206dbac58327a85530554e5e02feb28060e",
   },
   zeroclaw: {
     amd64: "aa06d409e8f4e5bdc1816dfa451f23bd01f25029b743177532c166e3f6204382",

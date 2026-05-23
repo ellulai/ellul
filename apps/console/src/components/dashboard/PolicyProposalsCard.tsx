@@ -7,6 +7,7 @@ import { AlertTriangle, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useVpsBridge } from "@/lib/vps-bridge";
+import { getVpsApiUrl } from "@/lib/domains";
 
 interface Proposal {
   id: string;
@@ -29,7 +30,7 @@ const ACTION_VARIANT: Record<string, "warning" | "secondary" | "destructive"> = 
 function useProposalApi(serverDomain: string, tier: string) {
   const t = useTranslations("console.policyProposals");
   const { send } = useVpsBridge();
-  const base = `https://${serverDomain}`;
+  const base = getVpsApiUrl(serverDomain);
   const opts = { credentials: "include" as const };
 
   if (tier !== "standard") {

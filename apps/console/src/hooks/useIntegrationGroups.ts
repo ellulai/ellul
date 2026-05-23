@@ -30,7 +30,7 @@ export interface IntegrationGroup {
 
 // ─── Hook ───────────────────────────────────────────────────────────────────
 
-export function useIntegrationGroups(serverId: string, sandboxId: string | null) {
+export function useIntegrationGroups(serverId: string, sandboxId: string | null, isLocal = false) {
   const queryClient = useQueryClient();
 
   const { data: groups = [], isLoading } = useQuery<IntegrationGroup[]>({
@@ -45,7 +45,7 @@ export function useIntegrationGroups(serverId: string, sandboxId: string | null)
       const data = await res.json();
       return data.groups ?? [];
     },
-    enabled: !!sandboxId,
+    enabled: !!sandboxId && !isLocal,
     staleTime: 30_000,
   });
 

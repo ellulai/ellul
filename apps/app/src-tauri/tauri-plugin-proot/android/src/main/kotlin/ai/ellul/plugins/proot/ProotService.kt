@@ -322,16 +322,9 @@ class ProotService : Service() {
     }
 
     private fun checkHealthSync(): List<ServiceStatusData> {
-        val healthMarker = java.io.File(filesDir, "rootfs/tmp/health-ready")
-        val markerHealthy = healthMarker.exists() && manager?.isRunning() == true
-
-        val services = listOf("sovereign-shield", "file-api", "agent-bridge", "caddy", "term-proxy")
-        if (markerHealthy) {
-            return services.map { ServiceStatusData(it, true) }
-        }
-
         data class Svc(val name: String, val port: Int, val httpPath: String?)
-        val svcChecks = listOf(
+
+        val services = listOf(
             Svc("sovereign-shield", 3005, "/_auth/health"),
             Svc("file-api", 3002, "/health"),
             Svc("agent-bridge", 7700, null),
@@ -339,7 +332,7 @@ class ProotService : Service() {
             Svc("term-proxy", 7701, null),
         )
 
-        return svcChecks.map { svc ->
+        return services.map { svc ->
             val healthy = try {
                 if (svc.httpPath != null) {
                     checkHttpHealth(svc.port, svc.httpPath)

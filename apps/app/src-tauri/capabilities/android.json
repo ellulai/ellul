@@ -75,8 +75,8 @@
     "proot:allow-proot-stop",
     "proot:allow-proot-status",
     "proot:allow-proot-health",
+    "proot:allow-proot-fetch",
     "proot:allow-proot-setup-status",
-    "proot:allow-proot-setup-start",
-    "proot:allow-proot-fetch"
+    "proot:allow-proot-setup-start"
   ]
 }

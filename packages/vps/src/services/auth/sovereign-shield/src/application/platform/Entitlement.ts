@@ -138,6 +138,7 @@ const MIN_FREE_RAM_BYTES = 512 * 1024 * 1024;
 const MIN_FREE_DISK_BYTES = 1024 * 1024 * 1024;
 
 function checkResourceGuard(): { ok: true } | { ok: false; detail: string } {
+  if (process.env.ELLUL_PLATFORM === 'android') return { ok: true };
   try {
     const meminfo = fs.readFileSync('/proc/meminfo', 'utf8');
     const match = meminfo.match(/MemAvailable:\s+(\d+)\s+kB/);

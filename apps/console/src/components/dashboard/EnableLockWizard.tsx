@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { useVpsBridge } from "@/lib/vps-bridge";
 import { useEncryptionPasskey } from "@/hooks/useEncryptionPasskey";
 import { isTauriApp } from "@/lib/utils";
+import { getVpsApiUrl } from "@/lib/domains";
 
 // Resolve translated lock name based on product
 function useLockNames(product: string | undefined) {
@@ -118,7 +119,7 @@ export function EnableLockWizard({
       if (mode === "web_lock") {
         setStep("registering");
         if (isTauriApp()) {
-          const vpsBase = `https://${serverDomain}`;
+          const vpsBase = getVpsApiUrl(serverDomain);
           const invoke = (window as any).__TAURI_INTERNALS__.invoke;
 
           const optRes = await fetch(`${vpsBase}/_auth/upgrade-to-web-locked`, {

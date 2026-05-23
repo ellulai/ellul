@@ -56,6 +56,7 @@ import {
   type ProviderAdapterError,
 } from "../errors";
 import { acpPermissionOutcome, mapAcpToAdapterError } from "./acp/AcpAdapterSupport";
+import { detectVersionSignal, emitVersionSignal } from "../../shared/adapterVersionDetector";
 import { type AcpSessionHandle } from "./acp/AcpProjectRuntime";
 import { CursorAcpServerPool, type CursorCrashCallback } from "./server-pool";
 import { CURSOR_PARAMETERIZED_MODEL_PICKER_CAPABILITIES } from "./provider";
@@ -479,6 +480,14 @@ function makeCursorAdapter(options?: CursorAdapterLiveOptions) {
           yield* Fiber.interrupt(ctx.notificationFiber);
         }
         sessions.delete(ctx.threadId);
+        let displayReason = reason;
+        if (typeof reason === "string") {
+          const vs = detectVersionSignal("cursor", reason, undefined);
+          if (vs) {
+            emitVersionSignal(vs).catch(() => {});
+            displayReason = "Cursor needs an update — your server is updating automatically. Please retry in ~30 seconds.";
+          }
+        }
         yield* offerRuntimeEvent({
           type: "runtime.error",
           ...(yield* makeEventStamp()),
@@ -486,7 +495,7 @@ function makeCursorAdapter(options?: CursorAdapterLiveOptions) {
           threadId: ctx.threadId,
           turnId: ctx.activeTurnId,
           payload: {
-            message: reason,
+            message: displayReason,
             class: "transport_error",
           },
         }).pipe(Effect.ignore);

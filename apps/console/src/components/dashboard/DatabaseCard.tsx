@@ -20,6 +20,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useVpsBridge } from "@/lib/vps-bridge";
+import { vpsFetch } from "@/lib/domains";
 
 interface DatabaseCardProps {
   serverDomain: string;
@@ -115,14 +116,14 @@ function DatabaseCardBridge({ serverDomain, sandboxId }: { serverDomain: string;
 
 function DatabaseCardDirect({ serverDomain, sandboxId }: { serverDomain: string; sandboxId: string }) {
   const t = useTranslations("console.database.card");
-  const vpsUrl = `https://${serverDomain}`;
+  const sf = useCallback((path: string, init?: RequestInit) => vpsFetch(serverDomain, path, init), [serverDomain]);
   const queryClient = useQueryClient();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { data: statusData, isLoading: isLoadingStatus, refetch: refetchStatus, isRefetching: isRetryingStatus } = useQuery<{ available: boolean }>({
     queryKey: ["db-status", serverDomain],
     queryFn: async () => {
-      const res = await fetch(`${vpsUrl}/_auth/db/status`, { credentials: "include", headers: { Accept: "application/json" } });
+      const res = await sf(`/_auth/db/status`, { headers: { Accept: "application/json" } });
       if (!res.ok) return { available: false };
       return res.json();
     },
@@ -134,8 +135,7 @@ function DatabaseCardDirect({ serverDomain, sandboxId }: { serverDomain: string;
   const { data: dbInfo, isLoading: isLoadingInfo } = useQuery<DatabaseInfo>({
     queryKey: ["db-info", serverDomain, sandboxId],
     queryFn: async () => {
-      const res = await fetch(`${vpsUrl}/_auth/db/info?sandboxId=${encodeURIComponent(sandboxId)}`, {
-        credentials: "include",
+      const res = await sf(`/_auth/db/info?sandboxId=${encodeURIComponent(sandboxId)}`, {
         headers: { Accept: "application/json" },
       });
       if (!res.ok) throw new Error(t("fetchInfoFailed"));
@@ -151,9 +151,8 @@ function DatabaseCardDirect({ serverDomain, sandboxId }: { serverDomain: string;
 
   const provisionMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${vpsUrl}/_auth/db/provision`, {
+      const res = await sf(`/_auth/db/provision`, {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sandboxId }),
       });
@@ -171,9 +170,8 @@ function DatabaseCardDirect({ serverDomain, sandboxId }: { serverDomain: string;
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${vpsUrl}/_auth/db/delete`, {
+      const res = await sf(`/_auth/db/delete`, {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sandboxId }),
       });

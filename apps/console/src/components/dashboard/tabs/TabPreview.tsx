@@ -15,13 +15,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppsList, type ApiApp, type ApiPackage } from "@/contexts/AppsListContext";
-import { getDevUrl, getDevDomain, getCodeApiUrl, isValidServerOrigin } from "@/lib/domains";
+import { getDevUrl, getDevDomain, getCodeApiUrl, getIframeBaseUrl, isValidServerOrigin } from "@/lib/domains";
 import { API_URL } from "@/lib/api";
 import { useVpsBridge } from "@/lib/vps-bridge";
 import { useCodeToken } from "@/contexts/CodeTokenContext";
 import { useRealtimeSubscribe } from "@/providers/realtime-provider";
 import { useQueryClient } from "@tanstack/react-query";
-import { cn } from "@/lib/utils";
+import { cn, isTauriApp } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { ApiDocsPreview } from "./ApiDocsPreview";
@@ -869,7 +869,7 @@ export function TabPreview({
   const codeApiUrl = getCodeApiUrl(serverDomain);
   const devDomain = getDevDomain(serverDomain);
   const basePreviewUrl = getDevUrl(serverDomain);
-  const srvOrigin = `https://${serverDomain}`;
+  const srvOrigin = getIframeBaseUrl(serverDomain, isTauriApp());
 
   // Installing gate — dependencies still resolving, preview would fail the
   const isInstalling = preview?.phase === "installing";

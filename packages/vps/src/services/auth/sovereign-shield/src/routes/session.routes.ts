@@ -30,9 +30,10 @@ import {
   TERMINAL_INIT_MAP,
 } from '../auth/pop';
 import { POP_CLIENT_MANIFEST } from '../../pop-client-manifest';
-import { parseCookies } from '../utils/cookie';
+import { parseCookies, codeSessionCookie } from '../utils/cookie';
 import { generateCspNonce, getCspHeader } from '../utils/csp';
 import { validatePreviewCredentials } from './preview.routes';
+import { validateCodeTokenInline, validateCodeSessionInline } from './token.routes';
 import crypto from 'crypto';
 import { getTokenForService } from '../application/credentials/InternalToken';
 import {
@@ -43,7 +44,7 @@ import {
   buildAllowCredentials,
   type CredentialRecord,
 } from '../auth/webauthn';
-import { RP_NAME as _RP_NAME, readAllowedOrigins, resolveRpId, APP_ZONE } from '../config';
+import { RP_NAME as _RP_NAME, readAllowedOrigins, resolveRpId, APP_ZONE, IS_LOCALHOST } from '../config';
 
 /**
  * Device id shape check — 16+ lowercase hex chars, or 'legacy-v1' for the
@@ -98,6 +99,8 @@ export function registerSessionRoutes(app: Hono, hostname: string): void {
 
     const tier = getCurrentTier();
     const forwardedUri = c.req.header('x-forwarded-uri') || '/';
+    const forwardedHost = c.req.header('x-forwarded-host') || hostname;
+    const forwardedProto = c.req.header('x-forwarded-proto') || 'https';
 
     // Terminal gate: require _term_token (initial) or _term_auth cookie. term-proxy does real auth.
     if (forwardedUri.startsWith('/term/') || forwardedUri.startsWith('/ttyd/') || forwardedUri.startsWith('/terminal/')) {
@@ -124,7 +127,7 @@ export function registerSessionRoutes(app: Hono, hostname: string): void {
           return c.json({ error: 'Terminal authentication required' }, 401);
         }
 
-        const wrapperUrl = `https://${hostname}/_auth/terminal/wrapper?target=${encodeURIComponent(forwardedUri)}`;
+        const wrapperUrl = `${forwardedProto}://${forwardedHost}/_auth/terminal/wrapper?target=${encodeURIComponent(forwardedUri)}`;
         return c.redirect(wrapperUrl, 302);
       }
 
@@ -133,8 +136,6 @@ export function registerSessionRoutes(app: Hono, hostname: string): void {
     }
 
     const cookies = parseCookies(c.req.header('cookie'));
-    const forwardedHost = c.req.header('x-forwarded-host') || hostname;
-    const forwardedProto = c.req.header('x-forwarded-proto') || 'https';
     const originalUrl = `${forwardedProto}://${forwardedHost}${forwardedUri}`;
 
     // Dev domain (ellul.app): preview token/session (JWT cookies don't flow .ellul.ai → .ellul.app).
@@ -190,29 +191,25 @@ export function registerSessionRoutes(app: Hono, hostname: string): void {
       if (isApiRequest) {
         return c.json({
           error: 'Preview authentication required',
-          loginUrl: `https://${hostname}/_auth/login?redirect=${encodeURIComponent(originalUrl)}`,
+          loginUrl: `${forwardedProto}://${forwardedHost}/_auth/login?redirect=${encodeURIComponent(originalUrl)}`,
         }, 401);
       }
 
       return c.redirect(
-        `https://${hostname}/_auth/login?redirect=${encodeURIComponent(originalUrl)}`,
+        `${forwardedProto}://${forwardedHost}/_auth/login?redirect=${encodeURIComponent(originalUrl)}`,
         302
       );
     }
 
     // Code subdomain: code_session, X-Code-Token, or JWT — runs before tier split.
-    const isCodeSubdomain = forwardedHost.includes('-code.') || forwardedHost.startsWith('code.');
+    // In localhost mode there are no subdomains; treat all requests as code domain.
+    const isCodeSubdomain = IS_LOCALHOST || forwardedHost.includes('-code.') || forwardedHost.startsWith('code.');
 
     if (isCodeSubdomain) {
       const codeTokenHeader = c.req.header('x-code-token');
       if (codeTokenHeader) {
         try {
-          const validateRes = await fetch('http://127.0.0.1:3005/_auth/code/validate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: codeTokenHeader })
-          });
-          const validateData = await validateRes.json() as { valid?: boolean; sessionId?: string; tier?: string };
+          const validateData = validateCodeTokenInline(codeTokenHeader);
 
           if (validateData.valid) {
             // SECURITY: require tier from validation; never fall back to getCurrentTier() (downgrade).
@@ -247,12 +244,7 @@ export function registerSessionRoutes(app: Hono, hostname: string): void {
 
       if (codeSessionId) {
         try {
-          const validateRes = await fetch('http://127.0.0.1:3005/_auth/code/session/validate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ codeSessionId, ip: getClientIp(c) })
-          });
-          const validateData = await validateRes.json() as { valid?: boolean; credentialId?: string; tier?: string };
+          const validateData = validateCodeSessionInline(codeSessionId, getClientIp(c));
 
           if (validateData.valid) {
             const validatedTier = validateData.tier;
@@ -262,7 +254,7 @@ export function registerSessionRoutes(app: Hono, hostname: string): void {
             }
 
             if (codeSessionFromUrl) {
-              c.header('Set-Cookie', `__Host-code_session=${codeSessionId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=1800`);
+              c.header('Set-Cookie', codeSessionCookie(codeSessionId, 1800));
 
               const acceptHeader = c.req.header('accept') || '';
               const isApiRequest = acceptHeader.includes('application/json') ||
@@ -294,7 +286,7 @@ export function registerSessionRoutes(app: Hono, hostname: string): void {
         }
       }
 
-      const codeAuthUrl = `https://${hostname}/_auth/code/redirect?target=${encodeURIComponent(originalUrl)}`;
+      const codeAuthUrl = `${forwardedProto}://${forwardedHost}/_auth/code/redirect?target=${encodeURIComponent(originalUrl)}`;
 
       const acceptHeader = c.req.header('accept') || '';
       const isWsUpgrade = c.req.header('upgrade')?.toLowerCase() === 'websocket';
@@ -370,7 +362,7 @@ export function registerSessionRoutes(app: Hono, hostname: string): void {
       } catch {}
     }
 
-    const loginUrl = `https://${hostname}/_auth/login?redirect=${encodeURIComponent(originalUrl)}`;
+    const loginUrl = `${forwardedProto}://${forwardedHost}/_auth/login?redirect=${encodeURIComponent(originalUrl)}`;
 
     const acceptHeader = c.req.header('accept') || '';
     // /_auth/chat is the only /_auth/* that serves HTML; all others are JSON APIs (must not 302).
@@ -404,10 +396,10 @@ export function registerSessionRoutes(app: Hono, hostname: string): void {
         if (isApiRequest) {
           return c.json({
             error: 'Step-up authentication required',
-            loginUrl: `https://${hostname}/_auth/login?reason=step_up&redirect=${encodeURIComponent(originalUrl)}`
+            loginUrl: `${forwardedProto}://${forwardedHost}/_auth/login?reason=step_up&redirect=${encodeURIComponent(originalUrl)}`
           }, 401);
         }
-        return c.redirect(`https://${hostname}/_auth/login?reason=step_up&redirect=${encodeURIComponent(originalUrl)}`, 302);
+        return c.redirect(`${forwardedProto}://${forwardedHost}/_auth/login?reason=step_up&redirect=${encodeURIComponent(originalUrl)}`, 302);
       }
 
       // H5: PoP binding incomplete — session valid but not yet initialized (don't clear).

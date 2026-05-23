@@ -6,6 +6,7 @@ import { getRequiredSignatureType, type IntentSignatureType } from "@ellul.ai/pq
 import { derivePrfKey } from "./passy-prf";
 import { isTauriApp } from "./utils";
 import type { BridgeSender } from "./gate-client";
+import { getVpsApiUrl } from "./domains";
 
 const PRF_SALT_LABEL = "ellul-browser-signing-keys-v1";
 const DB_NAME = "ellul-operator-key";
@@ -544,7 +545,7 @@ class HttpError extends Error {
 }
 
 async function apiGet<T>(serverDomain: string, path: string): Promise<T> {
-  const res = await fetch(`https://${serverDomain}${path}`, {
+  const res = await fetch(`${getVpsApiUrl(serverDomain)}${path}`, {
     method: "GET",
     credentials: "include",
     headers: { Accept: "application/json" },
@@ -561,7 +562,7 @@ async function apiPost<T>(
   path: string,
   body: unknown,
 ): Promise<T> {
-  const res = await fetch(`https://${serverDomain}${path}`, {
+  const res = await fetch(`${getVpsApiUrl(serverDomain)}${path}`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json", Accept: "application/json" },

@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useVpsBridge } from "@/lib/vps-bridge";
+import { getVpsApiUrl } from "@/lib/domains";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -178,7 +179,7 @@ interface GuardrailApi {
 function useGuardrailApi(serverDomain: string, tier: string): GuardrailApi {
   const t = useTranslations("console.policies");
   const { send } = useVpsBridge();
-  const base = `https://${serverDomain}`;
+  const base = getVpsApiUrl(serverDomain);
   const headers = { "Content-Type": "application/json" };
   const opts = { credentials: "include" as const };
 

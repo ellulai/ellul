@@ -20,7 +20,7 @@ import { isSandboxId } from '@ellul.ai/types';
 import { spawn, type ChildProcess, type SpawnOptions } from 'child_process';
 import { createHash, createHmac } from 'crypto';
 import * as fs from 'fs';
-import * as os from 'os';
+
 
 import { logEvent, serializeError } from '../../shared/event-log';
 import { EllulNamespacedClient } from './EllulNamespacedClient';
@@ -33,18 +33,9 @@ const NSD_ADMIN_SOCK = '/run/ellul-ns/admin.sock';
 // v1: PREROUTING DNAT for MCP endpoint port 7702.
 const REQUIRED_NET_VERSION = 1;
 
-export type Platform = 'linux' | 'darwin';
+export type Platform = 'linux';
 
-/** Detect the host platform. */
-function detectPlatform(): Platform {
-  const p = os.platform();
-  if (p === 'linux') return 'linux';
-  if (p === 'darwin') return 'darwin';
-  throw new Error(`Unsupported platform "${p}" — only linux and darwin are supported`);
-}
-
-// Resolved once at startup
-const PLATFORM: Platform = detectPlatform();
+const PLATFORM: Platform = 'linux';
 
 let nsAvailable: boolean | null = null;
 
@@ -56,7 +47,7 @@ let seccompAvailable: boolean | null = null;
  * Linux-only; macOS always false.
  */
 export function isNamespaceAvailable(): boolean {
-  if (PLATFORM === 'darwin') return false;
+
   if (nsAvailable !== null) return nsAvailable;
   try {
     fs.accessSync(NSD_ADMIN_SOCK, fs.constants.R_OK | fs.constants.W_OK);
@@ -78,7 +69,7 @@ export function isNamespaceAvailable(): boolean {
  * detection can recompile it at runtime).
  */
 export function isSeccompAvailable(): boolean {
-  if (PLATFORM === 'darwin') return false;
+
   // Re-check if previously unavailable (enforcer may have recompiled it)
   if (seccompAvailable === true) return true;
   try {
@@ -152,7 +143,7 @@ export function getNamespaceIp(project: string): string | null {
   // unreachable but a namespace anchor is still alive (post-fallback
   // recovery, or daemon restart-loops). Falling back to 0.0.0.0:port
   // here breaks every bridge→opencode HTTP call from the host network.
-  if (PLATFORM === 'darwin') return null;
+
   if (!isProjectNamespaceRunning(project)) return null;
   const key = getNsIpKey();
   const hash = createHmac('sha256', key).update(project).digest();
@@ -163,7 +154,7 @@ export function getNamespaceIp(project: string): string | null {
 }
 
 function isProjectNamespaceRunning(project: string): boolean {
-  if (PLATFORM === 'darwin') return false;
+
   try {
     fs.accessSync(`/run/.ns-${project}/anchor.pid`, fs.constants.R_OK);
     return true;
@@ -182,7 +173,7 @@ function isProjectNamespaceRunning(project: string): boolean {
  * In a /30 subnet: .0 = network, .1 = host, .2 = namespace, .3 = broadcast.
  */
 export function getHostVethIp(project: string): string | null {
-  if (PLATFORM === 'darwin') return null;
+
   if (!isProjectNamespaceRunning(project)) return null;
   const key = getNsIpKey();
   const hash = createHmac('sha256', key).update(project).digest();
@@ -660,9 +651,6 @@ export function spawnInNamespace(
 ): ChildProcess {
   if (!project) {
     return spawn(command, args, options);
-  }
-  if (PLATFORM === 'darwin') {
-    throw new Error(`macOS project isolation not yet implemented — refusing to spawn "${command}" for project "${project}"`);
   }
   if (!isNamespaceAvailable()) {
     throw new Error(`nsd admin socket missing at ${NSD_ADMIN_SOCK} — refusing to spawn "${command}" for project "${project}"`);

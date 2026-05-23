@@ -14,6 +14,8 @@ import { useTranslations } from "next-intl";
 import { useVpsBridge } from "@/lib/vps-bridge";
 import { MOCK_MODE } from "@/lib/mock-data";
 import { isTauriApp } from "@/lib/utils";
+import { isLocalDomain } from "@/lib/domains";
+import { hasTauriInvoke, localFetch, localResponse } from "@/lib/local-fetch";
 import { API_URL } from "@/lib/api";
 import { fetchWithRetry } from "@/lib/vps-api";
 
@@ -116,15 +118,34 @@ function RealCodeTokenProvider({
         let codeSessionId: string;
         let expiresAt: number;
 
-        const isLocalProot = srvUrl?.includes("localhost");
+        const isLocal = srvUrl ? isLocalDomain(new URL(srvUrl).hostname) : false;
 
-        if (isLocalProot) {
+        if (isLocal) {
+          let sessionData: { codeSessionId: string; expiresAt: number };
+          if (hasTauriInvoke()) {
+            const r = await localFetch("POST", "/_auth/code/session", { body: "{}" });
+            sessionData = JSON.parse(r.body);
+          } else {
+            const tokenR = await fetch("http://localhost/_auth/byos/token", { method: "POST" });
+            if (!tokenR.ok) throw new Error("BYOS token fetch failed");
+            const { token: byosJwt } = await tokenR.json() as { token: string };
+            jwtRef.current = byosJwt;
+            const sessionR = await fetch("http://localhost/_auth/code/session", {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${byosJwt}` },
+            });
+            if (!sessionR.ok) throw new Error("Code session failed");
+            sessionData = await sessionR.json() as { codeSessionId: string; expiresAt: number };
+          }
+          const sid = sessionData.codeSessionId;
+          await fetch(`/api/local-establish?_code_session=${sid}`, { credentials: "include" });
           cookieEstablishedRef.current = true;
           lastEstablishTimeRef.current = Date.now();
-          sessionExpiresRef.current = Date.now() + 86400000;
-          setActiveCodeSessionId("proot-local");
-          setActiveSessionExpiresAt(Date.now() + 86400000);
-          setToken("proot-internal");
+          sessionExpiresRef.current = sessionData.expiresAt;
+          setActiveCodeSessionId(sid);
+          setActiveSessionExpiresAt(sessionData.expiresAt);
+          setToken("cookie-session");
           setError(null);
           return;
         } else if (securityTier !== "standard") {
@@ -273,36 +294,21 @@ function RealCodeTokenProvider({
         await establishCookie();
       }
 
-      // Android WebView can't send cross-origin cookies — route through
-      // the dispatch endpoint which proxies to file-api via internal JWT.
-      if (isAndroidTauriApp()) {
-        const urlObj = new URL(url);
+      const isLocal = srvUrl ? isLocalDomain(new URL(srvUrl).hostname) : false;
+
+      if (isLocal || isAndroidTauriApp()) {
+        const urlObj = new URL(url, window.location.origin);
         const pathAndQuery = urlObj.pathname + urlObj.search;
         const method = options?.method || "GET";
 
-        const hdrs = options?.headers;
-        const acceptVal = hdrs instanceof Headers
-          ? hdrs.get("Accept")
-          : typeof hdrs === "object" && hdrs !== null
-            ? (hdrs as Record<string, string>)["Accept"] ?? (hdrs as Record<string, string>).accept
-            : undefined;
-
-        // SSE / streaming: call proot_fetch directly and return the raw
-        // body so ReadableStream consumers (createSandboxStream) can parse
-        // SSE frames.  The code_api_proxy path would JSON.stringify the
-        // text, mangling newlines the SSE parser needs.
-        if (acceptVal === "text/event-stream" && !(options?.body instanceof FormData)) {
-          const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
-          if (!invoke) throw new AuthenticationError("Tauri not available");
+        if (hasTauriInvoke()) {
           const bodyStr = typeof options?.body === "string" ? options.body
             : options?.body ? JSON.stringify(options.body) : null;
-          const result = await invoke("plugin:proot|proot_fetch", {
-            method, path: pathAndQuery, body: bodyStr, port: 3002,
-          }) as { status: number; body: string; content_type: string };
-          return new Response(result.body, {
-            status: result.status,
-            headers: { "Content-Type": result.content_type || "text/event-stream" },
-          });
+          return localResponse(await localFetch(method, pathAndQuery, { body: bodyStr }));
+        }
+
+        if (isLocal) {
+          return fetch(`http://localhost${pathAndQuery}`, { ...options, credentials: "include" });
         }
 
         let body: unknown;
@@ -312,10 +318,7 @@ function RealCodeTokenProvider({
         }
         try {
           const result = await send("code_api_proxy", { method, path: pathAndQuery, ...(body !== undefined ? { body } : {}) });
-          return new Response(JSON.stringify(result), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          });
+          return new Response(JSON.stringify(result), { status: 200, headers: { "Content-Type": "application/json" } });
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           if (msg.includes("Authentication") || msg.includes("session") || msg.includes("401") || msg.includes("Unauthorized")) {

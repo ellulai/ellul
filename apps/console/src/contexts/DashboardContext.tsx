@@ -95,6 +95,11 @@ export interface ServerStatus {
     // Raw agentVersion as reported by the most recent liveness ping.
     pingedAgentVersion: string | null;
   } | null;
+  adapterUpdates?: Record<string, {
+    installedVersion: string;
+    targetVersion: string | null;
+    status: "current" | "updating" | "updated" | "failed";
+  }>;
   deployments?: Array<{
     name: string;
     directory?: string;

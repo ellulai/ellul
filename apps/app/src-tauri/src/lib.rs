@@ -175,9 +175,6 @@ pub fn run() {
             poll_connect,
         ]);
 
-    #[cfg(target_os = "android")]
-    let builder = builder.plugin(tauri_plugin_proot::init());
-
     #[cfg(desktop)]
     let builder = builder
         .plugin(tauri_plugin_proot::init())

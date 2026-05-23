@@ -394,7 +394,9 @@ async function regenerateCaddyfileOnStartup(): Promise<void> {
     // and breaks preview. Both modes are security-equivalent (mTLS in
     // proxied vs ACME cert in direct — Caddy auth still gates traffic).
     const deploymentModelRaw = read(DEPLOYMENT_MODEL_PATH) || read(FIREWALL_MODE_PATH);
-    const deploymentModel: 'proxied' | 'direct' = deploymentModelRaw === 'direct' ? 'direct' : 'proxied';
+    const isLocalhost = deploymentModelRaw === 'localhost';
+    const deploymentModel: 'proxied' | 'direct' | 'localhost' =
+      isLocalhost ? 'localhost' : deploymentModelRaw === 'direct' ? 'direct' : 'proxied';
 
     const { PLATFORM_ZONE, APP_ZONE, CONSOLE_ORIGIN } = await import('./config');
     let customDomain: string | undefined;
@@ -413,6 +415,7 @@ async function regenerateCaddyfileOnStartup(): Promise<void> {
       consoleOrigin: CONSOLE_ORIGIN,
       customDomain,
       originTag,
+      ...(isLocalhost && { highPorts: process.env.ELLUL_PLATFORM === 'android', canDeploy: false }),
     });
 
     let current = '';

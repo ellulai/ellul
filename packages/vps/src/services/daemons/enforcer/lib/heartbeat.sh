@@ -68,7 +68,8 @@ heartbeat_curl() {
   local HB_PAYLOAD="$2"
   local HB_CURL_ARGS=()
 
-  HB_CURL_ARGS+=(-s -o /dev/null -w "%{http_code}" --connect-timeout 5 --max-time 10)
+  local HB_BODY_FILE=/run/ellul-heartbeat-body
+  HB_CURL_ARGS+=(-s -o "$HB_BODY_FILE" -w "%{http_code}" --connect-timeout 5 --max-time 10)
   HB_CURL_ARGS+=("$HB_URL" -X POST)
   HB_CURL_ARGS+=(-H "Authorization: Bearer $TOKEN")
   HB_CURL_ARGS+=(-H "Content-Type: application/json")
@@ -528,6 +529,7 @@ get_command_endpoint() {
     update-signing-keyring)    echo "DIRECT update-signing-keyring" ;;
     byos-migrate-restore)      echo "DIRECT byos-migrate-restore" ;;
     byos-migrate-export)       echo "DIRECT byos-migrate-export" ;;
+    update-adapter-version)    echo "DIRECT update-adapter-version" ;;
     *)                     echo "" ;;
   esac
 }
@@ -1382,6 +1384,27 @@ poll_and_execute_commands() {
             EXEC_CODE="500"
             EXEC_RESULT=$(echo "$APP_RESULT" | jq -R -s -c 'split("\n") | .[0] | {success: false, error: .}')
             log "Command queue: apply-pending-update FAILED ($APP_RESULT)"
+          fi
+          ;;
+
+        update-adapter-version)
+          local UAV_ADAPTER UAV_VERSION UAV_RESULT
+          UAV_ADAPTER=$(echo "$CMD_PAYLOAD" | jq -r '.adapter // empty' 2>/dev/null)
+          UAV_VERSION=$(echo "$CMD_PAYLOAD" | jq -r '.version // empty' 2>/dev/null)
+          if [ -n "$UAV_ADAPTER" ] && [ -n "$UAV_VERSION" ]; then
+            UAV_RESULT=$(update_single_adapter "$UAV_ADAPTER" "$UAV_VERSION" 2>&1)
+            if [ $? -eq 0 ]; then
+              EXEC_CODE="200"
+              EXEC_RESULT='{"success":true}'
+              log "Command queue: update-adapter-version $UAV_ADAPTER@$UAV_VERSION succeeded"
+            else
+              EXEC_CODE="500"
+              EXEC_RESULT=$(echo "$UAV_RESULT" | jq -R -s -c '{success: false, error: .}')
+              log "Command queue: update-adapter-version $UAV_ADAPTER@$UAV_VERSION FAILED ($UAV_RESULT)"
+            fi
+          else
+            EXEC_CODE="400"
+            EXEC_RESULT='{"success":false,"error":"missing adapter or version"}'
           fi
           ;;
 

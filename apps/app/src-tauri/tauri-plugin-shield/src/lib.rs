@@ -66,7 +66,6 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::shield_intent_nonce,
             commands::shield_create_signed_ws_url,
             commands::shield_fetch,
-            commands::shield_byos_token,
             commands::shield_js_log,
             commands::shield_open_url,
         ])

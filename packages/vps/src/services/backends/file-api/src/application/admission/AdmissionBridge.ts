@@ -18,7 +18,7 @@ import {
   type HeadroomSignals,
 } from "./Admission";
 import { idlenessMs, listTracked, lruOrder } from "../preview/PreviewTracking";
-import { listActive } from "../preview/PreviewUnits";
+import { previewPlatform } from "../preview/PreviewPlatform";
 
 let cached: AdmissionService | null = null;
 
@@ -45,8 +45,19 @@ function physicalMB(): number {
   return Math.max(512, Math.round(os.totalmem() / (1024 * 1024)));
 }
 
+const IS_ANDROID = process.env.ELLUL_PLATFORM === 'android';
+
 function readSignals(): HeadroomSignals {
   const phys = physicalMB();
+  if (IS_ANDROID) {
+    return {
+      physicalMB: phys,
+      workloadMaxMB: phys,
+      workloadUsedMB: 0,
+      psiMemAvg10: 0,
+      systemHealth: "green",
+    };
+  }
   const budget = computeWorkloadSliceBudget(phys);
   const usedMB = readWorkloadSliceUsedMB();
   const psi = readWorkloadSlicePsi();
@@ -118,4 +129,4 @@ function collectEvictionCandidates(): ReadonlyArray<EvictionCandidate> {
   return candidates;
 }
 
-void listActive;
+void previewPlatform;

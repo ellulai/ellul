@@ -109,6 +109,66 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
         }
     }
 
+    private val cookieManager = java.net.CookieManager(null, java.net.CookiePolicy.ACCEPT_ALL).also {
+        java.net.CookieHandler.setDefault(it)
+    }
+
+    @Command
+    fun prootFetch(invoke: Invoke) {
+        Thread({
+            try {
+                val method = invoke.getString("method") ?: "GET"
+                val path = invoke.getString("path") ?: "/"
+                val body = invoke.getString("body")
+                val port = invoke.getInt("port", 8443)
+
+                val url = java.net.URL("http://127.0.0.1:$port$path")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.connectTimeout = 15000
+                conn.readTimeout = 30000
+                conn.requestMethod = method.uppercase()
+                conn.setRequestProperty("Accept", "application/json")
+
+                val uri = url.toURI()
+                val cookies = cookieManager.cookieStore.get(uri)
+                if (cookies.isNotEmpty()) {
+                    conn.setRequestProperty("Cookie", cookies.joinToString("; ") { "${it.name}=${it.value}" })
+                }
+
+                if (body != null && method.uppercase() != "GET") {
+                    conn.doOutput = true
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+                }
+
+                val status = conn.responseCode
+
+                val setCookies = conn.headerFields?.get("Set-Cookie") ?: emptyList()
+                for (cookie in setCookies) {
+                    val parsed = java.net.HttpCookie.parse(cookie)
+                    for (c in parsed) {
+                        cookieManager.cookieStore.add(uri, c)
+                    }
+                }
+
+                val contentType = conn.contentType ?: "application/json"
+                val responseBody = try {
+                    (if (status in 200..399) conn.inputStream else conn.errorStream)
+                        ?.bufferedReader()?.readText() ?: ""
+                } catch (_: Exception) { "" }
+                conn.disconnect()
+
+                val result = JSObject()
+                result.put("status", status)
+                result.put("body", responseBody)
+                result.put("content_type", contentType)
+                invoke.resolve(result)
+            } catch (e: Exception) {
+                invoke.reject("proot_fetch failed: ${e.message}")
+            }
+        }, "proot-fetch").start()
+    }
+
     @Command
     fun isSetupComplete(invoke: Invoke) {
         try {
@@ -119,7 +179,7 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
             if (version != null) {
                 result.put("version", version)
             } else {
-                result.put("version", org.json.JSONObject.NULL)
+                result.put("version", JSObject.NULL)
             }
             invoke.resolve(result)
         } catch (e: Exception) {
@@ -216,10 +276,10 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
                     val result = JSObject().apply {
                         put("running", false)
                         put("connected", false)
-                        put("subdomain", org.json.JSONObject.NULL)
-                        put("url", org.json.JSONObject.NULL)
-                        put("stats", org.json.JSONObject.NULL)
-                        put("error", org.json.JSONObject.NULL)
+                        put("subdomain", JSObject.NULL)
+                        put("url", JSObject.NULL)
+                        put("stats", JSObject.NULL)
+                        put("error", JSObject.NULL)
                     }
                     invoke.resolve(result)
                     return@Thread
@@ -232,9 +292,9 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
                 if (data.optBoolean("needsToken", false)) {
                     result.put("running", false)
                     result.put("connected", false)
-                    result.put("subdomain", data.optString("subdomain", "") ?: org.json.JSONObject.NULL)
-                    result.put("url", org.json.JSONObject.NULL)
-                    result.put("stats", org.json.JSONObject.NULL)
+                    result.put("subdomain", data.optString("subdomain", "") ?: JSObject.NULL)
+                    result.put("url", JSObject.NULL)
+                    result.put("stats", JSObject.NULL)
                     result.put("error", "needs_token")
                     invoke.resolve(result)
                     return@Thread
@@ -243,9 +303,9 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
                 if (data.has("error")) {
                     result.put("running", true)
                     result.put("connected", false)
-                    result.put("subdomain", org.json.JSONObject.NULL)
-                    result.put("url", org.json.JSONObject.NULL)
-                    result.put("stats", org.json.JSONObject.NULL)
+                    result.put("subdomain", JSObject.NULL)
+                    result.put("url", JSObject.NULL)
+                    result.put("stats", JSObject.NULL)
                     result.put("error", data.getString("error"))
                     invoke.resolve(result)
                     return@Thread
@@ -266,7 +326,7 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
                     put("uptime", data.optLong("uptime", 0))
                 }
                 result.put("stats", stats)
-                result.put("error", if (stale) "status_stale" else org.json.JSONObject.NULL)
+                result.put("error", if (stale) "status_stale" else JSObject.NULL)
 
                 invoke.resolve(result)
             } catch (e: Exception) {
@@ -304,7 +364,7 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
         try {
             val result = JSObject().apply {
                 put("hasToken", securePrefs.getString("ellul_auth_token", null) != null)
-                put("subdomain", tunnelPrefs.getString("subdomain", null) ?: org.json.JSONObject.NULL)
+                put("subdomain", tunnelPrefs.getString("subdomain", null) ?: JSObject.NULL)
                 put("autoExpose", tunnelPrefs.getBoolean("autoExpose", false))
             }
             invoke.resolve(result)

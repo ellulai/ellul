@@ -10,20 +10,11 @@ pub struct ShieldHttpClient {
 
 impl ShieldHttpClient {
     pub fn new() -> Self {
-        let mut builder = reqwest::Client::builder()
+        let client = reqwest::Client::builder()
             .use_rustls_tls()
-            .redirect(reqwest::redirect::Policy::none());
-
-        if let Ok(home) = std::env::var("HOME") {
-            let ca_path = format!("{home}/.ellul/ca.crt");
-            if let Ok(pem) = std::fs::read(&ca_path) {
-                if let Ok(cert) = reqwest::Certificate::from_pem(&pem) {
-                    builder = builder.add_root_certificate(cert);
-                }
-            }
-        }
-
-        let client = builder.build().expect("failed to build reqwest client");
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .expect("failed to build reqwest client");
         Self { client }
     }
 

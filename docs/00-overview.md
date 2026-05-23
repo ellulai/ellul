@@ -81,11 +81,22 @@ Five non-negotiable properties drive every design decision.
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
+## Two runtime models
+
+The platform supports two infrastructure runtimes, selected by `servers.runtime`:
+
+| Runtime | How it works | Boot | Density | Best for |
+| --- | --- | --- | --- | --- |
+| `vps` (default) | Dedicated cloud server per customer | 2-5 min | 1:1 | Sovereign mode, dedicated tier, heavy workloads |
+| `sandbox` | Kata micro-VM on shared bare-metal via Daytona | <5s | 25-30:1 | Starter/standard tiers, fast iteration |
+
+Sandboxes run on dedicated bare-metal servers managed by the Daytona orchestration layer. Each sandbox is a hardware-isolated Kata VM with its own kernel — not a container sharing the host kernel. See [daytona/00-overview.md](./daytona/00-overview.md).
+
 ## What you cannot do
 
 To set expectations early, here is what the architecture deliberately rejects:
 
-- **Multi-tenant VPSes.** Every customer gets their own VPS. Shared kernels are not in scope.
+- **Multi-tenant VPSes.** Every customer gets their own VPS. Shared kernels are not in scope. (Daytona sandboxes share a host but each has its own kernel via Kata hardware virtualization.)
 - **Agent root access.** The agent runs as `coder` (free) or `dev` (paid). Privileged actions go through narrowly-scoped sudo entries that are themselves immutable (`chattr +i`).
 - **Bypassing the gate system.** Database writes, deploys, git pushes, and secret reads all flow through user-approved gates. There is no "trust this agent" mode.
 - **Stable IPv6 in gateway mode.** Origin DNS records are A-only; AAAA is rejected at the reconciler. (Direct mode supports IPv6.) See [networking/03-origin-tags.md](./networking/03-origin-tags.md).
@@ -98,3 +109,4 @@ To set expectations early, here is what the architecture deliberately rejects:
 - **Threat modeling?** [security/00-overview.md](./security/00-overview.md), [security/13-known-limitations.md](./security/13-known-limitations.md).
 - **Onboarding a new VPS?** [provisioning/01-pipeline.md](./provisioning/01-pipeline.md).
 - **Hibernate/wake?** [lifecycle/02-hibernate.md](./lifecycle/02-hibernate.md), [lifecycle/03-wake.md](./lifecycle/03-wake.md).
+- **Daytona sandboxes?** [daytona/00-overview.md](./daytona/00-overview.md).

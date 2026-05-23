@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
+import { getVpsApiUrl } from "@/lib/domains";
 
 interface GraphNode {
   id: string;
@@ -60,7 +61,7 @@ export function VaultGraphView({ serverDomain, project }: VaultGraphViewProps) {
       if (centerId) params.set("center", centerId);
 
       const res = await fetch(
-        `https://${serverDomain}/_auth/vault/graph?${params}`,
+        `${getVpsApiUrl(serverDomain)}/_auth/vault/graph?${params}`,
         { credentials: "include" },
       );
       if (!res.ok) {

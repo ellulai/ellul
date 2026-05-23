@@ -38,6 +38,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api";
 import { encryptSecret } from "@/lib/crypto";
 import { useVpsBridge } from "@/lib/vps-bridge";
+import { vpsFetch } from "@/lib/domains";
 
 type SecurityTier = "standard" | "web_locked" | "private_locked";
 type SecretEnvironment = "production" | "development";
@@ -199,9 +200,10 @@ function useExposures(serverDomain: string, sandboxId: string) {
   return useQuery<ExposureInfo[]>({
     queryKey: ["exposures", serverDomain, sandboxId],
     queryFn: async () => {
-      const res = await fetch(
-        `https://${serverDomain}/_auth/secrets/exposures?sandboxId=${encodeURIComponent(sandboxId)}`,
-        { credentials: "include", headers: { Accept: "application/json" } },
+      const res = await vpsFetch(
+        serverDomain,
+        `/_auth/secrets/exposures?sandboxId=${encodeURIComponent(sandboxId)}`,
+        { headers: { Accept: "application/json" } },
       );
       if (!res.ok) return [];
       const data = await res.json();
@@ -226,10 +228,19 @@ export function SecretsManager({ serverId, tier, serverDomain, sandboxId }: Secr
 
 // ── Shared hooks ──
 
-function usePublicKey(serverId: string, fallbackError: string) {
+function usePublicKey(serverId: string, serverDomain: string, fallbackError: string) {
+  const isLocal = serverId === "local" && serverDomain.startsWith("localhost");
   return useQuery<PublicKeyResponse>({
     queryKey: ["publicKey", serverId],
     queryFn: async () => {
+      if (isLocal) {
+        const res = await vpsFetch(serverDomain, "/_auth/secrets/public-key");
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { error?: string }).error || fallbackError);
+        }
+        return res.json() as Promise<PublicKeyResponse>;
+      }
       const response = await api.api.servers[":id"]["public-key"].$get({
         param: { id: serverId },
       });
@@ -248,7 +259,7 @@ function usePublicKey(serverId: string, fallbackError: string) {
 function SecretsBridge({ serverId, serverDomain, sandboxId }: { serverId: string; serverDomain: string; sandboxId: string }) {
   const t = useTranslations("console.secrets");
   const { send } = useVpsBridge();
-  const { data: publicKeyData, isLoading: loadingKey } = usePublicKey(serverId, t("errors.fetchPublicKey"));
+  const { data: publicKeyData, isLoading: loadingKey } = usePublicKey(serverId, serverDomain, t("errors.fetchPublicKey"));
   const [activeEnv, setActiveEnv] = useState<SecretEnvironment>("production");
   const { data: exposures } = useQuery<ExposureInfo[]>({
     queryKey: ["exposures", serverDomain, sandboxId],
@@ -429,8 +440,8 @@ function SecretsBridge({ serverId, serverDomain, sandboxId }: { serverId: string
 
 function SecretsDirect({ serverId, serverDomain, sandboxId }: { serverId: string; serverDomain: string; sandboxId: string }) {
   const t = useTranslations("console.secrets");
-  const vpsUrl = `https://${serverDomain}`;
-  const { data: publicKeyData, isLoading: loadingKey } = usePublicKey(serverId, t("errors.fetchPublicKey"));
+  const sf = useCallback((path: string, init?: RequestInit) => vpsFetch(serverDomain, path, init), [serverDomain]);
+  const { data: publicKeyData, isLoading: loadingKey } = usePublicKey(serverId, serverDomain, t("errors.fetchPublicKey"));
   const [activeEnv, setActiveEnv] = useState<SecretEnvironment>("production");
   const { data: exposures } = useExposures(serverDomain, sandboxId);
 
@@ -448,8 +459,7 @@ function SecretsDirect({ serverId, serverDomain, sandboxId }: { serverId: string
   const fetchNames = useCallback(async () => {
     if (!initialLoadDone.current) setLoadingNames(true);
     try {
-      const res = await fetch(`${vpsUrl}/_auth/secrets?sandboxId=${encodeURIComponent(sandboxId)}&env=${activeEnv}`, {
-        credentials: "include",
+      const res = await sf(`/_auth/secrets?sandboxId=${encodeURIComponent(sandboxId)}&env=${activeEnv}`, {
         headers: { Accept: "application/json" },
       });
       if (res.ok) {
@@ -469,28 +479,26 @@ function SecretsDirect({ serverId, serverDomain, sandboxId }: { serverId: string
       setLoadingNames(false);
       initialLoadDone.current = true;
     }
-  }, [vpsUrl, activeEnv]);
+  }, [sf, activeEnv]);
 
   useEffect(() => {
     fetchNames();
   }, [fetchNames]);
 
   const handleFetchValues = useCallback(async (): Promise<Record<string, string>> => {
-    const res = await fetch(`${vpsUrl}/_auth/secrets/values?sandboxId=${encodeURIComponent(sandboxId)}&env=${activeEnv}`, {
-      credentials: "include",
+    const res = await sf(`/_auth/secrets/values?sandboxId=${encodeURIComponent(sandboxId)}&env=${activeEnv}`, {
       headers: { Accept: "application/json" },
     });
     if (!res.ok) throw new Error(t("errors.readValues"));
     const data = await res.json();
     return data.values ?? {};
-  }, [vpsUrl, sandboxId, activeEnv, t]);
+  }, [sf, sandboxId, activeEnv, t]);
 
   const handleSaveOne = useCallback(async (name: string, value: string, sensitivity: "sensitive" | "plain") => {
     if (!publicKeyData?.publicKey) throw new Error(t("errors.publicKeyUnavailable"));
     const encrypted = await encryptSecret(publicKeyData.publicKey, value);
-    const res = await fetch(`${vpsUrl}/_auth/secrets`, {
+    const res = await sf(`/_auth/secrets`, {
       method: "POST",
-      credentials: "include",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({
         name,
@@ -504,7 +512,7 @@ function SecretsDirect({ serverId, serverDomain, sandboxId }: { serverId: string
       const err = await res.json().catch(() => ({}));
       throw new Error((err as { error?: string }).error || t("errors.saveSecret"));
     }
-  }, [vpsUrl, publicKeyData, sandboxId, activeEnv, t]);
+  }, [sf, publicKeyData, sandboxId, activeEnv, t]);
 
   const handleSaveAll = async () => {
     if (!publicKeyData?.publicKey) {
@@ -548,9 +556,8 @@ function SecretsDirect({ serverId, serverDomain, sandboxId }: { serverId: string
     if (!secretToDelete) return;
     setIsDeleting(true);
     try {
-      const res = await fetch(`${vpsUrl}/_auth/secrets/${encodeURIComponent(secretToDelete)}?sandboxId=${encodeURIComponent(sandboxId)}&env=${activeEnv}`, {
+      const res = await sf(`/_auth/secrets/${encodeURIComponent(secretToDelete)}?sandboxId=${encodeURIComponent(sandboxId)}&env=${activeEnv}`, {
         method: "DELETE",
-        credentials: "include",
         headers: { Accept: "application/json" },
       });
       if (!res.ok) throw new Error(t("errors.deleteSecret"));
@@ -604,9 +611,8 @@ function SecretsDirect({ serverId, serverDomain, sandboxId }: { serverId: string
           const encrypted = await encryptSecret(publicKeyData.publicKey, entry.value);
           secrets.push({ name: entry.key, ...encrypted });
         }
-        const res = await fetch(`${vpsUrl}/_auth/secrets/bulk`, {
+        const res = await sf(`/_auth/secrets/bulk`, {
           method: "POST",
-          credentials: "include",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
           body: JSON.stringify({ secrets, sandboxId, env }),
         });
@@ -741,9 +747,8 @@ function SecretsUI({
     }
     if (!serverDomain || !sandboxId) return;
     try {
-      await fetch(`https://${serverDomain}/_auth/secrets/classify`, {
+      await vpsFetch(serverDomain, `/_auth/secrets/classify`, {
         method: "PUT",
-        credentials: "include",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ sandboxId, keyName, kind }),
       });
@@ -759,9 +764,8 @@ function SecretsUI({
     }
     if (!serverDomain || !sandboxId) return;
     try {
-      await fetch(`https://${serverDomain}/_auth/secrets/acknowledge`, {
+      await vpsFetch(serverDomain, `/_auth/secrets/acknowledge`, {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ sandboxId, keyName }),
       });

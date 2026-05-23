@@ -26,7 +26,7 @@ import {
   type Product,
 } from "@/lib/tier-utils";
 import { isContextVisible } from "@/lib/feature-flags";
-import { getCodeApiUrl, isLocalServer, resolveServerDomain } from "@/lib/domains";
+import { getCodeApiUrl, getVpsApiUrl, isLocalServer, resolveServerDomain } from "@/lib/domains";
 import { toast } from "sonner";
 import * as kb from "@/lib/keybindings";
 import { useWorkspaceConfig } from "@/hooks/useWorkspaceConfig";
@@ -168,6 +168,7 @@ interface MobileDashboardLayoutProps {
   isRollingBack?: boolean;
   snapshotExpiresAt?: string | null;
   agentUpdate?: ServerStatus["agentUpdate"];
+  adapterUpdates?: ServerStatus["adapterUpdates"];
   onUpdateServer?: () => void;
   isUpdating?: boolean;
   onSetAgentUpdateMode?: (mode: "auto" | "manual") => void;
@@ -196,6 +197,7 @@ function DashboardContent({
   isRollingBack,
   snapshotExpiresAt,
   agentUpdate,
+  adapterUpdates,
   onUpdateServer,
   isUpdating,
   onSetAgentUpdateMode,
@@ -213,6 +215,7 @@ function DashboardContent({
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const product = (server.product as Product) || getProductForTier(server.product);
+  const isLocal = isLocalServer(server);
   const { allServers, activeServerId, updateActiveServer } = useDashboard();
 
   // Use AppsListContext for global sandbox list and management
@@ -292,10 +295,11 @@ function DashboardContent({
     requestedTab: searchParams.get("tab"),
     sendContextMode,
     selectedApp,
+    isLocal,
   });
 
   // ── Dynamic integration groups ──
-  const { groups: integrationGroups, dynamicTabIds, createGroup, deleteGroup } = useIntegrationGroups(server.id, selectedApp);
+  const { groups: integrationGroups, dynamicTabIds, createGroup, deleteGroup } = useIntegrationGroups(server.id, selectedApp, isLocal);
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const existingRoles = integrationGroups
     .filter(g => g.routeRole)
@@ -334,7 +338,6 @@ function DashboardContent({
 
   const [showServerSettings, setShowServerSettings] = useState(false);
 
-  const isLocal = isLocalServer(server);
   const serverDomain = resolveServerDomain(server);
 
   const handleResetWorkspace = useCallback(async () => {
@@ -348,7 +351,7 @@ function DashboardContent({
     } catch { /* Tauri not available or command not wired — fall through */ }
 
     if (!ok) {
-      const res = await fetch(`https://${serverDomain}/_auth/workspace/reset`, {
+      const res = await fetch(`${getVpsApiUrl(serverDomain)}/_auth/workspace/reset`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -361,7 +364,8 @@ function DashboardContent({
   const selectedAppName = selectedAppInfo?.name || null;
 
   // Context mode
-  const projectMode = selectedApp ? workbench?.projectContextModes[selectedApp] : undefined;
+  const sandboxIdForMode = selectedApp?.includes("/") ? selectedApp.split("/")[0] : selectedApp;
+  const projectMode = sandboxIdForMode ? workbench?.projectContextModes[sandboxIdForMode] : undefined;
 
   // ── Workspace-config-driven tabs ──
   const tNav = useTranslations("console.navContexts");
@@ -842,6 +846,7 @@ function DashboardContent({
           isRollingBack={isRollingBack}
           snapshotExpiresAt={snapshotExpiresAt}
           agentUpdate={agentUpdate}
+          adapterUpdates={adapterUpdates}
           onUpdateServer={onUpdateServer}
           isUpdating={isUpdating}
           onSetAgentUpdateMode={onSetAgentUpdateMode}
@@ -868,7 +873,7 @@ export function MobileDashboardLayout(props: MobileDashboardLayoutProps) {
   return (
     <VpsBridgeProvider hostname={serverDomain}>
       <VpsCapabilitiesProvider hostname={serverDomain} serverStatus={props.server.state}>
-        <CodeTokenProvider securityTier={props.server.securityTier} codeApiUrl={getCodeApiUrl(serverDomain)} serverId={props.server.id} srvUrl={`https://${serverDomain}`}>
+        <CodeTokenProvider securityTier={props.server.securityTier} codeApiUrl={getCodeApiUrl(serverDomain)} serverId={props.server.id} srvUrl={serverDomain.startsWith("localhost") ? `http://${serverDomain}` : `https://${serverDomain}`}>
           <AppsListProvider
             serverDomain={serverDomain}
             securityTier={props.server.securityTier}

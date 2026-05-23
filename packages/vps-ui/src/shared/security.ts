@@ -7,8 +7,24 @@ function getConfig(): EllulConfig | null {
   return typeof window !== "undefined" ? window.__ELLUL_CONFIG__ ?? null : null;
 }
 
-// Trust only origins on the same platform zone (console, other VPS workbenches).
-// User-deployed apps on the app zone are intentionally NOT trusted.
+function wsUrl(origin: string, path: string): string {
+  const proto = origin.startsWith("https") ? "wss:" : "ws:";
+  return `${proto}//${new URL(origin).host}${path}`;
+}
+
+export function getBridgeWsUrl(token: string): string {
+  const cfg = getConfig();
+  const origin = cfg?.wsOrigin || location.origin;
+  return wsUrl(origin, `/ws?_agent_token=${encodeURIComponent(token)}`);
+}
+
+export function getCodeWsUrl(): string {
+  const cfg = getConfig();
+  const origin = cfg?.codeWsOrigin || cfg?.wsOrigin || location.origin;
+  const path = cfg?.codeWsPath || "/ws";
+  return wsUrl(origin, path);
+}
+
 export function isOriginTrusted(origin: string): boolean {
   if (!origin || origin === "null") return false;
   const config = getConfig();
@@ -22,7 +38,7 @@ export function isOriginTrusted(origin: string): boolean {
   } catch {
     return false;
   }
-  if (protocol !== "https:") return false;
   const zone = config.platformZone;
+  if (protocol !== "https:" && !(protocol === "http:" && host === "localhost")) return false;
   return host === zone || host.endsWith(`.${zone}`);
 }

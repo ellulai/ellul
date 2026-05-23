@@ -19,8 +19,6 @@ export interface CaddyfileOptions {
   consoleOrigin: string;
   /** Optional additional hostname (customer custom domain) served by the main handler. */
   customDomain?: string;
-  /** Platform target. Linux uses unix socket for admin API. macOS keeps TCP default. */
-  platform?: "linux" | "macos";
   // Adds o-{tag}.{platformZone}:443 to .ai block for resolveOverride SNI. From /etc/ellul/origin-tag.
   originTag?: string;
   // false (Cloud Sandbox): omits sites-enabled + app-routes.d; dev preview still included.
@@ -79,8 +77,15 @@ function renderGlobalOptions(
   platformZone: string,
 ): string {
   const lines = ["{"];
-  if (useAdminSocket) lines.push(`    admin unix/${CADDY_ADMIN_SOCK}|0660`);
+  if (useAdminSocket) {
+    if (process.env.ELLUL_PLATFORM === 'android') {
+      lines.push(`    admin 127.0.0.1:2019`);
+    } else {
+      lines.push(`    admin unix/${CADDY_ADMIN_SOCK}|0660`);
+    }
+  }
   if (!autoHttps) lines.push("    auto_https off");
+  if (process.env.ELLUL_PLATFORM === 'android') lines.push("    persist_config off");
   lines.push(`    email admin@${platformZone}`);
   // Deliberately NO `servers { trusted_proxies ... }` block.
   //
@@ -117,8 +122,12 @@ function replaceDomains(text: string, main: string, code: string, dev: string): 
 
 const CF_AOP_CA = "/etc/caddy/cf-origin-pull-ca.pem";
 
-function configJsHandler(platformZone: string, appZone: string, consoleOrigin: string): string {
-  const json = JSON.stringify({ platformZone, appZone, consoleOrigin });
+function configJsHandler(platformZone: string, appZone: string, consoleOrigin: string, wsOrigin?: string, codeWsOrigin?: string, codeWsPath?: string): string {
+  const cfg: Record<string, string> = { platformZone, appZone, consoleOrigin };
+  if (wsOrigin) cfg.wsOrigin = wsOrigin;
+  if (codeWsOrigin) cfg.codeWsOrigin = codeWsOrigin;
+  if (codeWsPath) cfg.codeWsPath = codeWsPath;
+  const json = JSON.stringify(cfg);
   return [
     `    handle /vps-config.js {`,
     `        header Content-Type "application/javascript"`,
@@ -138,35 +147,35 @@ export function generateCaddyfileContent(opts: CaddyfileOptions): string {
     appZone,
     consoleOrigin,
     customDomain,
-    platform = "linux",
   } = opts;
   const replace = (text: string) => replaceDomains(text, mainDomain, codeDomain, devDomain);
   // If a custom domain is active on this VPS, allow it as a frame-ancestor on
   // the code viewer + preview + main handlers so a page on the customer's domain
   // can iframe those resources. 'self' + console stay in the allowlist regardless.
   const extraFrameAncestors = customDomain ? [`https://${customDomain}`] : undefined;
+  const isSingleHost = deploymentModel === "localhost";
   const handlerOpts = {
     consoleOrigin,
     extraFrameAncestors,
-    forceXForwardedHostRewrite: deploymentModel === "localhost",
+    forceXForwardedHostRewrite: isSingleHost,
+    singleHost: isSingleHost,
   };
-  const configJs = configJsHandler(platformZone, appZone, consoleOrigin);
+  const localhostPort = opts.highPorts ? 8443 : 80;
+  const wsOrigin = isSingleHost ? (localhostPort === 80 ? `http://localhost` : `http://localhost:${localhostPort}`) : undefined;
+  const codeWsOrigin = isSingleHost ? (localhostPort === 80 ? `http://localhost` : `http://localhost:${localhostPort}`) : undefined;
+  const codeWsPath = isSingleHost ? "/code-ws" : undefined;
+  const configJs = configJsHandler(platformZone, appZone, consoleOrigin, wsOrigin, codeWsOrigin, codeWsPath);
 
   const sites: SiteBlock[] = [];
 
   if (deploymentModel === "localhost") {
-    const httpsPort = opts.highPorts ? 8443 : 443;
+    const httpPort = opts.highPorts ? 8443 : 80;
+    const portSuffix = httpPort === 80 ? "" : `:${httpPort}`;
     sites.push({
-      addresses: [`localhost:${httpsPort}`, `127.0.0.1:${httpsPort}`],
-      tls: "internal",
+      addresses: [`http://localhost${portSuffix}`, `http://127.0.0.1${portSuffix}`],
+      tls: undefined,
       handlers: configJs + "\n" + replace(generateCaddyHandlers("all", handlerOpts)),
     });
-    if (opts.highPorts) {
-      sites.push({
-        addresses: ["localhost:8080", "127.0.0.1:8080"],
-        handlers: `    redir https://localhost:8443{uri}`,
-      });
-    }
   } else if (deploymentModel === "direct") {
     const addresses = [mainDomain, codeDomain, devDomain];
     if (customDomain) addresses.push(customDomain);
@@ -225,9 +234,9 @@ export function generateCaddyfileContent(opts: CaddyfileOptions): string {
   }
 
   const canDeploy = opts.canDeploy !== false;
-  const disableAutoHttps = deploymentModel === "direct" || deploymentModel === "localhost";
+  const autoHttps = deploymentModel !== "direct" && deploymentModel !== "localhost";
   const parts = [
-    renderGlobalOptions(disableAutoHttps, platform === "linux", platformZone),
+    renderGlobalOptions(autoHttps, true, platformZone),
     "",
     ...(canDeploy ? ["import /etc/caddy/sites-enabled/*.caddy", ""] : [""]),
     ...sites.map(renderSiteBlock),

@@ -1034,27 +1034,32 @@ function spawnInstall(paths: InstallPaths, lang: LangSpec, needsWipe: boolean): 
   // capture broken (marker file 0 bytes, reconciler infinite-loops).
   // A script file sidesteps every quoting hazard — bash reads the raw
   // bytes and evaluates them directly.
+  const isAndroid = process.env.ELLUL_PLATFORM === 'android';
   const exitMarkerEsc = shellEsc(paths.exitPath);
   const exitMarkerTmpEsc = shellEsc(paths.exitPath + '.tmp');
   const scriptPath = path.join(APPS_STATE_DIR, `${rootKey(installRoot)}.install.sh`);
   const needsCorepack = lang.packageManager === 'pnpm' || lang.packageManager === 'yarn';
-  const scriptBody =
-    `#!/bin/bash\n` +
-    `export PATH="$HOME/.node/bin:$HOME/.cargo/bin:$HOME/.local/bin:/usr/share/dotnet:/usr/local/go/bin:/usr/lib/dart/bin:/opt/flutter/bin:$PATH"\n` +
-    (needsCorepack ? `command -v ${lang.packageManager} >/dev/null 2>&1 || corepack enable 2>/dev/null\n` : '') +
-    `( flock -n 9 || exit 99\n` +
+  const installBody =
     (wipeFragment ? `${wipeFragment}\n` : '') +
     `cd ${shellEsc(installRoot)}\n` +
     (envLines ? `${envLines}\n` : '') +
     `echo "[install-manager] $(date -u +%Y-%m-%dT%H:%M:%SZ) ${lang.packageManager}: ${lang.command}"\n` +
     `${lang.command}\n` +
-    // $? can be empty under concurrent signal delivery — fall back to 143
-    // so the marker always parses to a number.
     `INSTALL_EC=$?\n` +
     `[ -z "$INSTALL_EC" ] && INSTALL_EC=143\n` +
     `printf "%s" "$INSTALL_EC" > ${exitMarkerTmpEsc} && mv ${exitMarkerTmpEsc} ${exitMarkerEsc}\n` +
-    `exit "$INSTALL_EC"\n` +
-    `) 9<>${shellEsc(paths.lockPath)}\n`;
+    `exit "$INSTALL_EC"\n`;
+  const scriptBody = isAndroid
+    ? `#!/bin/sh\n` +
+      `export PATH="$HOME/.node/bin:/usr/local/bin:/usr/bin:/bin:$PATH"\n` +
+      (needsCorepack ? `command -v ${lang.packageManager} >/dev/null 2>&1 || corepack enable 2>/dev/null\n` : '') +
+      installBody
+    : `#!/bin/bash\n` +
+      `export PATH="$HOME/.node/bin:$HOME/.cargo/bin:$HOME/.local/bin:/usr/share/dotnet:/usr/local/go/bin:/usr/lib/dart/bin:/opt/flutter/bin:$PATH"\n` +
+      (needsCorepack ? `command -v ${lang.packageManager} >/dev/null 2>&1 || corepack enable 2>/dev/null\n` : '') +
+      `( flock -n 9 || exit 99\n` +
+      installBody +
+      `) 9<>${shellEsc(paths.lockPath)}\n`;
   try {
     fs.writeFileSync(scriptPath, scriptBody, { mode: 0o755 });
   } catch {
@@ -1065,12 +1070,13 @@ function spawnInstall(paths: InstallPaths, lang: LangSpec, needsWipe: boolean): 
   const installMemMaxMB = Math.max(512, Math.floor(totalMB * 0.6));
   const scopeUnit = `ellul-install-${rootKey(installRoot).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
   const svcUser = process.env.USER || 'dev';
-  const launcher =
-    `nohup sudo /usr/local/bin/ellul-spawn-scope ` +
-    `ellul-user-workload.slice ${scopeUnit} ` +
-    `MemoryMax=${installMemMaxMB}M,MemorySwapMax=0 ` +
-    `-- runuser -u ${svcUser} -- bash ${shellEsc(scriptPath)} < /dev/null >> ${shellEsc(paths.logPath)} 2>&1 & ` +
-    `echo $!`;
+  const launcher = isAndroid
+    ? `sh ${shellEsc(scriptPath)} < /dev/null >> ${shellEsc(paths.logPath)} 2>&1 & echo $!`
+    : `nohup sudo /usr/local/bin/ellul-spawn-scope ` +
+      `ellul-user-workload.slice ${scopeUnit} ` +
+      `MemoryMax=${installMemMaxMB}M,MemorySwapMax=0 ` +
+      `-- runuser -u ${svcUser} -- bash ${shellEsc(scriptPath)} < /dev/null >> ${shellEsc(paths.logPath)} 2>&1 & ` +
+      `echo $!`;
 
   let pidStr = '';
   try {

@@ -1391,44 +1391,6 @@ pub async fn shield_fetch(
     }
 }
 
-// ── BYOS bootstrap token ──
-
-#[command(rename_all = "camelCase")]
-pub async fn shield_byos_token(
-    server_domain: String,
-) -> Result<serde_json::Value, Error> {
-    let _ = server_domain;
-    let home = std::env::var("HOME").map_err(|_| Error::Other("HOME not set".into()))?;
-    let secret_path = format!("{home}/.ellul/jwt-secret");
-    let secret = std::fs::read_to_string(&secret_path)
-        .map_err(|e| Error::HttpError(format!("Cannot read BYOS jwt-secret at {secret_path}: {e}")))?;
-    let secret = secret.trim();
-
-    let header = base64::engine::general_purpose::URL_SAFE_NO_PAD
-        .encode(r#"{"alg":"HS256","typ":"JWT"}"#);
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    let payload_json = serde_json::json!({
-        "sub": "byos-bootstrap",
-        "iat": now,
-        "exp": now + 3600,
-    });
-    let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD
-        .encode(serde_json::to_string(&payload_json).unwrap());
-
-    let signing_input = format!("{header}.{payload}");
-    use hmac::Mac;
-    let mut mac = hmac::Hmac::<sha2::Sha256>::new_from_slice(secret.as_bytes())
-        .map_err(|e| Error::HttpError(format!("HMAC init: {e}")))?;
-    mac.update(signing_input.as_bytes());
-    let signature = base64::engine::general_purpose::URL_SAFE_NO_PAD
-        .encode(mac.finalize().into_bytes());
-
-    Ok(serde_json::json!({ "jwt": format!("{signing_input}.{signature}") }))
-}
-
 // ── JS console log forwarder ──
 
 #[command]

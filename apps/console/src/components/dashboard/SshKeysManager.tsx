@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useVpsBridge } from "@/lib/vps-bridge";
+import { vpsFetch } from "@/lib/domains";
 
 type SecurityTier = "standard" | "web_locked" | "private_locked";
 
@@ -77,15 +78,12 @@ function SshKeysDirect({
   const [isAdding, setIsAdding] = useState(false);
   const [removingKey, setRemovingKey] = useState<string | null>(null);
 
-  const vpsUrl = `https://${serverDomain}`;
+  const sf = useCallback((path: string, init?: RequestInit) => vpsFetch(serverDomain, path, init), [serverDomain]);
 
-  // Fetch keys from VPS using JWT cookie
   const fetchKeys = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${vpsUrl}/_auth/api/keys`, {
-        credentials: "include", // JWT cookie sent automatically
-      });
+      const res = await sf(`/_auth/api/keys`);
       if (res.ok) {
         const data = await res.json();
         setKeys(
@@ -103,7 +101,7 @@ function SshKeysDirect({
     } finally {
       setLoading(false);
     }
-  }, [vpsUrl]);
+  }, [sf]);
 
   useEffect(() => {
     fetchKeys();
@@ -119,9 +117,8 @@ function SshKeysDirect({
     setError(null);
 
     try {
-      const res = await fetch(`${vpsUrl}/_auth/keys`, {
+      const res = await sf(`/_auth/keys`, {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newKeyName.trim() || t("defaultKeyName"),
@@ -161,12 +158,9 @@ function SshKeysDirect({
   const handleRemoveKey = async (fingerprint: string) => {
     setRemovingKey(fingerprint);
     try {
-      const res = await fetch(
-        `${vpsUrl}/_auth/keys/${encodeURIComponent(fingerprint)}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
+      const res = await sf(
+        `/_auth/keys/${encodeURIComponent(fingerprint)}`,
+        { method: "DELETE" },
       );
 
       if (!res.ok) {

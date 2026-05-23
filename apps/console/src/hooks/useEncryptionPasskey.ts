@@ -64,12 +64,12 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
 // ─── Hook ────────────────────────────────────────────────
 
-export function useEncryptionPasskey() {
+export function useEncryptionPasskey(options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
   const queryClient = useQueryClient();
   const [isRegistering, setIsRegistering] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-  // Query: check if user has encryption passkey
   const {
     data: credentialsData,
     isLoading: isLoadingCredentials,
@@ -77,6 +77,7 @@ export function useEncryptionPasskey() {
     queryKey: ["encryption-credentials"],
     queryFn: () => apiFetch("/encryption/credentials"),
     staleTime: 60_000,
+    enabled,
   });
 
   const hasPasskey = credentialsData?.hasPasskey ?? false;

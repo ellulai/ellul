@@ -2,6 +2,7 @@
 // Copyright (c) 2025 ellul.ai. All rights reserved.
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { getCodeWsUrl } from "@shared/security";
 import type { FileNode, GitChange } from "../types";
 
 interface WebSocketState {
@@ -38,7 +39,7 @@ export function useWebSocket(project: string | null) {
 
     const thisConnectId = ++connectIdRef.current;
 
-    const ws = new WebSocket(`wss://${location.host}/ws`);
+    const ws = new WebSocket(getCodeWsUrl());
     wsRef.current = ws;
     intentionalCloseRef.current = false;
 

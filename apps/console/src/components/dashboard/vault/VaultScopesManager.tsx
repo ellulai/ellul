@@ -15,6 +15,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { getVpsApiUrl } from "@/lib/domains";
 
 interface ScopeRule {
   type: "folder_glob" | "tag" | "frontmatter" | "note_path";
@@ -138,7 +139,7 @@ export function VaultScopesManager({ serverDomain, project }: VaultScopesManager
     setLoading(true);
     try {
       const res = await fetch(
-        `https://${serverDomain}/_auth/vault/scopes?project=${encodeURIComponent(project)}`,
+        `${getVpsApiUrl(serverDomain)}/_auth/vault/scopes?project=${encodeURIComponent(project)}`,
         { credentials: "include" },
       );
       if (!res.ok) {
@@ -170,7 +171,7 @@ export function VaultScopesManager({ serverDomain, project }: VaultScopesManager
   const createScope = useCallback(async () => {
     setCreating(true);
     try {
-      const res = await fetch(`https://${serverDomain}/_auth/vault/scopes`, {
+      const res = await fetch(`${getVpsApiUrl(serverDomain)}/_auth/vault/scopes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -205,7 +206,7 @@ export function VaultScopesManager({ serverDomain, project }: VaultScopesManager
     if (!confirm(t("deleteConfirm"))) return;
     try {
       await fetch(
-        `https://${serverDomain}/_auth/vault/scopes/${scopeId}?project=${encodeURIComponent(project)}`,
+        `${getVpsApiUrl(serverDomain)}/_auth/vault/scopes/${scopeId}?project=${encodeURIComponent(project)}`,
         { method: "DELETE", credentials: "include" },
       );
       fetchScopes();

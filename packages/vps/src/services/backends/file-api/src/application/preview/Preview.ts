@@ -9,7 +9,7 @@ import * as path from 'path';
 import * as http from 'http';
 import * as crypto from 'crypto';
 import type { IncomingMessage } from 'http';
-import { execSync, execFileSync, execFile as execFileCb } from 'child_process';
+import { execSync, execFile as execFileCb } from 'child_process';
 import { promisify } from 'util';
 import { isSandboxId } from '@ellul.ai/types';
 import { HOME, ROOT_DIR, getAppPath } from '../../config';
@@ -68,16 +68,6 @@ import type {
 // Re-export the canonical-phase set so tests and other modules already
 export { CANONICAL_PREVIEW_PHASES } from '@vps/shared/preview-types';
 import { CANONICAL_PREVIEW_PHASES } from '@vps/shared/preview-types';
-import {
-  startUnit,
-  stopUnit,
-  restartUnit,
-  resetFailed,
-  isActive,
-  listActive,
-  unitStatus,
-  writeFrameworkDropin,
-} from './PreviewUnits';
 import { evaluateAdmission, resolveCandidateReservation } from './PreviewAdmission';
 import { recordStart, recordStop } from './PreviewTracking';
 import { withPreviewLock } from './PreviewMutex';
@@ -85,6 +75,8 @@ import { transition as lifecycleTransition, forget as lifecycleForget, markPhase
 import { computeFrameworkCgroupCaps } from '@vps/shared/memory-budget';
 
 const execFile = promisify(execFileCb);
+
+import { previewPlatform } from './PreviewPlatform';
 
 const PREVIEW_FILE = `${HOME}/.ellul/preview-app`;
 const PORT_REGISTRY_FILE = `${HOME}/.ellul/preview-ports.json`;
@@ -775,8 +767,12 @@ async function writeCaddyDevRouteImpl(port: number, companions: CompanionEntry[]
   }
   const cspFrameAncestors = `frame-ancestors ${frameAncestors.join(' ')}`;
 
+  const isSingleHost = devDomain === "localhost";
+  const devMatcher = isSingleHost
+    ? `@dev {\n    host ${devDomain}\n    not path /browser /browser/* /api/*\n}`
+    : `@dev host ${devDomain}`;
   const config = `# template: ${DEV_CADDY_TEMPLATE_VERSION}
-@dev host ${devDomain}
+${devMatcher}
 handle @dev {
     @notAuth not path /_auth/*
     header @notAuth Content-Security-Policy "${cspFrameAncestors}"
@@ -883,60 +879,6 @@ function unitUptimeUs(activeEnterMonotonicUs: number): number {
   }
 }
 
-function getPidOnPort(port: number): number | null {
-  try {
-    const out = execSync(`ss -tlnp 'sport = :${port}'`, { encoding: 'utf8', timeout: 3000 });
-    const m = out.match(/pid=(\d+)/);
-    return m?.[1] ? parseInt(m[1], 10) : null;
-  } catch {
-    return null;
-  }
-}
-
-// Detect when a preview unit's process listens on a port OTHER than the
-// allocated one (e.g. app hardcodes `port: 3000` ignoring PORT env).
-// Scans all TCP listeners and matches PIDs that belong to the unit's
-// process tree (MainPID's descendants).
-function detectMismatchedPort(appDirectory: string, expectedPort: number): number | null {
-  try {
-    const { escapeInstance } = require('./PreviewUnits') as typeof import('./PreviewUnits');
-    const unit = `ellul-preview@${escapeInstance(appDirectory)}.service`;
-    const mainPidStr = execFileSync(
-      'systemctl', ['show', unit, '--property=MainPID', '--value'],
-      { encoding: 'utf8', timeout: 3000 },
-    ).trim();
-    const mainPid = parseInt(mainPidStr, 10);
-    if (!mainPid || mainPid <= 1) return null;
-
-    // Collect all PIDs in the unit's cgroup (MainPID + children).
-    const cgroupPath = `/proc/${mainPid}/cgroup`;
-    let unitPids = new Set<number>([mainPid]);
-    try {
-      const cgroupLine = fs.readFileSync(cgroupPath, 'utf8');
-      const m = cgroupLine.match(/0::(.+)/);
-      if (m?.[1]) {
-        const procsPath = `/sys/fs/cgroup${m[1].trim()}/cgroup.procs`;
-        const procs = fs.readFileSync(procsPath, 'utf8').trim().split('\n');
-        unitPids = new Set(procs.map(Number).filter(Boolean));
-      }
-    } catch {}
-
-    // Parse all TCP listeners and find one owned by a unit PID on a
-    // different port than expected.
-    const ssOut = execFileSync('ss', ['-tlnp'], { encoding: 'utf8', timeout: 3000 });
-    for (const line of ssOut.split('\n')) {
-      const pidMatch = line.match(/pid=(\d+)/);
-      const portMatch = line.match(/:(\d+)\s/);
-      if (!pidMatch?.[1] || !portMatch?.[1]) continue;
-      const pid = parseInt(pidMatch[1], 10);
-      const port = parseInt(portMatch[1], 10);
-      if (port !== expectedPort && unitPids.has(pid) && port >= 1024 && port <= 65535) {
-        return port;
-      }
-    }
-  } catch {}
-  return null;
-}
 
 // When a port mismatch is detected, rewrite the spec + registry + Caddy
 // route to use the actual port. Returns the corrected port or null.
@@ -1086,8 +1028,8 @@ export function classifyOrphan(inputs: {
 // every heal traces back to a concrete classification.
 export async function detectOrphan(appDirectory: string): Promise<OrphanReport> {
   const port = getProjectPort(appDirectory);
-  const pid = getPidOnPort(port);
-  const status = await unitStatus(appDirectory);
+  const pid = previewPlatform.getPidOnPort(port);
+  const status = await previewPlatform.unitStatus(appDirectory);
   return classifyOrphan({
     port,
     pid,
@@ -1196,23 +1138,6 @@ export const __orphanTestingInternals = {
   DEV_SERVER_CMDLINE_PATTERNS,
 };
 
-// Read the tail of the systemd journal for a preview unit. Requires
-async function readJournalTail(appDirectory: string, lines = 40): Promise<string> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { escapeInstance } = require('./PreviewUnits') as typeof import('./PreviewUnits');
-    const unit = `ellul-preview@${escapeInstance(appDirectory)}.service`;
-    const { stdout } = await execFile(
-      '/bin/journalctl',
-      ['-u', unit, '-n', String(lines), '--no-pager', '-o', 'cat'],
-      { timeout: 5_000, maxBuffer: 1024 * 128 },
-    );
-    const trimmed = stdout.length > 4096 ? stdout.slice(-4096) : stdout;
-    return trimmed.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
-  } catch {
-    return '';
-  }
-}
 
 function extractErrorSummary(logs: string): string | null {
   if (!logs) return null;
@@ -1875,7 +1800,7 @@ async function startPreviewLocked(
 
   // If heal fails, surface an error — we don't mask split-brain.
   // deliberately ran their own dev server; we don't kill their work.
-  if (getPidOnPort(projectPort) !== null) {
+  if (previewPlatform.getPidOnPort(projectPort) !== null) {
     const orphanCheck = await detectOrphan(appDirectory);
     if (!orphanCheck.isOrphan) {
       // Case 1: managed unit already listening.
@@ -1908,7 +1833,7 @@ async function startPreviewLocked(
   }
 
   // Clear any prior failed state so StartLimitBurst doesn't short-circuit.
-  await resetFailed(appDirectory);
+  await previewPlatform.resetFailed(appDirectory);
 
   // Framework-aware cgroup drop-in. The unit template carries no resource caps —
   // this drop-in is the sole source of truth for MemoryHigh/Max, TasksMax, CPUQuota.
@@ -1938,20 +1863,13 @@ async function startPreviewLocked(
         memoryHighMB: Math.min(baseCaps.memoryHighMB, Math.round(reservation.prodSteadyMB * 1.1)),
       }
     : baseCaps;
-  const dropinResult = await writeFrameworkDropin(appDirectory, {
+  const dropinResult = await previewPlatform.writeFrameworkDropin(appDirectory, {
     memoryHighMB: finalCaps.memoryHighMB,
     memoryMaxMB: finalCaps.memoryMaxMB,
     tasksMax: finalCaps.tasksMax,
     cpuQuotaPercent: finalCaps.cpuQuotaPercent,
   });
   if (!dropinResult.ok) {
-    // Fail-soft: log and continue. The aggregate previews-slice cap
-    // (ManagedOOMMemoryPressure + MemoryMax on the slice) is the
-    // backstop — a unit without per-instance caps still can't take
-    // the host down. EROFS here means the host's file-api unit was
-    // provisioned before /etc/systemd/system was added to ReadWritePaths;
-    // the next rebuild-all run picks up the new bundle.ts and the dropin
-    // path becomes writable again.
     log('warn', 'framework cgroup dropin write failed — falling back to slice-level caps', {
       appDirectory, error: dropinResult.error,
     });
@@ -1980,7 +1898,7 @@ async function startPreviewLocked(
     });
   } catch { /* never let lifecycle bookkeeping break startup. */ }
 
-  const result = await startUnit(appDirectory);
+  const result = await previewPlatform.startUnit(appDirectory);
   if (!result.ok) {
     try {
       lifecycleTransition({ directory: appDirectory, next: 'cold', force: true });
@@ -2032,7 +1950,7 @@ async function startPreviewLocked(
         if (reinstall.phase === 'running' || reinstall.phase === 'queued') {
           const result = await installManagerWait(appPath, 120_000, { intervalMs: 1_000 });
           if (result.phase === 'ready') {
-            await resetFailed(appDirectory);
+            await previewPlatform.resetFailed(appDirectory);
             return startPreview(appDirectory, requestId, { ...options, _reinstallAttempted: true });
           }
         }
@@ -2071,7 +1989,7 @@ async function waitForPortBind(
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
-    if (getPidOnPort(port) !== null) {
+    if (previewPlatform.getPidOnPort(port) !== null) {
       emitPhaseTransition(appDirectory, 'ready', 'Preview ready');
       return { ready: true, unitFailed: false };
     }
@@ -2080,7 +1998,7 @@ async function waitForPortBind(
     // bound a hardcoded port while we're waiting on the allocated one.
     const elapsed = Date.now() - (deadline - timeoutMs);
     if (elapsed > 3000) {
-      const actualPort = detectMismatchedPort(appDirectory, port);
+      const actualPort = previewPlatform.detectMismatchedPort(appDirectory, port);
       if (actualPort !== null) {
         const corrected = autoCorrectPort(appDirectory, port, actualPort);
         emitPhaseTransition(appDirectory, 'ready', 'Preview ready (port auto-corrected)');
@@ -2090,7 +2008,7 @@ async function waitForPortBind(
 
     // Short-circuit on a failed unit rather than waiting the full
     try {
-      const st = await unitStatus(appDirectory);
+      const st = await previewPlatform.unitStatus(appDirectory);
       if (st?.ActiveState === 'failed') {
         emitPhaseTransition(
           appDirectory,
@@ -2109,7 +2027,7 @@ async function waitForPortBind(
   }
 
   // Final mismatch check at timeout boundary.
-  const actualPort = detectMismatchedPort(appDirectory, port);
+  const actualPort = previewPlatform.detectMismatchedPort(appDirectory, port);
   if (actualPort !== null) {
     const corrected = autoCorrectPort(appDirectory, port, actualPort);
     emitPhaseTransition(appDirectory, 'ready', 'Preview ready (port auto-corrected)');
@@ -2132,25 +2050,24 @@ export async function stopPreview(appDirectory?: string): Promise<void> {
     try {
       lifecycleTransition({ directory: appDirectory, next: 'stopping', force: true });
     } catch {}
-    await stopUnit(appDirectory);
+    await previewPlatform.stopUnit(appDirectory);
     recordStop(appDirectory);
     try {
       lifecycleTransition({ directory: appDirectory, next: 'cold', force: true });
     } catch {}
-    // Ensure the port is free — systemd's KillMode=mixed should handle
     const port = getProjectPort(appDirectory);
-    if (getPidOnPort(port) !== null) {
+    if (previewPlatform.getPidOnPort(port) !== null) {
       try {
         execSync(`fuser -KILL ${port}/tcp 2>/dev/null || true`, { timeout: 3000 });
       } catch {}
     }
   } else {
-    const actives = await listActive();
+    const actives = await previewPlatform.listActive();
     for (const appDir of actives) {
       try {
         lifecycleTransition({ directory: appDir, next: 'stopping', force: true });
       } catch {}
-      await stopUnit(appDir);
+      await previewPlatform.stopUnit(appDir);
       try {
         lifecycleTransition({ directory: appDir, next: 'cold', force: true });
       } catch {}
@@ -2182,7 +2099,7 @@ export async function restartPreview(appDirectory: string): Promise<{ ok: boolea
       });
     }
   } catch {}
-  const r = await restartUnit(appDirectory);
+  const r = await previewPlatform.restartUnit(appDirectory);
   // After restart, Caddy route may or may not already be correct.
   try {
     ensureCaddyRoute(getProjectPort(appDirectory));
@@ -2276,7 +2193,7 @@ export async function getPreviewHealth(directory?: string): Promise<PreviewHealt
     }
   }
 
-  const status = await unitStatus(current);
+  const status = await previewPlatform.unitStatus(current);
   // when the unit isn't currently running, otherwise we false-positive
   const running = status.ActiveState === 'active' || status.ActiveState === 'activating';
   const isFailed = !running && (
@@ -2290,7 +2207,7 @@ export async function getPreviewHealth(directory?: string): Promise<PreviewHealt
   if (!isFailed) clearPendingHeal(current);
 
   if (isFailed) {
-    const logTail = await readJournalTail(current, 40);
+    const logTail = await previewPlatform.readJournalTail(current, 40);
     const error = extractErrorSummary(logTail) || `preview unit failed (${status.Result})`;
     checkAndHeal(current, error, logTail);
     const heal = healStates.get(current);
@@ -2354,19 +2271,19 @@ export async function getPreviewHealth(directory?: string): Promise<PreviewHealt
 
   // ActiveState=active — check actual readiness
   let effectivePort = projectPort;
-  let pid = getPidOnPort(projectPort);
+  let pid = previewPlatform.getPidOnPort(projectPort);
   if (pid === null) {
     // Nothing on the allocated port — check if the app hardcoded a
     // different port and auto-correct the route to match.
-    const actualPort = detectMismatchedPort(current, projectPort);
+    const actualPort = previewPlatform.detectMismatchedPort(current, projectPort);
     if (actualPort !== null) {
       effectivePort = autoCorrectPort(current, projectPort, actualPort);
-      pid = getPidOnPort(effectivePort);
+      pid = previewPlatform.getPidOnPort(effectivePort);
     }
     if (pid === null) {
       const uptimeUs = unitUptimeUs(status.ActiveEnterTimestampMonotonic);
       if (uptimeUs > 30_000_000) {
-        const logTail = await readJournalTail(current, 30);
+        const logTail = await previewPlatform.readJournalTail(current, 30);
         return {
           app: current,
           phase: 'crashed',
@@ -2419,7 +2336,7 @@ export async function getPreviewHealth(directory?: string): Promise<PreviewHealt
   }
 
   if (!reachable) {
-    const logTail = await readJournalTail(current, 30);
+    const logTail = await previewPlatform.readJournalTail(current, 30);
     return {
       app: current,
       phase: 'error',
@@ -2505,7 +2422,7 @@ export async function getCompanionHealth(directory: string, port: number, pathPr
     }
   }
 
-  const status = await unitStatus(directory);
+  const status = await previewPlatform.unitStatus(directory);
   const running = status.ActiveState === 'active' || status.ActiveState === 'activating';
   const isFailed = !running && (
     status.ActiveState === 'failed' ||
@@ -2518,7 +2435,7 @@ export async function getCompanionHealth(directory: string, port: number, pathPr
   if (!isFailed) clearPendingHeal(directory);
 
   if (isFailed) {
-    const logTail = await readJournalTail(directory, 40);
+    const logTail = await previewPlatform.readJournalTail(directory, 40);
     const error = extractErrorSummary(logTail) || `preview unit failed (${status.Result})`;
     checkAndHeal(directory, error, logTail);
     const heal = healStates.get(directory);
@@ -2541,12 +2458,12 @@ export async function getCompanionHealth(directory: string, port: number, pathPr
   }
 
   let effectivePort = port;
-  let pid = getPidOnPort(port);
+  let pid = previewPlatform.getPidOnPort(port);
   if (pid === null) {
-    const actualPort = detectMismatchedPort(directory, port);
+    const actualPort = previewPlatform.detectMismatchedPort(directory, port);
     if (actualPort !== null) {
       effectivePort = autoCorrectPort(directory, port, actualPort);
-      pid = getPidOnPort(effectivePort);
+      pid = previewPlatform.getPidOnPort(effectivePort);
       // Update the companion entry with the corrected port.
       const companions = getCompanions();
       const idx = companions.findIndex((c) => c.directory === directory);
@@ -2697,7 +2614,7 @@ export async function setPreviewApp(
     fs.writeFileSync(`${HOME}/.ellul/preview-script`, script);
   }
 
-  if (appDirectory) await resetFailed(appDirectory);
+  if (appDirectory) await previewPlatform.resetFailed(appDirectory);
   broadcastAllPreviewHealth();
 
   if (!appDirectory) {
@@ -2826,7 +2743,7 @@ export async function stopCompanionPreview(appDirectory: string): Promise<void> 
 export async function reconcileCompanions(): Promise<void> {
   const companions = getCompanions();
   if (companions.length === 0) return;
-  const actives = new Set(await listActive());
+  const actives = new Set(await previewPlatform.listActive());
   const valid = companions.filter((c) => {
     if (!actives.has(c.directory)) {
       log('info', 'reconcile: removing stale companion', { directory: c.directory });
@@ -2840,7 +2757,7 @@ export async function reconcileCompanions(): Promise<void> {
 export async function reconcilePortRegistry(): Promise<void> {
   try {
     const registry = getPortRegistry();
-    const actives = new Set(await listActive());
+    const actives = new Set(await previewPlatform.listActive());
     let changed = false;
     for (const [project, port] of Object.entries(registry)) {
       // Bare sandbox slugs should never have ports — clean up stale entries
@@ -2853,7 +2770,7 @@ export async function reconcilePortRegistry(): Promise<void> {
         continue;
       }
       const projectDir = path.join(ROOT_DIR, project);
-      const pidOnPort = getPidOnPort(port);
+      const pidOnPort = previewPlatform.getPidOnPort(port);
       if (!fs.existsSync(projectDir) && !actives.has(project) && pidOnPort === null) {
         delete registry[project];
         changed = true;
@@ -2896,12 +2813,12 @@ export async function cleanupOrphanedPreviews(): Promise<void> {
   try {
     // ── Pass 1: unit-owned orphans ────────────────────────────────────
     // systemd unit is active but its target is unreachable (app dir gone)
-    const actives = await listActive();
+    const actives = await previewPlatform.listActive();
     for (const appDir of actives) {
       const dir = path.join(ROOT_DIR, appDir);
       if (!fs.existsSync(dir)) {
         log('info', 'GC: stopping orphaned preview unit (app dir missing)', { appDir });
-        await stopUnit(appDir);
+        await previewPlatform.stopUnit(appDir);
         continue;
       }
       // Sandbox-level orphan: dir exists, but sandbox/ellul.json is gone
@@ -2912,19 +2829,19 @@ export async function cleanupOrphanedPreviews(): Promise<void> {
           log('info', 'GC: stopping orphaned preview unit (sandbox ellul.json missing)', {
             appDir, sandboxId,
           });
-          await stopUnit(appDir);
+          await previewPlatform.stopUnit(appDir);
         }
       }
     }
 
     // ── Pass 2: port-held orphans without any unit at all ────────────
-    // unit-owned sweep above won't catch this because listActive() only
-    // returns systemd-managed units. On 2026-04-20 this left a Next.js
+    // Requires ss for port scanning — skip on platforms without it.
+    if (!previewPlatform.hasPortScanning) return;
     const registry = getPortRegistry();
     const registeredPorts = new Set<number>(Object.values(registry));
     const actualActives = new Set(actives);
     for (let port = PREVIEW_PORT_MIN; port <= PREVIEW_PORT_MAX; port++) {
-      const pid = getPidOnPort(port);
+      const pid = previewPlatform.getPidOnPort(port);
       if (pid === null) continue;
       // Skip ports tracked by the registry — reconcilePortRegistry owns
       if (registeredPorts.has(port)) continue;
@@ -2958,10 +2875,10 @@ export async function cleanupOrphanedPreviews(): Promise<void> {
       // SIGTERM, wait up to 2s, then SIGKILL. Same escalation pattern as
       try { process.kill(pid, 'SIGTERM'); } catch {}
       const killDeadline = Date.now() + 2000;
-      while (Date.now() < killDeadline && getPidOnPort(port) === pid) {
+      while (Date.now() < killDeadline && previewPlatform.getPidOnPort(port) === pid) {
         await new Promise((r) => setTimeout(r, 100));
       }
-      if (getPidOnPort(port) === pid) {
+      if (previewPlatform.getPidOnPort(port) === pid) {
         try { process.kill(pid, 'SIGKILL'); } catch {}
       }
       metrics.orphansDetected++;
@@ -2980,7 +2897,7 @@ export async function getPreviewStatus(): Promise<{ app: string | null; running:
   if (fs.existsSync(PREVIEW_FILE)) {
     current = fs.readFileSync(PREVIEW_FILE, 'utf8').trim() || null;
   }
-  const running = current ? await isActive(current) : false;
+  const running = current ? await previewPlatform.isActive(current) : false;
   const port = current ? getProjectPort(current) : PREVIEW_PORT_MIN;
   return { app: current, running, port };
 }

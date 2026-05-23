@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/dialog";
 import { ClaudeLogo, OpenAILogo, CursorLogo, GeminiLogo, OpenRouterLogo, OpenCodeLogo, GrokLogo } from "@/components/ui/ai-logos";
 import { useVpsBridge } from "@/lib/vps-bridge";
+import { getIframeBaseUrl } from "@/lib/domains";
+import { isTauriApp } from "@/lib/utils";
 
 // ANSI renderer ported from AuthSetupModal. Translates cursor moves to
 // whitespace and reassembles URLs that Ink wraps across lines.
@@ -521,7 +523,9 @@ function SignInDialog({
   const eventSourceRef = useRef<EventSource | null>(null);
   const sessionIdRef = useRef<string | null>(null);
 
-  const vpsUrl = `https://${serverDomain}`;
+  const vpsUrl = serverDomain.startsWith("localhost")
+    ? getIframeBaseUrl(serverDomain, isTauriApp())
+    : `https://${serverDomain}`;
   const label = tool === "claude" ? "Claude Code" : tool === "codex" ? "Codex" : tool === "cursor" ? "Cursor" : tool ?? "";
   const isOpen = tool !== null;
 

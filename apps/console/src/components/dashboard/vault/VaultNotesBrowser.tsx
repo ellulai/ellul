@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { VaultNoteRenderer } from "./VaultNoteRenderer";
 import { VaultBacklinksPane } from "./VaultBacklinksPane";
+import { getVpsApiUrl } from "@/lib/domains";
 
 // ── Types ──
 
@@ -129,7 +130,7 @@ export function VaultNotesBrowser({
 
   const vaultFetch = useCallback(
     async (path: string, options?: RequestInit) => {
-      const res = await fetch(`https://${serverDomain}${path}`, {
+      const res = await fetch(`${getVpsApiUrl(serverDomain)}${path}`, {
         ...options,
         credentials: "include",
       });
@@ -507,7 +508,7 @@ export function VaultNotesBrowser({
       setLoading(true);
       try {
         const res = await fetch(
-          `https://${serverDomain}/_auth/vault/notes?project=${encodeURIComponent(project)}&limit=500`,
+          `${getVpsApiUrl(serverDomain)}/_auth/vault/notes?project=${encodeURIComponent(project)}&limit=500`,
           { credentials: "include" },
         );
         if (cancelled) return;

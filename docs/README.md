@@ -31,6 +31,7 @@ After that, jump to whichever area is relevant.
 | [`auth/`](./auth/) | Authentication flows, sessions, internal tokens. |
 | [`isolation/`](./isolation/) | Per-project namespaces, mount/PID/network isolation, seccomp, cross-project snapshots. |
 | [`operations/`](./operations/) | Release pipeline, manifest system, hot-shipping, runbooks, observability, capability versioning, testing. |
+| [`daytona/`](./daytona/) | Daytona orchestration layer: Kata micro-VM sandboxes on bare-metal, scheduler, routing, security, host setup. |
 | [`products/`](./products/) | Cloud Platform, Cloud Sandbox, Shield Gateway, Shield local daemon, Free Tier, BYOS, Game Studio, Paperclip; tier matrix. |
 | [`post-quantum/`](./post-quantum/) | PQC engineering: hybrid KEM, ML-DSA migration, fat keys, HD wallet quantum-blind. |
 | [`preview-and-deployment/`](./preview-and-deployment/) | Dev-server runtime, framework probe, production deploy, monorepo handling. |

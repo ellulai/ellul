@@ -74,7 +74,6 @@
     "shield:allow-shield-intent-nonce",
     "shield:allow-shield-create-signed-ws-url",
     "shield:allow-shield-fetch",
-    "shield:allow-shield-byos-token",
     "shield:allow-shield-get-tier",
     "shield:allow-shield-token-login",
     "shield:allow-shield-js-log",
@@ -83,6 +82,7 @@
     "proot:allow-proot-stop",
     "proot:allow-proot-status",
     "proot:allow-proot-health",
+    "proot:allow-proot-fetch",
     "proot:allow-proot-setup-status",
     "proot:allow-proot-setup-start",
     "proot:allow-proot-switch-to-local",
@@ -94,7 +94,6 @@
     "proot:allow-proot-update-cancel",
     "proot:allow-proot-update-get-settings",
     "proot:allow-proot-update-set-settings",
-    "proot:allow-proot-migration-export-file",
-    "proot:allow-proot-fetch"
+    "proot:allow-proot-migration-export-file"
   ]
 }

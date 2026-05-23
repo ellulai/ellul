@@ -8,23 +8,8 @@
 # (Cloudflare Edge / Direct Connect) is now handled via WebSocket bridge commands
 # routed through sovereign-shield (port 3005) instead of heartbeat polling.
 
-# Convert IPv4 address to hex tag (matches ipToTag() in gateway-kv.service.ts).
-# e.g. 178.156.170.66 → b29caa42
-ip_to_tag() {
-  local ip="$1"
-  if echo "$ip" | grep -q ':'; then
-    echo -n "$ip" | md5sum | cut -c1-8
-  else
-    echo "$ip" | awk -F. '{printf "%02x%02x%02x%02x", $1, $2, $3, $4}'
-  fi
-}
-
 # Ensure gateway origin hostname is in Caddy site block addresses.
-# The gateway Worker uses resolveOverride which sends SNI as o-{ipTag}.{zone}.
-# Caddy's strict SNI-Host enforcement (auto-enabled by mTLS) rejects connections
-# if the SNI doesn't match any configured site block address.
-# This adds the origin hostname so Caddy accepts the gateway Worker's connections.
-# Only applies to gateway deployment model (auto_https off + no direct connect).
+# Origin tag is identity-based (shortId) and immutable — written once at provision.
 ensure_gateway_origin() {
   local CADDYFILE="/etc/caddy/Caddyfile"
   [ ! -f "$CADDYFILE" ] && return
@@ -33,16 +18,14 @@ ensure_gateway_origin() {
   grep -q 'auto_https off' "$CADDYFILE" 2>/dev/null || return
   grep -q 'origin-pull-ca.pem' "$CADDYFILE" 2>/dev/null || return
 
-  local MY_IP=$(get_public_ip)
-  [ -z "$MY_IP" ] && return
+  local TAG
+  TAG=$(cat /etc/ellul/origin-tag 2>/dev/null)
+  [ -z "$TAG" ] && return
 
-  local TAG=$(ip_to_tag "$MY_IP")
   local PLATFORM_ZONE
   PLATFORM_ZONE=$(cat /etc/ellul/platform-zone 2>/dev/null)
   [ -z "$PLATFORM_ZONE" ] && return
   local ORIGIN_AI="o-${TAG}.${PLATFORM_ZONE}"
-
-  echo -n "$TAG" > /etc/ellul/origin-tag
 
   # Already patched? Skip.
   grep -q "$ORIGIN_AI" "$CADDYFILE" 2>/dev/null && return

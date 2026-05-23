@@ -67,6 +67,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::proot_stop,
             commands::proot_status,
             commands::proot_health,
+            commands::proot_fetch,
             commands::proot_setup_status,
             commands::proot_setup_start,
             commands::proot_switch_to_local,
@@ -82,7 +83,6 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::proot_update_cancel,
             commands::proot_update_get_settings,
             commands::proot_update_set_settings,
-            commands::proot_fetch,
             commands::proot_migration_export_file,
         ])
         .setup(|app, api| {

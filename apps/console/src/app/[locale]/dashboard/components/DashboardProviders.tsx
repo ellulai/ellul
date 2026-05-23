@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 "use client";
 
-import { useState } from "react";
+import { useState, useLayoutEffect } from "react";
 import { AppsListProvider } from "@/contexts/AppsListContext";
 import { CodeTokenProvider } from "@/contexts/CodeTokenContext";
 import { PermissionInboxProvider } from "@/contexts/PermissionInboxContext";
@@ -10,7 +10,8 @@ import { OperatorKeyProvider } from "@/contexts/OperatorKeyContext";
 import { VpsBridgeProvider, useVpsBridge } from "@/lib/vps-bridge";
 import { VpsCapabilitiesProvider } from "@/providers/VpsCapabilitiesProvider";
 import { RealtimeProvider } from "@/providers/realtime-provider";
-import { getCodeApiUrl, isLocalServer, resolveServerDomain } from "@/lib/domains";
+import { getCodeApiUrl, isLocalServer, isLocalDomain, resolveServerDomain } from "@/lib/domains";
+import { hasTauriInvoke, localFetch, localResponse } from "@/lib/local-fetch";
 import { isTauriApp } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +32,32 @@ interface DashboardProvidersProps {
   activeServerId: string | null;
   updateActiveServer: (id: string | null) => void;
   mutations: ReturnType<typeof useServerMutations>;
+}
+
+function useLocalFetchInterceptor(serverDomain: string, isLocal: boolean) {
+  useLayoutEffect(() => {
+    if (!isLocal) return;
+    const original = window.fetch;
+    const patched: typeof fetch = async (input, init) => {
+      const url = typeof input === "string"
+        ? input
+        : input instanceof URL ? input.toString() : (input as Request).url;
+      if (url.includes("localhost/") || url.includes(`${serverDomain}/`)) {
+        const u = new URL(url);
+        const path = u.pathname + u.search;
+        if (hasTauriInvoke()) {
+          const body = init?.body
+            ? typeof init.body === "string" ? init.body : JSON.stringify(init.body)
+            : null;
+          return localResponse(await localFetch(init?.method || "GET", path, { body }));
+        }
+        return original(url, { ...init, credentials: "include" as const });
+      }
+      return original(input, init);
+    };
+    window.fetch = patched;
+    return () => { window.fetch = original; };
+  }, [serverDomain, isLocal]);
 }
 
 function TauriReauthWall({ hostname, children }: { hostname: string; children: React.ReactNode }) {
@@ -94,6 +121,8 @@ export function DashboardProviders({
   const isLocal = isLocalServer(server);
   const serverDomain = resolveServerDomain(server);
 
+  useLocalFetchInterceptor(serverDomain, isLocal);
+
   const dashboardContext: DashboardContextValue = {
     serverStatus: effectiveServerStatus,
     isStatusLoading: effectiveIsStatusLoading,
@@ -137,7 +166,7 @@ export function DashboardProviders({
       securityTier={server.securityTier}
       codeApiUrl={getCodeApiUrl(serverDomain)}
       serverId={server.id}
-      srvUrl={`https://${serverDomain}`}
+      srvUrl={isLocalDomain(serverDomain) ? `http://${serverDomain}` : `https://${serverDomain}`}
     >
       <VpsCapabilitiesProvider hostname={serverDomain} serverStatus={effectiveServerStatus.state} isLocal={isLocal}>
         <RealtimeProvider

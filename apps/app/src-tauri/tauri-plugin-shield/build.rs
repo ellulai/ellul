@@ -43,10 +43,7 @@ const COMMANDS: &[&str] = &[
     "shield_operator_clear",
     "shield_intent_nonce",
     "shield_create_signed_ws_url",
-    "shield_get_tier",
-    "shield_token_login",
     "shield_fetch",
-    "shield_byos_token",
     "shield_js_log",
     "shield_open_url",
 ];
