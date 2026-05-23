@@ -572,7 +572,7 @@ function getConnectionCapabilities(
 function McpToolPermissionsCard({ serverId, app }: McpToolPermissionsCardProps) {
   const t = useTranslations("console.security");
   const sandboxId = app?.directory ?? null;
-  const server = useDashboard().serverStatus.server;
+  const server = useDashboard().serverStatus?.server;
   const { groups, isLoading } = useIntegrationGroups(serverId, sandboxId, server ? isLocalServer(server) : false);
   const { gatePerms } = useGatePermissions(app);
 
