@@ -77,9 +77,9 @@ export function usePreferredLocale(): UsePreferredLocaleResult {
           ...previousSession,
           user: {
             ...previousSession.user,
-            preferredLocale: newLocale,
+            preferredLocale: newLocale as string,
           },
-        });
+        } as Session);
       }
 
       router.replace(pathname || "/", { locale: newLocale as never });
