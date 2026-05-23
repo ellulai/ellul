@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-import { type NextRequest, NextResponse } from "next/server";
+import { type NextFetchEvent, type NextRequest, NextResponse } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
 import { wrapI18nMiddleware } from "@ellul.ai/i18n/middleware";
 import { routing } from "@/i18n/routing";
@@ -36,7 +36,7 @@ async function getJwt(): Promise<string | null> {
 
 const intlMiddleware = wrapI18nMiddleware(createIntlMiddleware(routing));
 
-export default async function middleware(request: NextRequest) {
+export default async function middleware(request: NextRequest, event: NextFetchEvent) {
   if (PROXY_PORT && VPS_PATH_RE.test(request.nextUrl.pathname)) {
     const jwt = await getJwt();
     if (jwt) {
@@ -45,7 +45,7 @@ export default async function middleware(request: NextRequest) {
       return NextResponse.next({ request: { headers } });
     }
   }
-  return intlMiddleware(request);
+  return intlMiddleware(request, event);
 }
 
 // Matcher is inlined (not imported) because Next 15.5+ requires the value

@@ -332,7 +332,7 @@ export function WorkbenchProvider({ children, initialSidebarOpen = false }: Work
     (mode: "base" | "preview" | "deploy", project?: string | null) => {
       const client = contextModeClientRef.current;
       if (!client || !project) return;
-      const sandboxId = project.includes("/") ? project.split("/")[0] : project;
+      const sandboxId = project.includes("/") ? project.split("/")[0]! : project;
       const writeId = (contextModeWriteIdRef.current[sandboxId] ?? 0) + 1;
       contextModeWriteIdRef.current[sandboxId] = writeId;
       setProjectContextModes((prev) => ({ ...prev, [sandboxId]: mode }));
@@ -358,10 +358,10 @@ export function WorkbenchProvider({ children, initialSidebarOpen = false }: Work
   const queryContextMode = useCallback((project?: string | null) => {
     const client = contextModeClientRef.current;
     if (!client || !project) return;
-    const sandboxId = project.includes("/") ? project.split("/")[0] : project;
+    const sandboxId = project.includes("/") ? project.split("/")[0]! : project;
     client.getContextMode(sandboxId)
       .then(({ mode }) =>
-        setProjectContextModes((prev) => ({ ...prev, [sandboxId]: mode })),
+        setProjectContextModes((prev) => ({ ...prev, [sandboxId as string]: mode })),
       )
       .catch((err) => {
         if (signalAuthIfNeeded(err)) return;
