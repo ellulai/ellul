@@ -26,47 +26,36 @@ class ProotManager(private val context: Context) {
     private val vaultDir = File(appDir, "vault")
     private val projectsDir: File =
         File(context.getExternalFilesDir(null) ?: appDir, "projects")
-    private val prootBin = File(appDir, "proot")
+    private val nativeLibDir = context.applicationInfo.nativeLibraryDir
+    private val prootBin = File(nativeLibDir, "libproot.so")
+    private val libDir = File(appDir, "lib")
     private val logDir = File(appDir, "logs")
 
     fun extractProotBinary() {
-        val versionFile = File(appDir, "proot.version")
-        val currentVersion = getAppVersionCode()
-
-        if (prootBin.exists() && prootBin.canExecute() && versionFile.exists()) {
-            if (versionFile.readText().trim() == currentVersion) return
-            Log.i(TAG, "APK updated — re-extracting proot binary")
+        if (prootBin.exists() && prootBin.canExecute()) {
+            Log.i(TAG, "Using proot from nativeLibraryDir: ${prootBin.absolutePath}")
+            ensureLibSymlinks()
+            return
         }
-
-        try {
-            context.assets.open("proot/arm64-v8a/proot").use { input ->
-                prootBin.outputStream().use { output ->
-                    input.copyTo(output)
-                }
-            }
-            prootBin.setExecutable(true, true)
-            versionFile.writeText(currentVersion)
-            Log.i(TAG, "Extracted proot binary (version $currentVersion)")
-        } catch (e: IOException) {
-            throw RuntimeException(
-                "proot binary not found in plugin assets — " +
-                    "build with scripts/build-proot-arm64.sh first",
-                e
-            )
-        }
+        throw RuntimeException(
+            "proot binary not found at ${prootBin.absolutePath} — " +
+                "ensure libproot.so is in jniLibs/arm64-v8a/"
+        )
     }
 
-    private fun getAppVersionCode(): String {
-        return try {
-            val info = context.packageManager.getPackageInfo(context.packageName, 0)
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                info.longVersionCode.toString()
-            } else {
-                @Suppress("DEPRECATION")
-                info.versionCode.toString()
+    private fun ensureLibSymlinks() {
+        libDir.mkdirs()
+        val versionedNames = mapOf("libtalloc.so" to "libtalloc.so.2")
+        for ((base, versioned) in versionedNames) {
+            val target = File(nativeLibDir, base)
+            val link = File(libDir, versioned)
+            java.nio.file.Files.deleteIfExists(link.toPath())
+            if (target.exists()) {
+                java.nio.file.Files.createSymbolicLink(
+                    link.toPath(),
+                    target.toPath()
+                )
             }
-        } catch (_: Exception) {
-            "unknown"
         }
     }
 
@@ -96,8 +85,10 @@ class ProotManager(private val context: Context) {
         vaultDir.mkdirs()
         projectsDir.mkdirs()
         logDir.mkdirs()
+        File(appDir, "tmp").mkdirs()
 
         ShieldVaultKeyStore.writeToVault(context, vaultDir)
+        linkGlobalNodeModules()
 
         val cmd = buildProotCommand()
         val env = buildEnvironment()
@@ -142,6 +133,26 @@ class ProotManager(private val context: Context) {
 
     fun isRunning(): Boolean = prootProcess?.isAlive == true
 
+    private fun linkGlobalNodeModules() {
+        val globalModules = File(rootfsDir, "usr/lib/node_modules")
+        if (!globalModules.exists()) return
+        val services = listOf("sovereign-shield", "file-api", "agent-bridge")
+        for (svc in services) {
+            val nmLink = File(rootfsDir, "opt/ellul/releases/$svc/current/node_modules")
+            if (nmLink.exists()) {
+                if (!nmLink.delete()) continue
+            }
+            try {
+                java.nio.file.Files.createSymbolicLink(
+                    nmLink.toPath(),
+                    java.nio.file.Path.of("/usr/lib/node_modules")
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "node_modules link failed for $svc: ${e.message}")
+            }
+        }
+    }
+
     private fun buildProotCommand(): List<String> = listOf(
         prootBin.absolutePath,
         "--rootfs=${rootfsDir.absolutePath}",
@@ -164,6 +175,9 @@ class ProotManager(private val context: Context) {
         "NODE_ENV" to "production",
         "ELLUL_PLATFORM" to "android",
         "ELLUL_HIGH_PORTS" to "1",
+        "LD_LIBRARY_PATH" to "$nativeLibDir:${libDir.absolutePath}",
+        "PROOT_LOADER" to "$nativeLibDir/libproot-loader.so",
+        "PROOT_TMP_DIR" to "${appDir.absolutePath}/tmp",
     )
 
     private fun startLogStreaming(process: Process) {

@@ -139,7 +139,11 @@ function RealCodeTokenProvider({
             sessionData = await sessionR.json() as { codeSessionId: string; expiresAt: number };
           }
           const sid = sessionData.codeSessionId;
-          await fetch(`/api/local-establish?_code_session=${sid}`, { credentials: "include" });
+          if (hasTauriInvoke()) {
+            await localFetch("GET", `/_auth/code/establish?_code_session=${encodeURIComponent(sid)}`);
+          } else {
+            await fetch(`/api/local-establish?_code_session=${sid}`, { credentials: "include" });
+          }
           cookieEstablishedRef.current = true;
           lastEstablishTimeRef.current = Date.now();
           sessionExpiresRef.current = sessionData.expiresAt;

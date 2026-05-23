@@ -175,10 +175,10 @@ pub fn run() {
             poll_connect,
         ]);
 
+    let builder = builder.plugin(tauri_plugin_proot::init());
+
     #[cfg(desktop)]
-    let builder = builder
-        .plugin(tauri_plugin_proot::init())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build());
+    let builder = builder.plugin(tauri_plugin_global_shortcut::Builder::new().build());
 
     builder
         .setup(|app| {

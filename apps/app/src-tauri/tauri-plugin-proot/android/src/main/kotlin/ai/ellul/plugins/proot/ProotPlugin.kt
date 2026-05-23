@@ -117,10 +117,11 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
     fun prootFetch(invoke: Invoke) {
         Thread({
             try {
-                val method = invoke.getString("method") ?: "GET"
-                val path = invoke.getString("path") ?: "/"
-                val body = invoke.getString("body")
-                val port = invoke.getInt("port", 8443)
+                val args = invoke.getArgs()
+                val method = args.getString("method", "GET") ?: "GET"
+                val path = args.getString("path", "/") ?: "/"
+                val body = if (args.isNull("body")) null else args.getString("body")
+                val port = args.getInteger("port", 8443)
 
                 val url = java.net.URL("http://127.0.0.1:$port$path")
                 val conn = url.openConnection() as java.net.HttpURLConnection
@@ -179,7 +180,7 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
             if (version != null) {
                 result.put("version", version)
             } else {
-                result.put("version", JSObject.NULL)
+                result.put("version", org.json.JSONObject.NULL)
             }
             invoke.resolve(result)
         } catch (e: Exception) {
@@ -276,10 +277,10 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
                     val result = JSObject().apply {
                         put("running", false)
                         put("connected", false)
-                        put("subdomain", JSObject.NULL)
-                        put("url", JSObject.NULL)
-                        put("stats", JSObject.NULL)
-                        put("error", JSObject.NULL)
+                        put("subdomain", org.json.JSONObject.NULL)
+                        put("url", org.json.JSONObject.NULL)
+                        put("stats", org.json.JSONObject.NULL)
+                        put("error", org.json.JSONObject.NULL)
                     }
                     invoke.resolve(result)
                     return@Thread
@@ -292,9 +293,9 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
                 if (data.optBoolean("needsToken", false)) {
                     result.put("running", false)
                     result.put("connected", false)
-                    result.put("subdomain", data.optString("subdomain", "") ?: JSObject.NULL)
-                    result.put("url", JSObject.NULL)
-                    result.put("stats", JSObject.NULL)
+                    result.put("subdomain", data.optString("subdomain", "") ?: org.json.JSONObject.NULL)
+                    result.put("url", org.json.JSONObject.NULL)
+                    result.put("stats", org.json.JSONObject.NULL)
                     result.put("error", "needs_token")
                     invoke.resolve(result)
                     return@Thread
@@ -303,9 +304,9 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
                 if (data.has("error")) {
                     result.put("running", true)
                     result.put("connected", false)
-                    result.put("subdomain", JSObject.NULL)
-                    result.put("url", JSObject.NULL)
-                    result.put("stats", JSObject.NULL)
+                    result.put("subdomain", org.json.JSONObject.NULL)
+                    result.put("url", org.json.JSONObject.NULL)
+                    result.put("stats", org.json.JSONObject.NULL)
                     result.put("error", data.getString("error"))
                     invoke.resolve(result)
                     return@Thread
@@ -326,7 +327,7 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
                     put("uptime", data.optLong("uptime", 0))
                 }
                 result.put("stats", stats)
-                result.put("error", if (stale) "status_stale" else JSObject.NULL)
+                result.put("error", if (stale) "status_stale" else org.json.JSONObject.NULL)
 
                 invoke.resolve(result)
             } catch (e: Exception) {
@@ -364,7 +365,7 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
         try {
             val result = JSObject().apply {
                 put("hasToken", securePrefs.getString("ellul_auth_token", null) != null)
-                put("subdomain", tunnelPrefs.getString("subdomain", null) ?: JSObject.NULL)
+                put("subdomain", tunnelPrefs.getString("subdomain", null) ?: org.json.JSONObject.NULL)
                 put("autoExpose", tunnelPrefs.getBoolean("autoExpose", false))
             }
             invoke.resolve(result)

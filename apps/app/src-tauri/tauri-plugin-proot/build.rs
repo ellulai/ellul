@@ -3,6 +3,7 @@ const COMMANDS: &[&str] = &[
     "proot_stop",
     "proot_status",
     "proot_health",
+    "proot_fetch",
     "proot_setup_status",
     "proot_setup_start",
     "proot_switch_to_local",
@@ -12,5 +13,7 @@ const COMMANDS: &[&str] = &[
 ];
 
 fn main() {
-    tauri_plugin::Builder::new(COMMANDS).build();
+    tauri_plugin::Builder::new(COMMANDS)
+        .android_path("android")
+        .build();
 }

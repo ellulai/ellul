@@ -237,7 +237,8 @@ class SetupManager(private val context: Context) {
         val pubKey = MLDSAPublicKeyParameters(MLDSAParameters.ml_dsa_65, pkBytes)
         val verifier = MLDSASigner()
         verifier.init(false, pubKey)
-        if (!verifier.verifySignature(signingInput, sigBytes)) {
+        verifier.update(signingInput, 0, signingInput.size)
+        if (!verifier.verifySignature(sigBytes)) {
             throw SetupException(
                 "Manifest signature verification failed — possible tampering",
                 SetupStage.DOWNLOADING
