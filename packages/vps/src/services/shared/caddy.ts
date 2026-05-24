@@ -17,14 +17,46 @@
 
 import * as fs from 'fs';
 import * as http from 'http';
+import * as path from 'path';
 
 export const CADDY_ADMIN_SOCK = '/run/caddy/admin.sock';
 const CADDYFILE_PATH = '/etc/caddy/Caddyfile';
 const RELOAD_TIMEOUT_MS = 10_000;
 const IS_ANDROID = process.env.ELLUL_PLATFORM === 'android';
 
+// Caddy's /load admin API doesn't support server blocks in imported files.
+// Collect file imports, remove them from the source, and insert the resolved
+// content after the global options block so server blocks land at top level.
+function resolveImports(caddyfile: string): string {
+  const collected: string[] = [];
+
+  const stripped = caddyfile.replace(/^\s*import\s+(\/\S+)$/gm, (_match, pattern: string) => {
+    const trimmed = pattern.trim();
+    if (!trimmed.includes('*') && !trimmed.includes('?')) {
+      try { collected.push(fs.readFileSync(trimmed, 'utf8')); } catch {}
+      return '';
+    }
+    const dir = path.dirname(trimmed);
+    const ext = path.basename(trimmed).replace('*', '');
+    try {
+      const files = fs.readdirSync(dir).filter(f => f.endsWith(ext)).sort();
+      collected.push(files.map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n'));
+    } catch {}
+    return '';
+  });
+
+  if (collected.length === 0) return stripped;
+  const globalEnd = stripped.indexOf('\n}\n');
+  if (globalEnd === -1) return collected.join('\n') + '\n' + stripped;
+  const insertAt = globalEnd + 3;
+  return stripped.slice(0, insertAt) + '\n' + collected.join('\n') + '\n' + stripped.slice(insertAt);
+}
+
 export function reloadCaddy(): Promise<void> {
-  const caddyfile = fs.readFileSync(CADDYFILE_PATH, 'utf8');
+  let caddyfile = fs.readFileSync(CADDYFILE_PATH, 'utf8');
+  if (IS_ANDROID) {
+    caddyfile = resolveImports(caddyfile);
+  }
   const body = Buffer.from(caddyfile, 'utf8');
 
   return new Promise<void>((resolve, reject) => {

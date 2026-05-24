@@ -102,6 +102,8 @@ function generateCaddyfile() {
     persist_config off
 }
 
+import ${path.join(VAULT, "etc/caddy/app-routes.d/*.caddy")}
+
 (auth_gate) {
     forward_auth ${SHIELD} {
         uri /api/auth/session
@@ -199,8 +201,6 @@ http://localhost:8443, http://127.0.0.1:8443 {
         reverse_proxy ${BRIDGE}
     }
 
-    import ${path.join(VAULT, "etc/caddy/app-routes.d/*.caddy")}
-
     handle {
         reverse_proxy 127.0.0.1:${CONSOLE_PROXY_PORT}
     }
@@ -281,7 +281,8 @@ function setupFilesystem() {
   }
   fs.mkdirSync(path.join(jwtDir, "shield-data"), { recursive: true });
 
-  const allOrigins = [...new Set([CONSOLE_ORIGIN, CONSOLE_UPSTREAM, "http://localhost:8443"])];
+  const PREVIEW_GATEWAY_PORT = 4443;
+  const allOrigins = [...new Set([CONSOLE_ORIGIN, CONSOLE_UPSTREAM, "http://localhost:8443", `http://localhost:${PREVIEW_GATEWAY_PORT}`])];
   const originFiles = {
     "console-origin": CONSOLE_ORIGIN,
     "allowed-origins": allOrigins.join("\n"),
@@ -289,9 +290,9 @@ function setupFilesystem() {
   };
   for (const [file, value] of Object.entries(originFiles)) {
     const p = path.join(jwtDir, file);
-    if (!fs.existsSync(p) || fs.readFileSync(p, "utf8").trim().length === 0) {
-      fs.writeFileSync(p, value);
-    }
+    // Engine owns origin/port config — always overwrite to stay in sync
+    // with port constants (e.g. PREVIEW_GATEWAY_PORT changes).
+    fs.writeFileSync(p, value);
   }
 
   // Clear stale preview routes from previous sessions so the console proxy catch-all isn't blocked

@@ -107,6 +107,12 @@ export const PORT_REGISTRY = {
       'localhost only; agent-bridge MCP gateway connects via ' +
       'streamable-http; unreachable from namespace veths',
   },
+  PREVIEW_GATEWAY: {
+    port: 4443,
+    service: 'caddy (preview gateway)',
+    bind: '127.0.0.1',
+    reachable: 'localhost only; Android preview iframe served on dedicated port to avoid URL conflicts with console proxy',
+  },
 } as const satisfies Record<string, PortAllocation>;
 
 export type PortRegistryKey = keyof typeof PORT_REGISTRY;
@@ -122,6 +128,7 @@ export const MCP_ENDPOINT_PORT = PORT_REGISTRY.MCP_ENDPOINT.port;
 export const METRICS_PROMETHEUS_PORT = PORT_REGISTRY.METRICS_PROMETHEUS.port;
 export const TERMINAL_PROXY_BACKEND_PORT = PORT_REGISTRY.TERMINAL_PROXY_BACKEND.port;
 export const GBRAIN_PORT = PORT_REGISTRY.GBRAIN.port;
+export const PREVIEW_GATEWAY_PORT = PORT_REGISTRY.PREVIEW_GATEWAY.port;
 
 /**
  * Assert that every entry in PORT_REGISTRY claims a unique port number.

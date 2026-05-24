@@ -773,11 +773,47 @@ async function writeCaddyDevRouteImpl(port: number, companions: CompanionEntry[]
   }
   const cspFrameAncestors = `frame-ancestors ${frameAncestors.join(' ')}`;
 
-  const isSingleHost = devDomain === "localhost";
-  const devMatcher = isSingleHost
-    ? `@dev {\n    host ${devDomain}\n    not path /browser /browser/* /api/*\n}`
-    : `@dev host ${devDomain}`;
-  const config = `# template: ${DEV_CADDY_TEMPLATE_VERSION}
+  let config: string;
+
+  if (IS_ANDROID) {
+    // Android: standalone server block on a dedicated preview port.
+    // The console proxy owns port 8443 — sharing it with preview routes
+    // causes irreconcilable URL conflicts (both apps can serve /_next/*,
+    // /, etc.). A separate port gives each app its own origin.
+    const gwPort = PORT_REGISTRY.PREVIEW_GATEWAY.port;
+    config = `# template: ${DEV_CADDY_TEMPLATE_VERSION}
+http://localhost:${gwPort} {
+    @notAuth not path /_auth/*
+    header @notAuth Content-Security-Policy "${cspFrameAncestors}"
+${companionBlocks}
+    route {
+        ${forwardAuthBlock}
+        uri query -_shield_session
+        uri query -_preview_token
+        @framework path ${frameworkPathsClause}
+        request_header @framework Origin "http://localhost:${port}"
+        reverse_proxy 127.0.0.1:${port} {
+            header_up X-Real-IP {remote_host}
+            flush_interval -1
+            fail_duration 10s
+            max_fails 2
+        }
+    }
+    handle_errors {
+        @warming expression \`{err.status_code} >= 502 || {err.status_code} == 500\`
+        respond @warming 200 {
+            body \`${WARMING_HTML}\`
+            close
+        }
+    }
+}
+`;
+  } else {
+    const isSingleHost = devDomain === "localhost";
+    const devMatcher = isSingleHost
+      ? `@dev {\n    host ${devDomain}\n    not path /browser /browser/* /api/*\n}`
+      : `@dev host ${devDomain}`;
+    config = `# template: ${DEV_CADDY_TEMPLATE_VERSION}
 ${devMatcher}
 handle @dev {
     @notAuth not path /_auth/*
@@ -789,28 +825,15 @@ ${companionBlocks}
         uri query -_shield_session
         uri query -_preview_token
         @framework path ${frameworkPathsClause}
-        # Next.js/Vite/etc. allowedDevOrigins accepts "localhost" but REJECTS
-        # "127.0.0.1" — rewrite to the hostname the framework trusts.
         request_header @framework Origin "http://localhost:${port}"
         reverse_proxy 127.0.0.1:${port} {
             header_up X-Real-IP {remote_host}
             flush_interval -1
-            # On upstream connect failure (dev server still compiling,
-            # restart in progress, port temporarily unbound), treat as
-            # unhealthy and let handle_errors serve our warming page
-            # instead of a raw Bad Gateway. 2026-04-19 post-mortem.
             fail_duration 10s
             max_fails 2
         }
     }
 }
-# handle_errors is a site-level directive — Caddy rejects it inside
-# handle/route/handle_path ("not an ordered HTTP handler"), and its first
-# positional argument is a status-code list, not a matcher. Scope via the
-# @warming expression (host + status) so other matchers in *.ellul.app fall
-# through to Caddy's default error handling. Fires only during the compile
-# window (502/503/504 from an unhealthy upstream) or an early crash (500);
-# once the dev server binds the port, traffic skips this entirely.
 handle_errors {
     @warming expression \`{http.request.host} == "${devDomain}" && ({err.status_code} >= 502 || {err.status_code} == 500)\`
     respond @warming 200 {
@@ -819,6 +842,7 @@ handle_errors {
     }
 }
 `;
+  }
   const caddyDir = '/etc/caddy/app-routes.d';
   const caddyPath = `${caddyDir}/dev.caddy`;
   const caddyTmp = `${caddyPath}.tmp.${process.pid}`;

@@ -31,13 +31,16 @@ export function getCodeApiUrl(serverDomain: string): string {
   return `https://${getCodeDomain(serverDomain)}`;
 }
 
+// Preview gateway port — must match PORT_REGISTRY.PREVIEW_GATEWAY in packages/vps.
+const PREVIEW_GATEWAY_PORT = 4443;
+
 // Get the full dev/preview URL for a server.
 export function getDevUrl(serverDomain: string): string {
   if (isLocalDomain(serverDomain)) {
     const limaPort = process.env.NEXT_PUBLIC_LIMA_PREVIEW_PORT;
     if (limaPort) return `http://localhost:${limaPort}`;
     if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) {
-      return "http://localhost:8443";
+      return `http://localhost:${PREVIEW_GATEWAY_PORT}`;
     }
     return `http://${getDevDomain(serverDomain)}`;
   }

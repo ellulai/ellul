@@ -41,6 +41,7 @@ export function isBehindCloudflare(headers: { get(name: string): string | null |
  */
 export function ipBindingClass(ip: string): string {
   if (!ip) return ip;
+  if (ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1') return 'loopback';
   if (ip.includes(':')) return expandIPv6Prefix(ip, 4);
   const parts = ip.split('.');
   if (parts.length !== 4) return ip;
