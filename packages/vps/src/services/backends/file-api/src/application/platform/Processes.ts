@@ -5,6 +5,7 @@
 
 import { execSync } from 'child_process';
 import { RESERVED_PORTS } from '@vps/shared/constants';
+import { IS_ANDROID } from '@vps/shared/platform';
 
 // Kill result for a single port.
 export interface KillResult {
@@ -52,6 +53,7 @@ export function restartServices(tier: string): {
   tier: string;
 } {
   const results = { agentBridge: false, ttyd: false, tier, success: true };
+  if (IS_ANDROID) return results;
 
   try {
     execSync(

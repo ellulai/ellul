@@ -9,8 +9,9 @@ import * as path from 'path';
 import * as http from 'http';
 import * as crypto from 'crypto';
 import type { IncomingMessage } from 'http';
-import { execSync, execFileSync, execFile as execFileCb } from 'child_process';
-import { promisify } from 'util';
+import { execSync } from 'child_process';
+import { IS_ANDROID } from '@vps/shared/platform';
+import { previewPlatform, type FrameworkDropinOpts } from './PreviewPlatform';
 import { isSandboxId } from '@ellul.ai/types';
 import { HOME, ROOT_DIR, getAppPath } from '../../config';
 import {
@@ -68,23 +69,19 @@ import type {
 // Re-export the canonical-phase set so tests and other modules already
 export { CANONICAL_PREVIEW_PHASES } from '@vps/shared/preview-types';
 import { CANONICAL_PREVIEW_PHASES } from '@vps/shared/preview-types';
-import {
-  startUnit,
-  stopUnit,
-  restartUnit,
-  resetFailed,
-  isActive,
-  listActive,
-  unitStatus,
-  writeFrameworkDropin,
-} from './PreviewUnits';
+const startUnit = (dir: string) => previewPlatform.startUnit(dir);
+const stopUnit = (dir: string, opts?: { mode?: 'graceful' | 'immediate' }) => previewPlatform.stopUnit(dir, opts);
+const restartUnit = (dir: string) => previewPlatform.restartUnit(dir);
+const resetFailed = (dir: string) => previewPlatform.resetFailed(dir);
+const isActive = (dir: string) => previewPlatform.isActive(dir);
+const listActive = () => previewPlatform.listActive();
+const unitStatus = (dir: string) => previewPlatform.unitStatus(dir);
+const writeFrameworkDropin = (dir: string, opts: FrameworkDropinOpts) => previewPlatform.writeFrameworkDropin(dir, opts);
 import { evaluateAdmission, resolveCandidateReservation } from './PreviewAdmission';
 import { recordStart, recordStop } from './PreviewTracking';
 import { withPreviewLock } from './PreviewMutex';
 import { transition as lifecycleTransition, forget as lifecycleForget, markPhaseEmitted } from './PreviewLifecycle';
 import { computeFrameworkCgroupCaps } from '@vps/shared/memory-budget';
-
-const execFile = promisify(execFileCb);
 
 const PREVIEW_FILE = `${HOME}/.ellul/preview-app`;
 const PORT_REGISTRY_FILE = `${HOME}/.ellul/preview-ports.json`;
@@ -643,6 +640,7 @@ function ensureBaseCaddyfile(): void {
   } catch {}
   if (baseCaddyfileHealAttempted) return;
   baseCaddyfileHealAttempted = true;
+  if (IS_ANDROID) return;
   log('warn', 'base Caddyfile missing — attempting self-heal via ellul-update-identity');
   try {
     const serverId = fs.readFileSync('/etc/ellul-bootstrap/server-id', 'utf8').trim();
@@ -888,13 +886,7 @@ function unitUptimeUs(activeEnterMonotonicUs: number): number {
 }
 
 function getPidOnPort(port: number): number | null {
-  try {
-    const out = execSync(`ss -tlnp 'sport = :${port}'`, { encoding: 'utf8', timeout: 3000 });
-    const m = out.match(/pid=(\d+)/);
-    return m?.[1] ? parseInt(m[1], 10) : null;
-  } catch {
-    return null;
-  }
+  return previewPlatform.getPidOnPort(port);
 }
 
 // Detect when a preview unit's process listens on a port OTHER than the
@@ -902,44 +894,7 @@ function getPidOnPort(port: number): number | null {
 // Scans all TCP listeners and matches PIDs that belong to the unit's
 // process tree (MainPID's descendants).
 function detectMismatchedPort(appDirectory: string, expectedPort: number): number | null {
-  try {
-    const { escapeInstance } = require('./PreviewUnits') as typeof import('./PreviewUnits');
-    const unit = `ellul-preview@${escapeInstance(appDirectory)}.service`;
-    const mainPidStr = execFileSync(
-      'systemctl', ['show', unit, '--property=MainPID', '--value'],
-      { encoding: 'utf8', timeout: 3000 },
-    ).trim();
-    const mainPid = parseInt(mainPidStr, 10);
-    if (!mainPid || mainPid <= 1) return null;
-
-    // Collect all PIDs in the unit's cgroup (MainPID + children).
-    const cgroupPath = `/proc/${mainPid}/cgroup`;
-    let unitPids = new Set<number>([mainPid]);
-    try {
-      const cgroupLine = fs.readFileSync(cgroupPath, 'utf8');
-      const m = cgroupLine.match(/0::(.+)/);
-      if (m?.[1]) {
-        const procsPath = `/sys/fs/cgroup${m[1].trim()}/cgroup.procs`;
-        const procs = fs.readFileSync(procsPath, 'utf8').trim().split('\n');
-        unitPids = new Set(procs.map(Number).filter(Boolean));
-      }
-    } catch {}
-
-    // Parse all TCP listeners and find one owned by a unit PID on a
-    // different port than expected.
-    const ssOut = execFileSync('ss', ['-tlnp'], { encoding: 'utf8', timeout: 3000 });
-    for (const line of ssOut.split('\n')) {
-      const pidMatch = line.match(/pid=(\d+)/);
-      const portMatch = line.match(/:(\d+)\s/);
-      if (!pidMatch?.[1] || !portMatch?.[1]) continue;
-      const pid = parseInt(pidMatch[1], 10);
-      const port = parseInt(portMatch[1], 10);
-      if (port !== expectedPort && unitPids.has(pid) && port >= 1024 && port <= 65535) {
-        return port;
-      }
-    }
-  } catch {}
-  return null;
+  return previewPlatform.detectMismatchedPort(appDirectory, expectedPort);
 }
 
 // When a port mismatch is detected, rewrite the spec + registry + Caddy
@@ -1202,20 +1157,7 @@ export const __orphanTestingInternals = {
 
 // Read the tail of the systemd journal for a preview unit. Requires
 async function readJournalTail(appDirectory: string, lines = 40): Promise<string> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { escapeInstance } = require('./PreviewUnits') as typeof import('./PreviewUnits');
-    const unit = `ellul-preview@${escapeInstance(appDirectory)}.service`;
-    const { stdout } = await execFile(
-      '/bin/journalctl',
-      ['-u', unit, '-n', String(lines), '--no-pager', '-o', 'cat'],
-      { timeout: 5_000, maxBuffer: 1024 * 128 },
-    );
-    const trimmed = stdout.length > 4096 ? stdout.slice(-4096) : stdout;
-    return trimmed.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
-  } catch {
-    return '';
-  }
+  return previewPlatform.readJournalTail(appDirectory, lines);
 }
 
 function extractErrorSummary(logs: string): string | null {
@@ -2141,11 +2083,15 @@ export async function stopPreview(appDirectory?: string): Promise<void> {
     try {
       lifecycleTransition({ directory: appDirectory, next: 'cold', force: true });
     } catch {}
-    // Ensure the port is free — systemd's KillMode=mixed should handle
     const port = getProjectPort(appDirectory);
-    if (getPidOnPort(port) !== null) {
+    const strayPid = getPidOnPort(port);
+    if (strayPid !== null) {
       try {
-        execSync(`fuser -KILL ${port}/tcp 2>/dev/null || true`, { timeout: 3000 });
+        if (IS_ANDROID) {
+          process.kill(strayPid, 'SIGKILL');
+        } else {
+          execSync(`fuser -KILL ${port}/tcp 2>/dev/null || true`, { timeout: 3000 });
+        }
       } catch {}
     }
   } else {

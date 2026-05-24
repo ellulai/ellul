@@ -175,7 +175,7 @@ pub async fn proot_switch_to_local<R: tauri::Runtime>(
     {
         use tauri::Manager;
         if let Some(window) = app.get_webview_window("main") {
-            let url: url::Url = "http://localhost:8443"
+            let url: url::Url = "http://localhost:8443/dashboard"
                 .parse()
                 .expect("valid localhost url");
             window

@@ -76,7 +76,8 @@ function log(msg) {
   console.log(`[engine] ${msg}`);
 }
 
-const CONSOLE_ORIGIN = process.env.ELLUL_CONSOLE_ORIGIN || "https://console.ellul.ai";
+const CONSOLE_UPSTREAM = process.env.ELLUL_CONSOLE_ORIGIN || "https://console.ellul.ai";
+const CONSOLE_ORIGIN = "http://localhost:8443";
 
 function generateCaddyfile() {
   for (const dir of CADDY_DIRS) {
@@ -199,8 +200,12 @@ http://localhost:8443, http://127.0.0.1:8443 {
     import ${path.join(VAULT, "etc/caddy/app-routes.d/*.caddy")}
 
     handle {
-        import auth_gate
-        reverse_proxy ${FILE_API}
+        reverse_proxy ${CONSOLE_UPSTREAM} {
+            header_up Host ${new URL(CONSOLE_UPSTREAM).host}
+            header_up X-Forwarded-Host {http.request.host}
+            header_down Location "${CONSOLE_UPSTREAM}" "http://localhost:8443"
+            header_down -Strict-Transport-Security
+        }
     }
 
     log {
@@ -280,11 +285,11 @@ function setupFilesystem() {
   }
   fs.mkdirSync(path.join(jwtDir, "shield-data"), { recursive: true });
 
-  const LOCALHOST_ORIGIN = "http://localhost:8443";
+  const allOrigins = [...new Set([CONSOLE_ORIGIN, CONSOLE_UPSTREAM, "http://localhost:8443"])];
   const originFiles = {
     "console-origin": CONSOLE_ORIGIN,
-    "allowed-origins": [CONSOLE_ORIGIN, LOCALHOST_ORIGIN].join("\n"),
-    "preview-origins.json": JSON.stringify({ origins: [CONSOLE_ORIGIN, LOCALHOST_ORIGIN], patterns: [] }),
+    "allowed-origins": allOrigins.join("\n"),
+    "preview-origins.json": JSON.stringify({ origins: allOrigins, patterns: [] }),
   };
   for (const [file, value] of Object.entries(originFiles)) {
     const p = path.join(jwtDir, file);

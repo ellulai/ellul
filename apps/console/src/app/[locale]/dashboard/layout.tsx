@@ -520,6 +520,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [isLocalMode, setIsLocalMode] = useState(false);
   const isTauri = isTauriApp();
 
+  const activateLocalMode = useCallback(() => {
+    setIsLocalMode(true);
+    setTauriNeedsConnect(false);
+    setSession({
+      user: { id: "local", name: "Local User", email: "local@localhost", emailVerified: true, image: null, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "local", userId: "local", token: "local", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date(), ipAddress: "127.0.0.1", userAgent: "" },
+    });
+    setIsAuthLoading(false);
+  }, []);
+
   // ── Tier / checkout ──
 
   const [checkoutMessage, setCheckoutMessage] = useState<{
@@ -577,12 +587,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         try {
           const r = await fetch("http://localhost/health", { credentials: "include" });
           if (r.ok) {
-            setIsLocalMode(true);
-            setSession({
-              user: { id: "local", name: "Local User", email: "local@localhost", emailVerified: true, image: null, createdAt: new Date(), updatedAt: new Date() },
-              session: { id: "local", userId: "local", token: "local", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date(), ipAddress: "127.0.0.1", userAgent: "" },
-            });
-            setIsAuthLoading(false);
+            activateLocalMode();
             return;
           }
         } catch {}
@@ -611,12 +616,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             } catch {}
           }
           if (localRunning) {
-            setIsLocalMode(true);
-            setSession({
-              user: { id: "local", name: "Local User", email: "local@localhost", emailVerified: true, image: null, createdAt: new Date(), updatedAt: new Date() },
-              session: { id: "local", userId: "local", token: "local", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date(), ipAddress: "127.0.0.1", userAgent: "" },
-            });
-            setIsAuthLoading(false);
+            activateLocalMode();
             return;
           }
           setTauriNeedsConnect(true);
@@ -918,13 +918,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   if (isTauri && tauriNeedsConnect) {
     return <TauriSetupScreen onLocalReady={() => {
-      setIsLocalMode(true);
-      setTauriNeedsConnect(false);
-      setSession({
-        user: { id: "local", name: "Local User", email: "local@localhost", emailVerified: true, image: null, createdAt: new Date(), updatedAt: new Date() },
-        session: { id: "local", userId: "local", token: "local", expiresAt: new Date(Date.now() + 86400000), createdAt: new Date(), updatedAt: new Date(), ipAddress: "127.0.0.1", userAgent: "" },
-      });
-      setIsAuthLoading(false);
+      const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+      if (invoke && getLocalEngine() === "proot") {
+        invoke("plugin:proot|proot_switch_to_local").catch(activateLocalMode);
+        return;
+      }
+      activateLocalMode();
     }} />;
   }
 
@@ -1014,7 +1013,14 @@ function TauriGate({ children }: { children: React.ReactNode }) {
     if (!cfg || (cfg.mode !== "cloud" && cfg.mode !== "local")) {
       return (
         <TauriSetupScreen
-          onLocalReady={() => window.location.reload()}
+          onLocalReady={() => {
+            const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+            if (invoke && getLocalEngine() === "proot") {
+              invoke("plugin:proot|proot_switch_to_local").catch(() => window.location.reload());
+              return;
+            }
+            window.location.reload();
+          }}
         />
       );
     }
