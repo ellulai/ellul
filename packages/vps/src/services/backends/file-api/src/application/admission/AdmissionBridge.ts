@@ -8,6 +8,7 @@ import {
   estimatePreviewSteadyMB,
   hotPreviewsCap,
 } from "@vps/shared/memory-budget";
+import { IS_ANDROID } from "@vps/shared/platform";
 import { detectFramework } from "@vps/shared/framework";
 import {
   makeAdmissionService,
@@ -47,6 +48,17 @@ function physicalMB(): number {
 
 function readSignals(): HeadroomSignals {
   const phys = physicalMB();
+  // Android proot has no cgroups; /proc/meminfo reflects host Android OS usage
+  // which always exceeds the workload budget threshold → permanent "red".
+  if (IS_ANDROID) {
+    return {
+      physicalMB: phys,
+      workloadMaxMB: phys,
+      workloadUsedMB: 0,
+      psiMemAvg10: 0,
+      systemHealth: "green",
+    };
+  }
   const budget = computeWorkloadSliceBudget(phys);
   const usedMB = readWorkloadSliceUsedMB();
   const psi = readWorkloadSlicePsi();

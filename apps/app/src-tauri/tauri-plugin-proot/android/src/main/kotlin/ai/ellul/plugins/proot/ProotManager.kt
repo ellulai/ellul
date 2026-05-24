@@ -24,8 +24,7 @@ class ProotManager(private val context: Context) {
     private val appDir: File = context.filesDir
     private val rootfsDir = File(appDir, "rootfs")
     private val vaultDir = File(appDir, "vault")
-    private val projectsDir: File =
-        File(context.getExternalFilesDir(null) ?: appDir, "projects")
+    private val projectsDir: File = File(appDir, "projects")
     private val nativeLibDir = context.applicationInfo.nativeLibraryDir
     private val prootBin = File(nativeLibDir, "libproot.so")
     private val libDir = File(appDir, "lib")

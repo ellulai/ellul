@@ -1591,56 +1591,60 @@ async function startPreviewLocked(
   requestId?: number,
   options?: { skipCaddyRoute?: boolean; _reinstallAttempted?: boolean },
 ): Promise<PreviewStartResult> {
-  // (MemAvailable + loadavg) only rejected starts; they never evicted,
-  const admission = await evaluateAdmission(appDirectory, { log });
-  if (admission.decision === 'reject') {
-    metrics.backpressureRejections++;
-    const backpressureReasons: Array<typeof admission.reason> = [
-      'memory-critical',
-      'load-critical',
-      'drain-timeout',
-      'budget-unavailable',
-    ];
-    const res = admission.candidateReservation;
-    const sig = admission.signals;
-    const bud = admission.budget;
-    return {
-      success: false,
-      error: admission.message,
-      failReason: backpressureReasons.includes(admission.reason)
-        ? 'backpressure'
-        : 'concurrency_limit',
-      resourceContext: {
-        reason: admission.reason,
-        estimatedPeakMB: res?.devPeakMB ?? 0,
-        estimatedSteadyMB: res?.steadyMB ?? 0,
-        availableMB: Math.round(sig.memAvailableMB),
-        totalMB: Math.round(sig.physicalMB),
-        frameworkId: res?.frameworkId ?? null,
-        perPreviewCapMB: bud?.perPreviewCapMB ?? 0,
-        activePreviewCount: sig.activeCount,
-        maxConcurrent: resolvePreviewMaxConcurrent(PREVIEW_LIMITS.MAX_CONCURRENT, sig.physicalMB),
-      },
-    };
-  }
-  if (admission.decision === 'accept-after-evict') {
-    log('info', 'preview: admitted after LRU eviction', {
-      appDirectory,
-      evicted: admission.evictedDirectory,
-      evictionMode: admission.evictionMode,
-      drainElapsedMs: admission.drainElapsedMs,
-      effectiveCapMB: admission.effectiveCapMB,
-      admittedMode: admission.admittedMode,
-      frameworkId: admission.frameworkId,
-    });
-  }
-  if (admission.decision === 'accept' && admission.admittedMode === 'warm') {
-    log('info', 'preview: admitted in warm mode (hot would exceed budget)', {
-      appDirectory,
-      effectiveCapMB: admission.effectiveCapMB,
-      perPreviewCapMB: admission.budget.perPreviewCapMB,
-      frameworkId: admission.frameworkId,
-    });
+  // Android proot: no cgroups, no systemd units — the entire admission system
+  // reads VPS-specific signals (cgroup memory, PSI, systemctl) that don't exist.
+  let admission: Awaited<ReturnType<typeof evaluateAdmission>> | undefined;
+  if (!IS_ANDROID) {
+    admission = await evaluateAdmission(appDirectory, { log });
+    if (admission.decision === 'reject') {
+      metrics.backpressureRejections++;
+      const backpressureReasons: Array<typeof admission.reason> = [
+        'memory-critical',
+        'load-critical',
+        'drain-timeout',
+        'budget-unavailable',
+      ];
+      const res = admission.candidateReservation;
+      const sig = admission.signals;
+      const bud = admission.budget;
+      return {
+        success: false,
+        error: admission.message,
+        failReason: backpressureReasons.includes(admission.reason)
+          ? 'backpressure'
+          : 'concurrency_limit',
+        resourceContext: {
+          reason: admission.reason,
+          estimatedPeakMB: res?.devPeakMB ?? 0,
+          estimatedSteadyMB: res?.steadyMB ?? 0,
+          availableMB: Math.round(sig.memAvailableMB),
+          totalMB: Math.round(sig.physicalMB),
+          frameworkId: res?.frameworkId ?? null,
+          perPreviewCapMB: bud?.perPreviewCapMB ?? 0,
+          activePreviewCount: sig.activeCount,
+          maxConcurrent: resolvePreviewMaxConcurrent(PREVIEW_LIMITS.MAX_CONCURRENT, sig.physicalMB),
+        },
+      };
+    }
+    if (admission.decision === 'accept-after-evict') {
+      log('info', 'preview: admitted after LRU eviction', {
+        appDirectory,
+        evicted: admission.evictedDirectory,
+        evictionMode: admission.evictionMode,
+        drainElapsedMs: admission.drainElapsedMs,
+        effectiveCapMB: admission.effectiveCapMB,
+        admittedMode: admission.admittedMode,
+        frameworkId: admission.frameworkId,
+      });
+    }
+    if (admission.decision === 'accept' && admission.admittedMode === 'warm') {
+      log('info', 'preview: admitted in warm mode (hot would exceed budget)', {
+        appDirectory,
+        effectiveCapMB: admission.effectiveCapMB,
+        perPreviewCapMB: admission.budget.perPreviewCapMB,
+        frameworkId: admission.frameworkId,
+      });
+    }
   }
 
   const appPath = getAppPath(appDirectory);
@@ -1748,6 +1752,7 @@ async function startPreviewLocked(
           { runtime: spec.runtime },
         );
         try {
+          if (IS_ANDROID) throw new Error('runtime install not supported on android');
           execSync(`sudo -n /usr/local/bin/ellul-install-runtime ${spec.runtime}`, {
             timeout: 300_000,
             stdio: 'ignore',
@@ -1860,8 +1865,10 @@ async function startPreviewLocked(
   // this drop-in is the sole source of truth for MemoryHigh/Max, TasksMax, CPUQuota.
   // Failure aborts the start: a unit without sized caps would compete with the
   // control plane unbounded.
-  const admittedMode = admission.admittedMode;
-  const budget = admission.budget;
+  const admittedMode: 'hot' | 'warm' = IS_ANDROID ? 'hot' : admission!.admittedMode;
+  const budget = IS_ANDROID
+    ? { physicalMB: 2048, reservedMB: 512, previewBudgetMB: 1536, perPreviewCapMB: 1536, perPreviewHighMB: 1200, maxConcurrent: 1, slicePercent: 70 }
+    : admission!.budget;
   let reservation;
   try {
     reservation = resolveCandidateReservation(appDirectory);

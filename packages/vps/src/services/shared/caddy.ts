@@ -24,7 +24,6 @@ const RELOAD_TIMEOUT_MS = 10_000;
 const IS_ANDROID = process.env.ELLUL_PLATFORM === 'android';
 
 export function reloadCaddy(): Promise<void> {
-  if (IS_ANDROID) return Promise.resolve();
   const caddyfile = fs.readFileSync(CADDYFILE_PATH, 'utf8');
   const body = Buffer.from(caddyfile, 'utf8');
 

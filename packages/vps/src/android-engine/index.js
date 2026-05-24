@@ -270,6 +270,7 @@ function setupFilesystem() {
     "platform-zone": "localhost",
     "app-zone": "ellul.app",
     "security-tier": "standard",
+    "billing-tier": "paid",
     "api-url": "https://api.ellul.ai",
     "origin-tag": "android-local",
     "firewall-mode": "direct",

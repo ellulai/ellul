@@ -139,7 +139,11 @@ function RealCodeTokenProvider({
             sessionData = await sessionR.json() as { codeSessionId: string; expiresAt: number };
           }
           const sid = sessionData.codeSessionId;
-          if (hasTauriInvoke()) {
+          const onVpsOrigin = typeof window !== "undefined" &&
+            (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+          if (hasTauriInvoke() && onVpsOrigin) {
+            await fetch(`/_auth/code/establish?_code_session=${encodeURIComponent(sid)}`, { credentials: "include" });
+          } else if (hasTauriInvoke()) {
             await localFetch("GET", `/_auth/code/establish?_code_session=${encodeURIComponent(sid)}`);
           } else {
             await fetch(`/api/local-establish?_code_session=${sid}`, { credentials: "include" });

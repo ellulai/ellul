@@ -863,6 +863,7 @@ function DashboardContent({
 
 export function MobileDashboardLayout(props: MobileDashboardLayoutProps) {
   const serverDomain = resolveServerDomain(props.server);
+  const isLocal = isLocalServer(props.server);
 
   // When view prop is provided (route-controlled), layout.tsx provides the providers
   if (props.view) {

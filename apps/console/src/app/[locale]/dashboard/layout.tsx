@@ -616,6 +616,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             } catch {}
           }
           if (localRunning) {
+            if (engine === "proot" && invoke && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+              try {
+                await invoke("plugin:proot|proot_switch_to_local");
+                return;
+              } catch {}
+            }
             activateLocalMode();
             return;
           }

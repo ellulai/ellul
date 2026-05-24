@@ -292,7 +292,7 @@ function detectLang(installRoot: string): LangSpec | null {
   if (has('package.json')) {
     const pm: PackageManagerInfo = detectPackageManager(installRoot, ROOT_DIR);
     const isBun = pm.pm === 'bun';
-    const noBinLinks = IS_ANDROID ? ' --no-bin-links' : '';
+    const noBinLinks = '';
     const flags: Record<string, string> = {
       npm:  ` --no-audit --no-fund --no-progress --prefer-offline --maxsockets=2${noBinLinks}`,
       pnpm: ` --prefer-offline${noBinLinks}`,
@@ -1063,16 +1063,23 @@ function spawnInstall(paths: InstallPaths, lang: LangSpec, needsWipe: boolean): 
     return -1;
   }
 
-  const { totalMB } = readMemoryPressure();
-  const installMemMaxMB = Math.max(512, Math.floor(totalMB * 0.6));
-  const scopeUnit = `ellul-install-${rootKey(installRoot).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
   const svcUser = process.env.USER || 'dev';
-  const launcher =
-    `nohup sudo /usr/local/bin/ellul-spawn-scope ` +
-    `ellul-user-workload.slice ${scopeUnit} ` +
-    `MemoryMax=${installMemMaxMB}M,MemorySwapMax=0 ` +
-    `-- runuser -u ${svcUser} -- bash ${shellEsc(scriptPath)} < /dev/null >> ${shellEsc(paths.logPath)} 2>&1 & ` +
-    `echo $!`;
+  let launcher: string;
+  if (IS_ANDROID) {
+    launcher =
+      `nohup bash ${shellEsc(scriptPath)} < /dev/null >> ${shellEsc(paths.logPath)} 2>&1 & ` +
+      `echo $!`;
+  } else {
+    const { totalMB } = readMemoryPressure();
+    const installMemMaxMB = Math.max(512, Math.floor(totalMB * 0.6));
+    const scopeUnit = `ellul-install-${rootKey(installRoot).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+    launcher =
+      `nohup sudo /usr/local/bin/ellul-spawn-scope ` +
+      `ellul-user-workload.slice ${scopeUnit} ` +
+      `MemoryMax=${installMemMaxMB}M,MemorySwapMax=0 ` +
+      `-- runuser -u ${svcUser} -- bash ${shellEsc(scriptPath)} < /dev/null >> ${shellEsc(paths.logPath)} 2>&1 & ` +
+      `echo $!`;
+  }
 
   let pidStr = '';
   try {
