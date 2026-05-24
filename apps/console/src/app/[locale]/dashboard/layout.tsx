@@ -601,27 +601,33 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             (window as any).__ELLUL_APP_CONFIG__ = appConfig;
           } catch {}
         }
+        const engine = getLocalEngine();
+        if (engine === "proot" && invoke) {
+          try {
+            const st = await invoke("plugin:proot|proot_status") as { running?: boolean };
+            if (st?.running) {
+              if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+                try {
+                  await invoke("plugin:proot|proot_switch_to_local");
+                  return;
+                } catch {}
+              }
+              activateLocalMode();
+              return;
+            }
+          } catch {}
+        }
         if (appConfig?.mode === "local") {
           let localRunning = false;
-          const engine = getLocalEngine();
           if (invoke) {
             try {
               if (engine === "lima") {
                 const st = await invoke("lima_status") as { vmState: string; provisioned: boolean };
                 localRunning = st?.vmState === "running" && st?.provisioned === true;
-              } else {
-                const st = await invoke("plugin:proot|proot_status") as { running?: boolean };
-                localRunning = st?.running === true;
               }
             } catch {}
           }
           if (localRunning) {
-            if (engine === "proot" && invoke && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-              try {
-                await invoke("plugin:proot|proot_switch_to_local");
-                return;
-              } catch {}
-            }
             activateLocalMode();
             return;
           }

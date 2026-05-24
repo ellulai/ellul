@@ -31,3 +31,6 @@
 -keep class org.apache.commons.compress.archivers.tar.TarArchiveInputStream { *; }
 -keep class org.apache.commons.compress.archivers.tar.TarArchiveEntry { *; }
 -keep class org.apache.commons.compress.compressors.CompressorStreamFactory { *; }
+# Optional codecs referenced by Commons Compress but not bundled
+-dontwarn org.tukaani.xz.**
+-dontwarn org.brotli.dec.**

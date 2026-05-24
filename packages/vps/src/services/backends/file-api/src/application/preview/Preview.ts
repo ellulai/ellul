@@ -729,7 +729,7 @@ async function writeCaddyDevRouteImpl(port: number, companions: CompanionEntry[]
             header_up Sec-Fetch-Dest {http.request.header.Sec-Fetch-Dest}
             header_up Sec-Fetch-Mode {http.request.header.Sec-Fetch-Mode}
             header_up X-Forwarded-Uri {uri}
-            header_up X-Forwarded-Host {host}
+            header_up X-Forwarded-Host {http.request.hostport}
             header_up -X-Auth-User
             header_up -X-Auth-Tier
             header_up -X-Auth-Session

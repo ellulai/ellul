@@ -78,6 +78,7 @@
     "proot:allow-proot-fetch",
     "proot:allow-proot-setup-status",
     "proot:allow-proot-setup-start",
-    "proot:allow-proot-bootstrap-auth"
+    "proot:allow-proot-bootstrap-auth",
+    "proot:allow-proot-switch-to-local"
   ]
 }
