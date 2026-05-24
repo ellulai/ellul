@@ -2773,7 +2773,8 @@ handle @app-${name} {${authBlock}
       if (fs.existsSync(packageJson)) {
         console.log(`${LOG} Found package.json — running npm install...`);
         try {
-          execFileSync('bash', ['-lc', 'cd -- "$1" && npm install --prefer-offline 2>&1', '_', targetDir], {
+          const npmNoBinLinks = process.env.ELLUL_PLATFORM === 'android' ? ' --no-bin-links' : '';
+          execFileSync('bash', ['-lc', `cd -- "$1" && npm install --prefer-offline${npmNoBinLinks} 2>&1`, '_', targetDir], {
             stdio: 'pipe', timeout: 120000,
           });
           console.log(`${LOG} npm install complete`);

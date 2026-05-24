@@ -89,6 +89,7 @@ import { execSync, spawnSync } from 'child_process';
 
 import { HOME, ROOT_DIR } from '../../config';
 import { detectPackageManager, type PackageManagerInfo } from '@vps/shared/framework';
+import { IS_ANDROID } from '@vps/shared/platform';
 
 // ── Public types ──────────────────────────────────────────────────────────
 
@@ -291,9 +292,10 @@ function detectLang(installRoot: string): LangSpec | null {
   if (has('package.json')) {
     const pm: PackageManagerInfo = detectPackageManager(installRoot, ROOT_DIR);
     const isBun = pm.pm === 'bun';
+    const noBinLinks = IS_ANDROID ? ' --no-bin-links' : '';
     const flags: Record<string, string> = {
-      npm:  ' --no-audit --no-fund --no-progress --prefer-offline --maxsockets=2',
-      pnpm: ' --prefer-offline',
+      npm:  ` --no-audit --no-fund --no-progress --prefer-offline --maxsockets=2${noBinLinks}`,
+      pnpm: ` --prefer-offline${noBinLinks}`,
       yarn: ' --prefer-offline',
       bun:  '',
     };

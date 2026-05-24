@@ -18,7 +18,6 @@
     "hono": "^4.6.14"
   },
   "devDependencies": {
-    "@ellul.ai/api": "workspace:*",
     "@ellul.ai/ts-config": "workspace:*",
     "hono": "^4.6.14",
     "tsx": "^4.19.2",
