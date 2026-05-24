@@ -36,6 +36,9 @@ export function getDevUrl(serverDomain: string): string {
   if (isLocalDomain(serverDomain)) {
     const limaPort = process.env.NEXT_PUBLIC_LIMA_PREVIEW_PORT;
     if (limaPort) return `http://localhost:${limaPort}`;
+    if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) {
+      return "http://localhost:8443";
+    }
     return `http://${getDevDomain(serverDomain)}`;
   }
   return `https://${getDevDomain(serverDomain)}`;

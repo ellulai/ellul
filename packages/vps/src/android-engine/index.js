@@ -264,6 +264,22 @@ function setupFilesystem() {
   fs.writeFileSync(path.join(jwtDir, "deployment-model"), "localhost");
   fs.writeFileSync(path.join(jwtDir, "dev-domain"), "localhost");
 
+  const requiredDefaults = {
+    "rp-id": "localhost",
+    "domain": "localhost",
+    "platform-zone": "localhost",
+    "app-zone": "ellul.app",
+    "security-tier": "standard",
+    "api-url": "https://api.ellul.ai",
+    "origin-tag": "android-local",
+    "firewall-mode": "direct",
+  };
+  for (const [file, value] of Object.entries(requiredDefaults)) {
+    const p = path.join(jwtDir, file);
+    if (!fs.existsSync(p)) fs.writeFileSync(p, value);
+  }
+  fs.mkdirSync(path.join(jwtDir, "shield-data"), { recursive: true });
+
   const LOCALHOST_ORIGIN = "http://localhost:8443";
   const originFiles = {
     "console-origin": CONSOLE_ORIGIN,
