@@ -76,6 +76,8 @@ function log(msg) {
   console.log(`[engine] ${msg}`);
 }
 
+const CONSOLE_ORIGIN = process.env.ELLUL_CONSOLE_ORIGIN || "https://console.ellul.ai";
+
 function generateCaddyfile() {
   for (const dir of CADDY_DIRS) {
     fs.mkdirSync(dir, { recursive: true });
@@ -132,7 +134,7 @@ http://localhost:8443, http://127.0.0.1:8443 {
     handle /vps-config.js {
         header Content-Type "application/javascript"
         header Cache-Control "no-store"
-        respond ${"`"}window.__ELLUL_CONFIG__=${JSON.stringify({platformZone:"localhost",appZone:"ellul.app",consoleOrigin:"http://localhost:8443",wsOrigin:"http://localhost:8443",codeWsOrigin:"http://localhost:8443",codeWsPath:"/code-ws",disabledSessions:["claw"]})};${"`"} 200
+        respond ${"`"}window.__ELLUL_CONFIG__=${JSON.stringify({platformZone:"localhost",appZone:"ellul.app",consoleOrigin:CONSOLE_ORIGIN,wsOrigin:"http://localhost:8443",codeWsOrigin:"http://localhost:8443",codeWsPath:"/code-ws",disabledSessions:["claw"]})};${"`"} 200
     }
 
     @shieldDirect path /_auth/login* /_auth/register* /_auth/recovery* /_auth/standard-upgrade* /_auth/bridge /_auth/bridge/tier /_auth/bridge/session /_auth/code/redirect /_auth/code/session /_auth/code/establish /_auth/terminal/authorize /_auth/agent/authorize /_auth/code/authorize /_auth/pop/* /_auth/static/* /_auth/capabilities /_auth/verify-confirmation /_auth/git/verify-link-token /_auth/git/verify-unlink-token /_auth/wake-enforcer /_auth/tauri/token-login /_auth/byos/token /_auth/chat /_auth/upgrade-to-web-locked /_auth/upgrade-to-web-locked/verify /health /_auth/health
@@ -262,11 +264,11 @@ function setupFilesystem() {
   fs.writeFileSync(path.join(jwtDir, "deployment-model"), "localhost");
   fs.writeFileSync(path.join(jwtDir, "dev-domain"), "localhost");
 
-  const CONSOLE_ORIGIN = "http://localhost:8443";
+  const LOCALHOST_ORIGIN = "http://localhost:8443";
   const originFiles = {
     "console-origin": CONSOLE_ORIGIN,
-    "allowed-origins": CONSOLE_ORIGIN,
-    "preview-origins.json": JSON.stringify({ origins: [CONSOLE_ORIGIN], patterns: [] }),
+    "allowed-origins": [CONSOLE_ORIGIN, LOCALHOST_ORIGIN].join("\n"),
+    "preview-origins.json": JSON.stringify({ origins: [CONSOLE_ORIGIN, LOCALHOST_ORIGIN], patterns: [] }),
   };
   for (const [file, value] of Object.entries(originFiles)) {
     const p = path.join(jwtDir, file);

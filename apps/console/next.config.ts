@@ -50,9 +50,9 @@ const securityHeaders = [
       "frame-ancestors 'self'",
       "base-uri 'self'",
       "form-action 'self'",
-      ...(process.env.NODE_ENV === "production"
-        ? ["upgrade-insecure-requests"]
-        : []),
+      // NOTE: upgrade-insecure-requests removed — Cloudflare enforces HTTPS
+      // at the edge, and this directive breaks Android proot (localhost HTTP
+      // iframes get upgraded to HTTPS which has no TLS cert).
     ].join("; "),
   },
 ];
