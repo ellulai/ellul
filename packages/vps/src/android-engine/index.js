@@ -5,6 +5,8 @@
 const { spawn } = require("child_process");
 const crypto = require("crypto");
 const fs = require("fs");
+const http = require("http");
+const https = require("https");
 const path = require("path");
 const net = require("net");
 
@@ -200,12 +202,7 @@ http://localhost:8443, http://127.0.0.1:8443 {
     import ${path.join(VAULT, "etc/caddy/app-routes.d/*.caddy")}
 
     handle {
-        reverse_proxy ${CONSOLE_UPSTREAM} {
-            header_up Host ${new URL(CONSOLE_UPSTREAM).host}
-            header_up X-Forwarded-Host {http.request.host}
-            header_down Location "${CONSOLE_UPSTREAM}" "http://localhost:8443"
-            header_down -Strict-Transport-Security
-        }
+        reverse_proxy 127.0.0.1:${CONSOLE_PROXY_PORT}
     }
 
     log {
@@ -242,11 +239,9 @@ function setupFilesystem() {
     }
   }
 
-  // DNS — Go binaries (opencode) need /etc/resolv.conf to resolve hostnames
-  if (!fs.existsSync("/etc/resolv.conf") || fs.readFileSync("/etc/resolv.conf", "utf8").trim().length === 0) {
-    fs.writeFileSync("/etc/resolv.conf", "nameserver 8.8.8.8\nnameserver 8.8.4.4\n");
-    log("wrote /etc/resolv.conf");
-  }
+  // DNS — rootfs built in Docker ships with Docker's DNS (192.168.x.x) which doesn't exist on Android
+  fs.writeFileSync("/etc/resolv.conf", "nameserver 8.8.8.8\nnameserver 8.8.4.4\n");
+  log("wrote /etc/resolv.conf");
 
   // Ensure bootstrap files exist (dummy values for local)
   const bootstrap = "/etc/ellul-bootstrap";
@@ -297,6 +292,17 @@ function setupFilesystem() {
       fs.writeFileSync(p, value);
     }
   }
+
+  // Clear stale preview routes from previous sessions so the console proxy catch-all isn't blocked
+  const appRoutesDir = path.join(VAULT, "etc/caddy/app-routes.d");
+  try {
+    for (const f of fs.readdirSync(appRoutesDir)) {
+      if (f.endsWith(".caddy")) {
+        fs.unlinkSync(path.join(appRoutesDir, f));
+        log(`cleared stale preview route: ${f}`);
+      }
+    }
+  } catch {}
 
   generateCaddyfile();
 }
@@ -444,11 +450,57 @@ function shutdown() {
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
+const CONSOLE_PROXY_PORT = 3010;
+
+function startConsoleProxy() {
+  const upstream = new URL(CONSOLE_UPSTREAM);
+  const server = http.createServer((clientReq, clientRes) => {
+    const hdrs = { ...clientReq.headers, host: upstream.hostname };
+    delete hdrs["connection"];
+    delete hdrs["transfer-encoding"];
+
+    const proxyReq = https.request(
+      { hostname: upstream.hostname, port: 443, path: clientReq.url, method: clientReq.method, headers: hdrs },
+      (proxyRes) => {
+        const rh = { ...proxyRes.headers };
+        if (rh.location) {
+          rh.location = rh.location.replace(
+            new RegExp(`https?://${upstream.hostname.replace(/\./g, "\\.")}`, "g"),
+            "http://localhost:8443",
+          );
+        }
+        delete rh["strict-transport-security"];
+        if (rh["set-cookie"]) {
+          const cookies = Array.isArray(rh["set-cookie"]) ? rh["set-cookie"] : [rh["set-cookie"]];
+          rh["set-cookie"] = cookies.map((c) =>
+            c.replace(/;\s*Domain=[^;]*/gi, "").replace(/;\s*Secure/gi, ""),
+          );
+        }
+        clientRes.writeHead(proxyRes.statusCode, rh);
+        proxyRes.pipe(clientRes);
+      },
+    );
+    proxyReq.on("error", (err) => {
+      log(`console-proxy error: ${err.message}`);
+      if (!clientRes.headersSent) {
+        clientRes.writeHead(502, { "Content-Type": "text/plain" });
+        clientRes.end("Console proxy error: " + err.message);
+      }
+    });
+    clientReq.pipe(proxyReq);
+  });
+  server.listen(CONSOLE_PROXY_PORT, "127.0.0.1", () => {
+    log(`console-proxy listening on 127.0.0.1:${CONSOLE_PROXY_PORT}`);
+  });
+  return server;
+}
+
 async function main() {
   log(`Starting ellul-engine-android on ${process.arch}`);
   log(`User: uid=${process.getuid()} gid=${process.getgid()}`);
 
   setupFilesystem();
+  startConsoleProxy();
 
   for (const svc of SERVICES) {
     startService(svc);
