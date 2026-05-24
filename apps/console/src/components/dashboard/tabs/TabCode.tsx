@@ -66,7 +66,7 @@ export function TabCode({
   // pick up the current pref.
   const userLocale = useUserLocale();
   const initialLocaleRef = useRef(userLocale);
-  const { token, loading, reauthenticate } = useCodeToken();
+  const { token, loading, reauthenticate, codeSessionId } = useCodeToken();
   const isMobile = useIsMobile();
 
   const iframeReady = useRef(false);
@@ -212,7 +212,7 @@ export function TabCode({
       </div>
       <iframe
         ref={iframeRef}
-        src={`${codeOrigin}/browser?app=${encodeURIComponent(directory)}&embedded=true&parentOrigin=${encodeURIComponent(window.location.origin)}&locale=${encodeURIComponent(initialLocaleRef.current)}`}
+        src={`${codeOrigin}/browser?app=${encodeURIComponent(directory)}&embedded=true&parentOrigin=${encodeURIComponent(window.location.origin)}&locale=${encodeURIComponent(initialLocaleRef.current)}${codeSessionId ? `&_code_session=${encodeURIComponent(codeSessionId)}` : ""}`}
         className="w-full flex-1 border-0"
         allow="clipboard-read; clipboard-write"
         title={t("iframeTitle")}
