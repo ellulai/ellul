@@ -25,11 +25,11 @@ enum CheckKind {
     Http(&'static str),
 }
 
-const SERVICES: [ServiceDef; 5] = [
+const SERVICES: [ServiceDef; 4] = [
     ServiceDef {
         name: "sovereign-shield",
         port: 3005,
-        check: CheckKind::Http("/_auth/health"),
+        check: CheckKind::Http("/health"),
     },
     ServiceDef {
         name: "file-api",
@@ -46,22 +46,16 @@ const SERVICES: [ServiceDef; 5] = [
         port: 8443,
         check: CheckKind::Tcp,
     },
-    ServiceDef {
-        name: "term-proxy",
-        port: 7701,
-        check: CheckKind::Tcp,
-    },
 ];
 
 pub async fn check_all() -> Vec<ServiceHealth> {
-    let (r0, r1, r2, r3, r4) = tokio::join!(
+    let (r0, r1, r2, r3) = tokio::join!(
         check_one(&SERVICES[0]),
         check_one(&SERVICES[1]),
         check_one(&SERVICES[2]),
         check_one(&SERVICES[3]),
-        check_one(&SERVICES[4]),
     );
-    vec![r0, r1, r2, r3, r4]
+    vec![r0, r1, r2, r3]
 }
 
 async fn check_one(svc: &ServiceDef) -> ServiceHealth {
@@ -98,7 +92,7 @@ async fn check_http(port: u16, path: &str) -> bool {
         let n = stream.read(&mut buf).await?;
         let resp = std::str::from_utf8(&buf[..n]).unwrap_or("");
         Ok::<bool, std::io::Error>(
-            resp.starts_with("HTTP/1.1 200") || resp.starts_with("HTTP/1.0 200"),
+            resp.starts_with("HTTP/1.1") || resp.starts_with("HTTP/1.0"),
         )
     })
     .await;

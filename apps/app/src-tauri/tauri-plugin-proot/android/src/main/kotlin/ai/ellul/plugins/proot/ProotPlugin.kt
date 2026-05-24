@@ -109,8 +109,34 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
         }
     }
 
-    private val cookieManager = java.net.CookieManager(null, java.net.CookiePolicy.ACCEPT_ALL).also {
-        java.net.CookieHandler.setDefault(it)
+    private val cookieJar = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    init {
+        java.net.CookieHandler.setDefault(null)
+    }
+
+    private fun parseSetCookies(headers: Map<String, List<String>>?) {
+        headers?.entries
+            ?.filter { it.key?.equals("Set-Cookie", ignoreCase = true) == true }
+            ?.flatMap { it.value }
+            ?.forEach { header ->
+                val eqIdx = header.indexOf('=')
+                if (eqIdx <= 0) return@forEach
+                val name = header.substring(0, eqIdx).trim()
+                val rest = header.substring(eqIdx + 1)
+                val semiIdx = rest.indexOf(';')
+                val value = (if (semiIdx >= 0) rest.substring(0, semiIdx) else rest).trim()
+                if (value.isEmpty()) {
+                    cookieJar.remove(name)
+                } else {
+                    cookieJar[name] = value
+                }
+            }
+    }
+
+    private fun buildCookieHeader(): String? {
+        if (cookieJar.isEmpty()) return null
+        return cookieJar.entries.joinToString("; ") { "${it.key}=${it.value}" }
     }
 
     @Command
@@ -123,18 +149,16 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
                 val body = if (args.isNull("body")) null else args.getString("body")
                 val port = args.getInteger("port", 8443)
 
+                java.net.CookieHandler.setDefault(null)
                 val url = java.net.URL("http://127.0.0.1:$port$path")
                 val conn = url.openConnection() as java.net.HttpURLConnection
                 conn.connectTimeout = 15000
                 conn.readTimeout = 30000
                 conn.requestMethod = method.uppercase()
+                conn.useCaches = false
                 conn.setRequestProperty("Accept", "application/json")
-
-                val uri = url.toURI()
-                val cookies = cookieManager.cookieStore.get(uri)
-                if (cookies.isNotEmpty()) {
-                    conn.setRequestProperty("Cookie", cookies.joinToString("; ") { "${it.name}=${it.value}" })
-                }
+                conn.setRequestProperty("Connection", "close")
+                buildCookieHeader()?.let { conn.setRequestProperty("Cookie", it) }
 
                 if (body != null && method.uppercase() != "GET") {
                     conn.doOutput = true
@@ -143,14 +167,7 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
                 }
 
                 val status = conn.responseCode
-
-                val setCookies = conn.headerFields?.get("Set-Cookie") ?: emptyList()
-                for (cookie in setCookies) {
-                    val parsed = java.net.HttpCookie.parse(cookie)
-                    for (c in parsed) {
-                        cookieManager.cookieStore.add(uri, c)
-                    }
-                }
+                parseSetCookies(conn.headerFields)
 
                 val contentType = conn.contentType ?: "application/json"
                 val responseBody = try {

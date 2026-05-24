@@ -88,13 +88,11 @@ vi.mock('@vps/shared/framework-artifacts', async () => {
 // systemd layer — every call resolves successfully by default. Tests
 // override per-case via the exported spies.
 const stopCalls: Array<{ dir: string; mode: 'graceful' | 'immediate' }> = [];
-vi.mock('./PreviewPlatform', () => ({
-  previewPlatform: {
-    listActive: async () => activeList,
-    stopUnit: async (dir: string, opts?: { mode?: 'graceful' | 'immediate' }) => {
-      stopCalls.push({ dir, mode: opts?.mode ?? 'graceful' });
-      return { ok: true };
-    },
+vi.mock('./PreviewUnits', () => ({
+  listActive: async () => activeList,
+  stopUnit: async (dir: string, opts?: { mode?: 'graceful' | 'immediate' }) => {
+    stopCalls.push({ dir, mode: opts?.mode ?? 'graceful' });
+    return { ok: true };
   },
 }));
 

@@ -3,7 +3,7 @@
 
 // Preview activity tracking.
 
-import { previewPlatform } from './PreviewPlatform';
+import { execSync } from 'node:child_process';
 
 // Per-preview activity record.
 export interface PreviewActivity {
@@ -69,5 +69,15 @@ export function lruOrder(): PreviewActivity[] {
 // sockets that would otherwise falsely extend idleness windows.
 // optimal; we never fail a preview because of a tracking miscount.
 function countEstablishedConnections(port: number): number {
-  return previewPlatform.countEstablishedConnections(port);
+  try {
+    const out = execSync(`ss -tnH state established sport = :${port}`, {
+      encoding: 'utf8',
+      timeout: 1000,
+    });
+    if (!out) return 0;
+    // Each non-empty line = one connection. ss adds no header with -H.
+    return out.split('\n').filter(l => l.trim().length > 0).length;
+  } catch {
+    return 0;
+  }
 }

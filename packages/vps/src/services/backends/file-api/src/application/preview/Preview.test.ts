@@ -21,27 +21,15 @@ vi.mock('@vps/shared/preview-spec', () => ({
   writeSpec: vi.fn(),
   inferSpecFromRepo: vi.fn(),
 }));
-vi.mock('./PreviewPlatform', () => ({
-  previewPlatform: {
-    startUnit: vi.fn(),
-    stopUnit: vi.fn(),
-    restartUnit: vi.fn(),
-    resetFailed: vi.fn(),
-    isActive: vi.fn(),
-    listActive: vi.fn().mockResolvedValue([]),
-    unitStatus: vi.fn(),
-    escapeInstance: vi.fn((s: string) => s),
-    writeFrameworkDropin: vi.fn().mockResolvedValue({ ok: true }),
-    clearFrameworkDropin: vi.fn().mockResolvedValue({ ok: true }),
-    getPidOnPort: vi.fn().mockReturnValue(null),
-    countEstablishedConnections: vi.fn().mockReturnValue(0),
-    detectMismatchedPort: vi.fn().mockReturnValue(null),
-    readJournalTail: vi.fn().mockResolvedValue(''),
-    listFailedUnits: vi.fn().mockReturnValue([]),
-    hasCgroups: false,
-    hasConnectionCounting: false,
-    hasPortScanning: false,
-  },
+vi.mock('./PreviewUnits', () => ({
+  startUnit: vi.fn(),
+  stopUnit: vi.fn(),
+  restartUnit: vi.fn(),
+  resetFailed: vi.fn(),
+  isActive: vi.fn(),
+  listActive: vi.fn().mockResolvedValue([]),
+  unitStatus: vi.fn(),
+  escapeInstance: vi.fn((s: string) => s),
 }));
 vi.mock('../../config', () => ({
   HOME: '/tmp',

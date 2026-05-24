@@ -320,10 +320,9 @@ export function generateCaddyHandlers(scope: "ai" | "app" | "all", opts: Handler
     }
   }
 
-  if (scope === "app" || (scope === "all" && !opts.singleHost)) {
+  if (scope === "app" || scope === "all") {
     // Per-app routes (host-matched handlers written by ellul-expose)
     // Also imports dev.caddy which is dynamically written by preview.service.ts
-    // For singleHost, the import is inside singleHostHandler before the catch-all.
     lines.push(...indent([`import /etc/caddy/app-routes.d/*.caddy`], 1));
   }
 
@@ -443,10 +442,6 @@ function singleHostHandler(consoleOrigin: string, extraFrameAncestors?: string[]
 
   // Per-agent gateway routes
   lines.push(...indent([`import /etc/caddy/agents.d/*.caddy`], 1));
-  lines.push("");
-
-  // Dev preview + deployed app routes — MUST precede the catch-all
-  lines.push(...indent([`import /etc/caddy/app-routes.d/*.caddy`], 1));
   lines.push("");
 
   // Catch-all → forward_auth → file-api (code browser)

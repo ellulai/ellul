@@ -269,7 +269,9 @@ serve({
   // only if the content differs from what's on disk, then reloads
   // Caddy via the admin socket. Any failure is logged and skipped —
   // the existing Caddyfile continues to serve.
-  void regenerateCaddyfileOnStartup();
+  if (process.env.ELLUL_PLATFORM !== 'android') {
+    void regenerateCaddyfileOnStartup();
+  }
 
   // Periodic cleanup of expired database temp migrate roles (every 60 seconds)
   setInterval(cleanupExpiredTempRoles, 60 * 1000);

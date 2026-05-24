@@ -77,15 +77,8 @@ function renderGlobalOptions(
   platformZone: string,
 ): string {
   const lines = ["{"];
-  if (useAdminSocket) {
-    if (process.env.ELLUL_PLATFORM === 'android') {
-      lines.push(`    admin 127.0.0.1:2019`);
-    } else {
-      lines.push(`    admin unix/${CADDY_ADMIN_SOCK}|0660`);
-    }
-  }
+  if (useAdminSocket) lines.push(`    admin unix/${CADDY_ADMIN_SOCK}|0660`);
   if (!autoHttps) lines.push("    auto_https off");
-  if (process.env.ELLUL_PLATFORM === 'android') lines.push("    persist_config off");
   lines.push(`    email admin@${platformZone}`);
   // Deliberately NO `servers { trusted_proxies ... }` block.
   //

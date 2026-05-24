@@ -29,7 +29,7 @@ import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 
 import type { ReconcilerLog } from './PreviewReconciler';
-import { previewPlatform } from './PreviewPlatform';
+import { restartUnit } from './PreviewUnits';
 
 interface ThrashWatchState {
   lastHighCount: number;
@@ -200,7 +200,6 @@ export async function checkAndHealThrash(
   port: number,
   log: ReconcilerLog,
 ): Promise<boolean> {
-  if (!previewPlatform.hasCgroups) return false;
   const signals = readSignals(appDir, port);
   const { thrashing, reason } = isThrashing(signals);
   if (!thrashing) return false;
@@ -239,7 +238,7 @@ export async function checkAndHealThrash(
   watchState.set(appDir, state);
 
   try {
-    const result = await previewPlatform.restartUnit(appDir);
+    const result = await restartUnit(appDir);
     if (!result.ok) {
       log('error', 'thrash-watchdog: restart failed', {
         directory: appDir,

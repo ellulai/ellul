@@ -325,11 +325,10 @@ class ProotService : Service() {
         data class Svc(val name: String, val port: Int, val httpPath: String?)
 
         val services = listOf(
-            Svc("sovereign-shield", 3005, "/_auth/health"),
+            Svc("sovereign-shield", 3005, "/health"),
             Svc("file-api", 3002, "/health"),
             Svc("agent-bridge", 7700, null),
             Svc("caddy", 8443, null),
-            Svc("term-proxy", 7701, null),
         )
 
         return services.map { svc ->
@@ -364,7 +363,7 @@ class ProotService : Service() {
             conn.connectTimeout = 3000
             conn.readTimeout = 3000
             conn.requestMethod = "GET"
-            conn.responseCode == 200
+            conn.responseCode in 200..499
         } catch (_: Exception) {
             false
         } finally {

@@ -9,7 +9,7 @@ import { execSync } from 'node:child_process';
 
 import { PREVIEW_LIMITS } from '@vps/shared/constants';
 
-import { previewPlatform } from '../preview/PreviewPlatform';
+import { stopUnit, unitStatus, escapeInstance, clearFrameworkDropin } from '../preview/PreviewUnits';
 import { recordStop } from '../preview/PreviewTracking';
 import { withPreviewLock } from '../preview/PreviewMutex';
 import { deleteMetrics } from '../preview/PreviewMetrics';
@@ -121,7 +121,7 @@ async function deleteCore(
     const targets = targetInstancesFor(directory, root);
     for (const t of targets) {
       try {
-        await previewPlatform.stopUnit(t);
+        await stopUnit(t);
       } catch (err) {
         warnings.push(`stopUnit(${t}) failed: ${(err as Error).message}`);
       }
@@ -130,7 +130,7 @@ async function deleteCore(
       // Clear the framework cgroup dropin so /etc/systemd/system/ellul-preview@<inst>.service.d/
       // doesn't accumulate stale framework caps after the project's gone.
       try {
-        const cleared = await previewPlatform.clearFrameworkDropin(t);
+        const cleared = await clearFrameworkDropin(t);
         if (!cleared.ok) warnings.push(`clearFrameworkDropin(${t}) failed: ${cleared.error ?? 'unknown'}`);
       } catch (err) {
         warnings.push(`clearFrameworkDropin(${t}) errored: ${(err as Error).message}`);
@@ -247,7 +247,7 @@ async function deleteCore(
     }
     // Any unit still active for this directory or its children?
     for (const t of targetInstancesFor(directory, root)) {
-      const st = await previewPlatform.unitStatus(t).catch(() => null);
+      const st = await unitStatus(t).catch(() => null);
       if (st && (st.ActiveState === 'active' || st.ActiveState === 'activating')) {
         throw new Error(`post-delete: unit ${t} is still ${st.ActiveState}`);
       }
@@ -262,8 +262,14 @@ async function deleteCore(
     const warnings: string[] = [];
     for (const t of targetInstancesFor(directory, root)) {
       try {
-        await previewPlatform.resetFailed(t);
+        const esc = escapeInstance(t);
+        execSync(`sudo -n /usr/local/bin/ellul-preview-ctl reset-failed '${esc}'`, {
+          encoding: 'utf8',
+          timeout: 5000,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
       } catch (err) {
+        // reset-failed is cosmetic for an already-stopped unit — warn, don't fail.
         warnings.push(`reset-failed ${t}: ${(err as Error).message}`);
       }
     }
@@ -314,7 +320,7 @@ async function waitForInactive(
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
-      const st = await previewPlatform.unitStatus(directory);
+      const st = await unitStatus(directory);
       if (!st || st.ActiveState === 'inactive' || st.ActiveState === 'failed') return;
     } catch {
       return; // no unit / can't query → treat as inactive

@@ -60,7 +60,7 @@ import {
   cancelInstall,
   wipeInstallTree,
 } from './application/platform/InstallManager';
-import { previewPlatform } from './application/preview/PreviewPlatform';
+import { listActive as listActiveUnits } from './application/preview/PreviewUnits';
 import { readAdmissionSignals, resolveCandidateReservation } from './application/preview/PreviewAdmission';
 import { startReconciler, reconcileOnce, startPreviewRef } from './application/preview/PreviewReconciler';
 import { deleteApp as coordinatedDelete } from './application/platform/SandboxDelete';
@@ -5064,7 +5064,7 @@ server.listen(PORT, '127.0.0.1', () => {
   setTimeout(() => {
     void (async () => {
       try {
-        const activeApps = await previewPlatform.listActive();
+        const activeApps = await listActiveUnits();
         if (activeApps.length > 0) {
           console.log(`[file-api] Startup reconciliation: ${activeApps.length} active preview(s) found`);
           for (const appDir of activeApps) {

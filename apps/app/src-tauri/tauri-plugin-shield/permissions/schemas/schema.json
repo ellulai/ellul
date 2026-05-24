@@ -295,18 +295,6 @@
       "type": "string",
       "oneOf": [
         {
-          "description": "Enables the shield_byos_token command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-shield-byos-token",
-          "markdownDescription": "Enables the shield_byos_token command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the shield_byos_token command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-shield-byos-token",
-          "markdownDescription": "Denies the shield_byos_token command without any pre-configured scope."
-        },
-        {
           "description": "Enables the shield_check_session command without any pre-configured scope.",
           "type": "string",
           "const": "allow-shield-check-session",
@@ -797,18 +785,6 @@
           "type": "string",
           "const": "deny-shield-register-verify",
           "markdownDescription": "Denies the shield_register_verify command without any pre-configured scope."
-        },
-        {
-          "description": "Enables the shield_reload_http command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-shield-reload-http",
-          "markdownDescription": "Enables the shield_reload_http command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the shield_reload_http command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-shield-reload-http",
-          "markdownDescription": "Denies the shield_reload_http command without any pre-configured scope."
         },
         {
           "description": "Enables the shield_session_info command without any pre-configured scope.",

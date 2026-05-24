@@ -10,32 +10,6 @@
 <tr>
 <td>
 
-`shield:allow-shield-byos-token`
-
-</td>
-<td>
-
-Enables the shield_byos_token command without any pre-configured scope.
-
-</td>
-</tr>
-
-<tr>
-<td>
-
-`shield:deny-shield-byos-token`
-
-</td>
-<td>
-
-Denies the shield_byos_token command without any pre-configured scope.
-
-</td>
-</tr>
-
-<tr>
-<td>
-
 `shield:allow-shield-check-session`
 
 </td>
@@ -1095,32 +1069,6 @@ Enables the shield_register_verify command without any pre-configured scope.
 <td>
 
 Denies the shield_register_verify command without any pre-configured scope.
-
-</td>
-</tr>
-
-<tr>
-<td>
-
-`shield:allow-shield-reload-http`
-
-</td>
-<td>
-
-Enables the shield_reload_http command without any pre-configured scope.
-
-</td>
-</tr>
-
-<tr>
-<td>
-
-`shield:deny-shield-reload-http`
-
-</td>
-<td>
-
-Denies the shield_reload_http command without any pre-configured scope.
 
 </td>
 </tr>

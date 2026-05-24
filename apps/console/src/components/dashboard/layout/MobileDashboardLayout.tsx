@@ -291,7 +291,7 @@ function DashboardContent({
     serverId: server.id,
     product,
     sandboxId: selectedApp,
-    activeContext: searchParams.get("ctx") || (product === "cloud_platform" ? "workspace" : "settings"),
+    activeContext: searchParams.get("ctx") || "workspace",
     requestedTab: searchParams.get("tab"),
     sendContextMode,
     selectedApp,
@@ -319,7 +319,7 @@ function DashboardContent({
     setAppContext, setVaultTab, setWorkspaceTab, setDatabaseTab, setObservabilityTab, setSettingsTab, setDesktopRightPanel,
     changeContext, changeTab, currentTabId,
   } = useDashboardNav({
-    defaultContext: product === "cloud_platform" ? "workspace" : "settings",
+    defaultContext: "workspace",
     tabOverrides: mergedTabOverrides,
   });
 
