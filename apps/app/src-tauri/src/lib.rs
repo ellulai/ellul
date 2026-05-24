@@ -42,10 +42,6 @@ fn resolve_start_url(cfg: &config::AppConfig) -> tauri::WebviewUrl {
             let dashboard = format!("{}/dashboard?_cb={}", config::console_url(), ts);
             tauri::WebviewUrl::External(dashboard.parse().unwrap())
         }
-        _ if cfg!(target_os = "android") => {
-            let dashboard = format!("{}/dashboard?_cb={}", config::console_url(), ts);
-            tauri::WebviewUrl::External(dashboard.parse().unwrap())
-        }
         _ => tauri::WebviewUrl::App("index.html".into()),
     }
 }
@@ -175,9 +171,10 @@ pub fn run() {
             poll_connect,
         ]);
 
+    let builder = builder.plugin(tauri_plugin_proot::init());
+
     #[cfg(desktop)]
     let builder = builder
-        .plugin(tauri_plugin_proot::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build());
 
     builder

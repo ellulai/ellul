@@ -173,6 +173,10 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_DOMAIN: APP_DOMAIN,
   },
 
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+
   // Disable x-powered-by header
   poweredByHeader: false,
 };

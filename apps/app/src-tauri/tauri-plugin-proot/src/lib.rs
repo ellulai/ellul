@@ -84,6 +84,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::proot_update_get_settings,
             commands::proot_update_set_settings,
             commands::proot_migration_export_file,
+            commands::proot_bootstrap_auth,
         ])
         .setup(|app, api| {
             #[cfg(target_os = "android")]

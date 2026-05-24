@@ -10,7 +10,7 @@
   "app": {
     "windows": [],
     "security": {
-      "csp": "default-src 'self' https://*.ellul.ai https://*.ellul.app https://localhost:8443; script-src 'self' 'unsafe-inline' https://*.ellul.ai; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.ellul.ai; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.ellul.ai wss://*.ellul.ai https://*.ellul.app wss://*.ellul.app https://api.ellul.ai https://localhost:8443 wss://localhost:8443; frame-src 'self' https://*.ellul.ai https://*.ellul.app https://localhost:8443; frame-ancestors 'self'"
+      "csp": "default-src 'self' https://*.ellul.ai https://*.ellul.app https://localhost:8443 http://localhost:8443; script-src 'self' 'unsafe-inline' https://*.ellul.ai http://localhost:8443; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.ellul.ai; img-src 'self' data: https: blob: http://localhost:8443; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.ellul.ai wss://*.ellul.ai https://*.ellul.app wss://*.ellul.app https://api.ellul.ai https://localhost:8443 wss://localhost:8443 http://localhost:8443 ws://localhost:8443; frame-src 'self' https://*.ellul.ai https://*.ellul.app https://localhost:8443 http://localhost:8443; frame-ancestors 'self'"
     }
   },
   "bundle": {

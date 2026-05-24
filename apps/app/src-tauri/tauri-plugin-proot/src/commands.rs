@@ -175,7 +175,7 @@ pub async fn proot_switch_to_local<R: tauri::Runtime>(
     {
         use tauri::Manager;
         if let Some(window) = app.get_webview_window("main") {
-            let url: url::Url = "https://localhost:8443"
+            let url: url::Url = "http://localhost:8443"
                 .parse()
                 .expect("valid localhost url");
             window
@@ -385,6 +385,23 @@ pub async fn proot_migration_export_file() -> Result<MigrationExportResult, Erro
     #[cfg(target_os = "android")]
     {
         let val = crate::bridge::call("migrationExportFile", json!({}))?;
+        return serde_json::from_value(val).map_err(|e| Error::ProotFailed(e.to_string()));
+    }
+    #[cfg(not(target_os = "android"))]
+    Err(Error::NotAvailable)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BootstrapAuthResult {
+    pub session_id: String,
+}
+
+#[command]
+pub async fn proot_bootstrap_auth() -> Result<BootstrapAuthResult, Error> {
+    #[cfg(target_os = "android")]
+    {
+        let val = crate::bridge::call("bootstrapAuth", json!({}))?;
         return serde_json::from_value(val).map_err(|e| Error::ProotFailed(e.to_string()));
     }
     #[cfg(not(target_os = "android"))]

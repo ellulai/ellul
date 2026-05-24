@@ -176,6 +176,9 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
                 } catch (_: Exception) { "" }
                 conn.disconnect()
 
+                val bodySnippet = if (responseBody.length > 200) responseBody.substring(0, 200) else responseBody
+                android.util.Log.d("proot-fetch", "$method :$port$path → $status $bodySnippet")
+
                 val result = JSObject()
                 result.put("status", status)
                 result.put("body", responseBody)
@@ -185,6 +188,71 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
                 invoke.reject("proot_fetch failed: ${e.message}")
             }
         }, "proot-fetch").start()
+    }
+
+    @Command
+    fun bootstrapAuth(invoke: Invoke) {
+        Thread({
+            try {
+                java.net.CookieHandler.setDefault(null)
+                val base = "http://127.0.0.1:8443"
+
+                val tokenConn = (java.net.URL("$base/_auth/byos/token").openConnection() as java.net.HttpURLConnection).apply {
+                    requestMethod = "POST"; connectTimeout = 10_000; readTimeout = 10_000
+                    setRequestProperty("Accept", "application/json")
+                }
+                if (tokenConn.responseCode != 200) {
+                    tokenConn.disconnect()
+                    invoke.reject("BYOS token failed: HTTP ${tokenConn.responseCode}")
+                    return@Thread
+                }
+                val jwt = org.json.JSONObject(tokenConn.inputStream.bufferedReader().readText()).getString("token")
+                tokenConn.disconnect()
+
+                val loginConn = (java.net.URL("$base/_auth/tauri/token-login").openConnection() as java.net.HttpURLConnection).apply {
+                    requestMethod = "POST"; connectTimeout = 10_000; readTimeout = 10_000
+                    setRequestProperty("Authorization", "Bearer $jwt")
+                    setRequestProperty("Content-Type", "application/json")
+                }
+                if (loginConn.responseCode != 200) {
+                    loginConn.disconnect()
+                    invoke.reject("Token login failed: HTTP ${loginConn.responseCode}")
+                    return@Thread
+                }
+                val sessionId = org.json.JSONObject(loginConn.inputStream.bufferedReader().readText()).getString("sessionId")
+                loginConn.disconnect()
+                cookieJar["shield_session"] = sessionId
+
+                val codeConn = (java.net.URL("$base/_auth/code/session").openConnection() as java.net.HttpURLConnection).apply {
+                    requestMethod = "POST"; connectTimeout = 10_000; readTimeout = 10_000
+                    setRequestProperty("Cookie", "shield_session=$sessionId")
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                }
+                if (codeConn.responseCode != 200) {
+                    codeConn.disconnect()
+                    invoke.reject("Code session failed: HTTP ${codeConn.responseCode}")
+                    return@Thread
+                }
+                val codeSessionId = org.json.JSONObject(codeConn.inputStream.bufferedReader().readText()).getString("codeSessionId")
+                codeConn.disconnect()
+                cookieJar["code_session"] = codeSessionId
+
+                val cm = android.webkit.CookieManager.getInstance()
+                cm.setAcceptCookie(true)
+                for (domain in arrayOf(base, "http://localhost:8443")) {
+                    cm.setCookie(domain, "shield_session=$sessionId; Path=/; SameSite=Lax")
+                    cm.setCookie(domain, "code_session=$codeSessionId; Path=/; SameSite=Lax")
+                }
+                cm.flush()
+
+                val result = JSObject()
+                result.put("sessionId", sessionId)
+                invoke.resolve(result)
+            } catch (e: Exception) {
+                invoke.reject("Bootstrap auth failed: ${e.message}")
+            }
+        }, "proot-bootstrap-auth").start()
     }
 
     @Command

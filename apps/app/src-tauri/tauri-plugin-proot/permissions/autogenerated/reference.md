@@ -10,6 +10,32 @@
 <tr>
 <td>
 
+`proot:allow-proot-bootstrap-auth`
+
+</td>
+<td>
+
+Enables the proot_bootstrap_auth command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`proot:deny-proot-bootstrap-auth`
+
+</td>
+<td>
+
+Denies the proot_bootstrap_auth command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `proot:allow-proot-fetch`
 
 </td>

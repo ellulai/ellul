@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-proot-bootstrap-auth"
+description = "Enables the proot_bootstrap_auth command without any pre-configured scope."
+commands.allow = ["proot_bootstrap_auth"]
+
+[[permission]]
+identifier = "deny-proot-bootstrap-auth"
+description = "Denies the proot_bootstrap_auth command without any pre-configured scope."
+commands.deny = ["proot_bootstrap_auth"]

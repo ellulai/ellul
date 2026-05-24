@@ -80,7 +80,7 @@ class SetupManager(private val context: Context) {
     fun isSetupComplete(): Boolean {
         return rootfsDir.exists()
             && File(rootfsDir, "usr/local/bin/ellul-engine-android").exists()
-            && File(rootfsDir, "usr/local/bin/node").exists()
+            && (File(rootfsDir, "usr/bin/node").exists() || File(rootfsDir, "usr/local/bin/node").exists())
             && versionFile.exists()
             && versionFile.readText().trim().isNotEmpty()
     }
@@ -97,13 +97,25 @@ class SetupManager(private val context: Context) {
 
         try {
             checkDiskSpace()
+            Log.d(TAG, "disk space OK, checking isSetupComplete")
+
+            if (isSetupComplete()) {
+                Log.d(TAG, "setup already complete, version=${getInstalledVersion()}")
+                val manifest = try { fetchSignedManifest() } catch (e: Exception) {
+                    Log.d(TAG, "manifest fetch failed (expected): ${e.message}")
+                    null
+                }
+                if (manifest == null || getInstalledVersion() == manifest.version) {
+                    Log.d(TAG, "returning COMPLETE (manifest=${manifest?.version})")
+                    onProgress(SetupProgress(SetupStage.COMPLETE, 100, 0, 0))
+                    return
+                }
+                Log.d(TAG, "newer version available: ${manifest.version}")
+            } else {
+                Log.d(TAG, "setup NOT complete")
+            }
 
             val manifest = fetchSignedManifest()
-
-            if (isSetupComplete() && getInstalledVersion() == manifest.version) {
-                onProgress(SetupProgress(SetupStage.COMPLETE, 100, 0, 0))
-                return
-            }
 
             val archiveFile = downloadRootfs(manifest.version, onProgress)
 
@@ -616,12 +628,12 @@ class SetupManager(private val context: Context) {
         File(vaultDir, "etc/ellul/security-tier").writeText("standard")
         File(vaultDir, "etc/ellul/domain").writeText("localhost")
         File(vaultDir, "etc/ellul/rp-id").writeText("localhost")
-        File(vaultDir, "etc/ellul/console-origin").writeText("https://localhost:8443")
+        File(vaultDir, "etc/ellul/console-origin").writeText("http://localhost:8443")
         File(vaultDir, "etc/ellul/platform-zone").writeText("localhost")
         File(vaultDir, "etc/ellul/app-zone").writeText("localhost")
-        File(vaultDir, "etc/ellul/allowed-origins").writeText("https://localhost:8443")
+        File(vaultDir, "etc/ellul/allowed-origins").writeText("http://localhost:8443")
         File(vaultDir, "etc/ellul/dev-domain").writeText("localhost")
-        File(vaultDir, "etc/ellul/preview-origins.json").writeText("""{"origins":["https://localhost:8443"],"patterns":[]}""")
+        File(vaultDir, "etc/ellul/preview-origins.json").writeText("""{"origins":["http://localhost:8443"],"patterns":[]}""")
 
         val vaultKey = ByteArray(32).also { SecureRandom().nextBytes(it) }
         val vaultKeyHex = vaultKey.joinToString("") { "%02x".format(it) }

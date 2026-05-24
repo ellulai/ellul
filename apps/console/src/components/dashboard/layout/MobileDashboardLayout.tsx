@@ -871,7 +871,7 @@ export function MobileDashboardLayout(props: MobileDashboardLayoutProps) {
 
   // Legacy mode: wrap with providers for backward compatibility
   return (
-    <VpsBridgeProvider hostname={serverDomain}>
+    <VpsBridgeProvider hostname={serverDomain} isLocal={isLocal}>
       <VpsCapabilitiesProvider hostname={serverDomain} serverStatus={props.server.state}>
         <CodeTokenProvider securityTier={props.server.securityTier} codeApiUrl={getCodeApiUrl(serverDomain)} serverId={props.server.id} srvUrl={serverDomain.startsWith("localhost") ? `http://${serverDomain}` : `https://${serverDomain}`}>
           <AppsListProvider

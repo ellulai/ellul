@@ -69,11 +69,17 @@ export function getLocalProxyOrigin(): string {
 }
 
 // Get the iframe-safe base URL for a server.
-// Tauri: /srv/ prefix (handled by Tauri IPC).
+// Android proot: direct to Caddy on port 8443 (no Next.js proxy in production).
+// Desktop Tauri dev: /srv/ prefix (Next.js dev rewrites proxy to VPS).
 // Browser local: direct to Caddy on port 80 (parity with cloud).
 export function getIframeBaseUrl(serverDomain: string, isTauri: boolean): string {
   if (isLocalDomain(serverDomain)) {
-    if (isTauri) return `${getLocalProxyOrigin()}/srv`;
+    if (isTauri) {
+      if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) {
+        return "http://localhost:8443";
+      }
+      return `${getLocalProxyOrigin()}/srv`;
+    }
     return "http://localhost";
   }
   return `https://${serverDomain}`;
@@ -114,6 +120,14 @@ export function getVpsApiUrl(serverDomain: string): string {
 // Used for postMessage security validation.
 export function isValidServerOrigin(origin: string): boolean {
   if (origin === "http://localhost" || origin === "http://localhost:80") return true;
-  if (typeof window !== "undefined" && origin === window.location.origin) return true;
+  if (typeof window !== "undefined") {
+    if (origin === window.location.origin) return true;
+    if ((window as any).__TAURI_INTERNALS__) {
+      try {
+        const u = new URL(origin);
+        if (u.protocol === "http:" && u.hostname === "localhost") return true;
+      } catch {}
+    }
+  }
   return origin.endsWith(`.${PLATFORM_DOMAIN}`) || origin.endsWith(`.${APP_DOMAIN}`);
 }

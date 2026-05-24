@@ -378,6 +378,12 @@ function BridgeProvider({ hostname, children }: { hostname: string; children: Re
               path: "/_auth/bridge/exchange-code",
             });
           }
+          if (type === "get_code_session") {
+            return await tauriInvoke<T>("shield_fetch", {
+              method: "POST",
+              path: "/_auth/code/session",
+            });
+          }
           return await tauriInvoke<T>("shield_fetch", {
             method: "POST",
             path: "/_auth/bridge/dispatch",

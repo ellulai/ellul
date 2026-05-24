@@ -12,7 +12,7 @@ import { useVpsBridge } from "@/lib/vps-bridge";
 import { useCodeToken } from "@/contexts/CodeTokenContext";
 import { isTauriApp } from "@/lib/utils";
 import { useWorkbenchOptional, type WorkbenchContextValue } from "@/contexts/WorkbenchContext";
-import { getCodeApiUrl, getIframeBaseUrl, isValidServerOrigin } from "@/lib/domains";
+import { getCodeApiUrl, getIframeBaseUrl, isLocalDomain, isValidServerOrigin } from "@/lib/domains";
 import type { ApiApp } from "@/contexts/AppsListContext";
 
 type AppInfo = ApiApp;
@@ -108,18 +108,22 @@ export function TabEditor({
     if (exchangeCodeFetchedRef.current) return;
     exchangeCodeFetchedRef.current = true;
 
-    send<{ code: string }>("get_exchange_code")
-      .then((result) => {
-        if (!result.code) {
-          setChatExchangeCode("error");
-          return;
-        }
-        setChatExchangeCode(result.code);
-      })
-      .catch(() => {
-        setChatExchangeCode("error");
-      });
-  }, [ready, codeToken, send]);
+    if (isLocalDomain(serverDomain)) {
+      send<{ codeSessionId: string }>("get_code_session")
+        .then((result) => {
+          if (!result.codeSessionId) { setChatExchangeCode("error"); return; }
+          setChatExchangeCode(result.codeSessionId);
+        })
+        .catch(() => setChatExchangeCode("error"));
+    } else {
+      send<{ code: string }>("get_exchange_code")
+        .then((result) => {
+          if (!result.code) { setChatExchangeCode("error"); return; }
+          setChatExchangeCode(result.code);
+        })
+        .catch(() => setChatExchangeCode("error"));
+    }
+  }, [ready, codeToken, send, serverDomain]);
 
   // Save user preferences
   const savePreferenceMutation = useMutation({
@@ -350,8 +354,9 @@ export function TabEditor({
   const loadTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Build iframe src (may be null if exchange code not ready)
+  const isLocal = isLocalDomain(serverDomain);
   const chatSrc = chatExchangeCode && chatExchangeCode !== "error"
-    ? `${chatOrigin}/_auth/chat?_shield_code=${encodeURIComponent(chatExchangeCode)}&parentOrigin=${encodeURIComponent(window.location.origin)}&locale=${encodeURIComponent(initialLocaleRef.current)}`
+    ? `${chatOrigin}/_auth/chat?${isLocal ? '_code_session' : '_shield_code'}=${encodeURIComponent(chatExchangeCode)}&parentOrigin=${encodeURIComponent(window.location.origin)}&locale=${encodeURIComponent(initialLocaleRef.current)}`
     : null;
 
   useEffect(() => {

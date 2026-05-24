@@ -36,7 +36,9 @@ setShieldServiceName("agent-bridge");
 import * as http from "http";
 import { Effect, Exit, Scope } from "effect";
 
-import { initCodeMode } from "./composition/CodeModeInit";
+// Dynamic import — isolated-vm (native addon) may not be available on all
+// platforms (e.g. Android proot). Bridge starts without code-mode in that case.
+// import { initCodeMode } from "./composition/CodeModeInit";
 import { makeApplicationRuntime } from "./composition/ApplicationLayer";
 import { PORT } from "./config";
 import { attachInternalHttp } from "./internal-http";
@@ -285,7 +287,14 @@ async function main(): Promise<void> {
   startNamespaceLifecycle();
 
   Promise.all([loadIntegrations(), mcpProviderRegistry.connectAll()])
-    .then(() => initCodeMode())
+    .then(async () => {
+      try {
+        const { initCodeMode } = await import("./composition/CodeModeInit");
+        initCodeMode();
+      } catch (err) {
+        console.warn("[Bridge] Code-mode unavailable (isolated-vm not loaded):", (err as Error).message);
+      }
+    })
     .then(() => startMcpEndpoint())
     .then(() => startZenModelRefresh())
     .catch((err) => {

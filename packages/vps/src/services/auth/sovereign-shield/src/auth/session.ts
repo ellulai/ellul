@@ -20,6 +20,8 @@ import { logAuditEvent } from '../application/audit/Audit';
 import { dbg } from '../application/audit/DebugLog';
 import { getSessionPolicy, getSessionTTL } from '../application/platform/SessionPolicy';
 import { compareFingerprints, type FingerprintData } from './fingerprint';
+import { SHIELD_SESSION_COOKIE } from '../utils/cookie';
+import { IS_LOCALHOST } from '../config';
 
 export interface Session {
   id: string;
@@ -496,17 +498,14 @@ export function refreshSession(
  * Set session cookie on response
  */
 export function setSessionCookie(c: Context, sessionId: string, _hostname: string): void {
-  // __Host- prefix: browser enforces Secure + Path=/ + no Domain (origin-locked)
-  // SameSite=None required: console.ellul.ai loads the bridge iframe from
-  // {shortId}-srv.ellul.ai — that's a cross-origin context. SameSite=Lax
-  // blocks cookie delivery on cross-origin iframe/fetch, breaking the entire
-  // bridge auth flow. SameSite=None + Secure allows it while still requiring HTTPS.
-  // __Host- prefix prevents cross-subdomain cookie tossing (no Domain= allowed).
   const { absoluteMaxMs } = getSessionTTL();
-  c.header('Set-Cookie', `__Host-shield_session=${sessionId}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=${Math.floor(absoluteMaxMs / 1000)}`);
+  const maxAge = Math.floor(absoluteMaxMs / 1000);
+  const secure = IS_LOCALHOST ? '' : ' Secure;';
+  const sameSite = IS_LOCALHOST ? 'Lax' : 'None';
+  c.header('Set-Cookie', `${SHIELD_SESSION_COOKIE}=${sessionId}; Path=/; HttpOnly;${secure} SameSite=${sameSite}; Max-Age=${maxAge}`);
   dbg('session', 'cookie_set', {
     sidShort: sessionId.slice(0, 8),
-    maxAgeS: Math.floor(absoluteMaxMs / 1000),
+    maxAgeS: maxAge,
     hostnameForLog: _hostname,
   });
 }
@@ -515,7 +514,9 @@ export function setSessionCookie(c: Context, sessionId: string, _hostname: strin
  * Clear session cookie
  */
 export function clearSessionCookie(c: Context, _hostname: string): void {
-  c.header('Set-Cookie', `__Host-shield_session=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0`);
+  const secure = IS_LOCALHOST ? '' : ' Secure;';
+  const sameSite = IS_LOCALHOST ? 'Lax' : 'None';
+  c.header('Set-Cookie', `${SHIELD_SESSION_COOKIE}=; Path=/; HttpOnly;${secure} SameSite=${sameSite}; Max-Age=0`);
 }
 
 /**

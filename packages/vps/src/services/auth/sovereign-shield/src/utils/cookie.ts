@@ -75,6 +75,7 @@ export function deleteCookieHeader(name: string, path = '/'): string {
 
 import { IS_LOCALHOST } from '../config';
 
+export const SHIELD_SESSION_COOKIE = IS_LOCALHOST ? 'shield_session' : '__Host-shield_session';
 export const CODE_SESSION_COOKIE = IS_LOCALHOST ? 'code_session' : '__Host-code_session';
 
 export function codeSessionCookie(sessionId: string, maxAge: number): string {

@@ -3,7 +3,7 @@
   "description": "Android-only capabilities — proot BYOS workspace commands and localhost remote origin for shield/core when WebView loads from localhost:8443",
   "windows": ["main"],
   "remote": {
-    "urls": ["https://localhost:8443/*"]
+    "urls": ["https://localhost:8443/*", "http://localhost:8443/*"]
   },
   "platforms": ["android"],
   "permissions": [
@@ -77,6 +77,7 @@
     "proot:allow-proot-health",
     "proot:allow-proot-fetch",
     "proot:allow-proot-setup-status",
-    "proot:allow-proot-setup-start"
+    "proot:allow-proot-setup-start",
+    "proot:allow-proot-bootstrap-auth"
   ]
 }

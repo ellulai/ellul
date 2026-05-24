@@ -6,7 +6,7 @@ import { Effect, Option } from "effect";
 import type { IncomingMessage, ServerResponse } from "http";
 
 import type { ApplicationRuntime } from "../composition/ApplicationLayer";
-import { scaffoldProjectDirect } from "../application/code-mode";
+import { scaffoldProjectDirect } from "../application/code-mode/PlatformTools";
 import { appendActivity, startContinuationTurn } from "./dispatch-activity";
 import { gateLocalhostOnly, readJsonBody } from "./acl";
 import { resolveFirstThreadIdForProject } from "./thread-resolver";
