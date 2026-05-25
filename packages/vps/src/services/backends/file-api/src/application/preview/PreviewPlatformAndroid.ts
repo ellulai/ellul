@@ -188,9 +188,15 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
   }
 
   async listActive(): Promise<string[]> {
-    return [...processes.entries()]
-      .filter(([, t]) => !t.child.killed && t.child.exitCode === null)
-      .map(([d]) => d);
+    const active = new Set<string>();
+    for (const [d, t] of processes) {
+      if (!t.child.killed && t.child.exitCode === null) active.add(d);
+    }
+    for (const [d, port] of adoptedPorts) {
+      if (isPortListening(port)) active.add(d);
+      else adoptedPorts.delete(d);
+    }
+    return [...active];
   }
 
   async writeFrameworkDropin(_appDir: string, _opts: FrameworkDropinOpts): Promise<UnitResult> {

@@ -916,7 +916,7 @@ export function TabPreview({
         const data = await res.json();
         if (data.health) {
           queryClient.setQueryData(
-            ["app", app?.directory ?? serverId],
+            ["current-app", app.directory, codeApiUrl],
             (old: Record<string, unknown> | undefined) =>
               old ? { ...old, preview: data.health } : old,
           );
@@ -1780,7 +1780,7 @@ export function TabPreview({
             onSubmitted={(outcome) => {
               if (outcome.health) {
                 queryClient.setQueryData(
-                  ["app", app?.directory ?? serverId],
+                  ["current-app", app.directory, codeApiUrl],
                   (old: Record<string, unknown> | undefined) =>
                     old ? { ...old, preview: outcome.health } : old,
                 );
