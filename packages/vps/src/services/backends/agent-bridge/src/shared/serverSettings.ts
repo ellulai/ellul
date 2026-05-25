@@ -2,6 +2,7 @@
 // Copyright (c) 2025 ellul.ai. All rights reserved.
 
 import { Context, Effect, Schema, Stream } from "effect";
+import { IS_ANDROID } from "@vps/shared/platform";
 
 export interface CodexSettings {
   readonly enabled: boolean;
@@ -102,9 +103,13 @@ export class ServerSettingsService extends Context.Service<
 // NOT under nvm — a probe using the codex-style nvm path here was failing
 // with ENOENT → "Cursor Agent CLI is not installed or not on PATH". Point
 // at the actual on-disk location that `which cursor-agent` resolves to.
-export const DEFAULT_CODEX_BINARY = "/home/dev/.node/bin/codex";
+export const DEFAULT_CODEX_BINARY = IS_ANDROID
+  ? "/tmp/.ellul-cli-cache/codex"
+  : "/home/dev/.node/bin/codex";
 export const DEFAULT_OPENCODE_BINARY = "/usr/local/bin/opencode";
-export const DEFAULT_CURSOR_BINARY = "/usr/local/bin/cursor-agent";
+export const DEFAULT_CURSOR_BINARY = IS_ANDROID
+  ? "/tmp/.ellul-cli-cache/cursor-agent"
+  : "/usr/local/bin/cursor-agent";
 
 // Claude Agent SDK spawns `claude` via Node's child_process.spawn directly —
 // bypasses our Effect ChildProcessSpawner layer. The adapter points
@@ -119,15 +124,20 @@ export const DEFAULT_CURSOR_BINARY = "/usr/local/bin/cursor-agent";
 // which is rm'd after sourcing). Previously a separate launcher process
 // did the redeem via execFileSync, but that extra Node.js layer broke the
 // Claude Agent SDK's stdin/stdout pipe delivery.
-export const DEFAULT_CLAUDE_LAUNCHER = "/usr/local/bin/ellul-claude-ns";
+export const DEFAULT_CLAUDE_LAUNCHER = IS_ANDROID
+  ? "/tmp/.ellul-cli-cache/claude"
+  : "/usr/local/bin/ellul-claude-ns";
 
-// Probe-only path. Same value the ns wrapper resolves at exec time.
-export const DEFAULT_CLAUDE_BINARY = "/home/dev/.node/bin/claude";
+export const DEFAULT_CLAUDE_BINARY = IS_ANDROID
+  ? "/tmp/.ellul-cli-cache/claude"
+  : "/home/dev/.node/bin/claude";
 
 // Resolved via PATH inside the project namespace.
 export const DEFAULT_ZEROCLAW_BINARY = "zeroclaw";
 
-export const DEFAULT_GROK_BINARY = "/home/dev/.grok/bin/grok";
+export const DEFAULT_GROK_BINARY = IS_ANDROID
+  ? "/tmp/.ellul-cli-cache/grok"
+  : "/home/dev/.grok/bin/grok";
 
 export const defaultServerSettings: ServerSettings = {
   enableAssistantStreaming: false,

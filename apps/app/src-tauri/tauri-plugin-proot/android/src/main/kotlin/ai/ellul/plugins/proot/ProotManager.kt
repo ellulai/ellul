@@ -6,8 +6,10 @@ import android.util.Log
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import java.util.zip.ZipFile
 
 class ProotManager(private val context: Context) {
 
@@ -26,7 +28,7 @@ class ProotManager(private val context: Context) {
     private val vaultDir = File(appDir, "vault")
     private val projectsDir: File = File(appDir, "projects")
     private val nativeLibDir = context.applicationInfo.nativeLibraryDir
-    private val prootBin = File(nativeLibDir, "libproot.so")
+    private var prootBin = File(nativeLibDir, "libproot.so")
     private val libDir = File(appDir, "lib")
     private val logDir = File(appDir, "logs")
 
@@ -36,10 +38,32 @@ class ProotManager(private val context: Context) {
             ensureLibSymlinks()
             return
         }
-        throw RuntimeException(
-            "proot binary not found at ${prootBin.absolutePath} — " +
-                "ensure libproot.so is in jniLibs/arm64-v8a/"
-        )
+        val fallback = File(appDir, "libproot.so")
+        if (fallback.exists() && fallback.canExecute()) {
+            Log.i(TAG, "Using proot from filesDir fallback: ${fallback.absolutePath}")
+            prootBin = fallback
+            ensureLibSymlinks()
+            return
+        }
+        val apkPath = context.applicationInfo.sourceDir
+        try {
+            ZipFile(apkPath).use { zip ->
+                val entry = zip.getEntry("lib/arm64-v8a/libproot.so")
+                    ?: throw RuntimeException("libproot.so not found in APK")
+                zip.getInputStream(entry).use { input ->
+                    FileOutputStream(fallback).use { output -> input.copyTo(output) }
+                }
+            }
+            fallback.setExecutable(true)
+            prootBin = fallback
+            Log.i(TAG, "Extracted proot from APK to ${fallback.absolutePath}")
+            ensureLibSymlinks()
+        } catch (e: Exception) {
+            throw RuntimeException(
+                "proot binary not found at ${File(nativeLibDir, "libproot.so").absolutePath} " +
+                    "and APK extraction failed: ${e.message}"
+            )
+        }
     }
 
     private fun ensureLibSymlinks() {
@@ -159,6 +183,7 @@ class ProotManager(private val context: Context) {
         "PATH" to "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
         "LANG" to "C.UTF-8",
         "TERM" to "xterm-256color",
+        "TMPDIR" to "/tmp",
         "NODE_ENV" to "production",
         "ELLUL_PLATFORM" to "android",
         "ELLUL_HIGH_PORTS" to "1",

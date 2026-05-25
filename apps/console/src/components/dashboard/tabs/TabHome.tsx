@@ -193,36 +193,40 @@ export function TabHome({
 
             <div className="p-4 space-y-4">
               {/* Plan & Uptime */}
-              <div className="grid grid-cols-2 gap-3 pb-4 border-b border-cream/[0.04]">
+              <div className={`${isLocal ? "" : "grid grid-cols-2"} gap-3 pb-4 border-b border-cream/[0.04]`}>
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 bg-cream/[0.04]">
                     <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-cream/60" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-[10px] sm:text-xs text-cream/60">{t("plan")}</p>
-                    <p className="text-base sm:text-lg font-semibold text-cream">{serverSpecs.label}</p>
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-[9px] sm:text-[10px] text-cream/45 hidden sm:block">{serverSpecs.capacity}</p>
-                      <span className={`text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full hidden sm:inline-block ${
-                        isDedicatedRuntime(server.runtimeTier)
-                          ? "bg-sodium/10 text-sodium"
-                          : "bg-cream/[0.04] text-cream/60"
-                      }`}>
-                        {getRuntimeTierLabel(server.runtimeTier)}
-                      </span>
+                    <p className="text-base sm:text-lg font-semibold text-cream">{isLocal ? "Free" : serverSpecs.label}</p>
+                    {!isLocal && (
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-[9px] sm:text-[10px] text-cream/45 hidden sm:block">{serverSpecs.capacity}</p>
+                        <span className={`text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full hidden sm:inline-block ${
+                          isDedicatedRuntime(server.runtimeTier)
+                            ? "bg-sodium/10 text-sodium"
+                            : "bg-cream/[0.04] text-cream/60"
+                        }`}>
+                          {getRuntimeTierLabel(server.runtimeTier)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {!isLocal && (
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 bg-cream/[0.04]">
+                      <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-cream/60" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] sm:text-xs text-cream/60">{t("uptime")}</p>
+                      <p className="text-base sm:text-lg font-semibold text-cream">{stats.uptime}</p>
+                      <p className="text-[9px] sm:text-[10px] text-cream/45 truncate hidden sm:block">{t("since", { date: new Date(server.createdAt).toLocaleDateString() })}</p>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 bg-cream/[0.04]">
-                    <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-cream/60" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] sm:text-xs text-cream/60">{t("uptime")}</p>
-                    <p className="text-base sm:text-lg font-semibold text-cream">{stats.uptime}</p>
-                    <p className="text-[9px] sm:text-[10px] text-cream/45 truncate hidden sm:block">{t("since", { date: new Date(server.createdAt).toLocaleDateString() })}</p>
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* IP Address — hidden on local (always localhost) */}

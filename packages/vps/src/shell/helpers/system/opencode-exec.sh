@@ -105,11 +105,25 @@ trap cleanup EXIT
 #                                  reads it from /proc/<pid>/environ and
 #                                  respawns the serve when the wrapper bytes
 #                                  change on disk (stale-wrapper eviction)
-TMPDIR="$RUN_TMPDIR" \
-BUN_TMPDIR="$RUN_TMPDIR" \
-BUN_INSTALL="$BUN_INSTALL_DIR" \
-ELLUL_OPENCODE_WRAPPER_SHA="$WRAPPER_SHA" \
-  "$REAL_OPENCODE" "$@" &
+# On Android proot, bun's JSC signal handlers crash under proot's ptrace
+# interception (SIGSEGV at 0xBBADBEEF). Bypass by invoking the binary
+# through the rootfs glibc linker directly — the kernel executes the
+# linker natively (no ptrace), which then loads bun without interference.
+GLIBC_LD="/lib/ld-linux-aarch64.so.1"
+GLIBC_LIBPATH="/lib/aarch64-linux-gnu"
+if [ "${ELLUL_PLATFORM:-}" = "android" ] && [ -x "$GLIBC_LD" ]; then
+  TMPDIR="$RUN_TMPDIR" \
+  BUN_TMPDIR="$RUN_TMPDIR" \
+  BUN_INSTALL="$BUN_INSTALL_DIR" \
+  ELLUL_OPENCODE_WRAPPER_SHA="$WRAPPER_SHA" \
+    "$GLIBC_LD" --library-path "$GLIBC_LIBPATH" "$REAL_OPENCODE" "$@" &
+else
+  TMPDIR="$RUN_TMPDIR" \
+  BUN_TMPDIR="$RUN_TMPDIR" \
+  BUN_INSTALL="$BUN_INSTALL_DIR" \
+  ELLUL_OPENCODE_WRAPPER_SHA="$WRAPPER_SHA" \
+    "$REAL_OPENCODE" "$@" &
+fi
 CHILD_PID=$!
 trap 'kill -TERM "$CHILD_PID" 2>/dev/null || true' INT TERM
 

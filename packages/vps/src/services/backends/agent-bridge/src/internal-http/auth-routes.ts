@@ -39,6 +39,7 @@ import * as path from "path";
 
 import { claudeLaunchTrace } from "../../../../shared/claude-launch-trace";
 import { getClaudeOatBridgeModule } from "../credentials/claude-oat/public";
+import { IS_ANDROID } from "@vps/shared/platform";
 
 function triggerProviderRefresh(): void {
   fetch('http://127.0.0.1:7700/api/internal/providers/refresh', { method: 'POST' }).catch(() => {});
@@ -85,6 +86,20 @@ const AUTH_COMMANDS: Record<AuthTool, { readonly cmd: string; readonly label: st
   grok: { cmd: `${STTY_WIDE}; exec grok login --device-auth`, label: "Grok Build" },
   gh: { cmd: `${STTY_WIDE}; exec gh auth login --web`, label: "GitHub" },
   npm: { cmd: `${STTY_WIDE}; exec npm login`, label: "npm" },
+};
+
+// Android proot: externally-installed CLI binaries get wrong SELinux
+// context (shell_data_file vs app_data_file), causing EPERM on execve.
+// Bypass: node-based CLIs invoke via `node /path/to/entry.js` (read,
+// not execute). ELF binaries use engine-cached copies at
+// /tmp/.ellul-cli-cache/ (created by app process → correct context).
+const AUTH_COMMANDS_ANDROID: Record<AuthTool, { readonly cmd: string; readonly label: string }> = {
+  claude: { cmd: `${STTY_WIDE}; /tmp/.ellul-cli-cache/claude setup-token`, label: "Claude" },
+  codex: { cmd: `/tmp/.ellul-cli-cache/codex login --device-auth`, label: "Codex" },
+  cursor: { cmd: `${STTY_WIDE}; /tmp/.ellul-cli-cache/cursor-agent login`, label: "Cursor" },
+  grok: { cmd: `/tmp/.ellul-cli-cache/grok login --device-auth`, label: "Grok Build" },
+  gh: { cmd: `gh auth login --web`, label: "GitHub" },
+  npm: { cmd: `npm login`, label: "npm" },
 };
 
 type StreamEvent =
@@ -178,7 +193,8 @@ async function handleChildExit(
   const probe = AUTH_PROBES[session.tool];
   const authed =
     (session.tool === "claude" && session.oatSaveStatus === "ok") ||
-    (probe ? probe(session) : false);
+    (probe ? probe(session) : false) ||
+    (code === 0 && !NEEDS_PTY.has(session.tool));
   dlog("child.exit.probed", {
     id,
     authed,
@@ -191,6 +207,7 @@ async function handleChildExit(
   else resolved = code ?? 0;
   session.exitCode = resolved;
   session.exitEmitted = true;
+  if (authed) triggerProviderRefresh();
   dlog("child.exit.emit", { id, resolvedCode: resolved });
   emit({ type: "exit", exitCode: resolved, signal: signal ?? null });
   setTimeout(() => reapSession(id, "exit"), 10_000);
@@ -213,22 +230,34 @@ function reapSession(id: string, reason: string): void {
   session.listeners.clear();
 }
 
+// Device-code tools don't need a pty — spawning without `script` avoids
+// the pty session cleanup that can prematurely kill the polling process.
+const NEEDS_PTY: ReadonlySet<AuthTool> = new Set(["claude", "cursor"]);
+
 function startSession(tool: AuthTool): AuthSession {
-  const entry = AUTH_COMMANDS[tool];
+  const commands = IS_ANDROID ? AUTH_COMMANDS_ANDROID : AUTH_COMMANDS;
+  const entry = commands[tool];
   const id = randomBytes(12).toString("hex");
-  dlog("startSession.spawn", { id, tool, cmd: entry.cmd });
-  const child = spawn("script", ["-qfc", entry.cmd, "/dev/null"], {
-    stdio: ["pipe", "pipe", "pipe"],
-    detached: true,
-    env: {
-      ...process.env,
-      TERM: "xterm-256color",
-      FORCE_COLOR: "0",
-      COLUMNS: "2000",
-      LINES: "30",
-    },
-  });
-  dlog("startSession.spawned", { id, scriptPid: child.pid });
+  const usePty = !IS_ANDROID || NEEDS_PTY.has(tool);
+  dlog("startSession.spawn", { id, tool, cmd: entry.cmd, android: IS_ANDROID, usePty });
+  const spawnEnv = {
+    ...process.env,
+    TERM: "xterm-256color",
+    FORCE_COLOR: "0",
+    COLUMNS: "2000",
+    LINES: "30",
+  };
+  const child = usePty
+    ? spawn("script", ["-qfc", entry.cmd, "/dev/null"], {
+        stdio: ["pipe", "pipe", "pipe"],
+        detached: !IS_ANDROID,
+        env: spawnEnv,
+      })
+    : spawn("sh", ["-c", entry.cmd], {
+        stdio: ["pipe", "pipe", "pipe"],
+        env: spawnEnv,
+      });
+  dlog("startSession.spawned", { id, pid: child.pid, usePty });
   const session: AuthSession = {
     id,
     tool,
@@ -342,6 +371,10 @@ function startSession(tool: AuthTool): AuthSession {
   });
 
   sessions.set(id, session);
+  // Start polling immediately — device-code flows (codex, grok) complete
+  // via browser auth, so writeSessionInput is never called and the poll
+  // that lived there never started.
+  startAuthFilePolling(session);
   return session;
 }
 

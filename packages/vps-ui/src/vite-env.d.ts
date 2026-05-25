@@ -7,6 +7,8 @@ interface EllulConfig {
   wsOrigin?: string;
   codeWsOrigin?: string;
   codeWsPath?: string;
+  platform?: string;
+  disabledSessions?: string[];
 }
 
 interface Window {

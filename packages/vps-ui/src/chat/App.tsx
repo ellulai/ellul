@@ -105,6 +105,7 @@ const DEFAULT_INTERACTION_MODE: ProviderInteractionMode = "default";
 const EMPTY_PINNED_MODEL_BY_PROVIDER: Partial<Record<ProviderKind, string>> = {};
 const EMPTY_SERVER_PROVIDERS: ServerProvider[] = [];
 const queryClient = new QueryClient();
+const IS_ANDROID = window.__ELLUL_CONFIG__?.platform === "android";
 
 function isTouchDevice() {
   return window.matchMedia("(pointer: coarse)").matches;
@@ -199,6 +200,7 @@ function AdapterPicker({
     </Select>
   );
 }
+
 
 /** Format a timestamp as a relative time string ("5 minutes ago" /
  *  "5分前") for recent values, or as a locale-aware absolute date for
@@ -2054,7 +2056,7 @@ export function App() {
       {/* Main content column (messages + composer) */}
       <div className="flex-1 flex flex-col min-h-0 min-w-0 relative">
       {/* Floating toolbar — thread pill (left) + actions (right), overlaid on content */}
-      <div className="absolute top-3 left-3 right-3 sm:left-4 sm:right-4 z-30 flex items-start justify-between pointer-events-none">
+      <div className={cn("absolute left-3 right-3 sm:left-4 sm:right-4 z-30 flex items-start justify-between pointer-events-none", !IS_ANDROID && "top-3")} style={IS_ANDROID ? { top: "calc(0.75rem + env(safe-area-inset-top, 0px))" } : undefined}>
         {/* Thread selector pill — hidden on desktop focus (sidebar handles it) */}
         <button
           onClick={() => setShowThreadPicker(true)}
@@ -2115,7 +2117,7 @@ export function App() {
             error={activeThreadFromStore.error}
             onDismiss={() => setActiveThreadError(activeThreadRef.threadId, null)}
           />
-          <div className="relative flex min-h-0 flex-1 flex-col pt-12">
+          <div className={cn("relative flex min-h-0 flex-1 flex-col", !IS_ANDROID && "pt-12")} style={IS_ANDROID ? { paddingTop: "calc(3rem + env(safe-area-inset-top, 0px))" } : undefined}>
             <MessagesTimeline
               key={activeThreadRef.threadId}
               isWorking={isWorking}

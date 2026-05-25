@@ -33,6 +33,8 @@ const ENSURE_DIRS = [
   "/etc/ellul/agent-bridge",
   "/home/dev/projects",
   "/home/dev/.ellul",
+  "/home/dev/.local/share",
+  "/home/dev/.cache/opencode-bun",
 ];
 
 const CADDY_BIN = "/usr/local/bin/caddy";
@@ -139,7 +141,7 @@ http://localhost:8443, http://127.0.0.1:8443 {
     handle /vps-config.js {
         header Content-Type "application/javascript"
         header Cache-Control "no-store"
-        respond ${"`"}window.__ELLUL_CONFIG__=${JSON.stringify({platformZone:"localhost",appZone:"ellul.app",consoleOrigin:CONSOLE_ORIGIN,wsOrigin:"http://localhost:8443",codeWsOrigin:"http://localhost:8443",codeWsPath:"/code-ws",disabledSessions:["claw"]})};${"`"} 200
+        respond ${"`"}window.__ELLUL_CONFIG__=${JSON.stringify({platformZone:"localhost",appZone:"ellul.app",consoleOrigin:CONSOLE_ORIGIN,wsOrigin:"http://localhost:8443",codeWsOrigin:"http://localhost:8443",codeWsPath:"/code-ws",platform:"android",disabledSessions:["claw"]})};${"`"} 200
     }
 
     @shieldDirect path /_auth/login* /_auth/register* /_auth/recovery* /_auth/standard-upgrade* /_auth/bridge /_auth/bridge/tier /_auth/bridge/session /_auth/code/redirect /_auth/code/session /_auth/code/establish /_auth/terminal/authorize /_auth/agent/authorize /_auth/code/authorize /_auth/pop/* /_auth/static/* /_auth/capabilities /_auth/verify-confirmation /_auth/git/verify-link-token /_auth/git/verify-unlink-token /_auth/wake-enforcer /_auth/tauri/token-login /_auth/byos/token /_auth/chat /_auth/upgrade-to-web-locked /_auth/upgrade-to-web-locked/verify /health /_auth/health
@@ -497,11 +499,36 @@ function startConsoleProxy() {
   return server;
 }
 
+function prepareCliTools() {
+  const CACHE = "/tmp/.ellul-cli-cache";
+  fs.mkdirSync(CACHE, { recursive: true });
+  const elfs = [
+    { name: "claude", src: "/usr/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe" },
+    { name: "codex", src: "/usr/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-arm64/vendor/aarch64-unknown-linux-musl/bin/codex" },
+    { name: "cursor-agent", src: "/usr/local/bin/cursor-agent" },
+    { name: "grok", src: "/home/dev/.grok/bin/grok" },
+  ];
+  for (const { name, src } of elfs) {
+    const dst = path.join(CACHE, name);
+    try {
+      if (!fs.existsSync(src)) continue;
+      const srcMtime = fs.statSync(src).mtimeMs;
+      if (fs.existsSync(dst) && fs.statSync(dst).mtimeMs >= srcMtime) continue;
+      fs.copyFileSync(src, dst);
+      fs.chmodSync(dst, 0o755);
+      log(`cli-cache: ${src} -> ${dst}`);
+    } catch (e) {
+      log(`cli-cache failed ${name}: ${e.message}`);
+    }
+  }
+}
+
 async function main() {
   log(`Starting ellul-engine-android on ${process.arch}`);
   log(`User: uid=${process.getuid()} gid=${process.getgid()}`);
 
   setupFilesystem();
+  prepareCliTools();
   startConsoleProxy();
 
   for (const svc of SERVICES) {

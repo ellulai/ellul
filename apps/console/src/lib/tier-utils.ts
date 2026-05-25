@@ -4,18 +4,18 @@ import { isContextVisible } from "./feature-flags";
 
 // - shield_proxy:     Settings only (secrets + security)
 
-export type Product = "cloud_platform" | "shield_proxy";
+export type Product = "cloud_platform" | "shield_proxy" | "self_hosted" | "byos";
 
 // Get which product a tier/product string belongs to
 export function getProductForTier(productOrTier?: string): Product {
   if (!productOrTier) return "cloud_platform";
   // New model: product is the value directly (e.g. "cloud_platform")
-  if (["cloud_platform", "shield_proxy"].includes(productOrTier)) {
+  if (["cloud_platform", "shield_proxy", "self_hosted", "byos"].includes(productOrTier)) {
     return productOrTier as Product;
   }
   // Composite key: "cloud_platform:hobby" → extract product
   const prefix = productOrTier.split(":")[0] ?? productOrTier;
-  if (["cloud_platform", "shield_proxy"].includes(prefix)) {
+  if (["cloud_platform", "shield_proxy", "self_hosted", "byos"].includes(prefix)) {
     return prefix as Product;
   }
   return "cloud_platform";
@@ -84,11 +84,12 @@ export function canShowServerSettingsTab(
   tabId: string,
   product: Product,
 ): boolean {
-  if (tabId === "general" || tabId === "billing" || tabId === "context")
-    return true;
-  if (tabId === "appearance") return product !== "shield_proxy";
-  if (tabId === "ai") return product === "cloud_platform";
-  // Custom domains only apply to products that have a user-facing web UI.
+  const isLocal = product === "self_hosted" || product === "byos";
+  if (tabId === "general") return true;
+  if (tabId === "ai") return product === "cloud_platform" || isLocal;
+  if (tabId === "billing") return !isLocal;
+  if (tabId === "context") return !isLocal;
+  if (tabId === "appearance") return product !== "shield_proxy" && !isLocal;
   if (tabId === "domains") return product === "cloud_platform";
   return true;
 }

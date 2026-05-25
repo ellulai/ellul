@@ -14,6 +14,7 @@ import { ContextSettings } from "../ContextSettings";
 import { LanguagePicker } from "../LanguagePicker";
 // import { ServerSettingsDomains } from "../ServerSettingsDomains"; // TODO: re-enable when domains UI is complete
 import { canShowServerSettingsTab } from "@/lib/tier-utils";
+import { isLocalServer } from "@/lib/domains";
 import { useState } from "react";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
 import type { ServerSettingsModalProps } from "./layout-types";
@@ -45,6 +46,7 @@ export function ServerSettingsModal({
 }: ServerSettingsModalProps) {
   const t = useTranslations("console.serverSettings");
   const vh = useVisualViewport();
+  const isLocal = isLocalServer(server);
   const [serverSettingsTab, setServerSettingsTab] = useState<"general" | "appearance" | "ai" | "billing" | "context" | "domains">("general");
 
   // Body scroll is permanently locked by MobileDashboardLayout (position:fixed).
@@ -53,12 +55,12 @@ export function ServerSettingsModal({
     <div className="fixed inset-x-0 top-0 z-[100] flex items-end sm:items-center justify-center" style={{ height: vh }}>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in-0 duration-200"
+        className="fixed inset-0 z-0 bg-black/60 backdrop-blur-sm animate-in fade-in-0 duration-200"
         onClick={onClose}
       />
 
       {/* Modal Content */}
-      <div className="relative w-full sm:w-[90%] sm:max-w-2xl h-[calc(100%-0.5rem)] sm:h-auto sm:max-h-[80vh] bg-card border border-border rounded-t-xl sm:rounded-xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-4 sm:zoom-in-95 sm:slide-in-from-bottom-0 duration-200">
+      <div className="relative z-10 w-full sm:w-[90%] sm:max-w-2xl h-[calc(100%-0.5rem)] sm:h-auto sm:max-h-[80vh] bg-card border border-border rounded-t-xl sm:rounded-xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-4 sm:zoom-in-95 sm:slide-in-from-bottom-0 duration-200">
         {/* Modal Header */}
         <div className="shrink-0 flex items-center justify-between px-5 py-3.5 border-b border-border">
           <h2 className="text-base font-semibold text-cream tracking-tight">{t("modalTitle")}</h2>
@@ -99,26 +101,40 @@ export function ServerSettingsModal({
         {/* Modal Body - Scrollable */}
         <div className="flex-1 overflow-y-auto">
           {serverSettingsTab === "general" && (
-            <TabHome
-              server={server}
-              plan={plan}
-              onDeleteServer={onDeleteServer}
-              isDeleting={isDeleting}
-              onRebuildServer={onRebuildServer}
-              isRebuilding={isRebuilding}
-              onRollbackServer={onRollbackServer}
-              isRollingBack={isRollingBack}
-              snapshotExpiresAt={snapshotExpiresAt}
-              agentUpdate={agentUpdate}
-              adapterUpdates={adapterUpdates}
-              onUpdateServer={onUpdateServer}
-              isUpdating={isUpdating}
-              onSetAgentUpdateMode={onSetAgentUpdateMode}
-              isSettingAgentUpdateMode={isSettingAgentUpdateMode}
-              onUpgrade={onUpgrade}
-              onResetWorkspace={onResetWorkspace}
-              section="server"
-            />
+            <>
+              <TabHome
+                server={server}
+                plan={plan}
+                onDeleteServer={onDeleteServer}
+                isDeleting={isDeleting}
+                onRebuildServer={onRebuildServer}
+                isRebuilding={isRebuilding}
+                onRollbackServer={onRollbackServer}
+                isRollingBack={isRollingBack}
+                snapshotExpiresAt={snapshotExpiresAt}
+                agentUpdate={agentUpdate}
+                adapterUpdates={adapterUpdates}
+                onUpdateServer={onUpdateServer}
+                isUpdating={isUpdating}
+                onSetAgentUpdateMode={onSetAgentUpdateMode}
+                isSettingAgentUpdateMode={isSettingAgentUpdateMode}
+                onUpgrade={onUpgrade}
+                onResetWorkspace={onResetWorkspace}
+                section="server"
+              />
+              {isLocal && (
+                <div className="px-4 pb-4">
+                  <section className="rounded-xl border border-cream/[0.06] bg-cream/[0.02]">
+                    <div className="px-4 py-3 border-b border-cream/[0.04]">
+                      <h3 className="text-sm font-medium text-cream">{t("language")}</h3>
+                    </div>
+                    <div className="p-4">
+                      <LanguagePicker className="w-full" />
+                    </div>
+                  </section>
+                </div>
+              )}
+            </>
           )}
           {serverSettingsTab === "appearance" && (
             <div className="p-4 sm:p-5 space-y-5">
