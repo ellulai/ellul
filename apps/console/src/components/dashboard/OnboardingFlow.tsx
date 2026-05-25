@@ -455,6 +455,7 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
                 </div>
               </button>
 
+              {/* Upload from desktop — hidden until upload flow is fixed
               <button
                 onClick={() => {
                   setFlowType("upload");
@@ -470,6 +471,7 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
                   <p className="text-sm text-cream/60">{isLocal ? t("choose.local.description") : t("choose.upload.description")}</p>
                 </div>
               </button>
+              */}
 
               <button
                 onClick={() => setStep("workspace-type")}

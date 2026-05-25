@@ -26,7 +26,7 @@ export function ChatGrid({
   ipAddress,
   domain,
   serverDomain,
-  preferredSession = "claw",
+  preferredSession = "opencode",
   app,
   onUpgrade,
 }: ChatGridProps) {

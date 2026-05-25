@@ -43,7 +43,7 @@ export function TabEditor({
   serverId,
   ipAddress,
   domain,
-  preferredSession = "claw",
+  preferredSession = "opencode",
   visible,
   app,
   fallbackDirectory,

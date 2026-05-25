@@ -72,6 +72,7 @@ function buildLocalServerStatus(
       securityTier: "standard",
       serverPlan: "free",
       product: isByos ? "byos" : "self_hosted",
+      preferredSession: "opencode",
     },
   };
 }
