@@ -341,26 +341,12 @@ function DashboardContent({
   const serverDomain = resolveServerDomain(server);
 
   const handleResetWorkspace = useCallback(async () => {
-    let ok = false;
-    try {
-      const ti = (window as any).__TAURI_INTERNALS__;
-      if (ti?.invoke) {
-        await ti.invoke("plugin:proot|proot_workspace_reset");
-        ok = true;
-      }
-    } catch { /* Tauri not available or command not wired — fall through */ }
-
-    if (!ok) {
-      const res = await fetch(`${getVpsApiUrl(serverDomain)}/_auth/workspace/reset`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!res.ok) throw new Error(`Reset failed: ${res.status}`);
+    for (const sandbox of sandboxes) {
+      await deleteSandbox(sandbox.id);
     }
-
     await refreshApps();
-  }, [serverDomain, refreshApps]);
+    setShowServerSettings(false);
+  }, [sandboxes, deleteSandbox, refreshApps]);
   const selectedAppName = selectedAppInfo?.name || null;
 
   // Context mode
