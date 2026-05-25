@@ -765,7 +765,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 commands: {
                     payload: any;
                     id: string;
-                    type: "mount-volume" | "flush-volume" | "force-unmount" | "grow-volume" | "update-identity" | "backup-identity" | "restore-identity" | "luks-close" | "luks-format" | "luks-rekey" | "luks-header-backup" | "maintenance-mode" | "wake-mount" | "read-public-key" | "stop-postgresql" | "ping" | "update-entitlements" | "agent-adapter-execute" | "agent-adapter-secret" | "block-migrate-upload" | "block-migrate-download" | "rotate-to-pqc" | "git-setup" | "re-attest" | "apply-pending-update" | "set-auto-update" | "reconfigure-caddy-domain" | "b2b-sandbox-destroy" | "update-signing-keyring" | "byos-migrate-restore" | "byos-migrate-export";
+                    type: "mount-volume" | "flush-volume" | "force-unmount" | "grow-volume" | "update-identity" | "backup-identity" | "restore-identity" | "luks-close" | "luks-format" | "luks-rekey" | "luks-header-backup" | "maintenance-mode" | "wake-mount" | "read-public-key" | "stop-postgresql" | "ping" | "update-entitlements" | "agent-adapter-execute" | "agent-adapter-secret" | "block-migrate-upload" | "block-migrate-download" | "rotate-to-pqc" | "git-setup" | "re-attest" | "apply-pending-update" | "set-auto-update" | "reconfigure-caddy-domain" | "b2b-sandbox-destroy" | "update-signing-keyring" | "byos-migrate-restore" | "byos-migrate-export" | "update-adapter-version";
                     createdAt: string;
                     expiresAt: string;
                 }[];
@@ -2221,7 +2221,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                         resetsIn: string;
                         resetAt: string;
                     } | undefined;
-                    state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                    state: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
                     plan: "free" | "hobby" | "pro";
                     frozenReason: string | null;
                     server: {
@@ -2243,7 +2243,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                         platformVersion: string | null;
                         billingInterval: "monthly" | "annual";
                         billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
-                        state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                        state: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
                         subscriptionEndsAt: string | null;
                         pendingDowngrade: {
                             targetPlan: string | null;
@@ -2321,7 +2321,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                         resetsIn: string;
                         resetAt: string;
                     } | undefined;
-                    state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                    state: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
                     plan: "free" | "hobby" | "pro";
                     frozenReason: string | null;
                     server: {
@@ -2343,7 +2343,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                         platformVersion: string | null;
                         billingInterval: "monthly" | "annual";
                         billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
-                        state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                        state: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
                         subscriptionEndsAt: string | null;
                         pendingDowngrade: {
                             targetPlan: string | null;
@@ -2412,7 +2412,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     resetsIn: string;
                     resetAt: string;
                 } | undefined;
-                state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                state: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
                 plan: "free" | "hobby" | "pro";
                 frozenReason: string | null;
                 server: {
@@ -2434,7 +2434,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     platformVersion: string | null;
                     billingInterval: "monthly" | "annual";
                     billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
-                    state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                    state: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
                     subscriptionEndsAt: string | null;
                     pendingDowngrade: {
                         targetPlan: string | null;
@@ -2537,7 +2537,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     resetsIn: string;
                     resetAt: string;
                 } | undefined;
-                state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                state: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
                 plan: "free" | "hobby" | "pro";
                 frozenReason: string | null;
                 server: {
@@ -2559,7 +2559,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     platformVersion: string | null;
                     billingInterval: "monthly" | "annual";
                     billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
-                    state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                    state: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
                     subscriptionEndsAt: string | null;
                     pendingDowngrade: {
                         targetPlan: string | null;
@@ -2803,7 +2803,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     id: string;
                     ipAddress: string;
                     domain: string;
-                    state: "running" | "error" | "creating" | "provisioning" | "hibernated" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                    state: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernated" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
                     serverPlan: string;
                     sshEnabled: false;
                     terminalEnabled: true;
@@ -2907,7 +2907,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     cloudServerId: string;
                     ipAddress: string;
                     domain: string;
-                    status: "running" | "error" | "creating" | "provisioning" | "hibernated" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                    status: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernated" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
                     sshEnabled: false;
                     terminalEnabled: true;
                     name: string;
@@ -2986,7 +2986,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             };
             output: {
                 id: string;
-                state: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                state: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
                 ipAddress: string | null;
                 domain: string | null;
                 deploymentModel: "cloudflare" | "direct" | "gateway";
@@ -3129,7 +3129,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                         description: string;
                         capacity: string;
                         features: string[];
-                        engine: "byos" | "ephemeral" | "persistent" | null;
+                        engine: "byos" | "ephemeral" | "persistent" | "daytona" | null;
                     };
                     type: "upgrade" | "downgrade" | "same";
                     priceChange: number;
@@ -5244,7 +5244,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             };
             output: {
                 hostname: string;
-                status: "pending_validation" | "validating" | "issuing_cert" | "active" | "validation_failed" | "cert_failed" | "suspended" | null;
+                status: "active" | "pending_validation" | "validating" | "issuing_cert" | "validation_failed" | "cert_failed" | "suspended" | null;
                 verifiedAt: string | null;
                 lastError: string | null;
                 verification: {
@@ -5299,7 +5299,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 };
             };
             output: {
-                status: "pending_validation" | "validating" | "issuing_cert" | "active" | "validation_failed" | "cert_failed" | "suspended";
+                status: "active" | "pending_validation" | "validating" | "issuing_cert" | "validation_failed" | "cert_failed" | "suspended";
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
@@ -6082,7 +6082,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             };
             output: {
                 status: string;
-                serverState: "running" | "error" | "creating" | "provisioning" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                serverState: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
@@ -8934,7 +8934,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             output: {
                 serverId: string;
                 domain: string;
-                status: "running" | "error" | "creating" | "provisioning" | "hibernated" | "upgrading" | "downgrading" | "pending_deletion" | "destroying" | "frozen" | "pool_ready" | "pool_assigned";
+                status: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernated" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
@@ -9088,9 +9088,9 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     minQuorum?: number | undefined;
                     publishedBy?: string | null | undefined;
                     chainOverride?: {
+                        previousVersion: number | null;
                         approvedBy: string;
                         reason: string;
-                        previousVersion: number | null;
                         incidentId: string;
                     } | undefined;
                 };
@@ -9122,9 +9122,9 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     minQuorum?: number | undefined;
                     publishedBy?: string | null | undefined;
                     chainOverride?: {
+                        previousVersion: number | null;
                         approvedBy: string;
                         reason: string;
-                        previousVersion: number | null;
                         incidentId: string;
                     } | undefined;
                 };
@@ -9158,9 +9158,9 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     minQuorum?: number | undefined;
                     publishedBy?: string | null | undefined;
                     chainOverride?: {
+                        previousVersion: number | null;
                         approvedBy: string;
                         reason: string;
-                        previousVersion: number | null;
                         incidentId: string;
                     } | undefined;
                 };
@@ -9602,7 +9602,19 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
     "/": {
         $get: {
             input: {};
-            output: never;
+            output: {
+                adapters: {
+                    unresolvedSignals: number;
+                    createdAt: string;
+                    updatedAt: string;
+                    adapter: string;
+                    currentVersion: string;
+                    previousVersion: string | null;
+                    source: "npm" | "github-release" | "curl-installer";
+                    registryPackage: string;
+                    updatedReason: string | null;
+                }[];
+            };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
@@ -9689,7 +9701,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     serverId: string;
                     userId: string | null;
                     hostname: string | null;
-                    status: "pending_validation" | "validating" | "issuing_cert" | "active" | "validation_failed" | "cert_failed" | "suspended" | null;
+                    status: "active" | "pending_validation" | "validating" | "issuing_cert" | "validation_failed" | "cert_failed" | "suspended" | null;
                     hostnameId: string | null;
                     verifiedAt: string | null;
                     lastError: string | null;
@@ -9963,7 +9975,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             input: {};
             output: {
                 ok: true;
-                status: "pending_validation" | "validating" | "issuing_cert" | "active" | "validation_failed" | "cert_failed" | "suspended";
+                status: "active" | "pending_validation" | "validating" | "issuing_cert" | "validation_failed" | "cert_failed" | "suspended";
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;

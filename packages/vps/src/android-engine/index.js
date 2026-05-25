@@ -12,7 +12,7 @@ const net = require("net");
 
 const VAULT = "/root/ellul-vault";
 const SERVICES_DIR = "/opt/ellul/releases";
-const NODE = "/usr/local/bin/node";
+const NODE = fs.existsSync("/usr/local/bin/node") ? "/usr/local/bin/node" : "/usr/bin/node";
 
 const SYMLINKS = [
   [path.join(VAULT, "etc/ellul"), "/etc/ellul"],
@@ -178,13 +178,13 @@ http://localhost:8443, http://127.0.0.1:8443 {
         reverse_proxy ${FILE_API}
     }
 
+    handle /api/internal/* {
+        reverse_proxy ${BRIDGE}
+    }
+
     handle /api/* {
         import auth_gate
         reverse_proxy ${FILE_API}
-    }
-
-    handle /api/internal/* {
-        reverse_proxy ${BRIDGE}
     }
 
     handle /terminal/* {

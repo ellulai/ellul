@@ -93,6 +93,8 @@ export class LinuxPreviewPlatform implements PreviewPlatform {
   readonly hasConnectionCounting = true;
   readonly hasPortScanning = true;
 
+  adoptProcess(_appDir: string, _port: number): void {}
+
   escapeInstance(appDir: string): string {
     return escapeInstanceImpl(appDir);
   }

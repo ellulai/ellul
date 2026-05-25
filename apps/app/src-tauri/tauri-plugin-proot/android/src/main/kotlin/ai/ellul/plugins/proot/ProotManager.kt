@@ -44,18 +44,6 @@ class ProotManager(private val context: Context) {
 
     private fun ensureLibSymlinks() {
         libDir.mkdirs()
-        val versionedNames = mapOf("libtalloc.so" to "libtalloc.so.2")
-        for ((base, versioned) in versionedNames) {
-            val target = File(nativeLibDir, base)
-            val link = File(libDir, versioned)
-            java.nio.file.Files.deleteIfExists(link.toPath())
-            if (target.exists()) {
-                java.nio.file.Files.createSymbolicLink(
-                    link.toPath(),
-                    target.toPath()
-                )
-            }
-        }
     }
 
     fun start() {

@@ -713,7 +713,7 @@ async function writeCaddyDevRouteImpl(port: number, companions: CompanionEntry[]
   try {
     devDomain = fs.readFileSync('/etc/ellul/dev-domain', 'utf8').trim();
   } catch {}
-  if (!devDomain) return;
+  if (!devDomain && !IS_ANDROID) return;
 
   const forwardAuthBlock = `forward_auth 127.0.0.1:${PORT_REGISTRY.SOVEREIGN_SHIELD.port} {
             uri /api/auth/session
@@ -1591,6 +1591,7 @@ async function adoptRunningPreview(
   skipCaddyRoute: boolean | undefined,
 ): Promise<PreviewStartResult> {
   if (!skipCaddyRoute) await ensureCaddyRoute(port);
+  previewPlatform.adoptProcess(appDirectory, port);
   recordStart(appDirectory, port);
   emitPhaseTransition(appDirectory, 'ready', 'Preview running');
   invalidateOpenApiCache(port);

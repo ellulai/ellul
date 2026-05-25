@@ -9,6 +9,13 @@ export function isLocalDomain(domain: string): boolean {
   return domain === "localhost" || domain.startsWith("localhost:");
 }
 
+function localHost(): string {
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return window.location.host;
+  }
+  return "localhost";
+}
+
 // Convert a server's main domain to its code API domain.
 export function getCodeDomain(serverDomain: string): string {
   if (isLocalDomain(serverDomain)) return serverDomain;
@@ -27,7 +34,7 @@ export function getDevDomain(serverDomain: string): string {
 
 // Get the full code API URL for a server.
 export function getCodeApiUrl(serverDomain: string): string {
-  if (isLocalDomain(serverDomain)) return `http://${getCodeDomain(serverDomain)}`;
+  if (isLocalDomain(serverDomain)) return `http://${localHost()}`;
   return `https://${getCodeDomain(serverDomain)}`;
 }
 
@@ -49,7 +56,7 @@ export function getDevUrl(serverDomain: string): string {
 
 // Get the WebSocket URL for real-time updates.
 export function getCodeWsUrl(serverDomain: string): string {
-  if (isLocalDomain(serverDomain)) return `ws://${getCodeDomain(serverDomain)}/ws`;
+  if (isLocalDomain(serverDomain)) return `ws://${localHost()}/ws`;
   return `wss://${getCodeDomain(serverDomain)}/ws`;
 }
 
@@ -105,7 +112,7 @@ export async function vpsFetch(
       const body = init?.body ? (typeof init.body === "string" ? init.body : JSON.stringify(init.body)) : null;
       return localResponse(await localFetch(init?.method || "GET", path, { body }));
     }
-    return fetch(`http://localhost${path}`, { ...init, credentials: "include" });
+    return fetch(`http://${localHost()}${path}`, { ...init, credentials: "include" });
   }
 
   return fetch(`https://${serverDomain}${path}`, { ...init, credentials: "include" });
@@ -118,7 +125,7 @@ export function getVpsApiUrl(serverDomain: string): string {
   if (isLocalDomain(serverDomain)) {
     const isTauri = typeof window !== "undefined" && !!(window as any).__TAURI_INTERNALS__;
     if (isTauri) return `${getLocalProxyOrigin()}/srv`;
-    return "http://localhost";
+    return `http://${localHost()}`;
   }
   return `https://${serverDomain}`;
 }

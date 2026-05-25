@@ -65,6 +65,9 @@ export interface PreviewPlatform {
   // Failed unit cleanup
   listFailedUnits(): FailedUnit[];
 
+  // Adopted-process bookkeeping (Android: tracks externally-started processes)
+  adoptProcess(appDir: string, port: number): void;
+
   // Instance naming (systemd escaping on Linux, identity on Android)
   escapeInstance(appDir: string): string;
 

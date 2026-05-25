@@ -27,6 +27,7 @@ interface TrackedProcess {
 
 const MAX_LOG_LINES = 200;
 const processes = new Map<string, TrackedProcess>();
+const adoptedPorts = new Map<string, number>();
 
 // ── Port probing (cross-platform, no ss) ─────────────────────────────
 
@@ -146,14 +147,26 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
 
   async resetFailed(_appDir: string): Promise<void> {}
 
+  adoptProcess(appDir: string, port: number): void {
+    adoptedPorts.set(appDir, port);
+  }
+
   async isActive(appDir: string): Promise<boolean> {
     const tracked = processes.get(appDir);
-    return !!tracked && !tracked.child.killed && tracked.child.exitCode === null;
+    if (tracked) return !tracked.child.killed && tracked.child.exitCode === null;
+    const adopted = adoptedPorts.get(appDir);
+    if (adopted) return isPortListening(adopted);
+    return false;
   }
 
   async unitStatus(appDir: string): Promise<UnitStatus> {
     const tracked = processes.get(appDir);
     if (!tracked) {
+      const adopted = adoptedPorts.get(appDir);
+      if (adopted && isPortListening(adopted)) {
+        return { ActiveState: 'active', SubState: 'running', Result: 'success', ExecMainStatus: '0', ActiveEnterTimestampMonotonic: 0 };
+      }
+      if (adopted) adoptedPorts.delete(appDir);
       return { ActiveState: 'inactive', SubState: 'dead', Result: 'success', ExecMainStatus: '0', ActiveEnterTimestampMonotonic: 0 };
     }
     const alive = !tracked.child.killed && tracked.child.exitCode === null;

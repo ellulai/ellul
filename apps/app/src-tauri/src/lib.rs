@@ -43,8 +43,7 @@ fn resolve_start_url(cfg: &config::AppConfig) -> tauri::WebviewUrl {
             tauri::WebviewUrl::External(dashboard.parse().unwrap())
         }
         config::AppMode::Local if cfg!(target_os = "android") => {
-            let dashboard = format!("{}/dashboard?_cb={}", config::console_url(), ts);
-            tauri::WebviewUrl::External(dashboard.parse().unwrap())
+            tauri::WebviewUrl::App("index.html".into())
         }
         _ => tauri::WebviewUrl::App("index.html".into()),
     }
@@ -202,6 +201,7 @@ if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) {{
     if (c) window.__ELLUL_APP_CONFIG__ = c;
   }}).catch(function() {{}});
   if (/Android/i.test(navigator.userAgent) && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {{
+    __inv('plugin:proot|proot_start').catch(function() {{}});
     (function __prootPoll(n) {{
       if (n > 60) return;
       __inv('plugin:proot|proot_health').then(function(h) {{
