@@ -10,10 +10,11 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getCodeWsUrl } from "@/lib/domains";
+import { getCodeWsUrl, isLocalDomain } from "@/lib/domains";
 import { useVpsBridge } from "@/lib/vps-bridge";
 import { useCodeToken } from "@/contexts/CodeTokenContext";
 import { emitSessionStatus } from "@/lib/session-events";
+import { hasTauriInvoke, localFetch } from "@/lib/local-fetch";
 
 export interface TreeData {
   project: string;
@@ -173,23 +174,43 @@ export function RealtimeProvider({
         );
       });
 
-    const acquireSession = async (): Promise<string | null> => {
+    const acquireAgentToken = async (): Promise<string | null> => {
       const now = Date.now();
       if (sessionCache.id && now < sessionCache.expiresAt - SESSION_REFRESH_BUFFER_MS) {
         return sessionCache.id;
       }
 
-      // Standard tier: use code session from CodeTokenContext (acquired via
-      // Authorization header, not cookies — works in Tauri WebView).
+      // Standard tier: acquire an agent token via shield. The code session
+      // cookie is already set by CodeTokenContext, so a credentialed POST
+      // to /_auth/agent/authorize returns an agent token the bridge accepts.
       if (!needsAuth) {
-        const id = ctxCodeSessionIdRef.current;
-        const exp = ctxSessionExpiresRef.current;
-        if (id && exp > now) {
-          sessionCache.id = id;
-          sessionCache.expiresAt = exp;
-          return id;
+        const csId = ctxCodeSessionIdRef.current;
+        if (!csId) return null;
+
+        try {
+          let data: { token: string; expiresIn?: number };
+          const isLocal = isLocalDomain(serverDomain);
+          if (isLocal && hasTauriInvoke() &&
+              typeof window !== "undefined" &&
+              window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+            const r = await localFetch("POST", "/_auth/agent/authorize", { body: "{}" });
+            data = JSON.parse(r.body);
+          } else {
+            const res = await fetch("/_auth/agent/authorize", {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+            });
+            if (!res.ok) return null;
+            data = await res.json();
+          }
+          const ttlMs = (data.expiresIn ?? 30) * 1000;
+          sessionCache.id = data.token;
+          sessionCache.expiresAt = now + ttlMs;
+          return data.token;
+        } catch {
+          return null;
         }
-        return null;
       }
 
       await bridgeWaitForReadyRef.current();
@@ -257,9 +278,9 @@ export function RealtimeProvider({
 
     const runOnce = async (): Promise<Outcome> => {
       setStatus("connecting");
-      let codeSessionId: string | null;
+      let token: string | null;
       try {
-        codeSessionId = await acquireSession();
+        token = await acquireAgentToken();
       } catch (e) {
         if (controller.signal.aborted) return { kind: "aborted" };
         return { kind: "bridge_failed" };
@@ -267,15 +288,16 @@ export function RealtimeProvider({
 
       if (controller.signal.aborted) return { kind: "aborted" };
 
-      if (needsAuth && codeSessionId === null) {
+      if (needsAuth && token === null) {
         return { kind: "needs_user_auth" };
       }
 
-      if (!needsAuth && codeSessionId === null) {
+      if (!needsAuth && token === null) {
         return { kind: "bridge_failed" };
       }
 
-      const url = codeSessionId ? `${wsUrl}?_code_session=${codeSessionId}` : wsUrl;
+      const paramName = needsAuth ? "_code_session" : "_agent_token";
+      const url = token ? `${wsUrl}?${paramName}=${token}` : wsUrl;
       let ws: WebSocket;
       try {
         ws = new WebSocket(url);

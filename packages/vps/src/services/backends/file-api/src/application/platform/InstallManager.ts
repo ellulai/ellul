@@ -621,7 +621,11 @@ function pgidAlive(pgid: number | null, startedAt?: string | null): boolean {
     if (startMs < BOOT_TIME_MS) return false;
   }
   try {
-    process.kill(-pgid, 0);
+    if (IS_ANDROID) {
+      process.kill(pgid, 0);
+    } else {
+      process.kill(-pgid, 0);
+    }
     return true;
   } catch { return false; }
 }
@@ -1097,9 +1101,13 @@ function spawnInstall(paths: InstallPaths, lang: LangSpec, needsWipe: boolean): 
   const pid = parseInt(pidStr, 10);
   if (!Number.isFinite(pid) || pid <= 0) return -1;
 
-  // The pgid equals the child's pid because setsid creates a new session +
-  // pgrp with the caller as leader. We also verify by stat — if setsid
-  // failed for any reason, the pgrp won't match and we fall back to pid.
+  // Android/proot: return the PID directly — all processes share zygote's
+  // pgid so process-group signals are meaningless.
+  if (IS_ANDROID) return pid;
+
+  // Linux: setsid creates a new session + pgrp with the caller as leader.
+  // Verify by stat — if setsid failed, the pgrp won't match and we fall
+  // back to pid.
   try {
     const pgid = parseInt(
       execSync(`ps -o pgid= -p ${pid}`, { encoding: 'utf8', timeout: 1000 }).trim(),
@@ -1154,15 +1162,15 @@ export function cancelInstall(appPath: string): InstallStatus {
   if (!state) return getInstallStatus(appPath);
   const pgid = state.pgid ?? activePgids.get(paths.installRoot) ?? 0;
   if (pgid > 0) {
-    try { process.kill(-pgid, 'SIGTERM'); } catch {}
-    // Give bash trap 500ms to flush the exit marker.
+    const sig = IS_ANDROID ? pgid : -pgid;
+    try { process.kill(sig, 'SIGTERM'); } catch {}
     const deadline = Date.now() + 500;
     while (Date.now() < deadline && pgidAlive(pgid)) {
       const r = spawnSync('sleep', ['0.05']);
       void r;
     }
     if (pgidAlive(pgid)) {
-      try { process.kill(-pgid, 'SIGKILL'); } catch {}
+      try { process.kill(sig, 'SIGKILL'); } catch {}
     }
   }
   activePgids.delete(paths.installRoot);
