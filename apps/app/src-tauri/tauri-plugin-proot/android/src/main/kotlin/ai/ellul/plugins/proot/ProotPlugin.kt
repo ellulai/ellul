@@ -158,7 +158,21 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
                 conn.useCaches = false
                 conn.setRequestProperty("Accept", "application/json")
                 conn.setRequestProperty("Connection", "close")
-                buildCookieHeader()?.let { conn.setRequestProperty("Cookie", it) }
+                val mergedCookies = mutableMapOf<String, String>()
+                cookieJar.forEach { (k, v) -> mergedCookies[k] = v }
+                try {
+                    val cm = android.webkit.CookieManager.getInstance()
+                    for (cookieUrl in arrayOf(url.toString(), "http://localhost:$port$path")) {
+                        cm.getCookie(cookieUrl)?.split(";")?.forEach { c ->
+                            val t = c.trim()
+                            val eq = t.indexOf('=')
+                            if (eq > 0) mergedCookies[t.substring(0, eq).trim()] = t.substring(eq + 1).trim()
+                        }
+                    }
+                } catch (_: Exception) {}
+                if (mergedCookies.isNotEmpty()) {
+                    conn.setRequestProperty("Cookie", mergedCookies.entries.joinToString("; ") { "${it.key}=${it.value}" })
+                }
 
                 if (body != null && method.uppercase() != "GET") {
                     conn.doOutput = true
@@ -168,6 +182,18 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
 
                 val status = conn.responseCode
                 parseSetCookies(conn.headerFields)
+                try {
+                    val cm = android.webkit.CookieManager.getInstance()
+                    conn.headerFields?.entries
+                        ?.filter { it.key?.equals("Set-Cookie", ignoreCase = true) == true }
+                        ?.flatMap { it.value }
+                        ?.forEach { h ->
+                            for (domain in arrayOf("http://127.0.0.1:$port", "http://localhost:$port")) {
+                                cm.setCookie(domain, h)
+                            }
+                        }
+                    cm.flush()
+                } catch (_: Exception) {}
 
                 val contentType = conn.contentType ?: "application/json"
                 val responseBody = try {

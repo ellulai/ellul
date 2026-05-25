@@ -309,6 +309,26 @@ function RealCodeTokenProvider({
         const pathAndQuery = urlObj.pathname + urlObj.search;
         const method = options?.method || "GET";
 
+        const atLocalhost = typeof window !== "undefined" &&
+          (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
+        if (atLocalhost) {
+          const res = await fetch(pathAndQuery, { ...options, credentials: "include" });
+          if (res.status === 401) {
+            const timeSinceEstablish = Date.now() - lastEstablishTimeRef.current;
+            if (timeSinceEstablish < ESTABLISH_COOLDOWN_MS) {
+              throw new AuthenticationError(t("authFailed"));
+            }
+            cookieEstablishedRef.current = false;
+            try { await establishCookie(); } catch { throw new AuthenticationError(t("authRequired")); }
+            if (cookieEstablishedRef.current) {
+              return fetch(pathAndQuery, { ...options, credentials: "include" });
+            }
+            throw new AuthenticationError(t("authRequired"));
+          }
+          return res;
+        }
+
         if (hasTauriInvoke()) {
           const bodyStr = typeof options?.body === "string" ? options.body
             : options?.body ? JSON.stringify(options.body) : null;

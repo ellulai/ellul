@@ -122,7 +122,7 @@ importers:
         version: 1.7.1(next@15.5.18(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))
       hono:
         specifier: ^4.6.14
-        version: 4.12.22
+        version: 4.12.23
       lucide-react:
         specifier: ^0.469.0
         version: 0.469.0(react@19.2.6)
@@ -168,13 +168,13 @@ importers:
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20241230.0
-        version: 4.20260524.1
+        version: 4.20260525.1
       '@ellul.ai/ts-config':
         specifier: workspace:*
         version: link:../../packages/ts-config
       '@opennextjs/cloudflare':
         specifier: ^1.14.8
-        version: 1.19.11(next@15.5.18(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(wrangler@4.94.0(@cloudflare/workers-types@4.20260524.1)(bufferutil@4.1.0))
+        version: 1.19.11(next@15.5.18(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(wrangler@4.94.0(@cloudflare/workers-types@4.20260525.1)(bufferutil@4.1.0))
       '@tauri-apps/api':
         specifier: ^2.10.1
         version: 2.11.0
@@ -213,7 +213,7 @@ importers:
         version: 4.1.7(@opentelemetry/api@1.9.1)(@types/node@22.19.19)(@vitest/coverage-v8@4.1.5)(jsdom@25.0.1(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@6.4.2(@types/node@22.19.19)(jiti@1.21.7)(terser@5.16.9)(tsx@4.22.3)(yaml@2.9.0))
       wrangler:
         specifier: ^4.58.0
-        version: 4.94.0(@cloudflare/workers-types@4.20260524.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+        version: 4.94.0(@cloudflare/workers-types@4.20260525.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
 
   apps/docs:
     dependencies:
@@ -289,7 +289,7 @@ importers:
         version: 5.9.3
       wrangler:
         specifier: ^4.58.0
-        version: 4.94.0(@cloudflare/workers-types@4.20260524.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+        version: 4.94.0(@cloudflare/workers-types@4.20260525.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
 
   apps/web:
     dependencies:
@@ -347,7 +347,7 @@ importers:
         version: 0.14.0(bufferutil@4.1.0)
       '@opennextjs/cloudflare':
         specifier: ^1.14.8
-        version: 1.19.11(next@15.5.18(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(wrangler@4.94.0(@cloudflare/workers-types@4.20260524.1)(bufferutil@4.1.0))
+        version: 1.19.11(next@15.5.18(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(wrangler@4.94.0(@cloudflare/workers-types@4.20260525.1)(bufferutil@4.1.0))
       '@types/mdx':
         specifier: ^2.0.13
         version: 2.0.13
@@ -380,7 +380,7 @@ importers:
         version: 5.9.3
       wrangler:
         specifier: ^4.58.0
-        version: 4.94.0(@cloudflare/workers-types@4.20260524.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+        version: 4.94.0(@cloudflare/workers-types@4.20260525.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
 
   packages/api-client:
     devDependencies:
@@ -389,7 +389,7 @@ importers:
         version: link:../ts-config
       hono:
         specifier: ^4.6.14
-        version: 4.12.22
+        version: 4.12.23
       tsx:
         specifier: ^4.19.2
         version: 4.22.3
@@ -417,10 +417,10 @@ importers:
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20260109.0
-        version: 4.20260524.1
+        version: 4.20260525.1
       wrangler:
         specifier: ^4.0.0
-        version: 4.94.0(@cloudflare/workers-types@4.20260524.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+        version: 4.94.0(@cloudflare/workers-types@4.20260525.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
 
   packages/i18n:
     dependencies:
@@ -650,7 +650,7 @@ importers:
         version: link:../vps-ui
       '@hono/node-server':
         specifier: ^1.13.7
-        version: 1.19.14(hono@4.12.22)
+        version: 1.19.14(hono@4.12.23)
       '@noble/curves':
         specifier: ~2.0.1
         version: 2.0.1
@@ -680,7 +680,7 @@ importers:
         version: 0.24.2
       hono:
         specifier: ^4.6.14
-        version: 4.12.22
+        version: 4.12.23
       pg:
         specifier: ^8.16.3
         version: 8.21.0
@@ -1354,8 +1354,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@cloudflare/workers-types@4.20260524.1':
-    resolution: {integrity: sha512-9o939wce6hAlfNAIG4W58bySW7twgkqgPkxmSNrk/DV0eEexjTPyqChGdsQeKZEXJAjxSUFklaebMYJWg1GM0g==}
+  '@cloudflare/workers-types@4.20260525.1':
+    resolution: {integrity: sha512-vQSjvQINGx2i3dovvVyszew4HU3+82eAuD2ryNmedBIzLcLwluKsnPLTAuL4FDVRyz+MikQEihEBsUmcTElEVQ==}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -5238,8 +5238,8 @@ packages:
   hast-util-whitespace@3.0.0:
     resolution: {integrity: sha512-88JUN06ipLwsnv+dVn+OIYOvAuvBMy/Qoi6O7mQHxdPXpjy+Cd6xRkWwux7DKO+4sYILtLBRIKgsdpS2gQc7qw==}
 
-  hono@4.12.22:
-    resolution: {integrity: sha512-7fvVPbB92zNRsQke+uiRGwtTuef0tB2Dg4hWxYfFNvkQhIltWoyi0ONReM5LWA+jJWS3nfT5lTq+qbsIpX0IQw==}
+  hono@4.12.23:
+    resolution: {integrity: sha512-eIaZ9qDgu7XV0pxOCrg7/WhnQ6Ivm22UcxhXx/A3dcbqbbYgBEkc6e/J/s7j2tS96zoB0S9VBdLwQNCWwUo4LA==}
     engines: {node: '>=16.9.0'}
 
   html-encoding-sniffer@4.0.0:
@@ -6448,8 +6448,8 @@ packages:
     peerDependencies:
       react: ^19.2.6
 
-  react-error-boundary@6.1.1:
-    resolution: {integrity: sha512-BrYwPOdXi5mqkk5lw+Uvt0ThHx32rCt3BkukS4X23A2AIWDPSGX6iaWTc0y9TU/mHDA/6qOSGel+B2ERkOvD1w==}
+  react-error-boundary@6.1.2:
+    resolution: {integrity: sha512-3DpCr5HVdZ0caUjYE/kIHBEJN0mNP3ZCgf16c48uJ5TbWjorKVp+YG8W3XqlJ7vJAVNw6wNIImyPXmFydwmyng==}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
 
@@ -8466,7 +8466,7 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20260521.1':
     optional: true
 
-  '@cloudflare/workers-types@4.20260524.1': {}
+  '@cloudflare/workers-types@4.20260525.1': {}
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
@@ -9054,9 +9054,9 @@ snapshots:
 
   '@hexagon/base64@1.1.28': {}
 
-  '@hono/node-server@1.19.14(hono@4.12.22)':
+  '@hono/node-server@1.19.14(hono@4.12.23)':
     dependencies:
-      hono: 4.12.22
+      hono: 4.12.23
 
   '@img/colour@1.1.0': {}
 
@@ -9316,7 +9316,7 @@ snapshots:
       lexical: 0.41.0
       react: 19.2.6
       react-dom: 19.2.6(react@19.2.6)
-      react-error-boundary: 6.1.1(react@19.2.6)
+      react-error-boundary: 6.1.2(react@19.2.6)
     transitivePeerDependencies:
       - yjs
 
@@ -9437,7 +9437,7 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.29.0(zod@3.25.76)':
     dependencies:
-      '@hono/node-server': 1.19.14(hono@4.12.22)
+      '@hono/node-server': 1.19.14(hono@4.12.23)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
@@ -9447,7 +9447,7 @@ snapshots:
       eventsource-parser: 3.0.8
       express: 5.2.1
       express-rate-limit: 8.5.2(express@5.2.1)
-      hono: 4.12.22
+      hono: 4.12.23
       jose: 6.2.3
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
@@ -9578,7 +9578,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@opennextjs/cloudflare@1.19.11(next@15.5.18(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(wrangler@4.94.0(@cloudflare/workers-types@4.20260524.1)(bufferutil@4.1.0))':
+  '@opennextjs/cloudflare@1.19.11(next@15.5.18(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(wrangler@4.94.0(@cloudflare/workers-types@4.20260525.1)(bufferutil@4.1.0))':
     dependencies:
       '@ast-grep/napi': 0.40.5
       '@dotenvx/dotenvx': 1.31.0
@@ -9590,7 +9590,7 @@ snapshots:
       glob: 12.0.0
       next: 15.5.18(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       ts-tqdm: 0.8.6
-      wrangler: 4.94.0(@cloudflare/workers-types@4.20260524.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      wrangler: 4.94.0(@cloudflare/workers-types@4.20260525.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
       yargs: 18.0.0
     transitivePeerDependencies:
       - encoding
@@ -12264,7 +12264,7 @@ snapshots:
     dependencies:
       '@types/hast': 3.0.4
 
-  hono@4.12.22: {}
+  hono@4.12.23: {}
 
   html-encoding-sniffer@4.0.0:
     dependencies:
@@ -13757,7 +13757,7 @@ snapshots:
       react: 19.2.6
       scheduler: 0.27.0
 
-  react-error-boundary@6.1.1(react@19.2.6):
+  react-error-boundary@6.1.2(react@19.2.6):
     dependencies:
       react: 19.2.6
 
@@ -14965,7 +14965,7 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20260521.1
       '@cloudflare/workerd-windows-64': 1.20260521.1
 
-  wrangler@4.94.0(@cloudflare/workers-types@4.20260524.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6):
+  wrangler@4.94.0(@cloudflare/workers-types@4.20260525.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.0
       '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260521.1)
@@ -14977,7 +14977,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       workerd: 1.20260521.1
     optionalDependencies:
-      '@cloudflare/workers-types': 4.20260524.1
+      '@cloudflare/workers-types': 4.20260525.1
       fsevents: 2.3.3
     transitivePeerDependencies:
       - bufferutil

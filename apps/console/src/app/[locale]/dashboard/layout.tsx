@@ -603,19 +603,23 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         }
         const engine = getLocalEngine();
         if (engine === "proot" && invoke) {
-          try {
-            const st = await invoke("plugin:proot|proot_status") as { running?: boolean };
-            if (st?.running) {
-              if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-                try {
-                  await invoke("plugin:proot|proot_switch_to_local");
-                  return;
-                } catch {}
+          for (let attempt = 0; attempt < 30; attempt++) {
+            try {
+              const health = await invoke("plugin:proot|proot_health") as { name: string; healthy: boolean }[];
+              const allHealthy = health?.length > 0 && health.every((s) => s.healthy);
+              if (allHealthy) {
+                if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+                  try {
+                    await invoke("plugin:proot|proot_switch_to_local");
+                    return;
+                  } catch {}
+                }
+                activateLocalMode();
+                return;
               }
-              activateLocalMode();
-              return;
-            }
-          } catch {}
+            } catch {}
+            if (attempt < 29) await new Promise((r) => setTimeout(r, 2000));
+          }
         }
         if (appConfig?.mode === "local") {
           let localRunning = false;
