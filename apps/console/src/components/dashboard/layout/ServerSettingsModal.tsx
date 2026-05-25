@@ -52,7 +52,7 @@ export function ServerSettingsModal({
   // Body scroll is permanently locked by MobileDashboardLayout (position:fixed).
 
   return (
-    <div className="fixed inset-x-0 top-0 z-[100] flex items-end sm:items-center justify-center" style={{ height: vh }}>
+    <div className="fixed inset-x-0 top-0 z-[100] flex items-end sm:items-center justify-center" style={{ height: vh, paddingTop: "env(safe-area-inset-top, 0px)" }}>
       {/* Backdrop */}
       <div
         className="fixed inset-0 z-0 bg-black/60 backdrop-blur-sm animate-in fade-in-0 duration-200"
@@ -101,40 +101,26 @@ export function ServerSettingsModal({
         {/* Modal Body - Scrollable */}
         <div className="flex-1 overflow-y-auto">
           {serverSettingsTab === "general" && (
-            <>
-              <TabHome
-                server={server}
-                plan={plan}
-                onDeleteServer={onDeleteServer}
-                isDeleting={isDeleting}
-                onRebuildServer={onRebuildServer}
-                isRebuilding={isRebuilding}
-                onRollbackServer={onRollbackServer}
-                isRollingBack={isRollingBack}
-                snapshotExpiresAt={snapshotExpiresAt}
-                agentUpdate={agentUpdate}
-                adapterUpdates={adapterUpdates}
-                onUpdateServer={onUpdateServer}
-                isUpdating={isUpdating}
-                onSetAgentUpdateMode={onSetAgentUpdateMode}
-                isSettingAgentUpdateMode={isSettingAgentUpdateMode}
-                onUpgrade={onUpgrade}
-                onResetWorkspace={onResetWorkspace}
-                section="server"
-              />
-              {isLocal && (
-                <div className="px-4 pb-4">
-                  <section className="rounded-xl border border-cream/[0.06] bg-cream/[0.02]">
-                    <div className="px-4 py-3 border-b border-cream/[0.04]">
-                      <h3 className="text-sm font-medium text-cream">{t("language")}</h3>
-                    </div>
-                    <div className="p-4">
-                      <LanguagePicker className="w-full" />
-                    </div>
-                  </section>
-                </div>
-              )}
-            </>
+            <TabHome
+              server={server}
+              plan={plan}
+              onDeleteServer={onDeleteServer}
+              isDeleting={isDeleting}
+              onRebuildServer={onRebuildServer}
+              isRebuilding={isRebuilding}
+              onRollbackServer={onRollbackServer}
+              isRollingBack={isRollingBack}
+              snapshotExpiresAt={snapshotExpiresAt}
+              agentUpdate={agentUpdate}
+              adapterUpdates={adapterUpdates}
+              onUpdateServer={onUpdateServer}
+              isUpdating={isUpdating}
+              onSetAgentUpdateMode={onSetAgentUpdateMode}
+              isSettingAgentUpdateMode={isSettingAgentUpdateMode}
+              onUpgrade={onUpgrade}
+              onResetWorkspace={onResetWorkspace}
+              section="server"
+            />
           )}
           {serverSettingsTab === "appearance" && (
             <div className="p-4 sm:p-5 space-y-5">

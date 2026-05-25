@@ -40,6 +40,7 @@ import { AdapterUpdateBanner } from "../AdapterUpdateBanner";
 import { BuildAttestationBadge } from "../BuildAttestationBadge";
 import type { ServerStatus } from "@/contexts/DashboardContext";
 import { isLocalServer } from "@/lib/domains";
+import { LanguagePicker } from "../LanguagePicker";
 import { toast } from "sonner";
 
 const PLAN_DISPLAY: Record<string, { capacity: string; label: string }> = {
@@ -385,6 +386,18 @@ export function TabHome({
           <div id="settings-tunnel">
             <TunnelCard />
           </div>
+        )}
+
+        {/* ─── Language (local only — merged from appearance tab) ─── */}
+        {showServer && isLocal && (
+          <section className="rounded-xl border border-cream/[0.06] bg-cream/[0.02]">
+            <div className="px-4 py-3 border-b border-cream/[0.04]">
+              <h3 className="text-sm font-medium text-cream">Language</h3>
+            </div>
+            <div className="p-4">
+              <LanguagePicker className="w-full" />
+            </div>
+          </section>
         )}
 
         {/* ─── Reset Workspace (local only) ─── */}
