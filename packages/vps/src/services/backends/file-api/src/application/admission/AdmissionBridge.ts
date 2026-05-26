@@ -19,7 +19,7 @@ import {
   type HeadroomSignals,
 } from "./Admission";
 import { idlenessMs, listTracked, lruOrder } from "../preview/PreviewTracking";
-import { listActive } from "../preview/PreviewUnits";
+import { previewPlatform } from "../preview/PreviewPlatform";
 
 let cached: AdmissionService | null = null;
 
@@ -128,4 +128,4 @@ function collectEvictionCandidates(): ReadonlyArray<EvictionCandidate> {
   return candidates;
 }
 
-void listActive;
+void previewPlatform;

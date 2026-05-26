@@ -9,7 +9,8 @@ import { execSync } from 'node:child_process';
 
 import { PREVIEW_LIMITS } from '@vps/shared/constants';
 
-import { stopUnit, unitStatus, escapeInstance, clearFrameworkDropin } from '../preview/PreviewUnits';
+import { previewPlatform } from '../preview/PreviewPlatform';
+import { IS_ANDROID } from '@vps/shared/platform';
 import { recordStop } from '../preview/PreviewTracking';
 import { withPreviewLock } from '../preview/PreviewMutex';
 import { deleteMetrics } from '../preview/PreviewMetrics';
@@ -121,7 +122,7 @@ async function deleteCore(
     const targets = targetInstancesFor(directory, root);
     for (const t of targets) {
       try {
-        await stopUnit(t);
+        await previewPlatform.stopUnit(t);
       } catch (err) {
         warnings.push(`stopUnit(${t}) failed: ${(err as Error).message}`);
       }
@@ -130,7 +131,7 @@ async function deleteCore(
       // Clear the framework cgroup dropin so /etc/systemd/system/ellul-preview@<inst>.service.d/
       // doesn't accumulate stale framework caps after the project's gone.
       try {
-        const cleared = await clearFrameworkDropin(t);
+        const cleared = await previewPlatform.clearFrameworkDropin(t);
         if (!cleared.ok) warnings.push(`clearFrameworkDropin(${t}) failed: ${cleared.error ?? 'unknown'}`);
       } catch (err) {
         warnings.push(`clearFrameworkDropin(${t}) errored: ${(err as Error).message}`);
@@ -247,7 +248,7 @@ async function deleteCore(
     }
     // Any unit still active for this directory or its children?
     for (const t of targetInstancesFor(directory, root)) {
-      const st = await unitStatus(t).catch(() => null);
+      const st = await previewPlatform.unitStatus(t).catch(() => null);
       if (st && (st.ActiveState === 'active' || st.ActiveState === 'activating')) {
         throw new Error(`post-delete: unit ${t} is still ${st.ActiveState}`);
       }
@@ -260,16 +261,16 @@ async function deleteCore(
   // 7. systemd-gc — reset-failed so the unit is not re-resurrected
   const gc = await runStep('systemd-gc', async () => {
     const warnings: string[] = [];
+    if (IS_ANDROID) return { warnings };
     for (const t of targetInstancesFor(directory, root)) {
       try {
-        const esc = escapeInstance(t);
+        const esc = previewPlatform.escapeInstance(t);
         execSync(`sudo -n /usr/local/bin/ellul-preview-ctl reset-failed '${esc}'`, {
           encoding: 'utf8',
           timeout: 5000,
           stdio: ['ignore', 'pipe', 'pipe'],
         });
       } catch (err) {
-        // reset-failed is cosmetic for an already-stopped unit — warn, don't fail.
         warnings.push(`reset-failed ${t}: ${(err as Error).message}`);
       }
     }
@@ -320,14 +321,14 @@ async function waitForInactive(
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
-      const st = await unitStatus(directory);
+      const st = await previewPlatform.unitStatus(directory);
       if (!st || st.ActiveState === 'inactive' || st.ActiveState === 'failed') return;
     } catch {
-      return; // no unit / can't query → treat as inactive
+      return;
     }
     await sleep(200);
   }
-  warnings.push(`unit for ${directory} still active after ${timeoutMs}ms — systemd KillMode=mixed will enforce`);
+  warnings.push(`unit for ${directory} still active after ${timeoutMs}ms`);
 }
 
 async function withRetry(label: string, fn: () => Promise<void>): Promise<void> {

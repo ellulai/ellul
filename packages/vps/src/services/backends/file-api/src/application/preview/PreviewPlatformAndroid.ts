@@ -5,9 +5,9 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync, spawn as cpSpawn, type ChildProcess } from 'child_process';
+import { spawn as cpSpawn, type ChildProcess } from 'child_process';
 import { getAppPath } from '../../config';
-import { resolvePortBindTimeoutMs } from '@vps/shared/constants';
+
 import { readSpec } from '@vps/shared/preview-spec';
 import type { PreviewPlatform, UnitStatus, UnitResult, FailedUnit, FrameworkDropinOpts } from './PreviewPlatform';
 
@@ -29,16 +29,18 @@ const MAX_LOG_LINES = 200;
 const processes = new Map<string, TrackedProcess>();
 const adoptedPorts = new Map<string, number>();
 
-// ── Port probing (cross-platform, no ss) ─────────────────────────────
+// ── Port probing (native TCP connect, no subprocess) ────────────────
 
-function isPortListening(port: number): boolean {
-  try {
-    execSync(
-      `node -e "const s=require('net').createConnection(${port},'127.0.0.1');s.on('connect',()=>{s.destroy();process.exit(0)});s.on('error',()=>process.exit(1));s.setTimeout(1000,()=>process.exit(1))"`,
-      { timeout: 3000, stdio: 'ignore' },
-    );
-    return true;
-  } catch { return false; }
+import * as net from 'net';
+
+function isPortListening(port: number): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
+    const sock = new net.Socket();
+    sock.once('connect', () => { sock.destroy(); resolve(true); });
+    sock.once('error', () => { sock.destroy(); resolve(false); });
+    sock.setTimeout(800, () => { sock.destroy(); resolve(false); });
+    sock.connect(port, '127.0.0.1');
+  });
 }
 
 // ── Network interfaces shim (Vite crashes without it in proot) ───────
@@ -58,6 +60,24 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
   readonly hasCgroups = false;
   readonly hasConnectionCounting = false;
   readonly hasPortScanning = false;
+
+  constructor() {
+    void this.adoptSurvivors();
+  }
+
+  private async adoptSurvivors(): Promise<void> {
+    const regPath = path.join(process.env.HOME || '/home/dev', '.ellul', 'port-registry.json');
+    try {
+      const reg = JSON.parse(fs.readFileSync(regPath, 'utf8')) as Record<string, number>;
+      for (const [dir, port] of Object.entries(reg)) {
+        if (typeof port !== 'number' || port <= 0) continue;
+        if (await isPortListening(port)) {
+          adoptedPorts.set(dir, port);
+          log('info', 'android: adopted surviving process', { appDirectory: dir, port });
+        }
+      }
+    } catch {}
+  }
 
   escapeInstance(appDir: string): string {
     return appDir;
@@ -98,6 +118,7 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
     const child = cpSpawn('sh', ['-c', startCmd], {
       cwd: appPath,
       stdio: ['ignore', 'pipe', 'pipe'],
+      detached: true,
       env: {
         ...process.env,
         PORT: String(port),
@@ -132,9 +153,18 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
 
   async stopUnit(appDir: string, opts: { mode?: 'graceful' | 'immediate' } = {}): Promise<UnitResult> {
     const tracked = processes.get(appDir);
-    if (!tracked) return { ok: true };
+    if (!tracked) {
+      const adopted = adoptedPorts.get(appDir);
+      if (adopted) adoptedPorts.delete(appDir);
+      return { ok: true };
+    }
     const sig = opts.mode === 'immediate' ? 'SIGKILL' : 'SIGTERM';
-    try { tracked.child.kill(sig); } catch {}
+    const pid = tracked.child.pid;
+    if (pid) {
+      try { process.kill(-pid, sig); } catch {}
+    } else {
+      try { tracked.child.kill(sig); } catch {}
+    }
     processes.delete(appDir);
     return { ok: true };
   }
@@ -163,7 +193,7 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
     const tracked = processes.get(appDir);
     if (!tracked) {
       const adopted = adoptedPorts.get(appDir);
-      if (adopted && isPortListening(adopted)) {
+      if (adopted && await isPortListening(adopted)) {
         return { ActiveState: 'active', SubState: 'running', Result: 'success', ExecMainStatus: '0', ActiveEnterTimestampMonotonic: 0 };
       }
       if (adopted) adoptedPorts.delete(appDir);
@@ -171,7 +201,7 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
     }
     const alive = !tracked.child.killed && tracked.child.exitCode === null;
     if (alive) {
-      const portBound = isPortListening(tracked.port);
+      const portBound = await isPortListening(tracked.port);
       return {
         ActiveState: portBound ? 'active' : 'activating',
         SubState: portBound ? 'running' : 'start',
@@ -193,7 +223,7 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
       if (!t.child.killed && t.child.exitCode === null) active.add(d);
     }
     for (const [d, port] of adoptedPorts) {
-      if (isPortListening(port)) active.add(d);
+      if (await isPortListening(port)) active.add(d);
       else adoptedPorts.delete(d);
     }
     return [...active];
@@ -213,7 +243,10 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
         return tracked.child.pid ?? -1;
       }
     }
-    return isPortListening(port) ? -1 : null;
+    for (const [, adoptedPort] of adoptedPorts) {
+      if (adoptedPort === port) return -1;
+    }
+    return null;
   }
 
   countEstablishedConnections(_port: number): number {

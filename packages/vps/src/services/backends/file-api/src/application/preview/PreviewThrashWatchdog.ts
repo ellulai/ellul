@@ -29,7 +29,7 @@ import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 
 import type { ReconcilerLog } from './PreviewReconciler';
-import { restartUnit } from './PreviewUnits';
+import { previewPlatform } from './PreviewPlatform';
 
 interface ThrashWatchState {
   lastHighCount: number;
@@ -238,7 +238,7 @@ export async function checkAndHealThrash(
   watchState.set(appDir, state);
 
   try {
-    const result = await restartUnit(appDir);
+    const result = await previewPlatform.restartUnit(appDir);
     if (!result.ok) {
       log('error', 'thrash-watchdog: restart failed', {
         directory: appDir,
