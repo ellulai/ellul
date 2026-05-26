@@ -629,6 +629,31 @@ function mainHandler(consoleOrigin: string, extraFrameAncestors?: string[]): Lin
   lines.push(...indent([`import /etc/caddy/agents.d/*.caddy`], 2));
   lines.push("");
 
+  // Code browser SPA + API — served by file-api (same as code domain) so the
+  // console can load the code browser iframe from the srv domain.
+  for (const codePath of ["/browser", "/browser/*", "/api/*"]) {
+    lines.push(...indent([`handle ${codePath} {`], 2));
+    lines.push(...forwardAuthBlock(3, [
+      `X-Code-Token {http.request.header.X-Code-Token}`,
+    ]));
+    lines.push(...indent([`reverse_proxy ${UPSTREAM_HOST}:${FILE_API_PORT}`], 3));
+    lines.push(...indent([`}`], 2));
+    lines.push("");
+  }
+
+  // Code browser WebSocket — /code-ws rewrites to /ws for file-api
+  // (main /ws is already claimed by agent-bridge above)
+  lines.push(...indent([`handle /code-ws {`], 2));
+  lines.push(...forwardAuthBlock(3, [
+    `X-Code-Token {http.request.header.X-Code-Token}`,
+  ]));
+  lines.push(...indent([`rewrite * /ws`], 3));
+  lines.push(...indent([`reverse_proxy ${UPSTREAM_HOST}:${FILE_API_PORT} {`], 3));
+  lines.push(...indent([`flush_interval -1`], 4));
+  lines.push(...indent([`}`], 3));
+  lines.push(...indent([`}`], 2));
+  lines.push("");
+
   // Catch-all: auth gate + static landing page.
   // web_locked: sovereign-shield redirects to passkey login
   // standard: sovereign-shield allows navigation through (landing page is public)

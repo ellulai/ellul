@@ -156,7 +156,7 @@ export function generateCaddyfileContent(opts: CaddyfileOptions): string {
   const localhostPort = opts.highPorts ? 8443 : 80;
   const wsOrigin = isSingleHost ? (localhostPort === 80 ? `http://localhost` : `http://localhost:${localhostPort}`) : undefined;
   const codeWsOrigin = isSingleHost ? (localhostPort === 80 ? `http://localhost` : `http://localhost:${localhostPort}`) : undefined;
-  const codeWsPath = isSingleHost ? "/code-ws" : undefined;
+  const codeWsPath = "/code-ws";
   const configJs = configJsHandler(platformZone, appZone, consoleOrigin, wsOrigin, codeWsOrigin, codeWsPath);
 
   const sites: SiteBlock[] = [];

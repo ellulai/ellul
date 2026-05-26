@@ -172,7 +172,7 @@ export function DashboardProviders({
         <RealtimeProvider
           serverDomain={serverDomain}
           securityTier={server.securityTier}
-          enabled={!isLocal}
+          enabled
         >
           <AppsListProvider
             serverDomain={serverDomain}

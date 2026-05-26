@@ -2,7 +2,7 @@
 // Android proot engine — starts VPS services without systemd.
 // Entry point: /usr/local/bin/ellul-engine-android → this file.
 
-const { spawn } = require("child_process");
+const { spawn, execSync: execSyncRaw } = require("child_process");
 const crypto = require("crypto");
 const fs = require("fs");
 const http = require("http");
@@ -82,6 +82,18 @@ function log(msg) {
 
 const CONSOLE_UPSTREAM = process.env.ELLUL_CONSOLE_ORIGIN || "https://console.ellul.ai";
 const CONSOLE_ORIGIN = "http://localhost:8443";
+
+const CLI_VERSIONS = {
+  opencode: "1.14.29",
+  claudeCode: "2.1.116",
+  codex: "0.133.0",
+  cursorAgent: "2026.04.17-787b533",
+  lazygit: "0.60.0",
+};
+
+function run(cmd, opts = {}) {
+  return execSyncRaw(cmd, { stdio: "pipe", timeout: 120_000, ...opts }).toString().trim();
+}
 
 function generateCaddyfile() {
   for (const dir of CADDY_DIRS) {
@@ -246,6 +258,17 @@ function setupFilesystem() {
   const bootstrap = "/etc/ellul-bootstrap";
   if (!fs.existsSync(path.join(bootstrap, "server-id"))) {
     fs.writeFileSync(path.join(bootstrap, "server-id"), "android-local");
+  }
+
+  const nodeKeyPath = path.join(bootstrap, "node.key");
+  if (!fs.existsSync(nodeKeyPath)) {
+    const { privateKey } = crypto.generateKeyPairSync("rsa", {
+      modulusLength: 2048,
+      privateKeyEncoding: { type: "pkcs8", format: "pem" },
+      publicKeyEncoding: { type: "spki", format: "pem" },
+    });
+    fs.writeFileSync(nodeKeyPath, privateKey, { mode: 0o600 });
+    log("generated node.key for secrets encryption");
   }
 
   const jwtDir = path.join(VAULT, "etc/ellul");
@@ -546,6 +569,135 @@ button{padding:10px 24px;border-radius:8px;border:none;background:#e8e5e0;color:
   return server;
 }
 
+const OPENCODE_WRAPPER = `#!/bin/bash
+set -euo pipefail
+REAL_OPENCODE="/usr/local/libexec/ellul/opencode"
+[ -x "$REAL_OPENCODE" ] || { echo "opencode: binary not found at $REAL_OPENCODE" >&2; exit 127; }
+PARENT_TMPDIR="\${TMPDIR:-/tmp}"
+RUN_TMPDIR="$(mktemp -d "\${PARENT_TMPDIR%/}/opencode-run.XXXXXXXXXX")"
+chmod 700 "$RUN_TMPDIR"
+BUN_INSTALL_DIR="\${HOME:-/root}/.cache/opencode-bun"
+mkdir -p "$BUN_INSTALL_DIR"
+WRAPPER_SHA="$(sha256sum "$0" 2>/dev/null | cut -c1-12)"
+cleanup() { rm -rf "$RUN_TMPDIR" 2>/dev/null || true; }
+trap cleanup EXIT
+GLIBC_LD="/lib/ld-linux-aarch64.so.1"
+GLIBC_LIBPATH="/lib/aarch64-linux-gnu"
+if [ "\${ELLUL_PLATFORM:-}" = "android" ] && [ -x "$GLIBC_LD" ]; then
+  TMPDIR="$RUN_TMPDIR" BUN_TMPDIR="$RUN_TMPDIR" BUN_INSTALL="$BUN_INSTALL_DIR" ELLUL_OPENCODE_WRAPPER_SHA="$WRAPPER_SHA" "$GLIBC_LD" --library-path "$GLIBC_LIBPATH" "$REAL_OPENCODE" "$@" &
+else
+  TMPDIR="$RUN_TMPDIR" BUN_TMPDIR="$RUN_TMPDIR" BUN_INSTALL="$BUN_INSTALL_DIR" ELLUL_OPENCODE_WRAPPER_SHA="$WRAPPER_SHA" "$REAL_OPENCODE" "$@" &
+fi
+CHILD_PID=$!
+trap 'kill -TERM "$CHILD_PID" 2>/dev/null || true' INT TERM
+wait "$CHILD_PID"
+EXIT_CODE=$?
+while [ "$EXIT_CODE" -ge 128 ] && kill -0 "$CHILD_PID" 2>/dev/null; do
+  wait "$CHILD_PID"
+  EXIT_CODE=$?
+done
+trap - INT TERM
+exit "$EXIT_CODE"
+`;
+
+function ensureOpencodeWrapper() {
+  const p = "/usr/local/bin/opencode";
+  try {
+    if (fs.existsSync(p) && fs.readFileSync(p, "utf8").includes("REAL_OPENCODE")) return;
+  } catch {}
+  fs.writeFileSync(p, OPENCODE_WRAPPER, { mode: 0o755 });
+  log("cli: wrote opencode wrapper");
+}
+
+function ensureCliTools() {
+  const tools = [
+    {
+      name: "opencode",
+      check: "/usr/local/libexec/ellul/opencode",
+      install() {
+        const url = `https://github.com/anomalyco/opencode/releases/download/v${CLI_VERSIONS.opencode}/opencode-linux-arm64.tar.gz`;
+        run("mkdir -p /usr/local/libexec/ellul");
+        run(`curl -fsSL --retry 3 --connect-timeout 15 --max-time 120 "${url}" -o /tmp/opencode.tar.gz`);
+        run("tar -xzf /tmp/opencode.tar.gz -C /usr/local/libexec/ellul");
+        fs.chmodSync("/usr/local/libexec/ellul/opencode", 0o755);
+        try { fs.unlinkSync("/tmp/opencode.tar.gz"); } catch {}
+        ensureOpencodeWrapper();
+      },
+    },
+    {
+      name: "lazygit",
+      check: "/usr/local/bin/lazygit",
+      install() {
+        const url = `https://github.com/jesseduffield/lazygit/releases/download/v${CLI_VERSIONS.lazygit}/lazygit_${CLI_VERSIONS.lazygit}_Linux_arm64.tar.gz`;
+        run(`curl -fsSL --retry 3 --connect-timeout 15 --max-time 60 "${url}" -o /tmp/lazygit.tar.gz`);
+        run("tar -xzf /tmp/lazygit.tar.gz -C /tmp lazygit");
+        fs.copyFileSync("/tmp/lazygit", "/usr/local/bin/lazygit");
+        fs.chmodSync("/usr/local/bin/lazygit", 0o755);
+        try { fs.unlinkSync("/tmp/lazygit.tar.gz"); fs.unlinkSync("/tmp/lazygit"); } catch {}
+      },
+    },
+    {
+      name: "cursor-agent",
+      check: "/usr/local/bin/cursor-agent",
+      install() {
+        const url = `https://downloads.cursor.com/lab/${CLI_VERSIONS.cursorAgent}/linux/arm64/agent-cli-package.tar.gz`;
+        run(`curl -fsSL --retry 3 --connect-timeout 15 --max-time 120 "${url}" -o /tmp/cursor.tar.gz`);
+        run("mkdir -p /usr/local/lib/cursor-agent");
+        run("tar -xzf /tmp/cursor.tar.gz -C /usr/local/lib/cursor-agent --strip-components=1");
+        fs.chmodSync("/usr/local/lib/cursor-agent/cursor-agent", 0o755);
+        try { fs.symlinkSync("/usr/local/lib/cursor-agent/cursor-agent", "/usr/local/bin/cursor-agent"); } catch {}
+        try { fs.unlinkSync("/tmp/cursor.tar.gz"); } catch {}
+      },
+    },
+    {
+      name: "claude-code",
+      check: "/usr/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe",
+      install() {
+        run(`npm install -g --no-audit --no-fund @anthropic-ai/claude-code@${CLI_VERSIONS.claudeCode}`, {
+          timeout: 300_000,
+          env: { ...process.env, HOME: "/root" },
+        });
+      },
+    },
+    {
+      name: "codex",
+      check: "/usr/lib/node_modules/@openai/codex",
+      install() {
+        run(`npm install -g --no-audit --no-fund @openai/codex@${CLI_VERSIONS.codex}`, {
+          timeout: 300_000,
+          env: { ...process.env, HOME: "/root" },
+        });
+      },
+    },
+    {
+      name: "grok",
+      check: "/home/dev/.grok/bin/grok",
+      install() {
+        run("curl -fsSL https://x.ai/cli/install.sh | bash", {
+          env: { ...process.env, HOME: "/home/dev" },
+        });
+      },
+    },
+  ];
+
+  ensureOpencodeWrapper();
+
+  let installed = 0;
+  for (const tool of tools) {
+    if (fs.existsSync(tool.check)) continue;
+    log(`cli: ${tool.name} missing, installing...`);
+    try {
+      tool.install();
+      installed++;
+      log(`cli: ${tool.name} installed`);
+    } catch (e) {
+      log(`cli: ${tool.name} install failed (non-fatal): ${e.message}`);
+    }
+  }
+  if (installed > 0) log(`cli: installed ${installed} missing tool(s)`);
+  else log("cli: all tools present");
+}
+
 function prepareCliTools() {
   const CACHE = "/tmp/.ellul-cli-cache";
   fs.mkdirSync(CACHE, { recursive: true });
@@ -645,6 +797,7 @@ async function main() {
   log(`User: uid=${process.getuid()} gid=${process.getgid()}`);
 
   setupFilesystem();
+  ensureCliTools();
   prepareCliTools();
   startConsoleProxy();
 

@@ -1013,11 +1013,21 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 }
 
 function TauriGate({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
+  const [ready, setReady] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    if (!isTauriApp()) { setReady(true); return; }
+    const cfg = (window as any).__ELLUL_APP_CONFIG__;
+    if (cfg?.mode === "cloud" || cfg?.mode === "local") { setReady(true); return; }
+    const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+    if (!invoke) { setReady(true); return; }
+    invoke("get_app_mode")
+      .then((loaded: any) => { (window as any).__ELLUL_APP_CONFIG__ = loaded; })
+      .catch(() => {})
+      .finally(() => setReady(true));
+  }, []);
 
-  if (!mounted) return <LoadingScreen message="Loading..." />;
+  if (!ready) return <LoadingScreen message="Loading..." />;
 
   if (isTauriApp()) {
     const cfg = (window as any).__ELLUL_APP_CONFIG__;
