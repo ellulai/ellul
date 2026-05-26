@@ -748,22 +748,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isLocalMode) return;
     let cancelled = false;
-    const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
-    if (invoke) {
-      const engine = getLocalEngine();
-      const cmd = engine === "lima" ? "lima_health" : "plugin:proot|proot_health";
-      const poll = () => {
-        invoke(cmd)
-          .then((h: Array<{ name: string; healthy: boolean }>) => { if (!cancelled) setLocalHealth(h); })
-          .catch(() => {});
-      };
-      poll();
-      const interval = setInterval(poll, 10_000);
-      return () => { cancelled = true; clearInterval(interval); };
-    }
-    const pollBrowser = async () => {
+    const healthUrl = `${window.location.protocol}//${window.location.host}/health`;
+    const fetchHealth = async () => {
       try {
-        const r = await fetch(`${window.location.protocol}//${window.location.host}/health`, { credentials: "include", signal: AbortSignal.timeout(3000) });
+        const r = await fetch(healthUrl, { credentials: "include", signal: AbortSignal.timeout(3000) });
         const healthy = r.ok;
         if (!cancelled) setLocalHealth([
           { name: "sovereign-shield", healthy },
@@ -778,8 +766,21 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         ]);
       }
     };
-    pollBrowser();
-    const interval = setInterval(pollBrowser, 10_000);
+    const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+    const engine = getLocalEngine();
+    const cmd = engine === "lima" ? "lima_health" : "plugin:proot|proot_health";
+    const poll = async () => {
+      if (invoke) {
+        try {
+          const h = await invoke(cmd) as Array<{ name: string; healthy: boolean }>;
+          if (!cancelled) setLocalHealth(h);
+          return;
+        } catch {}
+      }
+      await fetchHealth();
+    };
+    poll();
+    const interval = setInterval(poll, 10_000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [isLocalMode]);
 
