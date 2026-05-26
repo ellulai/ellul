@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -250,6 +250,17 @@ export function ConnectionGroupTab({
   const [customAuthToken, setCustomAuthToken] = useState("");
   const [viewingToolsFor, setViewingToolsFor] = useState<string | null>(null);
   const [discoveredTools, setDiscoveredTools] = useState<Record<string, DiscoveredTool[]>>({});
+  const [waitingForOAuth, setWaitingForOAuth] = useState(false);
+
+  useEffect(() => {
+    const onReturn = () => {
+      if (waitingForOAuth && document.visibilityState === "visible") {
+        window.location.reload();
+      }
+    };
+    document.addEventListener("visibilitychange", onReturn);
+    return () => document.removeEventListener("visibilitychange", onReturn);
+  }, [waitingForOAuth]);
 
   const GroupIcon = ICON_MAP[group.iconKey] ?? Terminal;
   const isRoleGroup = !!group.routeRole;
@@ -438,17 +449,33 @@ export function ConnectionGroupTab({
       } else {
         connectPath = `/api/integrations/connect/${provider}`;
       }
+
+      if (isLocalhost()) {
+        const params = new URLSearchParams({
+          groupId: group.id,
+          return_origin: "https://console.ellul.ai",
+          return_path: window.location.pathname + window.location.search,
+        });
+        const url = `${API_URL}${connectPath}?${params.toString()}`;
+        const authUrl = `${API_URL}/api/auth/native/start?provider=google&chain_redirect=${encodeURIComponent(url)}`;
+        const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+        if (invoke) {
+          setWaitingForOAuth(true);
+          invoke("open_external", { url: authUrl }).catch(() => {
+            window.location.href = authUrl;
+          });
+          return;
+        }
+        window.location.href = authUrl;
+        return;
+      }
+
       const params = new URLSearchParams({
         groupId: group.id,
         return_origin: window.location.origin,
         return_path: window.location.pathname + window.location.search,
       });
       const url = `${API_URL}${connectPath}?${params.toString()}`;
-
-      if (isLocalhost()) {
-        window.location.href = `${API_URL}/api/auth/native/start?provider=google&chain_redirect=${encodeURIComponent(url)}`;
-        return;
-      }
       window.location.href = url;
     },
     [group.id],

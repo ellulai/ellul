@@ -2,7 +2,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ExternalLink, Loader2 } from "lucide-react";
 import { API_URL } from "@/lib/api";
 import { isTauriApp } from "@/lib/utils";
@@ -74,21 +74,41 @@ export function ProviderCard({ provider, available, onBeforeConnect, appDirector
   const info = PROVIDER_INFO[provider];
   const [authenticating, setAuthenticating] = useState(false);
 
+  const handleReturn = useCallback(() => {
+    if (authenticating && document.visibilityState === "visible") {
+      window.location.reload();
+    }
+  }, [authenticating]);
+
+  useEffect(() => {
+    document.addEventListener("visibilitychange", handleReturn);
+    return () => document.removeEventListener("visibilitychange", handleReturn);
+  }, [handleReturn]);
+
   const handleConnect = async () => {
     onBeforeConnect?.();
     const params = new URLSearchParams();
     if (appDirectory) params.set('app', appDirectory);
-    params.set('return_origin', window.location.origin);
     params.set('return_path', window.location.pathname + window.location.search);
-    const url = `${API_URL}/api/git/connect/${provider}?${params.toString()}`;
 
     if (isLocalhost()) {
-      // Chain through Google sign-in to establish api.ellul.ai session,
-      // then redirect to the git connect endpoint. If already signed in,
-      // the /start endpoint skips OAuth and redirects directly.
-      window.location.href = `${API_URL}/api/auth/native/start?provider=google&chain_redirect=${encodeURIComponent(url)}`;
+      params.set('return_origin', 'https://console.ellul.ai');
+      const url = `${API_URL}/api/git/connect/${provider}?${params.toString()}`;
+      const authUrl = `${API_URL}/api/auth/native/start?provider=google&chain_redirect=${encodeURIComponent(url)}`;
+      const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+      if (invoke) {
+        setAuthenticating(true);
+        invoke("open_external", { url: authUrl }).catch(() => {
+          window.location.href = authUrl;
+        });
+        return;
+      }
+      window.location.href = authUrl;
       return;
     }
+
+    params.set('return_origin', window.location.origin);
+    const url = `${API_URL}/api/git/connect/${provider}?${params.toString()}`;
 
     if (isTauriApp()) {
       const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
