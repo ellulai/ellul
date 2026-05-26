@@ -1030,20 +1030,6 @@ function TauriGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (!ready) return <LoadingScreen message="Loading..." />;
-
-  if (isTauriApp()) {
-    const cfg = (window as any).__ELLUL_APP_CONFIG__;
-    if (!cfg || (cfg.mode !== "cloud" && cfg.mode !== "local")) {
-      return (
-        <TauriSetupScreen
-          onLocalReady={() => {
-            window.location.reload();
-          }}
-        />
-      );
-    }
-  }
-
   return <>{children}</>;
 }
 

@@ -61,6 +61,7 @@ import {
   wipeInstallTree,
 } from './application/platform/InstallManager';
 import { previewPlatform } from './application/preview/PreviewPlatform';
+import { reloadCaddy } from '@vps/shared/caddy';
 import { readAdmissionSignals, resolveCandidateReservation } from './application/preview/PreviewAdmission';
 import { startReconciler, reconcileOnce, startPreviewRef } from './application/preview/PreviewReconciler';
 import { deleteApp as coordinatedDelete } from './application/platform/SandboxDelete';
@@ -2412,7 +2413,7 @@ const server = http.createServer(async (req, res) => {
           }
 
           if (cleanup.includes('caddy-config')) {
-            bg.push(runCmd('systemctl reload caddy 2>/dev/null || systemctl restart caddy 2>/dev/null || true').then(() => {}).catch(() => {}));
+            bg.push(reloadCaddy().catch(() => {}));
           }
 
           if (deployedSandboxId) {
