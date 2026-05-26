@@ -8,7 +8,6 @@ import android.provider.Settings
 import android.util.Log
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import com.github.luben.zstd.ZstdInputStream
-import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider
 import org.json.JSONObject
 import java.io.File
 import java.io.FileInputStream
@@ -16,11 +15,7 @@ import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import java.net.HttpURLConnection
 import java.net.URL
-import java.security.KeyFactory
 import java.security.MessageDigest
-import java.security.Security
-import java.security.Signature
-import java.security.spec.X509EncodedKeySpec
 import java.util.concurrent.atomic.AtomicBoolean
 
 data class UpdateInfo(
@@ -80,12 +75,6 @@ class UpdateManager(private val context: Context) {
     private val downloadDir = File(context.cacheDir, "rootfs-update")
     private val prefs = context.getSharedPreferences("proot_update", Context.MODE_PRIVATE)
     private val cancelled = AtomicBoolean(false)
-
-    private val signingKey: String? = try {
-        BuildConfig.PLATFORM_SIGNING_KEY.ifEmpty { null }
-    } catch (_: Exception) {
-        null
-    }
 
     // ── Public API ──────────────────────────────────────────────────
 
@@ -270,45 +259,6 @@ class UpdateManager(private val context: Context) {
     }
 
     private fun fetchAndVerifyManifest(): UpdateInfo? {
-        if (signingKey != null) {
-            return fetchSignedManifest()
-        }
-        return fetchUnsignedManifest()
-    }
-
-    private fun fetchSignedManifest(): UpdateInfo? {
-        var conn: HttpURLConnection? = null
-        return try {
-            conn = URL("$CDN_BASE/latest.jws").openConnection() as HttpURLConnection
-            conn.connectTimeout = 15_000
-            conn.readTimeout = 15_000
-            conn.instanceFollowRedirects = true
-
-            if (conn.responseCode != 200) {
-                Log.w(TAG, "Failed to fetch signed manifest: HTTP ${conn.responseCode}")
-                return null
-            }
-
-            val jws = conn.inputStream.bufferedReader().readText().trim()
-            val payloadJson = verifyJws(jws)
-            parseManifest(payloadJson)
-        } catch (e: UpdateException) {
-            Log.e(TAG, "Manifest verification failed: ${e.message}")
-            null
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to fetch signed manifest: ${e.message}")
-            null
-        } finally {
-            conn?.disconnect()
-        }
-    }
-
-    private fun fetchUnsignedManifest(): UpdateInfo? {
-        if (!BuildConfig.DEBUG) {
-            Log.e(TAG, "Unsigned manifests rejected in release builds")
-            return null
-        }
-
         var conn: HttpURLConnection? = null
         return try {
             conn = URL("$CDN_BASE/latest.json").openConnection() as HttpURLConnection
@@ -338,51 +288,6 @@ class UpdateManager(private val context: Context) {
             changelog = obj.optString("changelog", ""),
             rolloutPercent = obj.optInt("rolloutPercent", 100),
         )
-    }
-
-    // ── ML-DSA-65 JWS verification ─────────────────────────────────
-
-    private fun verifyJws(jws: String): String {
-        val parts = jws.split(".")
-        if (parts.size != 3) throw UpdateException("Invalid JWS format", UpdateStage.CHECKING)
-
-        val headerJson = String(android.util.Base64.decode(parts[0], android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP))
-        val header = JSONObject(headerJson)
-        val alg = header.getString("alg")
-        if (alg != "ML-DSA-65") {
-            throw UpdateException("Unsupported JWS algorithm: $alg", UpdateStage.CHECKING)
-        }
-
-        val signingInput = "${parts[0]}.${parts[1]}".toByteArray(Charsets.UTF_8)
-        val signatureBytes = android.util.Base64.decode(parts[2], android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP)
-
-        if (Security.getProvider("BCPQC") == null) {
-            Security.addProvider(BouncyCastlePQCProvider())
-        }
-
-        val keyBytes = android.util.Base64.decode(signingKey!!, android.util.Base64.DEFAULT)
-        val keySpec = X509EncodedKeySpec(keyBytes)
-
-        val kf = try {
-            KeyFactory.getInstance("ML-DSA", "BCPQC")
-        } catch (_: Exception) {
-            KeyFactory.getInstance("DILITHIUM", "BCPQC")
-        }
-        val publicKey = kf.generatePublic(keySpec)
-
-        val sig = try {
-            Signature.getInstance("ML-DSA-65", "BCPQC")
-        } catch (_: Exception) {
-            Signature.getInstance("DILITHIUM3", "BCPQC")
-        }
-        sig.initVerify(publicKey)
-        sig.update(signingInput)
-
-        if (!sig.verify(signatureBytes)) {
-            throw UpdateException("Manifest signature verification failed", UpdateStage.CHECKING)
-        }
-
-        return String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP))
     }
 
     // ── Storage ─────────────────────────────────────────────────────

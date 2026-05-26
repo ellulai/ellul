@@ -614,12 +614,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               const health = await invoke("plugin:proot|proot_health") as { name: string; healthy: boolean }[];
               const allHealthy = health?.length > 0 && health.every((s) => s.healthy);
               if (allHealthy) {
-                if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-                  try {
-                    await invoke("plugin:proot|proot_switch_to_local");
-                    return;
-                  } catch {}
-                }
                 activateLocalMode();
                 return;
               }
@@ -940,11 +934,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   if (isTauri && tauriNeedsConnect) {
     return <TauriSetupScreen onLocalReady={() => {
-      const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
-      if (invoke && getLocalEngine() === "proot") {
-        invoke("plugin:proot|proot_switch_to_local").catch(activateLocalMode);
-        return;
-      }
       activateLocalMode();
     }} />;
   }
@@ -1036,11 +1025,6 @@ function TauriGate({ children }: { children: React.ReactNode }) {
       return (
         <TauriSetupScreen
           onLocalReady={() => {
-            const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
-            if (invoke && getLocalEngine() === "proot") {
-              invoke("plugin:proot|proot_switch_to_local").catch(() => window.location.reload());
-              return;
-            }
             window.location.reload();
           }}
         />

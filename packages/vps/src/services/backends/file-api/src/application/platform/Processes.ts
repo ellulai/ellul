@@ -4,6 +4,7 @@
 // Processes Service
 
 import { execSync } from 'child_process';
+import fs from 'fs';
 import { RESERVED_PORTS } from '@vps/shared/constants';
 import { IS_ANDROID } from '@vps/shared/platform';
 
@@ -33,7 +34,12 @@ export function killProcessesOnPorts(ports: number[]): {
   const results: KillResult[] = [];
   for (const port of safePorts) {
     try {
-      execSync(`fuser -k -n tcp ${port} 2>/dev/null || true`, { timeout: 5000 });
+      if (IS_ANDROID) {
+        const pid = findPidOnPort(port);
+        if (pid > 0) process.kill(pid, 'SIGKILL');
+      } else {
+        execSync(`fuser -k -n tcp ${port} 2>/dev/null || true`, { timeout: 5000 });
+      }
       results.push({ port, status: 'killed' });
     } catch (e) {
       const error = e as Error;
@@ -73,4 +79,42 @@ export function restartServices(tier: string): {
   }
 
   return results;
+}
+
+function findPidOnPort(port: number): number {
+  const hexPort = port.toString(16).toUpperCase().padStart(4, '0');
+  for (const proto of ['/proc/net/tcp', '/proc/net/tcp6']) {
+    try {
+      const lines = fs.readFileSync(proto, 'utf8').split('\n');
+      for (const line of lines) {
+        const cols = line.trim().split(/\s+/);
+        if (!cols[1]) continue;
+        const localPort = cols[1].split(':')[1];
+        if (localPort?.toUpperCase() === hexPort && cols[3] === '0A') {
+          const inode = cols[9];
+          if (!inode || inode === '0') continue;
+          return findPidByInode(inode);
+        }
+      }
+    } catch {}
+  }
+  return 0;
+}
+
+function findPidByInode(inode: string): number {
+  try {
+    const pids = fs.readdirSync('/proc').filter(d => /^\d+$/.test(d));
+    for (const pid of pids) {
+      try {
+        const fds = fs.readdirSync(`/proc/${pid}/fd`);
+        for (const fd of fds) {
+          try {
+            const link = fs.readlinkSync(`/proc/${pid}/fd/${fd}`);
+            if (link === `socket:[${inode}]`) return parseInt(pid, 10);
+          } catch {}
+        }
+      } catch {}
+    }
+  } catch {}
+  return 0;
 }

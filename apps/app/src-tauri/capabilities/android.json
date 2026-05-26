@@ -3,6 +3,9 @@
   "description": "Android-only capabilities — proot BYOS workspace commands",
   "windows": ["main"],
   "platforms": ["android"],
+  "remote": {
+    "urls": ["http://localhost:8443/*"]
+  },
   "permissions": [
     "default",
     "core:default",

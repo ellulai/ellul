@@ -315,6 +315,7 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
                 }
                 invoke.resolve()
             } catch (e: Exception) {
+                android.util.Log.e("SetupManager", "Setup failed", e)
                 val payload = JSObject().apply {
                     put("stage", SetupStage.FAILED.name)
                     put("percent", 0)

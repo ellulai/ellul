@@ -82,27 +82,7 @@ export function WelcomeOverlay() {
   const [projectId, setProjectId] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const proj = await fetchActiveProject();
-      if (cancelled) return;
-      if (!proj) {
-        // No active project (cold start, sandbox empty) — no overlay yet.
-        setPhase('hidden');
-        return;
-      }
-      setProjectId(proj);
-      const meta = await fetchProjectMeta(proj);
-      if (cancelled) return;
-      if (meta && typeof meta.welcomeShownAt === 'string' && meta.welcomeShownAt.length > 0) {
-        setPhase('hidden');
-      } else {
-        setPhase('show');
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    setPhase('hidden');
   }, []);
 
   useEffect(() => {

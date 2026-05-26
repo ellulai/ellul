@@ -12,8 +12,8 @@ android {
         consumerProguardFiles("consumer-rules.pro")
         buildConfigField(
             "String",
-            "PLATFORM_SIGNING_KEY",
-            "\"${findProperty("ellul.platformSigningKey") ?: ""}\""
+            "BUNDLED_ROOTFS_VERSION",
+            "\"${findProperty("ellul.bundledRootfsVersion") ?: ""}\""
         )
     }
 
@@ -46,5 +46,4 @@ dependencies {
     implementation("org.apache.commons:commons-compress:1.27.1")
     implementation("com.github.luben:zstd-jni:1.5.6-9@aar")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
-    implementation("org.bouncycastle:bcprov-jdk18on:1.79")
 }

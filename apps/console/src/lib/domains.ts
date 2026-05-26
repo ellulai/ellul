@@ -55,8 +55,15 @@ export function getDevUrl(serverDomain: string): string {
 }
 
 // Get the WebSocket URL for real-time updates.
+// Local single-host: /code-ws routes to file-api (/ws is agent-bridge).
+// Android Tauri: Caddy on port 8443 (WebView can't reach port 80).
 export function getCodeWsUrl(serverDomain: string): string {
-  if (isLocalDomain(serverDomain)) return `ws://${localHost()}/ws`;
+  if (isLocalDomain(serverDomain)) {
+    if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) {
+      return "ws://localhost:8443/code-ws";
+    }
+    return `ws://${localHost()}/code-ws`;
+  }
   return `wss://${getCodeDomain(serverDomain)}/ws`;
 }
 

@@ -119,8 +119,6 @@ import ${path.join(VAULT, "etc/caddy/app-routes.d/*.caddy")}
         header_up X-Forwarded-Method {method}
         header_up User-Agent {http.request.header.User-Agent}
         header_up X-Forwarded-Uri {uri}
-        header_up X-Forwarded-Host {http.request.hostport}
-        header_up X-Forwarded-Proto {scheme}
         header_up -X-Auth-User
         header_up -X-Auth-Tier
         header_up -X-Auth-Session
@@ -163,7 +161,6 @@ http://localhost:8443, http://127.0.0.1:8443 {
     }
 
     handle /code-ws {
-        import auth_gate
         rewrite * /ws
         reverse_proxy ${FILE_API} {
             flush_interval -1
