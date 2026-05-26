@@ -5,9 +5,10 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as net from 'net';
+import * as os from 'os';
 import { spawn as cpSpawn, type ChildProcess } from 'child_process';
 import { getAppPath } from '../../config';
-
 import { readSpec } from '@vps/shared/preview-spec';
 import type { PreviewPlatform, UnitStatus, UnitResult, FailedUnit, FrameworkDropinOpts } from './PreviewPlatform';
 
@@ -23,15 +24,54 @@ interface TrackedProcess {
   child: ChildProcess;
   port: number;
   logRing: string[];
+  startedAt: number;
 }
 
 const MAX_LOG_LINES = 200;
 const processes = new Map<string, TrackedProcess>();
 const adoptedPorts = new Map<string, number>();
 
-// ── Port probing (native TCP connect, no subprocess) ────────────────
+// ── Crash tracking (circuit breaker) ─────────────────────────────────
 
-import * as net from 'net';
+interface CrashRecord {
+  times: number[];
+  backoffUntil: number;
+}
+
+const CRASH_WINDOW_MS = 60_000;
+const CRASH_BACKOFF_SCHEDULE = [5_000, 15_000, 60_000];
+const crashHistory = new Map<string, CrashRecord>();
+
+function recordCrash(appDir: string, code: number | null, signal: string | null): void {
+  const now = Date.now();
+  const record = crashHistory.get(appDir) || { times: [], backoffUntil: 0 };
+  record.times = record.times.filter(t => now - t < CRASH_WINDOW_MS);
+  record.times.push(now);
+
+  const idx = Math.min(record.times.length - 1, CRASH_BACKOFF_SCHEDULE.length - 1);
+  record.backoffUntil = now + CRASH_BACKOFF_SCHEDULE[idx]!;
+  crashHistory.set(appDir, record);
+
+  log('warn', 'android: dev server crashed', {
+    appDirectory: appDir,
+    exitCode: code,
+    signal,
+    crashesInWindow: record.times.length,
+    backoffMs: CRASH_BACKOFF_SCHEDULE[idx],
+  });
+}
+
+function isInBackoff(appDir: string): boolean {
+  const record = crashHistory.get(appDir);
+  if (!record) return false;
+  return Date.now() < record.backoffUntil;
+}
+
+function clearCrashHistory(appDir: string): void {
+  crashHistory.delete(appDir);
+}
+
+// ── Port probing (native TCP connect, no subprocess) ────────────────
 
 function isPortListening(port: number): Promise<boolean> {
   return new Promise<boolean>((resolve) => {
@@ -54,6 +94,28 @@ function ensureNetShim(): void {
   }
 }
 
+// ── Dynamic memory budget ────────────────────────────────────────────
+
+export function computeAndroidBudget(): {
+  physicalMB: number;
+  reservedMB: number;
+  previewBudgetMB: number;
+  perPreviewCapMB: number;
+  perPreviewHighMB: number;
+  maxConcurrent: number;
+  slicePercent: number;
+} {
+  const physicalMB = Math.round(os.totalmem() / (1024 * 1024));
+  if (physicalMB < 3072) {
+    return { physicalMB, reservedMB: 256, previewBudgetMB: 512, perPreviewCapMB: 512, perPreviewHighMB: 400, maxConcurrent: 1, slicePercent: 50 };
+  }
+  if (physicalMB < 6144) {
+    return { physicalMB, reservedMB: 512, previewBudgetMB: 1536, perPreviewCapMB: 1536, perPreviewHighMB: 1200, maxConcurrent: 1, slicePercent: 70 };
+  }
+  const perPreviewCapMB = Math.round((physicalMB * 0.6) / 2);
+  return { physicalMB, reservedMB: 512, previewBudgetMB: physicalMB - 512, perPreviewCapMB, perPreviewHighMB: Math.round(perPreviewCapMB * 0.85), maxConcurrent: 2, slicePercent: 70 };
+}
+
 // ── Implementation ───────────────────────────────────────────────────
 
 export class AndroidPreviewPlatform implements PreviewPlatform {
@@ -61,8 +123,10 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
   readonly hasConnectionCounting = false;
   readonly hasPortScanning = false;
 
+  private readonly adoptionReady: Promise<void>;
+
   constructor() {
-    void this.adoptSurvivors();
+    this.adoptionReady = this.adoptSurvivors();
   }
 
   private async adoptSurvivors(): Promise<void> {
@@ -84,9 +148,17 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
   }
 
   async startUnit(appDir: string): Promise<UnitResult> {
+    if (isInBackoff(appDir)) {
+      const record = crashHistory.get(appDir)!;
+      const waitMs = record.backoffUntil - Date.now();
+      return { ok: false, error: `Crash backoff: ${record.times.length} crashes in 60s, retry in ${Math.ceil(waitMs / 1000)}s` };
+    }
+
     const old = processes.get(appDir);
     if (old && !old.child.killed && old.child.exitCode === null) {
-      try { old.child.kill('SIGTERM'); } catch {}
+      const pid = old.child.pid;
+      if (pid) { try { process.kill(-pid, 'SIGTERM'); } catch {} }
+      else { try { old.child.kill('SIGTERM'); } catch {} }
       processes.delete(appDir);
     }
 
@@ -130,7 +202,7 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
       },
     });
 
-    const tracked: TrackedProcess = { child, port, logRing: [] };
+    const tracked: TrackedProcess = { child, port, logRing: [], startedAt: Date.now() };
     processes.set(appDir, tracked);
 
     const appendLog = (d: Buffer) => {
@@ -146,8 +218,15 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
 
     child.on('exit', (code, signal) => {
       log('info', 'android: dev server exited', { appDirectory: appDir, code, signal });
+      const uptime = Date.now() - tracked.startedAt;
+      if (code !== 0 && code !== null && uptime < CRASH_WINDOW_MS) {
+        recordCrash(appDir, code, signal);
+      } else if (code === 0) {
+        clearCrashHistory(appDir);
+      }
     });
 
+    clearCrashHistory(appDir);
     return { ok: true };
   }
 
@@ -166,6 +245,7 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
       try { tracked.child.kill(sig); } catch {}
     }
     processes.delete(appDir);
+    clearCrashHistory(appDir);
     return { ok: true };
   }
 
@@ -175,13 +255,16 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
     return this.startUnit(appDir);
   }
 
-  async resetFailed(_appDir: string): Promise<void> {}
+  async resetFailed(appDir: string): Promise<void> {
+    clearCrashHistory(appDir);
+  }
 
   adoptProcess(appDir: string, port: number): void {
     adoptedPorts.set(appDir, port);
   }
 
   async isActive(appDir: string): Promise<boolean> {
+    await this.adoptionReady;
     const tracked = processes.get(appDir);
     if (tracked) return !tracked.child.killed && tracked.child.exitCode === null;
     const adopted = adoptedPorts.get(appDir);
@@ -190,6 +273,7 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
   }
 
   async unitStatus(appDir: string): Promise<UnitStatus> {
+    await this.adoptionReady;
     const tracked = processes.get(appDir);
     if (!tracked) {
       const adopted = adoptedPorts.get(appDir);
@@ -218,6 +302,7 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
   }
 
   async listActive(): Promise<string[]> {
+    await this.adoptionReady;
     const active = new Set<string>();
     for (const [d, t] of processes) {
       if (!t.child.killed && t.child.exitCode === null) active.add(d);

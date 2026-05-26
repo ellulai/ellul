@@ -1136,13 +1136,14 @@ export async function waitForInstall(
 ): Promise<InstallStatus> {
   const interval = Math.max(250, opts.intervalMs ?? DEFAULT_WAIT_INTERVAL_MS);
   const deadline = Date.now() + timeoutMs;
-  let last: InstallStatus = getInstallStatus(appPath);
+  const withLogTail = !!opts.onProgress;
+  let last: InstallStatus = getInstallStatus(appPath, { withLogTail });
   opts.onProgress?.(last);
 
   while (Date.now() < deadline) {
     if (last.phase === 'ready' || last.phase === 'failed') return last;
     await new Promise<void>((r) => setTimeout(r, interval));
-    last = getInstallStatus(appPath);
+    last = getInstallStatus(appPath, { withLogTail });
     opts.onProgress?.(last);
     // Auto-rerun on detected fingerprint drift while we're polling. The
     // install-manager's requestInstall is idempotent, so the cost is a

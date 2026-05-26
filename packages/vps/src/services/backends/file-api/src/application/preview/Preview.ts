@@ -867,6 +867,7 @@ handle_errors {
       log('error', 'caddy reload failed, rolling back', {
         error: (reloadErr as Error).message.slice(0, 500),
       });
+      emitPhaseTransition('', 'routing_failed', `Preview routing failed — rolling back. ${(reloadErr as Error).message.slice(0, 100)}`);
       if (oldConfig) {
         fs.writeFileSync(caddyPath, oldConfig);
       } else {
@@ -1817,8 +1818,22 @@ async function startPreviewLocked(
         `Installing ${installKickoff.packageManager ?? 'dependencies'}...`,
       );
     }
+    let lastProgressMsg = '';
     const installFinal = await installManagerWait(appPath, 120_000, {
       intervalMs: 1_000,
+      onProgress: (status) => {
+        if (status.phase !== 'running') return;
+        const tail = status.logTail ?? '';
+        const lines = tail.split('\n').filter(Boolean);
+        const lastLine = lines[lines.length - 1]?.trim().slice(0, 120) ?? '';
+        const msg = lastLine && lastLine !== lastProgressMsg
+          ? `Installing ${status.packageManager ?? 'dependencies'}: ${lastLine}`
+          : `Installing ${status.packageManager ?? 'dependencies'}...`;
+        if (msg !== lastProgressMsg) {
+          lastProgressMsg = msg;
+          emitPhaseTransition(appDirectory, 'installing_deps', msg);
+        }
+      },
     });
     if (installFinal.phase === 'failed') {
       emitPhaseTransition(
@@ -1892,7 +1907,7 @@ async function startPreviewLocked(
   // control plane unbounded.
   const admittedMode: 'hot' | 'warm' = IS_ANDROID ? 'hot' : admission!.admittedMode;
   const budget = IS_ANDROID
-    ? { physicalMB: 2048, reservedMB: 512, previewBudgetMB: 1536, perPreviewCapMB: 1536, perPreviewHighMB: 1200, maxConcurrent: 1, slicePercent: 70 }
+    ? (() => { const { computeAndroidBudget } = require('./PreviewPlatformAndroid'); return computeAndroidBudget(); })()
     : admission!.budget;
   let reservation;
   try {

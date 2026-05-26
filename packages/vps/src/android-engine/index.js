@@ -321,6 +321,19 @@ function readVaultKey() {
   return generated;
 }
 
+// ── Service restart budget ──────────────────────────────────────────
+const serviceHealth = new Map();
+const RESTART_WINDOW_MS = 120_000;
+const MAX_RESTARTS_IN_WINDOW = 5;
+const BACKOFF_SCHEDULE = [2000, 5000, 10000, 30000, 60000];
+
+function getServiceHealth(name) {
+  if (!serviceHealth.has(name)) {
+    serviceHealth.set(name, { restarts: [], lastExitCode: null, lastSignal: null, startedAt: 0, stable: true });
+  }
+  return serviceHealth.get(name);
+}
+
 function startService(svc) {
   let cmd, cmdArgs;
   if (svc.command) {
@@ -351,11 +364,13 @@ function startService(svc) {
     ELLUL_DISABLE_SESSION_VAULT: "1",
   };
 
-  // Node 20 lacks node:sqlite — load polyfill if present
   const nodeMajor = parseInt(process.versions.node.split(".")[0], 10);
   if (svc.name === "agent-bridge" && nodeMajor < 22 && fs.existsSync("/usr/lib/node-sqlite-polyfill.js")) {
     env.NODE_OPTIONS = "--require /usr/lib/node-sqlite-polyfill.js";
   }
+
+  const health = getServiceHealth(svc.name);
+  health.startedAt = Date.now();
 
   log(`starting ${svc.name} on port ${svc.port}`);
   const child = spawn(cmd, cmdArgs, {
@@ -377,18 +392,42 @@ function startService(svc) {
   }
 
   child.on("exit", (code, signal) => {
-    log(`${svc.name} exited code=${code} signal=${signal}`);
+    const uptime = Date.now() - health.startedAt;
+    health.lastExitCode = code;
+    health.lastSignal = signal;
+    log(`${svc.name} exited code=${code} signal=${signal} uptime=${Math.round(uptime / 1000)}s`);
     children.delete(svc.name);
-    if (!shuttingDown) {
-      setTimeout(() => {
-        log(`restarting ${svc.name}`);
-        startService(svc);
-      }, 2000);
+
+    if (shuttingDown) return;
+
+    const now = Date.now();
+    health.restarts = health.restarts.filter((t) => now - t < RESTART_WINDOW_MS);
+    health.restarts.push(now);
+
+    if (health.restarts.length > MAX_RESTARTS_IN_WINDOW) {
+      health.stable = false;
+      log(`ERROR: ${svc.name} crash loop — ${health.restarts.length} restarts in ${RESTART_WINDOW_MS / 1000}s, stopping restarts`);
+      writeServiceEvent(svc.name, "crash_loop", { exitCode: code, signal, restartsInWindow: health.restarts.length });
+      return;
     }
+
+    const backoffIdx = Math.min(health.restarts.length - 1, BACKOFF_SCHEDULE.length - 1);
+    const delay = BACKOFF_SCHEDULE[backoffIdx];
+    log(`restarting ${svc.name} in ${delay}ms (attempt ${health.restarts.length}/${MAX_RESTARTS_IN_WINDOW})`);
+    setTimeout(() => startService(svc), delay);
   });
 
   children.set(svc.name, child);
   return child;
+}
+
+function writeServiceEvent(svcName, eventType, details) {
+  try {
+    const logDir = "/var/log/ellul";
+    fs.mkdirSync(logDir, { recursive: true });
+    const entry = JSON.stringify({ ts: new Date().toISOString(), svc: svcName, event: eventType, ...details }) + "\n";
+    fs.appendFileSync(path.join(logDir, "engine-events.jsonl"), entry);
+  } catch {}
 }
 
 function checkPort(port) {
@@ -488,8 +527,15 @@ function startConsoleProxy() {
     proxyReq.on("error", (err) => {
       log(`console-proxy error: ${err.message}`);
       if (!clientRes.headersSent) {
-        clientRes.writeHead(502, { "Content-Type": "text/plain" });
-        clientRes.end("Console proxy error: " + err.message);
+        clientRes.writeHead(502, { "Content-Type": "text/html; charset=utf-8" });
+        clientRes.end(`<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ellul.ai — Offline</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,-apple-system,sans-serif;background:#0a0a0a;color:#e8e5e0;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.card{max-width:400px;text-align:center}.title{font-size:20px;font-weight:600;margin-bottom:12px}.msg{font-size:14px;color:#a8a4a0;line-height:1.5;margin-bottom:20px}
+button{padding:10px 24px;border-radius:8px;border:none;background:#e8e5e0;color:#0a0a0a;font-size:14px;font-weight:600;cursor:pointer}button:active{opacity:.8}</style></head>
+<body><div class="card"><div class="title">Unable to connect</div><p class="msg">Cannot reach console.ellul.ai. Check your network connection and try again.</p>
+<button onclick="location.reload()">Retry</button></div></body></html>`);
       }
     });
     clientReq.pipe(proxyReq);
@@ -566,9 +612,28 @@ function handleRpc(method, params) {
     case "health": {
       const status = {};
       for (const [name, child] of children) {
-        status[name] = child && !child.killed;
+        const health = getServiceHealth(name);
+        status[name] = {
+          alive: child && !child.killed,
+          stable: health.stable,
+          restarts: health.restarts.length,
+          lastExitCode: health.lastExitCode,
+          uptimeMs: health.startedAt ? Date.now() - health.startedAt : 0,
+        };
       }
       return status;
+    }
+    case "health.reset": {
+      const name = params.service;
+      if (name && serviceHealth.has(name)) {
+        const health = getServiceHealth(name);
+        health.restarts = [];
+        health.stable = true;
+        const svc = SERVICES.find((s) => s.name === name);
+        if (svc && !children.has(name)) startService(svc);
+        return { ok: true, restarted: !!svc };
+      }
+      return { ok: false, error: "unknown service" };
     }
     default:
       throw new Error(`unknown method: ${method}`);
