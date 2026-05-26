@@ -45,7 +45,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: https: blob:",
       "font-src 'self' data: https://fonts.gstatic.com",
-      `connect-src 'self' https://api.${PLATFORM_DOMAIN} https://*.${PLATFORM_DOMAIN} wss://*.${PLATFORM_DOMAIN} https://*.${APP_DOMAIN} wss://*.${APP_DOMAIN} https://*.sslip.io wss://*.sslip.io${process.env.NODE_ENV !== "production" ? ` http://localhost ws://localhost http://localhost:7700 ws://localhost:7700 http://localhost:3002 ws://localhost:3002 ws://localhost:3000 http://localhost:3001${process.env.PROOT_PROXY_PORT ? ` http://localhost:${process.env.PROOT_PROXY_PORT} ws://localhost:${process.env.PROOT_PROXY_PORT}` : ""}` : ""}`,
+      `connect-src 'self' https://api.${PLATFORM_DOMAIN} https://*.${PLATFORM_DOMAIN} wss://*.${PLATFORM_DOMAIN} https://*.${APP_DOMAIN} wss://*.${APP_DOMAIN} https://*.sslip.io wss://*.sslip.io http://localhost:8443 ws://localhost:8443${process.env.NODE_ENV !== "production" ? ` http://localhost ws://localhost http://localhost:7700 ws://localhost:7700 http://localhost:3002 ws://localhost:3002 ws://localhost:3000 http://localhost:3001${process.env.PROOT_PROXY_PORT ? ` http://localhost:${process.env.PROOT_PROXY_PORT} ws://localhost:${process.env.PROOT_PROXY_PORT}` : ""}` : ""}`,
       `frame-src 'self' https://*.${PLATFORM_DOMAIN} https://*.${APP_DOMAIN} https://*.sslip.io http://localhost http://localhost:8443 http://localhost:4443${process.env.NEXT_PUBLIC_LIMA_PREVIEW_PORT ? ` http://localhost:${process.env.NEXT_PUBLIC_LIMA_PREVIEW_PORT}` : ""}`,
       "frame-ancestors 'self'",
       "base-uri 'self'",

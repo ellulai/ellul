@@ -200,21 +200,8 @@ if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) {{
   __inv('get_app_mode').then(function(c) {{
     if (c) window.__ELLUL_APP_CONFIG__ = c;
   }}).catch(function() {{}});
-  if (/Android/i.test(navigator.userAgent) && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {{
+  if (/Android/i.test(navigator.userAgent)) {{
     __inv('plugin:proot|proot_start').catch(function() {{}});
-    (function __prootPoll(n) {{
-      if (n > 60) return;
-      __inv('plugin:proot|proot_health').then(function(h) {{
-        var ok = h && h.length > 0 && h.every(function(s) {{ return s.healthy; }});
-        if (ok) {{
-          __inv('plugin:proot|proot_switch_to_local').catch(function() {{}});
-        }} else {{
-          setTimeout(function() {{ __prootPoll(n + 1); }}, 2000);
-        }}
-      }}).catch(function() {{
-        setTimeout(function() {{ __prootPoll(n + 1); }}, 2000);
-      }});
-    }})(0);
   }}
 }}
 (function() {{
