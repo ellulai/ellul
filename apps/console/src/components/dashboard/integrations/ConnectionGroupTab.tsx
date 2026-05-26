@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -250,18 +250,6 @@ export function ConnectionGroupTab({
   const [customAuthToken, setCustomAuthToken] = useState("");
   const [viewingToolsFor, setViewingToolsFor] = useState<string | null>(null);
   const [discoveredTools, setDiscoveredTools] = useState<Record<string, DiscoveredTool[]>>({});
-  const [waitingForOAuth, setWaitingForOAuth] = useState(false);
-
-  useEffect(() => {
-    const onReturn = () => {
-      if (waitingForOAuth && document.visibilityState === "visible") {
-        window.location.reload();
-      }
-    };
-    document.addEventListener("visibilitychange", onReturn);
-    return () => document.removeEventListener("visibilitychange", onReturn);
-  }, [waitingForOAuth]);
-
   const GroupIcon = ICON_MAP[group.iconKey] ?? Terminal;
   const isRoleGroup = !!group.routeRole;
 
@@ -453,17 +441,14 @@ export function ConnectionGroupTab({
       if (isLocalhost()) {
         const params = new URLSearchParams({
           groupId: group.id,
-          return_origin: "https://console.ellul.ai",
+          return_origin: "http://localhost:8443",
           return_path: window.location.pathname + window.location.search,
         });
         const url = `${API_URL}${connectPath}?${params.toString()}`;
-        const authUrl = `${API_URL}/api/auth/native/start?provider=google&chain_redirect=${encodeURIComponent(url)}`;
+        const authUrl = `${API_URL}/api/auth/native/start?provider=google&chain_redirect=${encodeURIComponent(url)}&deep_link=1`;
         const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
         if (invoke) {
-          setWaitingForOAuth(true);
-          invoke("open_external", { url: authUrl }).catch(() => {
-            window.location.href = authUrl;
-          });
+          invoke("open_external", { url: authUrl }).catch(() => {});
           return;
         }
         window.location.href = authUrl;

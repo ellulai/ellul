@@ -2,7 +2,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { ExternalLink, Loader2 } from "lucide-react";
 import { API_URL } from "@/lib/api";
 import { isTauriApp } from "@/lib/utils";
@@ -74,17 +74,6 @@ export function ProviderCard({ provider, available, onBeforeConnect, appDirector
   const info = PROVIDER_INFO[provider];
   const [authenticating, setAuthenticating] = useState(false);
 
-  const handleReturn = useCallback(() => {
-    if (authenticating && document.visibilityState === "visible") {
-      window.location.reload();
-    }
-  }, [authenticating]);
-
-  useEffect(() => {
-    document.addEventListener("visibilitychange", handleReturn);
-    return () => document.removeEventListener("visibilitychange", handleReturn);
-  }, [handleReturn]);
-
   const handleConnect = async () => {
     onBeforeConnect?.();
     const params = new URLSearchParams();
@@ -92,15 +81,12 @@ export function ProviderCard({ provider, available, onBeforeConnect, appDirector
     params.set('return_path', window.location.pathname + window.location.search);
 
     if (isLocalhost()) {
-      params.set('return_origin', 'https://console.ellul.ai');
+      params.set('return_origin', 'http://localhost:8443');
       const url = `${API_URL}/api/git/connect/${provider}?${params.toString()}`;
-      const authUrl = `${API_URL}/api/auth/native/start?provider=google&chain_redirect=${encodeURIComponent(url)}`;
+      const authUrl = `${API_URL}/api/auth/native/start?provider=google&chain_redirect=${encodeURIComponent(url)}&deep_link=1`;
       const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
       if (invoke) {
-        setAuthenticating(true);
-        invoke("open_external", { url: authUrl }).catch(() => {
-          window.location.href = authUrl;
-        });
+        invoke("open_external", { url: authUrl }).catch(() => {});
         return;
       }
       window.location.href = authUrl;
