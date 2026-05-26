@@ -9690,6 +9690,208 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         };
     };
 }, "/api/admin/adapter-versions"> | import("hono/types").MergeSchemaPath<{
+    "/commission-token": {
+        $post: {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 403;
+        } | {
+            input: {};
+            output: {
+                token: string;
+                expiresAt: string;
+            };
+            outputFormat: "json";
+            status: 201;
+        };
+    };
+} & {
+    "/register": {
+        $post: {
+            input: {
+                json: {
+                    providerRegion: string;
+                    totalRamMb: number;
+                    totalCpuMillis: number;
+                    incusApiUrl: string;
+                    hostname: string;
+                    publicIp: string;
+                    incusVersion: string;
+                    clientCertB64: string;
+                    clientKeyB64: string;
+                    serverType?: string | undefined;
+                    maxSandboxes?: number | undefined;
+                    labels?: Record<string, string> | undefined;
+                    serverCaB64?: string | undefined;
+                };
+            };
+            output: {
+                hostId: string;
+                status: string;
+            };
+            outputFormat: "json";
+            status: 200;
+        } | {
+            input: {
+                json: {
+                    providerRegion: string;
+                    totalRamMb: number;
+                    totalCpuMillis: number;
+                    incusApiUrl: string;
+                    hostname: string;
+                    publicIp: string;
+                    incusVersion: string;
+                    clientCertB64: string;
+                    clientKeyB64: string;
+                    serverType?: string | undefined;
+                    maxSandboxes?: number | undefined;
+                    labels?: Record<string, string> | undefined;
+                    serverCaB64?: string | undefined;
+                };
+            };
+            output: {
+                hostId: string;
+                status: string;
+                platformZone: string;
+                appZone: string;
+            };
+            outputFormat: "json";
+            status: 201;
+        };
+    };
+} & {
+    "/:id/activate": {
+        $post: {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                hostId: string;
+                status: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/:id/drain": {
+        $post: {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 403;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                hostId: string;
+                status: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/:id/decommission": {
+        $post: {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 403;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                hostId: string;
+                status: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/:id/heartbeat": {
+        $post: {
+            input: {
+                param: {
+                    id: string;
+                };
+            };
+            output: {
+                ok: true;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/": {
+        $get: {
+            input: {};
+            output: {
+                hosts: any;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+}, "/api/admin/hosts"> | import("hono/types").MergeSchemaPath<{
     "/custom-domains": {
         $get: {
             input: {};
@@ -9865,7 +10067,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
     };
-}, "/api/admin"> | import("hono/types").MergeSchemaPath<{
+}, "/api/admin"> | import("hono/types").MergeSchemaPath<import("hono/types").BlankSchema, "/api/admin/capacity"> | import("hono/types").MergeSchemaPath<{
     "/:shortId": {
         $post: {
             input: {

@@ -98,6 +98,37 @@ class ProotManager(private val context: Context) {
         logDir.mkdirs()
         File(appDir, "tmp").mkdirs()
 
+        // Vault subdirs that proot's mkdirat can't create through bind mounts
+        val vaultSubdirs = listOf(
+            "etc/ellul/agent-bridge",
+            "etc/ellul/shield-data",
+            "etc/ellul/secrets",
+            "etc/caddy/agents.d",
+            "etc/caddy/app-routes.d",
+            "var/log/ellul",
+            "var/log/caddy",
+            "var/lib/ellul-shielded/guardrail-rules/global",
+            "var/lib/ellul-shielded/shield-data",
+            "var/lib/postgresql",
+            "run/shield",
+        )
+        for (sub in vaultSubdirs) {
+            File(vaultDir, sub).mkdirs()
+        }
+
+        // Rootfs dirs that need to exist before proot starts
+        val rootfsDirs = listOf(
+            "home/dev/.local/share",
+            "home/dev/.cache/opencode-bun",
+            "home/dev/.ellul",
+            "run/caddy",
+            "tmp",
+            "etc/ellul-bootstrap",
+        )
+        for (sub in rootfsDirs) {
+            File(rootfsDir, sub).mkdirs()
+        }
+
         ShieldVaultKeyStore.writeToVault(context, vaultDir)
         linkGlobalNodeModules()
 

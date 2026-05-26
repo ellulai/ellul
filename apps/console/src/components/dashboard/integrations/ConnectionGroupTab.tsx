@@ -37,7 +37,6 @@ import {
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { API_URL } from "@/lib/api";
-import { isLocalhost, hasCloudSession, cloudAuthThenRedirect, hasPendingConnect } from "@/lib/cloud-auth";
 import { toast } from "sonner";
 import type {
   IntegrationGroup,
@@ -444,16 +443,6 @@ export function ConnectionGroupTab({
         return_path: window.location.pathname + window.location.search,
       });
       const url = `${API_URL}${connectPath}?${params.toString()}`;
-
-      if (isLocalhost()) {
-        const authed = await hasCloudSession();
-        if (authed) {
-          window.location.href = url;
-          return;
-        }
-        await cloudAuthThenRedirect(url);
-        return;
-      }
 
       window.location.href = url;
     },

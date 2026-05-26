@@ -2,11 +2,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ExternalLink, Loader2 } from "lucide-react";
 import { API_URL } from "@/lib/api";
 import { isTauriApp } from "@/lib/utils";
-import { isLocalhost, hasCloudSession, cloudAuthThenRedirect, hasPendingConnect } from "@/lib/cloud-auth";
+import { isLocalhost } from "@/lib/cloud-auth";
 
 type GitProvider = "github" | "gitlab" | "bitbucket";
 
@@ -74,12 +74,6 @@ export function ProviderCard({ provider, available, onBeforeConnect, appDirector
   const info = PROVIDER_INFO[provider];
   const [authenticating, setAuthenticating] = useState(false);
 
-  useEffect(() => {
-    if (!isLocalhost()) return;
-    const pending = hasPendingConnect();
-    if (pending) window.location.href = pending.url;
-  }, []);
-
   const handleConnect = async () => {
     onBeforeConnect?.();
     const params = new URLSearchParams();
@@ -89,14 +83,7 @@ export function ProviderCard({ provider, available, onBeforeConnect, appDirector
     const url = `${API_URL}/api/git/connect/${provider}?${params.toString()}`;
 
     if (isLocalhost()) {
-      setAuthenticating(true);
-      const authed = await hasCloudSession();
-      if (authed) {
-        window.location.href = url;
-        return;
-      }
-      await cloudAuthThenRedirect(url);
-      setAuthenticating(false);
+      window.location.href = url;
       return;
     }
 

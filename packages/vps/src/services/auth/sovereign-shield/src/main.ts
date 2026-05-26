@@ -64,17 +64,23 @@ import { initDebugLog, dbg } from './application/audit/DebugLog';
 
 initDebugLog();
 
-// On Android, the engine pipes the vault encryption key via stdin before
-// closing the write end. Read synchronously before any route handler
-// triggers loadAuthSecrets(). On VPS this is a no-op (stdin is /dev/null).
+// On Android, the engine passes the vault encryption key via env var (preferred,
+// avoids piped stdin which forces fork() in libuv) or stdin fallback.
 if (process.env.ELLUL_PLATFORM === 'android') {
-  try {
-    const key = fs.readFileSync(0, 'utf8').trim();
-    if (/^[0-9a-f]{64}$/.test(key)) {
-      setVaultKey(key);
-      console.log('[shield] Vault encryption key loaded from engine');
-    }
-  } catch {}
+  const envKey = process.env.ELLUL_VAULT_KEY;
+  if (envKey && /^[0-9a-f]{64}$/.test(envKey)) {
+    setVaultKey(envKey);
+    delete process.env.ELLUL_VAULT_KEY;
+    console.log('[shield] Vault encryption key loaded from env');
+  } else {
+    try {
+      const key = fs.readFileSync(0, 'utf8').trim();
+      if (/^[0-9a-f]{64}$/.test(key)) {
+        setVaultKey(key);
+        console.log('[shield] Vault encryption key loaded from stdin');
+      }
+    } catch {}
+  }
 }
 
 // Read domain from file or use default

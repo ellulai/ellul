@@ -37,6 +37,7 @@ const ENSURE_DIRS = [
   "/home/dev/.cache/opencode-bun",
 ];
 
+
 const CADDY_BIN = "/usr/local/bin/caddy";
 const CADDYFILE_PATH = path.join(VAULT, "etc/caddy/Caddyfile");
 const CADDY_DIRS = [
@@ -428,26 +429,33 @@ function startService(svc) {
   const health = getServiceHealth(svc.name);
   health.startedAt = Date.now();
 
-  log(`starting ${svc.name} on port ${svc.port}`);
-  const child = spawn(cmd, cmdArgs, {
-    env,
-    stdio: svc.pipeVaultKey ? ["pipe", "inherit", "inherit"] : ["ignore", "inherit", "inherit"],
-    // No cwd option — Android's seccomp-bpf filter (inherited from zygote) blocks
-    // fork(), which libuv falls back to when cwd is set (posix_spawn can't chdir
-    // without glibc's posix_spawn_file_actions_addchdir_np). Engine chdir's at startup.
-  });
-
   if (svc.pipeVaultKey) {
     const vaultKey = readVaultKey();
     if (vaultKey) {
-      child.stdin.write(vaultKey + "\n");
-      child.stdin.end();
-      log(`${svc.name}: vault key piped`);
-    } else {
-      child.stdin.end();
-      log(`${svc.name}: WARNING no vault key found`);
+      env.ELLUL_VAULT_KEY = vaultKey;
+      log(`${svc.name}: vault key via env`);
     }
   }
+
+  log(`starting ${svc.name} on port ${svc.port}`);
+  let child;
+  try {
+    child = spawn(cmd, cmdArgs, {
+      env,
+      stdio: "inherit",
+      // No cwd option — Android's seccomp-bpf filter (inherited from zygote) blocks
+      // fork(), which libuv falls back to when cwd is set (posix_spawn can't chdir
+      // without glibc's posix_spawn_file_actions_addchdir_np). Engine chdir's at startup.
+      // stdio must be "inherit" (not mixed pipe/inherit) to guarantee posix_spawn path.
+    });
+  } catch (e) {
+    log(`ERROR: ${svc.name} spawn failed: ${e.message}`);
+    return null;
+  }
+
+  child.on("error", (err) => {
+    log(`ERROR: ${svc.name} spawn error: ${err.message}`);
+  });
 
   child.on("exit", (code, signal) => {
     const uptime = Date.now() - health.startedAt;
@@ -656,7 +664,16 @@ function ensureOpencodeWrapper() {
   log("cli: wrote opencode wrapper");
 }
 
+function canExecSync() {
+  try { execSyncRaw("true", { stdio: "pipe", timeout: 3000 }); return true; } catch { return false; }
+}
+
 function ensureCliTools() {
+  if (!canExecSync()) {
+    log("cli: execSync unavailable (fork blocked), skipping tool install");
+    ensureOpencodeWrapper();
+    return;
+  }
   const tools = [
     {
       name: "opencode",
@@ -839,13 +856,43 @@ function handleRpc(method, params) {
   }
 }
 
+async function killStaleListeners() {
+  const ports = SERVICES.map((s) => s.port).concat([CONSOLE_PROXY_PORT, RPC_PORT]);
+  const inUse = [];
+  for (const port of ports) {
+    if (await checkPort(port)) inUse.push(port);
+  }
+  if (inUse.length === 0) return;
+  log(`stale listeners on ports: ${inUse.join(", ")}`);
+  try {
+    const pids = fs.readdirSync("/proc")
+      .filter((e) => /^\d+$/.test(e))
+      .map(Number)
+      .filter((p) => p !== process.pid);
+    for (const pid of pids) {
+      try { process.kill(pid, "SIGTERM"); } catch {}
+    }
+    log(`sent SIGTERM to ${pids.length} processes`);
+  } catch {}
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    let stillBlocked = false;
+    for (const port of inUse) {
+      if (await checkPort(port)) { stillBlocked = true; break; }
+    }
+    if (!stillBlocked) { log("stale listeners cleared"); return; }
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  log("WARN: some stale listeners remain");
+}
+
 async function main() {
   log(`Starting ellul-engine-android on ${process.arch}`);
   log(`User: uid=${process.getuid()} gid=${process.getgid()}`);
 
   setupFilesystem();
-  ensureCliTools();
   prepareCliTools();
+  await killStaleListeners();
   startConsoleProxy();
 
   for (const svc of SERVICES) {
@@ -863,9 +910,22 @@ async function main() {
 
   startRpcServer();
 
+  // CLI tools are not critical for service startup — install in background.
+  // execSync uses fork() which may ENOSYS on Android; failures are non-fatal.
+  setTimeout(() => {
+    try { ensureCliTools(); } catch (e) { log(`cli install failed: ${e.message}`); }
+  }, 5000);
+
   // Keep alive
   setInterval(() => {}, 60000);
 }
+
+process.on("uncaughtException", (err) => {
+  log(`uncaught: ${err.message}`);
+});
+process.on("unhandledRejection", (reason) => {
+  log(`unhandled rejection: ${reason}`);
+});
 
 main().catch((e) => {
   log(`fatal: ${e.message}`);
