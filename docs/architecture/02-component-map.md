@@ -29,8 +29,8 @@ Most engineering changes live in `apps/api/` (the control plane) and `apps/conso
 | `providers/security/` | Provider firewall profiles. |
 | `routes/` | Hono routes. `v1/`, `byos/`, `paperclip/`, `admin/`, `webhooks/`, `servers/`, `git/`, etc. |
 | `services/` | Business logic (server-state, gateway-kv, gateway-hostname, agent-manifest, billing). |
-| `engines/` | Server lifecycle engines: `ephemeral/` (hibernate/wake), `persistent/`, `daytona/` (sandbox), `shared/`. |
-| `orchestration/daytona/` | Daytona orchestration boundary: SDK client, provisioner (rate-guarded), scheduler (bin-pack), sandbox DB ops. |
+| `engines/` | Server lifecycle engines: `ephemeral/` (hibernate/wake), `persistent/`, `incus/` (sandbox), `shared/`. |
+| `orchestration/incus/` | Incus orchestration boundary: REST client (TLS mutual auth), provisioner (rate-guarded), scheduler (bin-pack), warm pool, instance DB ops. |
 | `bridges/` | Terminal and protocol bridges. |
 | `cron/` | Background jobs: idle-manager, gateway-reconciler, cpu-monitor, bandwidth-monitor. |
 | `security/` | Auth, JWT, middleware, threat detection, audit, attestation, guards. |

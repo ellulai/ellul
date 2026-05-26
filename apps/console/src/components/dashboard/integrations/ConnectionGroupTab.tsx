@@ -37,6 +37,7 @@ import {
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { API_URL } from "@/lib/api";
+import { isLocalhost, hasCloudSession, cloudAuthThenRedirect, hasPendingConnect } from "@/lib/cloud-auth";
 import { toast } from "sonner";
 import type {
   IntegrationGroup,
@@ -428,15 +429,13 @@ export function ConnectionGroupTab({
   );
 
   const handleProviderClick = useCallback(
-    (provider: string) => {
-      // Route to the correct OAuth connect endpoint per provider type
+    async (provider: string) => {
       let connectPath: string;
       if (["github", "gitlab", "bitbucket"].includes(provider)) {
         connectPath = `/api/git/connect/${provider}`;
       } else if (provider === "cloudflare-workers") {
         connectPath = `/api/integrations/cloudflare/connect`;
       } else {
-        // vercel, supabase, neon, etc.
         connectPath = `/api/integrations/connect/${provider}`;
       }
       const params = new URLSearchParams({
@@ -444,7 +443,19 @@ export function ConnectionGroupTab({
         return_origin: window.location.origin,
         return_path: window.location.pathname + window.location.search,
       });
-      window.location.href = `${API_URL}${connectPath}?${params.toString()}`;
+      const url = `${API_URL}${connectPath}?${params.toString()}`;
+
+      if (isLocalhost()) {
+        const authed = await hasCloudSession();
+        if (authed) {
+          window.location.href = url;
+          return;
+        }
+        await cloudAuthThenRedirect(url);
+        return;
+      }
+
+      window.location.href = url;
     },
     [group.id],
   );

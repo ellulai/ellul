@@ -2,9 +2,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { ExternalLink } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ExternalLink, Loader2 } from "lucide-react";
 import { API_URL } from "@/lib/api";
 import { isTauriApp } from "@/lib/utils";
+import { isLocalhost, hasCloudSession, cloudAuthThenRedirect, hasPendingConnect } from "@/lib/cloud-auth";
 
 type GitProvider = "github" | "gitlab" | "bitbucket";
 
@@ -70,14 +72,34 @@ function ProviderLogo({ provider, className }: { provider: GitProvider; classNam
 export function ProviderCard({ provider, available, onBeforeConnect, appDirectory }: ProviderCardProps) {
   const t = useTranslations("console.git.providerCard");
   const info = PROVIDER_INFO[provider];
+  const [authenticating, setAuthenticating] = useState(false);
 
-  const handleConnect = () => {
+  useEffect(() => {
+    if (!isLocalhost()) return;
+    const pending = hasPendingConnect();
+    if (pending) window.location.href = pending.url;
+  }, []);
+
+  const handleConnect = async () => {
     onBeforeConnect?.();
     const params = new URLSearchParams();
     if (appDirectory) params.set('app', appDirectory);
     params.set('return_origin', window.location.origin);
     params.set('return_path', window.location.pathname + window.location.search);
     const url = `${API_URL}/api/git/connect/${provider}?${params.toString()}`;
+
+    if (isLocalhost()) {
+      setAuthenticating(true);
+      const authed = await hasCloudSession();
+      if (authed) {
+        window.location.href = url;
+        return;
+      }
+      await cloudAuthThenRedirect(url);
+      setAuthenticating(false);
+      return;
+    }
+
     if (isTauriApp()) {
       const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
       if (invoke) {
@@ -106,10 +128,11 @@ export function ProviderCard({ provider, available, onBeforeConnect, appDirector
       {available ? (
         <button
           onClick={handleConnect}
-          className="shrink-0 px-3 py-1 text-xs font-medium text-cream/75 bg-cream/[0.06] hover:bg-cream/[0.1] border border-cream/[0.08] rounded-md transition-colors flex items-center gap-1.5"
+          disabled={authenticating}
+          className="shrink-0 px-3 py-1 text-xs font-medium text-cream/75 bg-cream/[0.06] hover:bg-cream/[0.1] border border-cream/[0.08] rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50"
         >
-          {t("connect")}
-          <ExternalLink className="h-3 w-3 text-cream/45" />
+          {authenticating ? <Loader2 className="h-3 w-3 animate-spin" /> : t("connect")}
+          {!authenticating && <ExternalLink className="h-3 w-3 text-cream/45" />}
         </button>
       ) : (
         <span className="shrink-0 px-3 py-1 text-xs text-cream/35 border border-cream/[0.04] rounded-md">

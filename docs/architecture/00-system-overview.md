@@ -22,13 +22,13 @@ The single-tenant Linux machine. Runs the customer's code, AI agent, and all enf
 
 Critical property: **VPS does not trust API responses.** Heartbeat responses are discarded; commands flow as separately-signed envelopes through a queue, validated locally with ML-DSA-65.
 
-### 3b. Sandbox plane (Daytona orchestration layer)
+### 3b. Sandbox plane (Incus orchestration layer)
 
-An alternative runtime: Kata micro-VM sandboxes on dedicated bare-metal. Same service stack as VPS (Caddy, Shield, file-api, agent-bridge, enforcer), but provisioned in <5s via Daytona SDK instead of 2-5 min via cloud-init.
+An alternative runtime: QEMU/KVM virtual machines on dedicated bare-metal via Incus. Same service stack as VPS (Caddy, Shield, file-api, agent-bridge, enforcer), but provisioned in ~100ms from warm pool (or ~60s cold) via Incus REST API with TLS mutual auth.
 
-The sandbox plane adds one new layer: **compute hosts** (dedicated bare-metal) running a route-manager daemon that does L4 SNI routing to individual sandboxes. Host never sees plaintext — raw TCP passthrough.
+The sandbox plane adds one new layer: **compute hosts** (dedicated bare-metal) running a route-manager daemon that does L4 SNI routing to individual VMs. Host never sees plaintext — raw TCP passthrough.
 
-See [../daytona/00-overview.md](../daytona/00-overview.md).
+See [../incus/00-overview.md](../incus/00-overview.md).
 
 ## How a request flows
 

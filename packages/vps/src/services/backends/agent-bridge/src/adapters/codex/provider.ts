@@ -43,6 +43,7 @@ import type { ServerProviderShape } from "../../shared/ServerProvider";
 import { expandHomePath } from "../../shared/pathExpansion";
 import { ServerSettingsService, ServerSettingsError, type CodexSettings } from "../../shared/serverSettings";
 import { logEvent } from "../../shared/event-log";
+import { safeCwd } from "../../shared/config";
 
 const PROVIDER = "codex" as const;
 const PROVIDER_PROBE_TIMEOUT_MS = 8_000;
@@ -465,7 +466,7 @@ export const checkCodexProviderStatus = Effect.fn("checkCodexProviderStatus")(fu
   const probeResult = yield* probe({
     binaryPath: codexSettings.binaryPath,
     ...(codexSettings.homePath ? { homePath: codexSettings.homePath } : {}),
-    cwd: process.cwd(),
+    cwd: safeCwd(),
     customModels: codexSettings.customModels,
   }).pipe(Effect.timeoutOption(Duration.millis(PROVIDER_PROBE_TIMEOUT_MS)), Effect.result);
 

@@ -25,43 +25,83 @@
       ]
     },
     "hero": {
-      "eyebrow": "Ellul Cloud",
-      "headlineLine1": "あなたのエージェントの、",
-      "headlineLine2": "コンピューター。",
-      "subhead": "AIエージェントのための、常時稼働するワークステーション。夜通し動き続け、ノートPCがスリープしている間も作業を進めます。エージェントのチームを並列に動かし、協調させます。",
-      "bringAgent": "好きなエージェントを",
-      "ctaPrimary": "ワークステーションを取得",
-      "ctaSecondary": "夜のうちに何が出荷されたかを見る",
-      "stats": {
-        "runValue": "8時間",
-        "runLabel": "無人実行",
-        "parallelValue": "3+",
-        "parallelLabel": "並列エージェント数",
-        "credsValue": "0",
-        "credsLabel": "ノートPC上の認証情報"
+      "tabs": {
+        "android": "ローカル",
+        "cloud": "クラウド"
       },
-      "nightLog": {
-        "eyebrow": "昨夜、あなたのワークステーションで",
-        "timestamp": "07:30 · 火",
-        "entries": {
-          "branchStart": "branch start: fix/race-condition-checkout",
-          "wroteTests": "Webhookハンドラに対して失敗するテストを3本書いた",
-          "addedIdempotency": "/api/orders に冪等性キーを追加した",
-          "testsGreen": "テストが通った (47 passed, 0 failed)",
-          "regenSchema": "/api/orders から openapi.json を再生成した",
-          "gitPush": "git push origin fix/race-condition-checkout",
-          "openedPr": "PR #847 を main に向けて開いた",
-          "waiting": "マージのためにあなたのpasskeyを待っています"
+      "android": {
+        "eyebrow": "Androidで無料",
+        "headlineLine1": "スマホで",
+        "headlineLine2": "コーディング。",
+        "subhead": "Androidデバイスでフル開発環境を。ノートPC不要。クレジットカード不要。GitHub、ライブプレビュー、ターミナル、AIエージェント — すべてポケットの中に。",
+        "ctaPrimary": "アプリを入手",
+        "ctaSecondary": "クラウドを試す",
+        "features": {
+          "noLaptop": {
+            "title": "ノートPC不要",
+            "body": "Androidデバイスで動作するフルLinux開発環境。"
+          },
+          "free": {
+            "title": "完全無料",
+            "body": "クレジットカード不要。トライアルなし。使用制限なし。"
+          },
+          "github": {
+            "title": "GitHub内蔵",
+            "body": "プッシュ、プル、PR作成。スマホからフルgitワークフロー。"
+          },
+          "previews": {
+            "title": "ライブプレビュー",
+            "body": "すべてのdevサーバーにURLが付きます。ビルド中のものをすぐに確認。"
+          },
+          "codeBrowser": {
+            "title": "コードブラウザ",
+            "body": "シンタックスハイライト付きでコードベース全体を閲覧、検索、編集。"
+          },
+          "terminal": {
+            "title": "本物のターミナル",
+            "body": "Bash、Node、Python、Bun — エミュレーターではなく本物のシェル。"
+          }
+        }
+      },
+      "cloud": {
+        "eyebrow": "Ellul Cloud",
+        "headlineLine1": "あなたのエージェントの、",
+        "headlineLine2": "コンピューター。",
+        "subhead": "AIエージェントのための、常時稼働するワークステーション。夜通し動き続け、ノートPCがスリープしている間も作業を進めます。エージェントのチームを並列に動かし、協調させます。",
+        "bringAgent": "好きなエージェントを",
+        "ctaPrimary": "ワークステーションを取得",
+        "ctaSecondary": "夜のうちに何が出荷されたかを見る",
+        "stats": {
+          "runValue": "8時間",
+          "runLabel": "無人実行",
+          "parallelValue": "3+",
+          "parallelLabel": "並列エージェント数",
+          "credsValue": "0",
+          "credsLabel": "ノートPC上の認証情報"
         },
-        "agentLabels": {
-          "checkout": "checkout",
-          "docs": "docs",
-          "ellul": "ellul"
-        },
-        "prTitle": "PR #847 はマージ準備完了です",
-        "prSub": "fix/race-condition-checkout · +127 −44 · 47 tests",
-        "prCta": "Passkeyをタップ",
-        "footnote": "ノートPCは23:42からずっと閉じたままです。"
+        "nightLog": {
+          "eyebrow": "昨夜、あなたのワークステーションで",
+          "timestamp": "07:30 · 火",
+          "entries": {
+            "branchStart": "branch start: fix/race-condition-checkout",
+            "wroteTests": "Webhookハンドラに対して失敗するテストを3本書いた",
+            "addedIdempotency": "/api/orders に冪等性キーを追加した",
+            "testsGreen": "テストが通った (47 passed, 0 failed)",
+            "regenSchema": "/api/orders から openapi.json を再生成した",
+            "gitPush": "git push origin fix/race-condition-checkout",
+            "openedPr": "PR #847 を main に向けて開いた",
+            "waiting": "マージのためにあなたのpasskeyを待っています"
+          },
+          "agentLabels": {
+            "checkout": "checkout",
+            "docs": "docs",
+            "ellul": "ellul"
+          },
+          "prTitle": "PR #847 はマージ準備完了です",
+          "prSub": "fix/race-condition-checkout · +127 −44 · 47 tests",
+          "prCta": "Passkeyをタップ",
+          "footnote": "ノートPCは23:42からずっと閉じたままです。"
+        }
       }
     },
     "highlights": {

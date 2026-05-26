@@ -1269,7 +1269,7 @@ function SecretsUI({
                 <Input
                   placeholder={t("keyPlaceholder")}
                   value={variable.key}
-                  onChange={(e) => updateCustomVariable(variable.id, "key", e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ""))}
+                  onChange={(e) => updateCustomVariable(variable.id, "key", e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
                   autoComplete="new-password"
                   data-1p-ignore
                   data-lpignore="true"

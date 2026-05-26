@@ -8,9 +8,11 @@ import * as path from 'path';
 import * as net from 'net';
 import * as os from 'os';
 import { spawn as cpSpawn, type ChildProcess } from 'child_process';
-import { getAppPath } from '../../config';
+import { getAppPath, HOME } from '../../config';
 import { readSpec } from '@vps/shared/preview-spec';
 import type { PreviewPlatform, UnitStatus, UnitResult, FailedUnit, FrameworkDropinOpts } from './PreviewPlatform';
+
+const PORT_REGISTRY_FILE = `${HOME}/.ellul/preview-ports.json`;
 
 // ── Logging ──────────────────────────────────────────────────────────
 
@@ -83,6 +85,34 @@ function isPortListening(port: number): Promise<boolean> {
   });
 }
 
+// ── Port registry reader (same file Preview.ts writes) ─────────────
+
+function readPortFromRegistry(appDir: string): number | null {
+  try {
+    const reg = JSON.parse(fs.readFileSync(PORT_REGISTRY_FILE, 'utf8'));
+    const port = reg[appDir];
+    return typeof port === 'number' && port > 0 ? port : null;
+  } catch { return null; }
+}
+
+// ── Synchronous port check via /proc/net/tcp ────────────────────────
+
+function isPortListeningSync(port: number): boolean {
+  try {
+    const hex = port.toString(16).toUpperCase().padStart(4, '0');
+    const data = fs.readFileSync('/proc/net/tcp', 'utf8');
+    for (const line of data.split('\n')) {
+      const cols = line.trim().split(/\s+/);
+      if (cols.length < 4) continue;
+      const [, localAddr, , state] = cols;
+      if (state !== '0A') continue; // 0A = LISTEN
+      const addrPort = localAddr!.split(':')[1];
+      if (addrPort === hex) return true;
+    }
+  } catch {}
+  return false;
+}
+
 // ── Network interfaces shim (Vite crashes without it in proot) ───────
 
 const NET_SHIM_PATH = '/tmp/.ellul-net-shim.js';
@@ -130,9 +160,8 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
   }
 
   private async adoptSurvivors(): Promise<void> {
-    const regPath = path.join(process.env.HOME || '/home/dev', '.ellul', 'port-registry.json');
     try {
-      const reg = JSON.parse(fs.readFileSync(regPath, 'utf8')) as Record<string, number>;
+      const reg = JSON.parse(fs.readFileSync(PORT_REGISTRY_FILE, 'utf8')) as Record<string, number>;
       for (const [dir, port] of Object.entries(reg)) {
         if (typeof port !== 'number' || port <= 0) continue;
         if (await isPortListening(port)) {
@@ -167,10 +196,9 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
       return { ok: false, error: `App path not found: ${appPath}` };
     }
 
-    const portRegistryPath = path.join(process.env.HOME || '/home/dev', '.ellul', 'port-registry.json');
     let port = 4000;
     try {
-      const reg = JSON.parse(fs.readFileSync(portRegistryPath, 'utf8'));
+      const reg = JSON.parse(fs.readFileSync(PORT_REGISTRY_FILE, 'utf8'));
       if (reg[appDir]) port = reg[appDir];
     } catch {}
 
@@ -269,35 +297,48 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
     if (tracked) return !tracked.child.killed && tracked.child.exitCode === null;
     const adopted = adoptedPorts.get(appDir);
     if (adopted) return isPortListening(adopted);
+    const registryPort = readPortFromRegistry(appDir);
+    if (registryPort && await isPortListening(registryPort)) {
+      adoptedPorts.set(appDir, registryPort);
+      return true;
+    }
     return false;
   }
 
   async unitStatus(appDir: string): Promise<UnitStatus> {
     await this.adoptionReady;
     const tracked = processes.get(appDir);
-    if (!tracked) {
-      const adopted = adoptedPorts.get(appDir);
-      if (adopted && await isPortListening(adopted)) {
-        return { ActiveState: 'active', SubState: 'running', Result: 'success', ExecMainStatus: '0', ActiveEnterTimestampMonotonic: 0 };
+    if (tracked) {
+      const alive = !tracked.child.killed && tracked.child.exitCode === null;
+      if (alive) {
+        const portBound = await isPortListening(tracked.port);
+        return {
+          ActiveState: portBound ? 'active' : 'activating',
+          SubState: portBound ? 'running' : 'start',
+          Result: 'success',
+          ExecMainStatus: '0',
+          ActiveEnterTimestampMonotonic: 0,
+        };
       }
-      if (adopted) adoptedPorts.delete(appDir);
-      return { ActiveState: 'inactive', SubState: 'dead', Result: 'success', ExecMainStatus: '0', ActiveEnterTimestampMonotonic: 0 };
+      const code = tracked.child.exitCode;
+      if (code !== null && code !== 0) {
+        return { ActiveState: 'failed', SubState: 'failed', Result: 'exit-code', ExecMainStatus: String(code), ActiveEnterTimestampMonotonic: 0 };
+      }
     }
-    const alive = !tracked.child.killed && tracked.child.exitCode === null;
-    if (alive) {
-      const portBound = await isPortListening(tracked.port);
-      return {
-        ActiveState: portBound ? 'active' : 'activating',
-        SubState: portBound ? 'running' : 'start',
-        Result: 'success',
-        ExecMainStatus: '0',
-        ActiveEnterTimestampMonotonic: 0,
-      };
+
+    const adopted = adoptedPorts.get(appDir);
+    if (adopted && await isPortListening(adopted)) {
+      return { ActiveState: 'active', SubState: 'running', Result: 'success', ExecMainStatus: '0', ActiveEnterTimestampMonotonic: 0 };
     }
-    const code = tracked.child.exitCode;
-    if (code !== null && code !== 0) {
-      return { ActiveState: 'failed', SubState: 'failed', Result: 'exit-code', ExecMainStatus: String(code), ActiveEnterTimestampMonotonic: 0 };
+    if (adopted) adoptedPorts.delete(appDir);
+
+    const registryPort = readPortFromRegistry(appDir);
+    if (registryPort && await isPortListening(registryPort)) {
+      adoptedPorts.set(appDir, registryPort);
+      log('info', 'android: late-adopted process via port probe', { appDirectory: appDir, port: registryPort });
+      return { ActiveState: 'active', SubState: 'running', Result: 'success', ExecMainStatus: '0', ActiveEnterTimestampMonotonic: 0 };
     }
+
     return { ActiveState: 'inactive', SubState: 'dead', Result: 'success', ExecMainStatus: '0', ActiveEnterTimestampMonotonic: 0 };
   }
 
@@ -311,6 +352,16 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
       if (await isPortListening(port)) active.add(d);
       else adoptedPorts.delete(d);
     }
+    try {
+      const reg = JSON.parse(fs.readFileSync(PORT_REGISTRY_FILE, 'utf8')) as Record<string, number>;
+      for (const [dir, port] of Object.entries(reg)) {
+        if (active.has(dir) || typeof port !== 'number' || port <= 0) continue;
+        if (await isPortListening(port)) {
+          adoptedPorts.set(dir, port);
+          active.add(dir);
+        }
+      }
+    } catch {}
     return [...active];
   }
 
@@ -331,7 +382,7 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
     for (const [, adoptedPort] of adoptedPorts) {
       if (adoptedPort === port) return -1;
     }
-    return null;
+    return isPortListeningSync(port) ? -1 : null;
   }
 
   countEstablishedConnections(_port: number): number {

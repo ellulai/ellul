@@ -30,14 +30,14 @@ Where state lives, who owns it, what survives a reboot, what survives a hibernat
 | `agent_reports` | Per-VPS heartbeat reports | manifestVersion, appliedVersion, healthStatus |
 | `cross_project_access` | A→B read grants | scope: read-only source snapshots |
 
-### Daytona orchestration
+### Incus orchestration
 
 | Table | Holds | Notes |
 | --- | --- | --- |
-| `compute_hosts` | Dedicated bare-metal servers running Daytona + Kata | Capacity tracking, scheduler state, health |
-| `daytona_sandboxes` | Kata micro-VM workloads | FK→servers (identity), FK→compute_hosts (placement) |
+| `compute_hosts` | Dedicated bare-metal servers running Incus (QEMU/KVM) | Capacity tracking, scheduler state, TLS credentials, health |
+| `incus_instances` | QEMU/KVM VM workloads | FK→servers (identity), FK→compute_hosts (placement), plan tier, warm pool state |
 
-`servers.runtime` column (`"vps"` default, `"sandbox"`) determines which engine manages the server. See [../daytona/01-data-model.md](../daytona/01-data-model.md).
+`servers.runtime` column (`"vps"` default, `"sandbox"`) determines which engine manages the server. See [../incus/01-data-model.md](../incus/01-data-model.md).
 
 ### Manifests
 

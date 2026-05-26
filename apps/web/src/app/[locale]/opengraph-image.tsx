@@ -31,8 +31,8 @@ export default async function OpengraphImage({
   return ogImageResponse({
     title: m.home.cta.headlineLine1,
     highlight: m.home.cta.headlineLine2,
-    eyebrow: m.home.hero.eyebrow,
-    subtitle: m.home.hero.subhead,
+    eyebrow: m.home.hero.cloud.eyebrow,
+    subtitle: m.home.hero.cloud.subhead,
     locale,
   });
 }

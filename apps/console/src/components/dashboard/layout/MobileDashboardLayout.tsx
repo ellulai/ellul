@@ -473,6 +473,18 @@ function DashboardContent({
     router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
   }, [searchParams, routeView, queryClient, router, pathname, setAppContext, setSettingsTab, bridgeReady, vpsSend]);
 
+  // Localhost: resume pending OAuth connect after cloud sign-in redirect
+  useEffect(() => {
+    if (typeof window === "undefined" || window.location.hostname !== "localhost") return;
+    try {
+      const raw = sessionStorage.getItem("_pendingOAuthConnect");
+      if (!raw) return;
+      sessionStorage.removeItem("_pendingOAuthConnect");
+      const { url } = JSON.parse(raw);
+      if (url) window.location.href = url;
+    } catch {}
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

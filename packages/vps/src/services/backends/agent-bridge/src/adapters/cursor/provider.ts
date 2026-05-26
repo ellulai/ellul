@@ -51,6 +51,7 @@ import { logEvent } from "../../shared/event-log";
 import * as EffectAcpErrors from "../vendor/t3code/effect-acp/errors";
 import { AcpSessionRuntime } from "./acp/AcpSessionRuntime";
 import { AcpProjectRuntime } from "./acp/AcpProjectRuntime";
+import { safeCwd } from "../../shared/config";
 
 // Targeted debug logger for the cursor probe path. Writes to the bridge's
 // debug log so we can see exactly which RPC step in the probe sequence
@@ -505,7 +506,7 @@ const makeCursorAcpProbeRuntime = (cursorSettings: CursorSettings) =>
             ...(cursorSettings.apiEndpoint ? (["-e", cursorSettings.apiEndpoint] as const) : []),
             "acp",
           ],
-          cwd: process.cwd(),
+          cwd: safeCwd(),
           // Host-mode probe with cgroup confinement. The routing trio
           // routes this spawn through ellul-spawn-scope into
           // ellul-user-workload.slice / ellul-probe-cursor-<scope>; no
@@ -518,7 +519,7 @@ const makeCursorAcpProbeRuntime = (cursorSettings: CursorSettings) =>
             [NAMESPACE_SOFT_HINT_MB_ENV]: String(PROBE_SOFT_HINT_MB),
           },
         },
-        cwd: process.cwd(),
+        cwd: safeCwd(),
         clientInfo: { name: "ellul-cursor-provider-probe", version: "0.1.0" },
         authMethodId: "cursor_login",
         clientCapabilities: CURSOR_PARAMETERIZED_MODEL_PICKER_CAPABILITIES,
@@ -720,7 +721,7 @@ export const discoverCursorModelCapabilitiesViaAcp = (
               ...(cursorSettings.apiEndpoint ? (["-e", cursorSettings.apiEndpoint] as const) : []),
               "acp",
             ],
-            cwd: process.cwd(),
+            cwd: safeCwd(),
             // Host-mode probe with cgroup confinement — same routing as
             // the inventory probe above. cursor-agent never enters a
             // project namespace; the scope wrapper places it in
@@ -784,7 +785,7 @@ export const discoverCursorModelCapabilitiesViaAcp = (
       // Effect.scoped finalizer below kills cursor-agent and the
       // AcpProjectRuntime layer finalizer drops session state in the
       // dispatch maps. Net effect is identical, with no -32601 trap.
-      const initialSession = yield* runtime.newSession({ cwd: process.cwd() });
+      const initialSession = yield* runtime.newSession({ cwd: safeCwd() });
       const initialConfigOptions = initialSession.sessionSetupResult.configOptions ?? [];
 
       const modelOption = findCursorModelConfigOption(initialConfigOptions);
@@ -836,7 +837,7 @@ export const discoverCursorModelCapabilitiesViaAcp = (
           }
 
           return Effect.gen(function* () {
-            const session = yield* runtime.newSession({ cwd: process.cwd() });
+            const session = yield* runtime.newSession({ cwd: safeCwd() });
             const probeConfigOptions = session.sessionSetupResult.configOptions ?? [];
             const probeModelOption = findCursorModelConfigOption(probeConfigOptions);
             const probeCurrentModelValue =

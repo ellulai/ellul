@@ -41,6 +41,7 @@ import { Effect, Exit, Scope } from "effect";
 // import { initCodeMode } from "./composition/CodeModeInit";
 import { makeApplicationRuntime } from "./composition/ApplicationLayer";
 import { PORT } from "./config";
+import { safeCwd } from "./shared/config";
 import { attachInternalHttp } from "./internal-http";
 import { OrchestrationReactor } from "./orchestration/Services/OrchestrationReactor";
 import { loadIntegrations } from "./application/mcp-tool/IntegrationLoader";
@@ -147,7 +148,7 @@ async function main(): Promise<void> {
     nodeVersion: process.version,
     uid: process.getuid?.(),
     gid: process.getgid?.(),
-    cwd: process.cwd(),
+    cwd: safeCwd(),
     nodeOptions: process.env.NODE_OPTIONS || null,
     port: PORT,
     arch: process.arch,

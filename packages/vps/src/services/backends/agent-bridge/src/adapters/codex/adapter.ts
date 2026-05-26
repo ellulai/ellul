@@ -54,6 +54,7 @@ import {
   type CodexSessionRuntimeShape,
 } from "./session-runtime";
 import { type EventNdjsonLogger, makeEventNdjsonLogger } from "../event-logger";
+import { safeCwd } from "../../shared/config";
 
 const PROVIDER = "codex" as const;
 
@@ -1382,7 +1383,7 @@ const makeCodexAdapter = Effect.fn("makeCodexAdapter")(function* (
         );
         const runtimeInput: CodexSessionRuntimeOptions = {
           threadId: input.threadId,
-          cwd: input.cwd ?? process.cwd(),
+          cwd: input.cwd ?? safeCwd(),
           binaryPath: codexSettings.binaryPath,
           ...(codexSettings.homePath ? { homePath: codexSettings.homePath } : {}),
           ...(Schema.is(CodexResumeCursorSchema)(input.resumeCursor)

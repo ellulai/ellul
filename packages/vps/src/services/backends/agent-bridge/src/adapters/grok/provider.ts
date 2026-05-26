@@ -49,6 +49,7 @@ import { AcpSessionRuntime } from "../cursor/acp/AcpSessionRuntime";
 import {
   buildCursorDiscoveredModelsFromConfigOptions,
 } from "../cursor/provider";
+import { safeCwd } from "../../shared/config";
 
 const PROVIDER = "grokAgent" as const;
 
@@ -201,7 +202,7 @@ const makeGrokAcpProbeRuntime = (grokSettings: GrokSettings) =>
         spawn: {
           command: grokSettings.binaryPath,
           args: ["agent", "stdio"],
-          cwd: process.cwd(),
+          cwd: safeCwd(),
           env: {
             [NAMESPACE_PROJECT_ENV]: NAMESPACE_HOST_SENTINEL,
             [NAMESPACE_ADAPTER_ENV]: "grok",
@@ -209,7 +210,7 @@ const makeGrokAcpProbeRuntime = (grokSettings: GrokSettings) =>
             [NAMESPACE_SOFT_HINT_MB_ENV]: String(PROBE_SOFT_HINT_MB),
           },
         },
-        cwd: process.cwd(),
+        cwd: safeCwd(),
         clientInfo: { name: "ellul-grok-provider-probe", version: "0.1.0" },
         authMethodId: "xai.api_key",
         requestLogger: (event) =>

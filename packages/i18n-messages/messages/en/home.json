@@ -25,43 +25,83 @@
       ]
     },
     "hero": {
-      "eyebrow": "Ellul Cloud",
-      "headlineLine1": "Your agent’s",
-      "headlineLine2": "computer.",
-      "subhead": "An always-on workstation for your AI agent. Runs overnight. Keeps working while your laptop sleeps. Coordinates a team of agents in parallel.",
-      "bringAgent": "Bring your agent",
-      "ctaPrimary": "Get a workstation",
-      "ctaSecondary": "See what shipped overnight",
-      "stats": {
-        "runValue": "8 hr",
-        "runLabel": "Unattended runs",
-        "parallelValue": "3+",
-        "parallelLabel": "Agents in parallel",
-        "credsValue": "0",
-        "credsLabel": "Creds on your laptop"
+      "tabs": {
+        "android": "Local",
+        "cloud": "Cloud"
       },
-      "nightLog": {
-        "eyebrow": "Last night, on your workstation",
-        "timestamp": "07:30 · Tue",
-        "entries": {
-          "branchStart": "branch start: fix/race-condition-checkout",
-          "wroteTests": "wrote 3 failing tests against webhook handler",
-          "addedIdempotency": "added idempotency key to /api/orders",
-          "testsGreen": "tests green (47 passed, 0 failed)",
-          "regenSchema": "regenerated openapi.json from /api/orders",
-          "gitPush": "git push origin fix/race-condition-checkout",
-          "openedPr": "opened PR #847 → main",
-          "waiting": "waiting for your passkey to merge"
+      "android": {
+        "eyebrow": "Free on Android",
+        "headlineLine1": "Code from",
+        "headlineLine2": "your phone.",
+        "subhead": "A full dev environment on your Android device. No laptop needed. No credit card. GitHub, live previews, terminal, and AI agents — all from your pocket.",
+        "ctaPrimary": "Get the app",
+        "ctaSecondary": "Or try the cloud",
+        "features": {
+          "noLaptop": {
+            "title": "No laptop needed",
+            "body": "Full Linux dev environment running on your Android device."
+          },
+          "free": {
+            "title": "Completely free",
+            "body": "No credit card. No trial. No limits on usage."
+          },
+          "github": {
+            "title": "GitHub built in",
+            "body": "Push, pull, open PRs. Full git workflow from your phone."
+          },
+          "previews": {
+            "title": "Live previews",
+            "body": "Every dev server gets a URL. See what you’re building instantly."
+          },
+          "codeBrowser": {
+            "title": "Code browser",
+            "body": "Browse, search, and edit your entire codebase with syntax highlighting."
+          },
+          "terminal": {
+            "title": "Real terminal",
+            "body": "Bash, Node, Python, Bun — a real shell, not an emulator."
+          }
+        }
+      },
+      "cloud": {
+        "eyebrow": "Ellul Cloud",
+        "headlineLine1": "Your agent’s",
+        "headlineLine2": "computer.",
+        "subhead": "An always-on workstation for your AI agent. Runs overnight. Keeps working while your laptop sleeps. Coordinates a team of agents in parallel.",
+        "bringAgent": "Bring your agent",
+        "ctaPrimary": "Get a workstation",
+        "ctaSecondary": "See what shipped overnight",
+        "stats": {
+          "runValue": "8 hr",
+          "runLabel": "Unattended runs",
+          "parallelValue": "3+",
+          "parallelLabel": "Agents in parallel",
+          "credsValue": "0",
+          "credsLabel": "Creds on your laptop"
         },
-        "agentLabels": {
-          "checkout": "checkout",
-          "docs": "docs",
-          "ellul": "ellul"
-        },
-        "prTitle": "PR #847 is ready to merge",
-        "prSub": "fix/race-condition-checkout · +127 −44 · 47 tests",
-        "prCta": "Tap passkey",
-        "footnote": "Your laptop has been closed since 23:42."
+        "nightLog": {
+          "eyebrow": "Last night, on your workstation",
+          "timestamp": "07:30 · Tue",
+          "entries": {
+            "branchStart": "branch start: fix/race-condition-checkout",
+            "wroteTests": "wrote 3 failing tests against webhook handler",
+            "addedIdempotency": "added idempotency key to /api/orders",
+            "testsGreen": "tests green (47 passed, 0 failed)",
+            "regenSchema": "regenerated openapi.json from /api/orders",
+            "gitPush": "git push origin fix/race-condition-checkout",
+            "openedPr": "opened PR #847 → main",
+            "waiting": "waiting for your passkey to merge"
+          },
+          "agentLabels": {
+            "checkout": "checkout",
+            "docs": "docs",
+            "ellul": "ellul"
+          },
+          "prTitle": "PR #847 is ready to merge",
+          "prSub": "fix/race-condition-checkout · +127 −44 · 47 tests",
+          "prCta": "Tap passkey",
+          "footnote": "Your laptop has been closed since 23:42."
+        }
       }
     },
     "highlights": {

@@ -261,14 +261,40 @@ function setupFilesystem() {
   }
 
   const nodeKeyPath = path.join(bootstrap, "node.key");
-  if (!fs.existsSync(nodeKeyPath)) {
-    const { privateKey } = crypto.generateKeyPairSync("rsa", {
-      modulusLength: 2048,
-      privateKeyEncoding: { type: "pkcs8", format: "pem" },
-      publicKeyEncoding: { type: "spki", format: "pem" },
-    });
-    fs.writeFileSync(nodeKeyPath, privateKey, { mode: 0o600 });
-    log("generated node.key for secrets encryption");
+  const nodePubPath = path.join(bootstrap, "node.pub");
+  let needsPqcKeygen = true;
+  if (fs.existsSync(nodePubPath)) {
+    try {
+      const pub = JSON.parse(fs.readFileSync(nodePubPath, "utf8"));
+      if (pub.version === 3 && pub.algorithm === "X25519+ML-KEM-1024") needsPqcKeygen = false;
+    } catch {}
+  }
+  if (needsPqcKeygen) {
+    const keygenSrc = `
+import { x25519 } from "@noble/curves/ed25519.js";
+import { ml_kem1024 } from "@noble/post-quantum/ml-kem.js";
+import { writeFileSync } from "node:fs";
+const sk = x25519.utils.randomSecretKey();
+const pk = x25519.getPublicKey(sk);
+const { publicKey: ek, secretKey: dk } = ml_kem1024.keygen();
+const ts = new Date().toISOString();
+const b = (a) => Buffer.from(a).toString("base64");
+writeFileSync(process.argv[2], JSON.stringify({ version: 3, algorithm: "X25519+ML-KEM-1024", x25519_sk: b(sk), mlkem_dk: b(dk), created_at: ts }), { mode: 0o600 });
+writeFileSync(process.argv[3], JSON.stringify({ version: 3, algorithm: "X25519+ML-KEM-1024", x25519_pk: b(pk), mlkem_ek: b(ek), created_at: ts }), { mode: 0o644 });
+`;
+    const tmpKeygen = "/usr/lib/.ellul-pqc-keygen.mjs";
+    fs.writeFileSync(tmpKeygen, keygenSrc);
+    try {
+      execSyncRaw(`${NODE} "${tmpKeygen}" "${nodeKeyPath}" "${nodePubPath}"`, {
+        stdio: "pipe",
+        env: { ...process.env, NODE_PATH: "/usr/lib/node_modules" },
+      });
+      log("generated PQC keypair (X25519+ML-KEM-1024)");
+    } catch (e) {
+      log(`WARN: PQC keygen failed: ${e.message}`);
+    } finally {
+      try { fs.unlinkSync(tmpKeygen); } catch {}
+    }
   }
 
   const jwtDir = path.join(VAULT, "etc/ellul");
@@ -302,6 +328,7 @@ function setupFilesystem() {
     if (!fs.existsSync(p)) fs.writeFileSync(p, value);
   }
   fs.mkdirSync(path.join(jwtDir, "shield-data"), { recursive: true });
+  fs.mkdirSync(path.join(jwtDir, "secrets"), { recursive: true });
 
   const PREVIEW_GATEWAY_PORT = 4443;
   const allOrigins = [...new Set([CONSOLE_ORIGIN, CONSOLE_UPSTREAM, "http://localhost:8443", `http://localhost:${PREVIEW_GATEWAY_PORT}`])];
@@ -327,6 +354,9 @@ function setupFilesystem() {
       }
     }
   } catch {}
+
+  fs.writeFileSync(CWD_SHIM_PATH, CWD_SHIM);
+  log("wrote node cwd shim");
 
   generateCaddyfile();
 }
@@ -358,7 +388,7 @@ function getServiceHealth(name) {
 }
 
 function startService(svc) {
-  let cmd, cmdArgs;
+  let cmd, cmdArgs, bundlePath;
   if (svc.command) {
     if (!fs.existsSync(svc.command)) {
       log(`SKIP ${svc.name}: binary not found at ${svc.command}`);
@@ -367,13 +397,13 @@ function startService(svc) {
     cmd = svc.command;
     cmdArgs = svc.args || [];
   } else {
-    const bundlePath = path.join(SERVICES_DIR, svc.name, "current", svc.bundle);
+    bundlePath = path.join(SERVICES_DIR, svc.name, "current", svc.bundle);
     if (!fs.existsSync(bundlePath)) {
       log(`SKIP ${svc.name}: bundle not found at ${bundlePath}`);
       return null;
     }
     cmd = NODE;
-    cmdArgs = [bundlePath];
+    cmdArgs = [CWD_SHIM_PATH];
   }
 
   const env = {
@@ -387,9 +417,12 @@ function startService(svc) {
     ELLUL_DISABLE_SESSION_VAULT: "1",
   };
 
-  const nodeMajor = parseInt(process.versions.node.split(".")[0], 10);
-  if (svc.name === "agent-bridge" && nodeMajor < 22 && fs.existsSync("/usr/lib/node-sqlite-polyfill.js")) {
-    env.NODE_OPTIONS = "--require /usr/lib/node-sqlite-polyfill.js";
+  if (!svc.command) {
+    env._ELLUL_ENTRY = bundlePath;
+    const nodeMajor = parseInt(process.versions.node.split(".")[0], 10);
+    if (svc.name === "agent-bridge" && nodeMajor < 22 && fs.existsSync("/usr/lib/node-sqlite-polyfill.js")) {
+      env.NODE_OPTIONS = (env.NODE_OPTIONS ? env.NODE_OPTIONS + " " : "") + "--require /usr/lib/node-sqlite-polyfill.js";
+    }
   }
 
   const health = getServiceHealth(svc.name);
@@ -399,7 +432,9 @@ function startService(svc) {
   const child = spawn(cmd, cmdArgs, {
     env,
     stdio: svc.pipeVaultKey ? ["pipe", "inherit", "inherit"] : ["ignore", "inherit", "inherit"],
-    cwd: "/home/dev",
+    // No cwd option — Android's seccomp-bpf filter (inherited from zygote) blocks
+    // fork(), which libuv falls back to when cwd is set (posix_spawn can't chdir
+    // without glibc's posix_spawn_file_actions_addchdir_np). Engine chdir's at startup.
   });
 
   if (svc.pipeVaultKey) {
@@ -568,6 +603,18 @@ button{padding:10px 24px;border-radius:8px;border:none;background:#e8e5e0;color:
   });
   return server;
 }
+
+const CWD_SHIM_PATH = "/usr/lib/ellul-node-shims.js";
+const CWD_SHIM = `'use strict';
+(function() {
+  var _cwd = process.cwd;
+  var _chdir = process.chdir;
+  var fallback = process.env.HOME || '/home/dev';
+  process.cwd = function cwd() { try { return _cwd.call(process); } catch(e) { return fallback; } };
+  process.chdir = function chdir(d) { try { _chdir.call(process, d); } catch(e) { fallback = require('path').resolve(fallback, d); } };
+})();
+if (process.env._ELLUL_ENTRY) require(process.env._ELLUL_ENTRY);
+`;
 
 const OPENCODE_WRAPPER = `#!/bin/bash
 set -euo pipefail

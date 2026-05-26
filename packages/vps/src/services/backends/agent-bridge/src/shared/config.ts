@@ -9,6 +9,10 @@ import { Context } from "effect";
 import * as os from "node:os";
 import * as path from "node:path";
 
+export function safeCwd(): string {
+  try { return process.cwd(); } catch { return process.env.HOME ?? "/home/dev"; }
+}
+
 export interface ServerConfigShape {
   readonly attachmentsDir: string;
   readonly cwd: string;
@@ -22,6 +26,6 @@ export class ServerConfig extends Context.Service<ServerConfig, ServerConfigShap
 
 export const defaultServerConfig: ServerConfigShape = {
   attachmentsDir: path.join(os.homedir(), ".ellul", "attachments"),
-  cwd: process.cwd(),
+  cwd: safeCwd(),
   svcHome: process.env.HOME ?? os.homedir(),
 };
