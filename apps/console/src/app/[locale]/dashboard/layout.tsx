@@ -768,7 +768,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     }
     const pollBrowser = async () => {
       try {
-        const r = await fetch("http://localhost/health", { credentials: "include", signal: AbortSignal.timeout(3000) });
+        const r = await fetch(`${window.location.protocol}//${window.location.host}/health`, { credentials: "include", signal: AbortSignal.timeout(3000) });
         const healthy = r.ok;
         if (!cancelled) setLocalHealth([
           { name: "sovereign-shield", healthy },
