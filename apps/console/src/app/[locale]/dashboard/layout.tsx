@@ -518,7 +518,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [tauriNeedsConnect, setTauriNeedsConnect] = useState(false);
-  const [isLocalMode, setIsLocalMode] = useState(false);
+  const [isLocalMode, setIsLocalMode] = useState(
+    typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"),
+  );
   const isTauri = isTauriApp();
 
   const activateLocalMode = useCallback(() => {

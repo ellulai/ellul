@@ -107,7 +107,7 @@ export function OverviewPage({
       if (!res.ok) return { repos: {} };
       return res.json();
     },
-    enabled: !!serverId,
+    enabled: !!serverId && serverId !== "local",
     staleTime: 30000,
   });
 

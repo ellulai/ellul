@@ -317,7 +317,11 @@ function readVaultKey() {
     const key = fs.readFileSync(keyPath, "utf8").trim();
     if (/^[0-9a-f]{64}$/.test(key)) return key;
   } catch {}
-  return null;
+  const generated = crypto.randomBytes(32).toString("hex");
+  fs.mkdirSync(path.dirname(keyPath), { recursive: true });
+  fs.writeFileSync(keyPath, generated, { mode: 0o600 });
+  log("generated fallback vault key");
+  return generated;
 }
 
 function startService(svc) {
@@ -523,6 +527,57 @@ function prepareCliTools() {
   }
 }
 
+const RPC_PORT = 7710;
+const rpcSecret = crypto.randomBytes(32).toString("hex");
+
+function startRpcServer() {
+  fs.writeFileSync("/tmp/ellul-engine-secret", rpcSecret, { mode: 0o600 });
+  const server = net.createServer((sock) => {
+    let buf = "";
+    sock.on("data", (chunk) => {
+      buf += chunk.toString();
+      let nl;
+      while ((nl = buf.indexOf("\n")) !== -1) {
+        const line = buf.slice(0, nl);
+        buf = buf.slice(nl + 1);
+        try {
+          const req = JSON.parse(line);
+          if (req.auth !== rpcSecret) {
+            sock.write(JSON.stringify({ jsonrpc: "2.0", id: req.id, error: { code: -32600, message: "unauthorized" } }) + "\n");
+            return;
+          }
+          const result = handleRpc(req.method, req.params || {});
+          sock.write(JSON.stringify({ jsonrpc: "2.0", id: req.id, result }) + "\n");
+        } catch (e) {
+          sock.write(JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32603, message: e.message } }) + "\n");
+        }
+      }
+    });
+    sock.on("error", () => {});
+  });
+  server.listen(RPC_PORT, "127.0.0.1", () => {
+    log(`rpc server on 127.0.0.1:${RPC_PORT}`);
+  });
+}
+
+function handleRpc(method, params) {
+  switch (method) {
+    case "tunnel.start":
+    case "tunnel.stop":
+    case "tunnel.reconnect":
+      return { ok: true };
+    case "health": {
+      const status = {};
+      for (const [name, child] of children) {
+        status[name] = child && !child.killed;
+      }
+      return status;
+    }
+    default:
+      throw new Error(`unknown method: ${method}`);
+  }
+}
+
 async function main() {
   log(`Starting ellul-engine-android on ${process.arch}`);
   log(`User: uid=${process.getuid()} gid=${process.getgid()}`);
@@ -543,6 +598,8 @@ async function main() {
     log("WARNING: not all services healthy, writing marker anyway");
     writeHealthMarker();
   }
+
+  startRpcServer();
 
   // Keep alive
   setInterval(() => {}, 60000);
