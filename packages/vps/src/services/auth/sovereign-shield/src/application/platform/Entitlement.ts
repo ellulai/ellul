@@ -56,7 +56,7 @@ import fs from 'fs';
 import path from 'path';
 import { SANDBOX_ID_RE } from '@ellul.ai/types';
 import { SVC_HOME, SERVER_ID_FILE, SHIELD_DATA_DIR } from '../../config';
-import { isValidProjectOwner } from '@vps/shared/platform';
+import { isValidProjectOwner, IS_ANDROID } from '@vps/shared/platform';
 
 // Lazy-loaded ML-DSA-65 (post-quantum signature verification)
 let _ml_dsa65: typeof import("@noble/post-quantum/ml-dsa.js").ml_dsa65 | null = null;
@@ -138,6 +138,9 @@ const MIN_FREE_RAM_BYTES = 512 * 1024 * 1024;
 const MIN_FREE_DISK_BYTES = 1024 * 1024 * 1024;
 
 function checkResourceGuard(): { ok: true } | { ok: false; detail: string } {
+  // Android: phone OS manages memory via its own OOM killer; VPS thresholds don't apply.
+  if (IS_ANDROID) return { ok: true };
+
   try {
     const meminfo = fs.readFileSync('/proc/meminfo', 'utf8');
     const match = meminfo.match(/MemAvailable:\s+(\d+)\s+kB/);

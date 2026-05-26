@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { GitBranch, ArrowLeft, Plus, Sparkles, Layers, FileCode, FolderUp } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { useAppsList } from "@/contexts/AppsListContext";
+import { isTauriApp } from "@/lib/utils";
 import { API_URL } from "@/lib/api";
 import { ProviderCard, ProviderLogo, PROVIDER_INFO, type GitProvider } from "./git/ProviderCard";
 import { RepoPicker, type NormalizedRepo } from "./git/RepoPicker";
@@ -125,6 +126,7 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
       return res.json();
     },
     enabled: step === "git-connect",
+    retry: isLocal ? 0 : 3,
   });
 
 
@@ -162,6 +164,37 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
   const saveStateForOAuth = useCallback(() => {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify({ flowType: "git", sandboxId }));
   }, [sandboxId]);
+
+  const [waitingForOAuth, setWaitingForOAuth] = useState(false);
+
+  const navigateToOAuth = useCallback((url: string) => {
+    if (isTauriApp()) {
+      const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+      if (invoke) {
+        invoke("open_external", { url }).catch(() => {
+          window.location.href = url;
+        });
+        setWaitingForOAuth(true);
+        return;
+      }
+    }
+    window.location.href = url;
+  }, []);
+
+  useEffect(() => {
+    if (!waitingForOAuth) return;
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ["git-connections"] });
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [waitingForOAuth, queryClient]);
+
+  useEffect(() => {
+    if (waitingForOAuth && connections.length > 0) {
+      setWaitingForOAuth(false);
+      if (!activeProvider) setActiveProvider(connections[0]!.provider);
+    }
+  }, [waitingForOAuth, connections, activeProvider]);
 
   const validateName = (): boolean => {
     const trimmed = sandboxId.trim();
@@ -811,7 +844,18 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
             )}
 
             <div className="space-y-4">
-              {loadingConnections ? (
+              {waitingForOAuth ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                  <Spinner size="default" color="primary" />
+                  <p className="text-sm text-cream/60">{t("git.waitingForAuth")}</p>
+                  <button
+                    onClick={() => setWaitingForOAuth(false)}
+                    className="text-xs text-cream/45 hover:text-cream/75 transition-colors"
+                  >
+                    {t("buttons.cancel")}
+                  </button>
+                </div>
+              ) : loadingConnections ? (
                 <div className="flex items-center justify-center py-12">
                   <Spinner size="default" color="muted" delay={300} />
                 </div>
@@ -860,7 +904,7 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
                             const unconnected = availableProviders.find(p => !connections.find(c => c.provider === p));
                             if (unconnected) {
                               saveStateForOAuth();
-                              window.location.href = `${API_URL}/api/git/connect/${unconnected}`;
+                              navigateToOAuth(`${API_URL}/api/git/connect/${unconnected}`);
                             }
                           }}
                           className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-cream/45 border border-dashed border-border hover:text-cream/75 hover:border-[#5D0099] transition-colors"

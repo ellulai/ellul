@@ -580,13 +580,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       return;
     }
     const checkSession = async () => {
-      const isBrowserLocal =
-        !isTauriApp() &&
+      const isLocalhost =
         typeof window !== "undefined" &&
-        window.location.hostname === "localhost";
-      if (isBrowserLocal) {
+        (window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1");
+      if (isLocalhost) {
         try {
-          const r = await fetch("http://localhost/health", { credentials: "include" });
+          const healthUrl = `${window.location.protocol}//${window.location.host}/health`;
+          const r = await fetch(healthUrl, { credentials: "include" });
           if (r.ok) {
             activateLocalMode();
             return;

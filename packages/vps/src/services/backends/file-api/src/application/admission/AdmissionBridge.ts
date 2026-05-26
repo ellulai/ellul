@@ -48,8 +48,6 @@ function physicalMB(): number {
 
 function readSignals(): HeadroomSignals {
   const phys = physicalMB();
-  // Android proot has no cgroups; /proc/meminfo reflects host Android OS usage
-  // which always exceeds the workload budget threshold → permanent "red".
   if (IS_ANDROID) {
     return {
       physicalMB: phys,

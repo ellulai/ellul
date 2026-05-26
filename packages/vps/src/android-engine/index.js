@@ -12,7 +12,7 @@ const net = require("net");
 
 const VAULT = "/root/ellul-vault";
 const SERVICES_DIR = "/opt/ellul/releases";
-const NODE = fs.existsSync("/usr/local/bin/node") ? "/usr/local/bin/node" : "/usr/bin/node";
+const NODE = process.execPath;
 
 const SYMLINKS = [
   [path.join(VAULT, "etc/ellul"), "/etc/ellul"],

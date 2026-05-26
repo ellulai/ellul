@@ -52,7 +52,7 @@ export function ServerSettingsModal({
   // Body scroll is permanently locked by MobileDashboardLayout (position:fixed).
 
   return (
-    <div className="fixed inset-x-0 top-0 z-[100] flex items-end sm:items-center justify-center" style={{ height: vh, paddingTop: "env(safe-area-inset-top, 0px)" }}>
+    <div className="fixed inset-x-0 top-0 z-[100] flex items-end sm:items-center justify-center" style={{ height: vh, paddingTop: "max(env(safe-area-inset-top, 0px), var(--ellul-safe-top, 0px))" }}>
       {/* Backdrop */}
       <div
         className="fixed inset-0 z-0 bg-black/60 backdrop-blur-sm animate-in fade-in-0 duration-200"

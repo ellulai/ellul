@@ -336,6 +336,14 @@ function DashboardContent({
     return () => mq.removeEventListener("change", handler);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!/Android/i.test(navigator.userAgent)) return;
+    const root = document.documentElement;
+    if (root.style.getPropertyValue("--ellul-safe-top")) return;
+    root.style.setProperty("--ellul-safe-top", "20px");
+  }, []);
+
   const [showServerSettings, setShowServerSettings] = useState(false);
 
   const serverDomain = resolveServerDomain(server);
@@ -573,7 +581,7 @@ function DashboardContent({
   }, []);
 
   return (
-    <div style={vh ? { height: vh } : undefined} className="fixed inset-x-0 top-0 flex flex-col text-cream p-3 sm:p-4 gap-3 sm:gap-4 overflow-hidden">
+    <div style={{ ...(vh ? { height: vh } : {}), paddingTop: "calc(max(env(safe-area-inset-top, 0px), var(--ellul-safe-top, 0px)) + 0.75rem)" }} className="fixed inset-x-0 top-0 flex flex-col text-cream px-3 pb-3 sm:px-4 sm:pb-4 gap-3 sm:gap-4 overflow-hidden">
       {/* Sovereign Gates — thread-scoped modal. Opens only for the currently
           focused thread; cross-thread requests surface via the toast +
           sidebar dots so the user isn't interrupted mid-task. */}

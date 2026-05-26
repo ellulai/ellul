@@ -627,7 +627,12 @@ function pgidAlive(pgid: number | null, startedAt?: string | null): boolean {
       process.kill(-pgid, 0);
     }
     return true;
-  } catch { return false; }
+  } catch {
+    try {
+      process.kill(pgid, 0);
+      return true;
+    } catch { return false; }
+  }
 }
 
 // ── Per-language completeness check ──────────────────────────────────────

@@ -105,6 +105,7 @@ class ProotManager(private val context: Context) {
         val env = buildEnvironment()
 
         Log.i(TAG, "Starting proot: ${cmd.joinToString(" ")}")
+        Log.d(TAG, "Proot env: ${env.entries.joinToString(", ") { "${it.key}=${it.value}" }}")
 
         val pb = ProcessBuilder(cmd)
         pb.environment().putAll(env)
@@ -190,6 +191,8 @@ class ProotManager(private val context: Context) {
         "LD_LIBRARY_PATH" to "$nativeLibDir:${libDir.absolutePath}",
         "PROOT_LOADER" to "$nativeLibDir/libproot-loader.so",
         "PROOT_TMP_DIR" to "${appDir.absolutePath}/tmp",
+        "PROOT_NO_SECCOMP" to "1",
+        "UV_USE_IO_URING" to "0",
     )
 
     private fun startLogStreaming(process: Process) {

@@ -4,6 +4,7 @@
 import { useTranslations } from "next-intl";
 import { ExternalLink } from "lucide-react";
 import { API_URL } from "@/lib/api";
+import { isTauriApp } from "@/lib/utils";
 
 type GitProvider = "github" | "gitlab" | "bitbucket";
 
@@ -76,7 +77,15 @@ export function ProviderCard({ provider, available, onBeforeConnect, appDirector
     if (appDirectory) params.set('app', appDirectory);
     params.set('return_origin', window.location.origin);
     params.set('return_path', window.location.pathname + window.location.search);
-    window.location.href = `${API_URL}/api/git/connect/${provider}?${params.toString()}`;
+    const url = `${API_URL}/api/git/connect/${provider}?${params.toString()}`;
+    if (isTauriApp()) {
+      const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
+      if (invoke) {
+        invoke("open_external", { url }).catch(() => { window.location.href = url; });
+        return;
+      }
+    }
+    window.location.href = url;
   };
 
   return (

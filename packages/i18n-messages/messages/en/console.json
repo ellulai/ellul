@@ -188,7 +188,8 @@
         "providerLabel": "Connect a Git Provider",
         "connectedTo": "Connected to {provider}.",
         "connectAnother": "Connect another provider",
-        "addProvider": "Add"
+        "addProvider": "Add",
+        "waitingForAuth": "Complete sign-in in your browser, then return here"
       },
       "upload": {
         "title": "Upload Project",

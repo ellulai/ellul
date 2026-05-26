@@ -2244,6 +2244,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                         billingInterval: "monthly" | "annual";
                         billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
                         state: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
+                        runtime: "vps" | "sandbox";
                         subscriptionEndsAt: string | null;
                         pendingDowngrade: {
                             targetPlan: string | null;
@@ -2344,6 +2345,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                         billingInterval: "monthly" | "annual";
                         billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
                         state: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
+                        runtime: "vps" | "sandbox";
                         subscriptionEndsAt: string | null;
                         pendingDowngrade: {
                             targetPlan: string | null;
@@ -2435,6 +2437,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     billingInterval: "monthly" | "annual";
                     billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
                     state: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
+                    runtime: "vps" | "sandbox";
                     subscriptionEndsAt: string | null;
                     pendingDowngrade: {
                         targetPlan: string | null;
@@ -2560,6 +2563,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                     billingInterval: "monthly" | "annual";
                     billingStatus: "active" | "past_due" | "canceled" | "trialing" | null;
                     state: "running" | "error" | "provisioning" | "creating" | "destroying" | "hibernating" | "hibernated" | "waking" | "awaiting_unlock" | "upgrading" | "downgrading" | "pending_deletion" | "frozen" | "pool_ready" | "pool_assigned";
+                    runtime: "vps" | "sandbox";
                     subscriptionEndsAt: string | null;
                     pendingDowngrade: {
                         targetPlan: string | null;
@@ -3129,7 +3133,7 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                         description: string;
                         capacity: string;
                         features: string[];
-                        engine: "byos" | "ephemeral" | "persistent" | "daytona" | null;
+                        engine: "byos" | "ephemeral" | "persistent" | "incus" | null;
                     };
                     type: "upgrade" | "downgrade" | "same";
                     priceChange: number;
