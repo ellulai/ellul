@@ -83,7 +83,10 @@ export function ProviderCard({ provider, available, onBeforeConnect, appDirector
     const url = `${API_URL}/api/git/connect/${provider}?${params.toString()}`;
 
     if (isLocalhost()) {
-      window.location.href = url;
+      // Chain through Google sign-in to establish api.ellul.ai session,
+      // then redirect to the git connect endpoint. If already signed in,
+      // the /start endpoint skips OAuth and redirects directly.
+      window.location.href = `${API_URL}/api/auth/native/start?provider=google&chain_redirect=${encodeURIComponent(url)}`;
       return;
     }
 

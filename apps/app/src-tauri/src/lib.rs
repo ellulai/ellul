@@ -206,6 +206,8 @@ if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) {{
 }}
 (function() {{
   if (!navigator.serviceWorker) return;
+  var h = window.location.hostname;
+  if (h !== 'localhost' && h !== '127.0.0.1' && !h.endsWith('.ellul.ai') && !h.endsWith('.ellul.app')) return;
   navigator.serviceWorker.getRegistrations().then(function(regs) {{
     if (regs.length === 0) return;
     for (var i = 0; i < regs.length; i++) regs[i].unregister();
@@ -356,6 +358,16 @@ if (!window.PublicKeyCredential) {{
                         return false;
                     }
                     true
+                });
+            }
+
+            #[cfg(target_os = "android")]
+            {
+                builder = builder.on_navigation(|url| {
+                    // OAuth connect flows traverse external domains
+                    // (api.ellul.ai → github.com → api.ellul.ai → localhost:8443)
+                    // and must complete in-WebView for the localhost callback to land.
+                    matches!(url.scheme(), "http" | "https" | "tauri")
                 });
             }
 

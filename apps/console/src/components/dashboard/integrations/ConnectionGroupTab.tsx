@@ -37,6 +37,7 @@ import {
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { API_URL } from "@/lib/api";
+import { isLocalhost } from "@/lib/cloud-auth";
 import { toast } from "sonner";
 import type {
   IntegrationGroup,
@@ -444,6 +445,10 @@ export function ConnectionGroupTab({
       });
       const url = `${API_URL}${connectPath}?${params.toString()}`;
 
+      if (isLocalhost()) {
+        window.location.href = `${API_URL}/api/auth/native/start?provider=google&chain_redirect=${encodeURIComponent(url)}`;
+        return;
+      }
       window.location.href = url;
     },
     [group.id],
