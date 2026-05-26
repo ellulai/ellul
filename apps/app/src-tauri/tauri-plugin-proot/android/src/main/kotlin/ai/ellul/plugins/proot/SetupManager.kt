@@ -70,8 +70,6 @@ class SetupManager(private val context: Context) {
         }
 
         try {
-            checkDiskSpace()
-
             val bundledVersion = BuildConfig.BUNDLED_ROOTFS_VERSION
             if (bundledVersion.isEmpty()) {
                 throw SetupException("No bundled rootfs in this build", SetupStage.DOWNLOADING)
@@ -82,6 +80,8 @@ class SetupManager(private val context: Context) {
                 onProgress(SetupProgress(SetupStage.COMPLETE, 100, 0, 0))
                 return
             }
+
+            checkDiskSpace()
 
             Log.i(TAG, "extracting bundled rootfs v$bundledVersion")
             onProgress(SetupProgress(SetupStage.EXTRACTING, 0, 0, 0))

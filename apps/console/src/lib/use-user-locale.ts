@@ -29,14 +29,19 @@ const SESSION_QUERY_KEY = ["auth", "session"] as const;
 export function useUserLocale(): Locale {
   const urlLocale = useUrlLocale() as Locale;
 
+  const isLocal =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1");
+
   const { data } = useQuery<Session | null>({
     queryKey: SESSION_QUERY_KEY,
     queryFn: async () => {
+      if (isLocal) return null;
       const result = await authClient.getSession();
       return result.data ?? null;
     },
-    // better-auth's cookie cache holds for 5 minutes; mirror that here so
-    // a stale-time refetch isn't triggered on every component mount.
+    enabled: !isLocal,
     staleTime: 5 * 60_000,
   });
 

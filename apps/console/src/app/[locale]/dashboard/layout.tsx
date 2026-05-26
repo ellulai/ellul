@@ -583,6 +583,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       setIsAuthLoading(false);
       return;
     }
+    if (isLocalMode && session) return;
     const checkSession = async () => {
       const isLocalhost =
         typeof window !== "undefined" &&
