@@ -13,6 +13,7 @@ import { API_URL } from "@/lib/api";
 import { ProviderCard, ProviderLogo, PROVIDER_INFO, type GitProvider } from "./git/ProviderCard";
 import { RepoPicker, type NormalizedRepo } from "./git/RepoPicker";
 import { CreateRepoDialog } from "./git/CreateRepoDialog";
+import { LocalGitOnboarding } from "./git/LocalGitOnboarding";
 import { WorkspaceTypePicker } from "./WorkspaceTypePicker";
 import {
   FrameworkPicker,
@@ -843,127 +844,145 @@ export function OnboardingFlow({ serverId, serverDomain, onComplete, isModal = f
               </div>
             )}
 
-            <div className="space-y-4">
-              {waitingForOAuth ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-3">
-                  <Spinner size="default" color="primary" />
-                  <p className="text-sm text-cream/60">{t("git.waitingForAuth")}</p>
-                  <button
-                    onClick={() => setWaitingForOAuth(false)}
-                    className="text-xs text-cream/45 hover:text-cream/75 transition-colors"
-                  >
-                    {t("buttons.cancel")}
-                  </button>
-                </div>
-              ) : loadingConnections ? (
-                <div className="flex items-center justify-center py-12">
-                  <Spinner size="default" color="muted" delay={300} />
-                </div>
-              ) : connections.length === 0 ? (
-                // No providers connected — show provider cards
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-cream/75 mb-1">{t("git.providerLabel")}</label>
-                  {availableProviders.map((provider) => (
-                    <ProviderCard
-                      key={provider}
-                      provider={provider}
-                      available={true}
-                      onBeforeConnect={saveStateForOAuth}
-                    />
-                  ))}
-                </div>
-              ) : (
-                // Provider connected — show provider tabs + repo picker
+            {isLocal ? (
+              <LocalGitOnboarding
+                onSelectRepo={(repo) => {
+                  setActiveProvider("github");
+                  void runClone({
+                    provider: "github",
+                    repoFullName: repo.fullName,
+                    repoUrl: repo.url,
+                    defaultBranch: repo.defaultBranch,
+                    isPrivate: repo.isPrivate,
+                    name: sandboxId.trim(),
+                  });
+                }}
+              />
+            ) : (
+              <>
                 <div className="space-y-4">
-                  {/* Provider selector (if multiple connected) */}
-                  {connections.length > 1 && (
-                    <div className="flex gap-2">
-                      {connections.map((conn) => {
-                        const info = PROVIDER_INFO[conn.provider];
-                        const isActive = activeProvider === conn.provider;
-                        return (
-                          <button
-                            key={conn.provider}
-                            onClick={() => setActiveProvider(conn.provider)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                              isActive
-                                ? "bg-secondary text-cream border border-[#5D0099]"
-                                : "bg-card text-cream/60 border border-border hover:text-cream"
-                            }`}
-                          >
-                            <ProviderLogo provider={conn.provider} className="h-4 w-4" />
-                            {info?.name || conn.provider}
-                          </button>
-                        );
-                      })}
-                      {/* Button to connect additional provider */}
-                      {availableProviders.some(p => !connections.find(c => c.provider === p)) && (
-                        <button
-                          onClick={() => {
-                            // Find first unconnected provider and redirect
-                            const unconnected = availableProviders.find(p => !connections.find(c => c.provider === p));
-                            if (unconnected) {
-                              saveStateForOAuth();
-                              navigateToOAuth(`${API_URL}/api/git/connect/${unconnected}`);
-                            }
-                          }}
-                          className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-cream/45 border border-dashed border-border hover:text-cream/75 hover:border-[#5D0099] transition-colors"
-                        >
-                          <Plus className="h-3 w-3" />
-                          {t("git.addProvider")}
-                        </button>
+                  {waitingForOAuth ? (
+                    <div className="flex flex-col items-center justify-center py-12 gap-3">
+                      <Spinner size="default" color="primary" />
+                      <p className="text-sm text-cream/60">{t("git.waitingForAuth")}</p>
+                      <button
+                        onClick={() => setWaitingForOAuth(false)}
+                        className="text-xs text-cream/45 hover:text-cream/75 transition-colors"
+                      >
+                        {t("buttons.cancel")}
+                      </button>
+                    </div>
+                  ) : loadingConnections ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Spinner size="default" color="muted" delay={300} />
+                    </div>
+                  ) : connections.length === 0 ? (
+                    // No providers connected — show provider cards
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-cream/75 mb-1">{t("git.providerLabel")}</label>
+                      {availableProviders.map((provider) => (
+                        <ProviderCard
+                          key={provider}
+                          provider={provider}
+                          available={true}
+                          onBeforeConnect={saveStateForOAuth}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    // Provider connected — show provider tabs + repo picker
+                    <div className="space-y-4">
+                      {/* Provider selector (if multiple connected) */}
+                      {connections.length > 1 && (
+                        <div className="flex gap-2">
+                          {connections.map((conn) => {
+                            const info = PROVIDER_INFO[conn.provider];
+                            const isActive = activeProvider === conn.provider;
+                            return (
+                              <button
+                                key={conn.provider}
+                                onClick={() => setActiveProvider(conn.provider)}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                  isActive
+                                    ? "bg-secondary text-cream border border-[#5D0099]"
+                                    : "bg-card text-cream/60 border border-border hover:text-cream"
+                                }`}
+                              >
+                                <ProviderLogo provider={conn.provider} className="h-4 w-4" />
+                                {info?.name || conn.provider}
+                              </button>
+                            );
+                          })}
+                          {/* Button to connect additional provider */}
+                          {availableProviders.some(p => !connections.find(c => c.provider === p)) && (
+                            <button
+                              onClick={() => {
+                                // Find first unconnected provider and redirect
+                                const unconnected = availableProviders.find(p => !connections.find(c => c.provider === p));
+                                if (unconnected) {
+                                  saveStateForOAuth();
+                                  navigateToOAuth(`${API_URL}/api/git/connect/${unconnected}`);
+                                }
+                              }}
+                              className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-cream/45 border border-dashed border-border hover:text-cream/75 hover:border-[#5D0099] transition-colors"
+                            >
+                              <Plus className="h-3 w-3" />
+                              {t("git.addProvider")}
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Repo picker */}
+                      {activeProvider && (
+                        <RepoPicker
+                          provider={activeProvider}
+                          serverId={serverId}
+                          onSelectRepo={handleSelectRepo}
+                          onCreateNew={() => setShowCreateDialog(true)}
+                        />
+                      )}
+
+                      {/* Connect another provider link (if only 1 connected) */}
+                      {connections.length === 1 && (
+                        <div className="text-center">
+                          <p className="text-xs text-cream/45">
+                            {t("git.connectedTo", { provider: connections[0] ? PROVIDER_INFO[connections[0].provider]?.name ?? "" : "" })}{" "}
+                            {availableProviders.some(p => !connections.find(c => c.provider === p)) && (
+                              <button
+                                onClick={() => {
+                                  const unconnected = availableProviders.find(p => !connections.find(c => c.provider === p));
+                                  if (unconnected) {
+                                    saveStateForOAuth();
+                                    window.location.href = `${API_URL}/api/git/connect/${unconnected}`;
+                                  }
+                                }}
+                                className="text-cyan-400 hover:text-cyan-300 underline"
+                              >
+                                {t("git.connectAnother")}
+                              </button>
+                            )}
+                          </p>
+                        </div>
                       )}
                     </div>
                   )}
-
-                  {/* Repo picker */}
-                  {activeProvider && (
-                    <RepoPicker
-                      provider={activeProvider}
-                      serverId={serverId}
-                      onSelectRepo={handleSelectRepo}
-                      onCreateNew={() => setShowCreateDialog(true)}
-                    />
-                  )}
-
-                  {/* Connect another provider link (if only 1 connected) */}
-                  {connections.length === 1 && (
-                    <div className="text-center">
-                      <p className="text-xs text-cream/45">
-                        {t("git.connectedTo", { provider: connections[0] ? PROVIDER_INFO[connections[0].provider]?.name ?? "" : "" })}{" "}
-                        {availableProviders.some(p => !connections.find(c => c.provider === p)) && (
-                          <button
-                            onClick={() => {
-                              const unconnected = availableProviders.find(p => !connections.find(c => c.provider === p));
-                              if (unconnected) {
-                                saveStateForOAuth();
-                                window.location.href = `${API_URL}/api/git/connect/${unconnected}`;
-                              }
-                            }}
-                            className="text-cyan-400 hover:text-cyan-300 underline"
-                          >
-                            {t("git.connectAnother")}
-                          </button>
-                        )}
-                      </p>
-                    </div>
-                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Create repo dialog */}
-            {activeProvider && (
-              <CreateRepoDialog
-                open={showCreateDialog}
-                onOpenChange={setShowCreateDialog}
-                provider={activeProvider}
-                serverId={serverId}
-                onCreated={(repo) => {
-                  setShowCreateDialog(false);
-                  handleSelectRepo(repo);
-                }}
-              />
+                {/* Create repo dialog */}
+                {activeProvider && (
+                  <CreateRepoDialog
+                    open={showCreateDialog}
+                    onOpenChange={setShowCreateDialog}
+                    provider={activeProvider}
+                    serverId={serverId}
+                    onCreated={(repo) => {
+                      setShowCreateDialog(false);
+                      handleSelectRepo(repo);
+                    }}
+                  />
+                )}
+              </>
             )}
           </>
         )}

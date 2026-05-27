@@ -2766,12 +2766,12 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 message: string;
                 server: {
                     id: string;
-                    ipAddress: string;
-                    domain: string;
+                    ipAddress: string | null;
+                    domain: string | undefined;
                     state: string;
-                    serverPlan: string;
-                    sshEnabled: false;
-                    terminalEnabled: true;
+                    serverPlan: "free" | "hobby" | "pro";
+                    sshEnabled: boolean;
+                    terminalEnabled: boolean;
                 };
                 hibernation: {
                     waking: true;
@@ -3012,19 +3012,19 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {};
             output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
+        } | {
+            input: {};
+            output: {
                 message: string;
                 serverId: string;
                 state: string;
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
-        } | {
-            input: {};
-            output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 404;
         } | {
             input: {};
             output: {
@@ -7465,7 +7465,54 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
             status: import("hono/utils/http-status").ContentfulStatusCode;
         };
     };
-}, "/">, "/api/git"> | import("hono/types").MergeSchemaPath<import("hono/types").BlankSchema | import("hono/types").MergeSchemaPath<{
+}, "/"> | import("hono/types").MergeSchemaPath<{
+    "/start": {
+        $post: {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 503;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 502;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 400;
+        } | {
+            input: {};
+            output: {
+                ref: string;
+                userCode: string;
+                verificationUri: string;
+                expiresIn: number;
+                interval: number;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+} & {
+    "/poll": {
+        $post: {
+            input: {};
+            output: {
+                status: string;
+            };
+            outputFormat: "json";
+            status: import("hono/utils/http-status").ContentfulStatusCode;
+        };
+    };
+}, "/device-flow">, "/api/git"> | import("hono/types").MergeSchemaPath<import("hono/types").BlankSchema | import("hono/types").MergeSchemaPath<{
     "/connections": {
         $get: {
             input: {};
