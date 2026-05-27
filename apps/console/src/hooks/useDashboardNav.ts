@@ -16,7 +16,7 @@ const ALL_APP_CONTEXTS = ["workspace", "vault", "integrations", "database", "obs
 const APP_CONTEXTS = ALL_APP_CONTEXTS.filter(
   (c) => isContextVisible(c),
 ) as unknown as typeof ALL_APP_CONTEXTS;
-const INTEGRATIONS_TABS = ["zeroclaw"] as const;
+const INTEGRATIONS_TABS = ["zeroclaw", "github"] as const;
 const VAULT_TABS = ["notes", "graph", "scopes"] as const;
 const WORKSPACE_TABS = ["chat", "code", "preview"] as const;
 const DATABASE_TABS = ["tables", "sql", "bin", "settings"] as const;

@@ -308,9 +308,12 @@ function DashboardContent({
   // Merge dynamic integration group IDs into tab overrides so useDashboardNav
   const mergedTabOverrides = (() => {
     const base = { ...workspaceConfig.tabOverrides };
-    const staticIntTabs = base.integrations ?? [];
-    // Append dynamic group IDs after the static zeroclaw tab
-    base.integrations = [...staticIntTabs, ...dynamicTabIds.filter(id => !staticIntTabs.includes(id))];
+    if (isLocal) {
+      base.integrations = ["github"];
+    } else {
+      const staticIntTabs = base.integrations ?? [];
+      base.integrations = [...staticIntTabs, ...dynamicTabIds.filter(id => !staticIntTabs.includes(id))];
+    }
     return base;
   })();
 
@@ -367,7 +370,7 @@ function DashboardContent({
 
   const currentTabs: ExtendedTabConfig[] = (() => {
     const resolved = workspaceConfig.resolved.contexts[appContext];
-    const staticTabs = resolved
+    let staticTabs = resolved
       ? resolved.tabs
           .filter(t => t.availability.state !== "hidden")
           .map(t => ({
@@ -379,6 +382,11 @@ function DashboardContent({
             tabId: t.tabId,
           }))
       : [];
+
+    // Local (Android): integrations shows only the GitHub tab — no ZeroClaw or dynamic groups
+    if (isLocal && appContext === "integrations") {
+      return staticTabs.filter(t => t.id === "github");
+    }
 
     // For integrations context: append user-created groups as dynamic tabs
     if (appContext === "integrations" && integrationGroups.length > 0) {
@@ -656,7 +664,7 @@ function DashboardContent({
                 onSuccess: () => {
                   toast.success(t("groups.deleted"));
                   if (currentTabId === groupId) {
-                    const fallback = currentTabs[0]?.id ?? "zeroclaw";
+                    const fallback = currentTabs[0]?.id ?? (isLocal ? "github" : "zeroclaw");
                     changeTab(fallback);
                   }
                 },
@@ -810,7 +818,7 @@ function DashboardContent({
               onSuccess: () => {
                 toast.success(t("groups.deleted"));
                 if (currentTabId === groupId) {
-                  const fallback = currentTabs[0]?.id ?? "zeroclaw";
+                  const fallback = currentTabs[0]?.id ?? (isLocal ? "github" : "zeroclaw");
                   changeTab(fallback);
                 }
               },

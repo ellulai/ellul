@@ -988,7 +988,22 @@
       "gitSyncInitiated": "Git 同期を開始しました。AI アシスタントがコードをプッシュしています。",
       "gitSyncFailed": "Git 同期に失敗しました: {message}",
       "passkeyFailed": "パスキー認証に失敗しました",
-      "passkeyRequired": "パスキー確認が必要です。もう一度お試しください。"
+      "passkeyRequired": "パスキー確認が必要です。もう一度お試しください。",
+      "deviceFlowPrompt": "このコードを GitHub で入力してください:",
+      "deviceFlowWaiting": "認証を待っています...",
+      "deviceFlowOpenGitHub": "GitHub を開く",
+      "deviceFlowCancel": "キャンセル",
+      "deviceFlowExpired": "認証の有効期限が切れました。もう一度お試しください。",
+      "deviceFlowStartFailed": "GitHub 認証の開始に失敗しました",
+      "deviceFlowStoreFailed": "認証情報の保存に失敗しました",
+      "searchRepos": "リポジトリを検索...",
+      "noReposFound": "リポジトリが見つかりません",
+      "noReposAvailable": "利用可能なリポジトリがありません",
+      "branchLabel": "ブランチ: {branch}",
+      "credentialsStored": "Git 認証情報が保存されました。ターミナルでクローン・プッシュ・プルを行えます:",
+      "changeRepo": "リポジトリを変更",
+      "disconnectFailed": "切断に失敗しました",
+      "connectButton": "接続"
     },
     "tabEditor": {
       "connecting": "接続中",

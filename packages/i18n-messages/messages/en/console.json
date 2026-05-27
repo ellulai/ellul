@@ -1004,7 +1004,22 @@
       "gitSyncInitiated": "Git sync initiated. The AI assistant is pushing your code.",
       "gitSyncFailed": "Git sync failed: {message}",
       "passkeyFailed": "Passkey authorization failed",
-      "passkeyRequired": "Passkey confirmation required. Please try again."
+      "passkeyRequired": "Passkey confirmation required. Please try again.",
+      "deviceFlowPrompt": "Enter this code on GitHub:",
+      "deviceFlowWaiting": "Waiting for authorization...",
+      "deviceFlowOpenGitHub": "Open GitHub",
+      "deviceFlowCancel": "Cancel",
+      "deviceFlowExpired": "Authorization expired. Try again.",
+      "deviceFlowStartFailed": "Failed to start GitHub authorization",
+      "deviceFlowStoreFailed": "Failed to store credentials",
+      "searchRepos": "Search repositories...",
+      "noReposFound": "No repositories found",
+      "noReposAvailable": "No repositories available",
+      "branchLabel": "Branch: {branch}",
+      "credentialsStored": "Git credentials are stored. Use the terminal to clone, push, and pull:",
+      "changeRepo": "Change repository",
+      "disconnectFailed": "Failed to disconnect",
+      "connectButton": "Connect"
     },
     "tabEditor": {
       "connecting": "Connecting",

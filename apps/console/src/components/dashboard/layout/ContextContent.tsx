@@ -12,6 +12,7 @@ import {
 } from "../tabs/TabObservability";
 import { DatabaseBrowser } from "../database";
 import { IntAiAgents, ConnectionGroupTab } from "../integrations";
+import { LocalGitTab } from "../git/LocalGitTab";
 import type { IntegrationGroup } from "@/hooks/useIntegrationGroups";
 import { ContextSettings } from "../ContextSettings";
 import type { ContextContentProps } from "./layout-types";
@@ -73,42 +74,58 @@ export function ContextContent({
         </div>
       )}
 
-      {/* Integrations Context - dynamic groups */}
+      {/* Integrations Context - local: GitHub only; cloud: ZeroClaw + dynamic groups */}
       {appContext === "integrations" && (
         <div className="flex-1 flex flex-col min-h-0">
-          {/* ZeroClaw - system defined, always present */}
-          <div
-            className={
-              currentTabId === "zeroclaw"
-                ? "flex-1 flex flex-col min-h-0 overflow-y-auto panel-ascente"
-                : "hidden"
-            }
-          >
-            <IntAiAgents
-              serverId={server.id}
-              serverDomain={serverDomain}
-              apps={appsSlim}
-              selectedApp={selectedApp}
-            />
-          </div>
-          {/* User-created groups - rendered dynamically */}
-          {integrationGroups.map((group) => (
+          {isLocalServer(server) ? (
             <div
-              key={group.id}
               className={
-                currentTabId === group.id
+                currentTabId === "github"
                   ? "flex-1 flex flex-col min-h-0 overflow-y-auto panel-ascente"
                   : "hidden"
               }
             >
-              <ConnectionGroupTab
-                group={group}
-                serverId={server.id}
-                serverDomain={serverDomain}
-                selectedApp={selectedApp}
+              <LocalGitTab
+                app={app ? { directory: app.directory, name: app.name } : null}
               />
             </div>
-          ))}
+          ) : (
+            <>
+              {/* ZeroClaw - system defined, always present */}
+              <div
+                className={
+                  currentTabId === "zeroclaw"
+                    ? "flex-1 flex flex-col min-h-0 overflow-y-auto panel-ascente"
+                    : "hidden"
+                }
+              >
+                <IntAiAgents
+                  serverId={server.id}
+                  serverDomain={serverDomain}
+                  apps={appsSlim}
+                  selectedApp={selectedApp}
+                />
+              </div>
+              {/* User-created groups - rendered dynamically */}
+              {integrationGroups.map((group) => (
+                <div
+                  key={group.id}
+                  className={
+                    currentTabId === group.id
+                      ? "flex-1 flex flex-col min-h-0 overflow-y-auto panel-ascente"
+                      : "hidden"
+                  }
+                >
+                  <ConnectionGroupTab
+                    group={group}
+                    serverId={server.id}
+                    serverDomain={serverDomain}
+                    selectedApp={selectedApp}
+                  />
+                </div>
+              ))}
+            </>
+          )}
         </div>
       )}
 

@@ -19,6 +19,8 @@ import { useAppsList } from "@/contexts/AppsListContext";
 import { useCodeToken } from "@/contexts/CodeTokenContext";
 import { ProviderCard, ProviderLogo, PROVIDER_INFO, type GitProvider } from "../git/ProviderCard";
 import { isProviderVisible } from "@/lib/feature-flags";
+import { isLocalhost } from "@/lib/cloud-auth";
+import { LocalGitTab } from "../git/LocalGitTab";
 
 const ENABLED_GIT_PROVIDERS = (["github", "gitlab", "bitbucket"] as const).filter(
   isProviderVisible,
@@ -74,7 +76,14 @@ interface NormalizedRepo {
 
 type ViewState = "providers" | "repos" | "linked";
 
-export function TabGit({ serverId, securityTier, app, onUpgrade }: TabGitProps) {
+export function TabGit(props: TabGitProps) {
+  if (isLocalhost()) {
+    return <LocalGitTab app={props.app ? { directory: props.app.directory, name: props.app.name } : null} />;
+  }
+  return <TabGitWeb {...props} />;
+}
+
+function TabGitWeb({ serverId, securityTier, app, onUpgrade }: TabGitProps) {
   const t = useTranslations("console.tabGit");
   const queryClient = useQueryClient();
   const [viewState, setViewState] = useState<ViewState>("providers");

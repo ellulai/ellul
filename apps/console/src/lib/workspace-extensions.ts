@@ -635,6 +635,28 @@ export const CORE_SETTINGS_CONTEXT: WorkspaceExtensionManifestV1 = {
 
 // CORE_SETTINGS_GIT removed - git connections moved to Integrations → Source Control
 
+export const CORE_INT_GITHUB: WorkspaceExtensionManifestV1 = {
+  id: "core.int.github",
+  version: "1.0.0",
+  name: "GitHub",
+  description: "GitHub connection — link repositories, push, pull, and clone via terminal",
+  author: "ellul",
+  tabs: [
+    {
+      tabId: "main",
+      context: "integrations",
+      label: "GitHub",
+      description: "Connect your GitHub account and link a repository",
+      iconKey: "git-branch",
+      category: "development",
+      routeSegment: "github",
+      defaultEnabled: true,
+      required: true,
+      unavailableVisibility: "disabled",
+    },
+  ],
+};
+
 export const CORE_SETTINGS_SECRETS: WorkspaceExtensionManifestV1 = {
   id: "core.settings.secrets",
   version: "1.0.0",
@@ -733,6 +755,7 @@ export const FIRST_PARTY_MANIFESTS: WorkspaceExtensionManifestV1[] = [
   CORE_SETTINGS_SECURITY,
   // Integrations (dynamic groups replace source-control, deploy, data)
   CORE_INT_ZEROCLAW,
+  CORE_INT_GITHUB,
 ];
 
 // ─── Default Registry Instance ──────────────────────────────────────────────

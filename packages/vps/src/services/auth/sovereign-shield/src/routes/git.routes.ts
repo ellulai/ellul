@@ -20,6 +20,12 @@ import { getDeviceFingerprint, getClientIp } from '../auth/fingerprint';
 import { logAuditEvent } from '../application/audit/Audit';
 import { parseCookies } from '../utils/cookie';
 import { getCurrentTier } from '../application/gates/Tier';
+import { IS_ANDROID } from '@vps/shared/platform';
+import {
+  setGitSecret,
+  getGitCredential,
+  deleteAllGitSecrets,
+} from '../application/credentials/GitCredentials';
 
 // ============================================
 // IN-MEMORY TOKEN STORE
@@ -235,5 +241,174 @@ export function registerGitRoutes(app: Hono): void {
     });
 
     return c.json({ valid: true });
+  });
+
+  // ── Android-only: local git credential management ──────────────
+  // These endpoints let the console store/read/clear git credentials
+  // directly in shield's memory without going through the central API.
+  // Profile + linked-repo metadata live in a sidecar map since
+  // GitCredential doesn't carry display fields.
+
+  interface LocalGitProfile {
+    provider: string;
+    username: string;
+    avatarUrl: string | null;
+  }
+  interface LocalLinkedRepo {
+    fullName: string;
+    url: string;
+    isPrivate: boolean;
+    defaultBranch: string;
+    description: string | null;
+  }
+  let localProfile: LocalGitProfile | null = null;
+  let localLinkedRepo: LocalLinkedRepo | null = null;
+
+  app.post('/_auth/git/credentials', async (c) => {
+    if (!IS_ANDROID) return c.json({ error: 'Not available' }, 404);
+
+    const body = await c.req.json() as {
+      provider?: string;
+      token?: string;
+      username?: string;
+      avatarUrl?: string | null;
+    };
+
+    if (!body.provider || !body.token || !body.username) {
+      return c.json({ error: 'provider, token, and username are required' }, 400);
+    }
+
+    setGitSecret('__GIT_TOKEN', body.token);
+    setGitSecret('__GIT_PROVIDER', body.provider);
+    setGitSecret('__GIT_USER_NAME', body.provider === 'github' ? 'x-access-token' : 'oauth2');
+
+    localProfile = {
+      provider: body.provider,
+      username: body.username,
+      avatarUrl: body.avatarUrl ?? null,
+    };
+
+    return c.json({ ok: true });
+  });
+
+  app.get('/_auth/git/connection', async (c) => {
+    if (!IS_ANDROID) return c.json({ error: 'Not available' }, 404);
+
+    const cred = getGitCredential('');
+    if (!cred?.token || !localProfile) {
+      return c.json({ connected: false });
+    }
+
+    return c.json({
+      connected: true,
+      provider: localProfile.provider,
+      username: localProfile.username,
+      avatarUrl: localProfile.avatarUrl,
+      linkedRepo: localLinkedRepo,
+    });
+  });
+
+  app.delete('/_auth/git/connection', async (c) => {
+    if (!IS_ANDROID) return c.json({ error: 'Not available' }, 404);
+    deleteAllGitSecrets();
+    localProfile = null;
+    localLinkedRepo = null;
+    return c.json({ ok: true });
+  });
+
+  app.post('/_auth/git/link', async (c) => {
+    if (!IS_ANDROID) return c.json({ error: 'Not available' }, 404);
+
+    const cred = getGitCredential('');
+    if (!cred?.token) {
+      return c.json({ error: 'Connect a git provider first' }, 400);
+    }
+
+    const body = await c.req.json() as {
+      fullName?: string;
+      url?: string;
+      isPrivate?: boolean;
+      defaultBranch?: string;
+      description?: string | null;
+    };
+
+    if (!body.fullName || !body.url) {
+      return c.json({ error: 'fullName and url are required' }, 400);
+    }
+
+    setGitSecret('__GIT_REPO_URL', body.url);
+    if (body.defaultBranch) {
+      setGitSecret('__GIT_DEFAULT_BRANCH', body.defaultBranch);
+    }
+
+    localLinkedRepo = {
+      fullName: body.fullName,
+      url: body.url,
+      isPrivate: body.isPrivate ?? false,
+      defaultBranch: body.defaultBranch ?? 'main',
+      description: body.description ?? null,
+    };
+
+    return c.json({ ok: true });
+  });
+
+  app.delete('/_auth/git/link', async (c) => {
+    if (!IS_ANDROID) return c.json({ error: 'Not available' }, 404);
+    localLinkedRepo = null;
+    return c.json({ ok: true });
+  });
+
+  app.get('/_auth/git/repos', async (c) => {
+    if (!IS_ANDROID) return c.json({ error: 'Not available' }, 404);
+
+    const cred = getGitCredential('');
+    if (!cred?.token) {
+      return c.json({ error: 'No git credentials stored' }, 401);
+    }
+
+    const search = c.req.query('search') || '';
+    const page = parseInt(c.req.query('page') || '1', 10);
+    const perPage = 30;
+
+    let url: string;
+    if (search) {
+      const owner = localProfile?.username;
+      const userFilter = owner ? `+user:${encodeURIComponent(owner)}` : '';
+      url = `https://api.github.com/search/repositories?q=${encodeURIComponent(search)}${userFilter}&sort=updated&per_page=${perPage}&page=${page}`;
+    } else {
+      url = `https://api.github.com/user/repos?sort=updated&per_page=${perPage}&page=${page}&affiliation=owner,collaborator`;
+    }
+
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${cred.token}`,
+          Accept: 'application/vnd.github+json',
+          'User-Agent': 'Ellul/1.0',
+        },
+        signal: AbortSignal.timeout(10_000),
+      });
+
+      if (!res.ok) {
+        return c.json({ error: 'GitHub API error', status: res.status }, 502);
+      }
+
+      const data = await res.json();
+      const items = search ? (data as any).items ?? [] : data;
+      const repos = (items as any[]).map((r: any) => ({
+        name: r.name,
+        fullName: r.full_name,
+        url: r.clone_url,
+        sshUrl: r.ssh_url,
+        isPrivate: r.private,
+        defaultBranch: r.default_branch,
+        description: r.description,
+        updatedAt: r.updated_at,
+      }));
+
+      return c.json({ repos });
+    } catch {
+      return c.json({ error: 'Failed to fetch repositories' }, 502);
+    }
   });
 }

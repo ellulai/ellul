@@ -2766,12 +2766,12 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
                 message: string;
                 server: {
                     id: string;
-                    ipAddress: string | null;
-                    domain: string | undefined;
+                    ipAddress: string;
+                    domain: string;
                     state: string;
-                    serverPlan: "free" | "hobby" | "pro";
-                    sshEnabled: boolean;
-                    terminalEnabled: boolean;
+                    serverPlan: string;
+                    sshEnabled: false;
+                    terminalEnabled: true;
                 };
                 hibernation: {
                     waking: true;
@@ -3012,19 +3012,19 @@ declare const app: import("hono/hono-base").HonoBase<{}, ((({
         } | {
             input: {};
             output: {
-                error: string;
-            };
-            outputFormat: "json";
-            status: 404;
-        } | {
-            input: {};
-            output: {
                 message: string;
                 serverId: string;
                 state: string;
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;
+        } | {
+            input: {};
+            output: {
+                error: string;
+            };
+            outputFormat: "json";
+            status: 404;
         } | {
             input: {};
             output: {
