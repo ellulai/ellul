@@ -81,9 +81,9 @@ export function ProviderCard({ provider, available, onBeforeConnect, appDirector
     params.set('return_path', window.location.pathname + window.location.search);
 
     if (isLocalhost()) {
-      params.set('return_origin', 'http://localhost:8443');
+      params.set('return_deep_link', '1');
       const url = `${API_URL}/api/git/connect/${provider}?${params.toString()}`;
-      const authUrl = `${API_URL}/api/auth/native/start?provider=google&chain_redirect=${encodeURIComponent(url)}&deep_link=1`;
+      const authUrl = `${API_URL}/api/auth/native/start?provider=google&chain_redirect=${encodeURIComponent(url)}`;
       const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
       if (invoke) {
         invoke("open_external", { url: authUrl }).catch(() => {});

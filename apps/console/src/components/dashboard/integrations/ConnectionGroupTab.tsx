@@ -441,11 +441,11 @@ export function ConnectionGroupTab({
       if (isLocalhost()) {
         const params = new URLSearchParams({
           groupId: group.id,
-          return_origin: "http://localhost:8443",
+          return_deep_link: "1",
           return_path: window.location.pathname + window.location.search,
         });
         const url = `${API_URL}${connectPath}?${params.toString()}`;
-        const authUrl = `${API_URL}/api/auth/native/start?provider=google&chain_redirect=${encodeURIComponent(url)}&deep_link=1`;
+        const authUrl = `${API_URL}/api/auth/native/start?provider=google&chain_redirect=${encodeURIComponent(url)}`;
         const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
         if (invoke) {
           invoke("open_external", { url: authUrl }).catch(() => {});
