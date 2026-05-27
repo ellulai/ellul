@@ -23,6 +23,9 @@ pub struct ServiceStatus {
 pub struct SetupStatus {
     pub complete: bool,
     pub version: Option<String>,
+    pub phase: Option<String>,
+    pub progress: Option<u32>,
+    pub error: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -161,6 +164,17 @@ pub async fn proot_setup_start() -> Result<(), Error> {
     #[cfg(target_os = "android")]
     {
         crate::bridge::call("setupRootfs", serde_json::json!({}))?;
+        return Ok(());
+    }
+    #[cfg(not(target_os = "android"))]
+    Err(Error::NotAvailable)
+}
+
+#[command]
+pub async fn proot_setup_reset() -> Result<(), Error> {
+    #[cfg(target_os = "android")]
+    {
+        crate::bridge::call("resetSetup", serde_json::json!({}))?;
         return Ok(());
     }
     #[cfg(not(target_os = "android"))]

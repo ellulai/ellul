@@ -244,10 +244,6 @@ export function registerGitRoutes(app: Hono): void {
   });
 
   // ── Android-only: local git credential management ──────────────
-  // These endpoints let the console store/read/clear git credentials
-  // directly in shield's memory without going through the central API.
-  // Profile + linked-repo metadata live in a sidecar map since
-  // GitCredential doesn't carry display fields.
 
   interface LocalGitProfile {
     provider: string;
@@ -264,6 +260,161 @@ export function registerGitRoutes(app: Hono): void {
   let localProfile: LocalGitProfile | null = null;
   let localLinkedRepo: LocalLinkedRepo | null = null;
 
+  function storeGitCredentials(provider: string, token: string, username: string, avatarUrl: string | null) {
+    setGitSecret('__GIT_TOKEN', token);
+    setGitSecret('__GIT_PROVIDER', provider);
+    setGitSecret('__GIT_USER_NAME', provider === 'github' ? 'x-access-token' : 'oauth2');
+    localProfile = { provider, username, avatarUrl };
+  }
+
+  // ── Android-only: GitHub device flow ──────────────────────────
+  // Proxies GitHub's OAuth device flow so the browser doesn't need
+  // direct CORS access to github.com. The client_id is provided by
+  // the frontend (it's public — included in every OAuth redirect URL).
+
+  interface DeviceFlowEntry {
+    deviceCode: string;
+    clientId: string;
+    expiresAt: number;
+    interval: number;
+  }
+  const deviceFlows = new Map<string, DeviceFlowEntry>();
+
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of deviceFlows) {
+      if (entry.expiresAt < now) deviceFlows.delete(key);
+    }
+  }, 60_000);
+
+  app.post('/_auth/git/device-flow/start', async (c) => {
+    if (!IS_ANDROID) return c.json({ error: 'Not available' }, 404);
+
+    const clientId = process.env.GITHUB_APP_CLIENT_ID;
+    if (!clientId) {
+      return c.json({ error: 'GitHub not configured on this server' }, 503);
+    }
+
+    try {
+      const res = await fetch('https://github.com/login/device/code', {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: clientId }),
+        signal: AbortSignal.timeout(10_000),
+      });
+
+      if (!res.ok) {
+        return c.json({ error: 'GitHub device flow unavailable' }, 502);
+      }
+
+      const data = (await res.json()) as {
+        device_code: string;
+        user_code: string;
+        verification_uri: string;
+        expires_in: number;
+        interval: number;
+        error?: string;
+      };
+
+      if (data.error) {
+        return c.json({ error: data.error }, 400);
+      }
+
+      const ref = crypto.randomBytes(16).toString('hex');
+      deviceFlows.set(ref, {
+        deviceCode: data.device_code,
+        clientId,
+        expiresAt: Date.now() + data.expires_in * 1000,
+        interval: data.interval,
+      });
+
+      return c.json({
+        ref,
+        userCode: data.user_code,
+        verificationUri: data.verification_uri,
+        expiresIn: data.expires_in,
+        interval: data.interval,
+      });
+    } catch {
+      return c.json({ error: 'Could not reach GitHub' }, 502);
+    }
+  });
+
+  app.post('/_auth/git/device-flow/poll', async (c) => {
+    if (!IS_ANDROID) return c.json({ error: 'Not available' }, 404);
+
+    const body = await c.req.json() as { ref: string };
+    const entry = deviceFlows.get(body.ref);
+
+    if (!entry || entry.expiresAt < Date.now()) {
+      if (entry) deviceFlows.delete(body.ref);
+      return c.json({ status: 'expired' });
+    }
+
+    try {
+      const res = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: entry.clientId,
+          device_code: entry.deviceCode,
+          grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+
+      const data = (await res.json()) as {
+        access_token?: string;
+        error?: string;
+        interval?: number;
+      };
+
+      if (data.error === 'authorization_pending') {
+        return c.json({ status: 'pending' });
+      }
+      if (data.error === 'slow_down') {
+        if (data.interval) entry.interval = data.interval;
+        return c.json({ status: 'pending', interval: entry.interval });
+      }
+      if (data.error) {
+        deviceFlows.delete(body.ref);
+        return c.json({ status: 'error', error: data.error });
+      }
+
+      let username = '';
+      let avatarUrl: string | null = null;
+      try {
+        const profileRes = await fetch('https://api.github.com/user', {
+          headers: {
+            Authorization: `Bearer ${data.access_token}`,
+            Accept: 'application/vnd.github+json',
+            'User-Agent': 'Ellul/1.0',
+          },
+          signal: AbortSignal.timeout(10_000),
+        });
+        if (profileRes.ok) {
+          const profile = (await profileRes.json()) as { login: string; avatar_url: string };
+          username = profile.login;
+          avatarUrl = profile.avatar_url;
+        }
+      } catch {}
+
+      deviceFlows.delete(body.ref);
+
+      storeGitCredentials('github', data.access_token!, username, avatarUrl);
+
+      return c.json({
+        status: 'authorized',
+        username,
+        avatarUrl,
+      });
+    } catch {
+      return c.json({ status: 'pending', interval: entry.interval });
+    }
+  });
+
+  // ── Android-only: credential management ───────────────────────
+
   app.post('/_auth/git/credentials', async (c) => {
     if (!IS_ANDROID) return c.json({ error: 'Not available' }, 404);
 
@@ -278,16 +429,7 @@ export function registerGitRoutes(app: Hono): void {
       return c.json({ error: 'provider, token, and username are required' }, 400);
     }
 
-    setGitSecret('__GIT_TOKEN', body.token);
-    setGitSecret('__GIT_PROVIDER', body.provider);
-    setGitSecret('__GIT_USER_NAME', body.provider === 'github' ? 'x-access-token' : 'oauth2');
-
-    localProfile = {
-      provider: body.provider,
-      username: body.username,
-      avatarUrl: body.avatarUrl ?? null,
-    };
-
+    storeGitCredentials(body.provider, body.token, body.username, body.avatarUrl ?? null);
     return c.json({ ok: true });
   });
 

@@ -31,6 +31,12 @@ class SetupException(
     cause: Throwable? = null,
 ) : Exception(message, cause)
 
+data class SetupState(
+    val phase: String,
+    val progress: Int,
+    val error: String?,
+)
+
 class SetupManager(private val context: Context) {
 
     companion object {
@@ -41,6 +47,7 @@ class SetupManager(private val context: Context) {
         private const val MAX_EXTRACTED_BYTES = 4L * 1024 * 1024 * 1024
         private const val ZSTD_EXPANSION_FACTOR = 3L
         private const val PROGRESS_THROTTLE_MS = 100L
+        private const val STATE_WRITE_THROTTLE_MS = 2000L
         private const val BUNDLED_ASSET = "rootfs.tar.zst"
 
         private val setupRunning = AtomicBoolean(false)
@@ -50,13 +57,20 @@ class SetupManager(private val context: Context) {
     private val rootfsDir = File(appDir, "rootfs")
     private val vaultDir = File(appDir, "vault")
     private val versionFile = File(appDir, "rootfs-version")
+    private val setupStateFile = File(appDir, "setup-state.json")
+    private var lastStateWrite = 0L
 
     fun isSetupComplete(): Boolean {
-        return rootfsDir.exists()
-            && File(rootfsDir, "usr/local/bin/ellul-engine-android").exists()
-            && (File(rootfsDir, "usr/bin/node").exists() || File(rootfsDir, "usr/local/bin/node").exists())
-            && versionFile.exists()
-            && versionFile.readText().trim().isNotEmpty()
+        val rootfsExists = rootfsDir.exists()
+        val engineExists = File(rootfsDir, "usr/local/bin/ellul-engine-android").exists()
+        val nodeExists = File(rootfsDir, "usr/bin/node").exists() || File(rootfsDir, "usr/local/bin/node").exists()
+        val versionExists = versionFile.exists()
+        val versionNonEmpty = versionExists && versionFile.readText().trim().isNotEmpty()
+        val complete = rootfsExists && engineExists && nodeExists && versionExists && versionNonEmpty
+        if (!complete) {
+            Log.d(TAG, "isSetupComplete=false: rootfs=$rootfsExists engine=$engineExists node=$nodeExists version=$versionExists versionNonEmpty=$versionNonEmpty")
+        }
+        return complete
     }
 
     fun getInstalledVersion(): String? {
@@ -64,36 +78,114 @@ class SetupManager(private val context: Context) {
         return versionFile.readText().trim().ifEmpty { null }
     }
 
+    fun getSetupState(): SetupState {
+        if (isSetupComplete()) return SetupState("complete", 100, null)
+        if (setupRunning.get()) {
+            return try {
+                val json = org.json.JSONObject(setupStateFile.readText())
+                SetupState(
+                    phase = json.optString("phase", "extracting"),
+                    progress = json.optInt("progress", 0),
+                    error = if (json.has("error")) json.getString("error") else null,
+                )
+            } catch (_: Exception) {
+                SetupState("extracting", 0, null)
+            }
+        }
+        if (!setupStateFile.exists()) return SetupState("idle", 0, null)
+        return try {
+            val json = org.json.JSONObject(setupStateFile.readText())
+            SetupState(
+                phase = json.optString("phase", "idle"),
+                progress = json.optInt("progress", 0),
+                error = if (json.has("error")) json.getString("error") else null,
+            )
+        } catch (_: Exception) {
+            SetupState("idle", 0, null)
+        }
+    }
+
+    private fun writeState(phase: String, progress: Int, error: String? = null, force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!force && now - lastStateWrite < STATE_WRITE_THROTTLE_MS) return
+        lastStateWrite = now
+        try {
+            val json = org.json.JSONObject().apply {
+                put("phase", phase)
+                put("progress", progress)
+                if (error != null) put("error", error)
+                put("ts", now)
+            }
+            val tmp = File(appDir, "setup-state.tmp")
+            tmp.writeText(json.toString())
+            if (!tmp.renameTo(setupStateFile)) {
+                tmp.delete()
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to write setup state", e)
+        }
+    }
+
+    fun resetSetup() {
+        if (setupRunning.get()) {
+            Log.w(TAG, "resetSetup: setup is running, refusing reset")
+            return
+        }
+        Log.i(TAG, "resetSetup: cleaning up rootfs=${rootfsDir.exists()} version=${versionFile.exists()} state=${setupStateFile.exists()}")
+        if (rootfsDir.exists()) rootfsDir.deleteRecursively()
+        versionFile.delete()
+        setupStateFile.delete()
+    }
+
     fun setup(onProgress: (SetupProgress) -> Unit) {
         if (!setupRunning.compareAndSet(false, true)) {
+            Log.w(TAG, "setup: already running, refusing concurrent setup")
             throw SetupException("Setup already in progress")
         }
 
+        val setupStartMs = System.currentTimeMillis()
         try {
             val bundledVersion = BuildConfig.BUNDLED_ROOTFS_VERSION
+            Log.i(TAG, "setup: bundledVersion='$bundledVersion' appDir=${appDir.absolutePath}")
             if (bundledVersion.isEmpty()) {
                 throw SetupException("No bundled rootfs in this build", SetupStage.DOWNLOADING)
             }
 
             if (isSetupComplete() && getInstalledVersion() == bundledVersion) {
-                Log.d(TAG, "setup already complete, version=$bundledVersion")
+                Log.d(TAG, "setup: already complete, version=$bundledVersion")
                 onProgress(SetupProgress(SetupStage.COMPLETE, 100, 0, 0))
                 return
             }
 
             checkDiskSpace()
 
-            Log.i(TAG, "extracting bundled rootfs v$bundledVersion")
+            Log.i(TAG, "setup: starting extraction of v$bundledVersion")
+            writeState("extracting", 0, force = true)
             onProgress(SetupProgress(SetupStage.EXTRACTING, 0, 0, 0))
 
+            val extractStartMs = System.currentTimeMillis()
             extractFromAssets(onProgress)
+            val extractDurationMs = System.currentTimeMillis() - extractStartMs
+            Log.i(TAG, "setup: extraction complete in ${extractDurationMs}ms")
+
+            Log.i(TAG, "setup: initializing vault")
+            writeState("initializing", 0, force = true)
             initializeVault(onProgress)
             writeVersionMarker(bundledVersion)
 
+            val totalDurationMs = System.currentTimeMillis() - setupStartMs
+            Log.i(TAG, "setup: complete in ${totalDurationMs}ms, version=$bundledVersion")
+            writeState("complete", 100, force = true)
             onProgress(SetupProgress(SetupStage.COMPLETE, 100, 0, 0))
         } catch (e: SetupException) {
+            val elapsed = System.currentTimeMillis() - setupStartMs
+            Log.e(TAG, "setup: failed after ${elapsed}ms at stage=${e.stage}: ${e.message}", e)
+            writeState("failed", 0, e.message, force = true)
             throw e
         } catch (e: Exception) {
+            val elapsed = System.currentTimeMillis() - setupStartMs
+            Log.e(TAG, "setup: unexpected failure after ${elapsed}ms: ${e.message}", e)
+            writeState("failed", 0, e.message, force = true)
             throw SetupException("Setup failed: ${e.message}", cause = e)
         } finally {
             setupRunning.set(false)
@@ -112,8 +204,9 @@ class SetupManager(private val context: Context) {
     private fun checkDiskSpace() {
         val stat = StatFs(appDir.path)
         val available = stat.availableBytes
+        val availableMB = available / (1024 * 1024)
+        Log.d(TAG, "checkDiskSpace: ${availableMB}MB available, need ${REQUIRED_SPACE_BYTES / (1024 * 1024)}MB")
         if (available < REQUIRED_SPACE_BYTES) {
-            val availableMB = available / (1024 * 1024)
             throw SetupException(
                 "Not enough storage. Need 3GB free, have ${availableMB}MB.",
                 SetupStage.DOWNLOADING
@@ -126,11 +219,20 @@ class SetupManager(private val context: Context) {
     private fun extractFromAssets(onProgress: (SetupProgress) -> Unit) {
         val assetSize = try {
             context.assets.openFd(BUNDLED_ASSET).length
-        } catch (_: Exception) { 0L }
+        } catch (e: Exception) {
+            Log.d(TAG, "extractFromAssets: openFd failed (compressed asset), falling back to stream: ${e.message}")
+            0L
+        }
         val estimatedTotal = if (assetSize > 0) assetSize * ZSTD_EXPANSION_FACTOR else 0L
+        Log.i(TAG, "extractFromAssets: assetSize=${assetSize}B estimatedTotal=${estimatedTotal}B")
 
-        context.assets.open(BUNDLED_ASSET).use { assetStream ->
-            extractRootfs(assetStream, estimatedTotal, onProgress)
+        try {
+            context.assets.open(BUNDLED_ASSET).use { assetStream ->
+                extractRootfs(assetStream, estimatedTotal, onProgress)
+            }
+        } catch (e: java.io.FileNotFoundException) {
+            Log.e(TAG, "extractFromAssets: bundled asset '$BUNDLED_ASSET' not found in APK", e)
+            throw SetupException("Installation package missing from app. Please reinstall the app.", SetupStage.EXTRACTING, e)
         }
     }
 
@@ -140,17 +242,24 @@ class SetupManager(private val context: Context) {
         estimatedTotal: Long,
         onProgress: (SetupProgress) -> Unit,
     ) {
-        if (rootfsDir.exists()) rootfsDir.deleteRecursively()
+        if (rootfsDir.exists()) {
+            Log.d(TAG, "extractRootfs: removing existing rootfs dir")
+            rootfsDir.deleteRecursively()
+        }
         rootfsDir.mkdirs()
 
         var extracted = 0L
+        var entryCount = 0
         val rootfsCanonical = rootfsDir.canonicalPath
         var lastEmit = 0L
+        var lastLogMs = 0L
 
         try {
+            Log.d(TAG, "extractRootfs: opening zstd+tar stream")
             ZstdInputStream(inputStream).use { zstdIn ->
                 TarArchiveInputStream(zstdIn).use { tar ->
                     generateSequence { tar.nextEntry }.forEach { entry ->
+                        entryCount++
                         checkInterrupted()
                         val name = entry.name
 
@@ -218,17 +327,25 @@ class SetupManager(private val context: Context) {
                             val pct = if (estimatedTotal > 0) {
                                 (extracted * 100 / estimatedTotal).toInt().coerceIn(0, 99)
                             } else 0
+                            writeState("extracting", pct)
                             onProgress(
                                 SetupProgress(SetupStage.EXTRACTING, pct, extracted, estimatedTotal)
                             )
+                            if (now - lastLogMs >= 10_000L) {
+                                lastLogMs = now
+                                Log.d(TAG, "extractRootfs: ${entryCount} entries, ${extracted / (1024 * 1024)}MB extracted, ${pct}%")
+                            }
                         }
                     }
                 }
             }
+            Log.i(TAG, "extractRootfs: stream complete — ${entryCount} entries, ${extracted / (1024 * 1024)}MB total")
         } catch (e: SetupException) {
+            Log.e(TAG, "extractRootfs: setup exception at entry $entryCount, ${extracted / (1024 * 1024)}MB extracted", e)
             rootfsDir.deleteRecursively()
             throw e
         } catch (e: Exception) {
+            Log.e(TAG, "extractRootfs: unexpected exception at entry $entryCount, ${extracted / (1024 * 1024)}MB extracted", e)
             rootfsDir.deleteRecursively()
             throw SetupException("Extraction failed: ${e.message}", SetupStage.EXTRACTING, e)
         }
@@ -265,7 +382,11 @@ class SetupManager(private val context: Context) {
     private fun initializeVault(onProgress: (SetupProgress) -> Unit) {
         onProgress(SetupProgress(SetupStage.INITIALIZING, 0, 0, 0))
 
-        if (File(vaultDir, "etc/ellul/jwt-secret").exists()) return
+        if (File(vaultDir, "etc/ellul/jwt-secret").exists()) {
+            Log.d(TAG, "initializeVault: vault already initialized, skipping")
+            return
+        }
+        Log.d(TAG, "initializeVault: creating vault at ${vaultDir.absolutePath}")
 
         for (dir in listOf(
             "etc/ellul",

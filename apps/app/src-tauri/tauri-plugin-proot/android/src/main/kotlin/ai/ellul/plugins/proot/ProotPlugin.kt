@@ -56,10 +56,12 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
         try {
             val setupManager = SetupManager(activity)
             if (!setupManager.isSetupComplete()) {
+                android.util.Log.w("ProotPlugin", "startWorkspace: setup not complete")
                 invoke.reject("Setup not complete")
                 return
             }
 
+            android.util.Log.i("ProotPlugin", "startWorkspace: launching ProotService")
             val intent = Intent(activity, ProotService::class.java).apply {
                 action = ProotService.ACTION_START
             }
@@ -70,6 +72,7 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
             }
             invoke.resolve()
         } catch (e: Exception) {
+            android.util.Log.e("ProotPlugin", "startWorkspace: failed", e)
             invoke.reject("Failed to start workspace: ${e.message}")
         }
     }
@@ -285,22 +288,47 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
     fun isSetupComplete(invoke: Invoke) {
         try {
             val setupManager = SetupManager(activity)
+            val state = setupManager.getSetupState()
+            val complete = setupManager.isSetupComplete()
+            android.util.Log.d("ProotPlugin", "isSetupComplete: complete=$complete phase=${state.phase} progress=${state.progress} error=${state.error}")
             val result = JSObject()
-            result.put("complete", setupManager.isSetupComplete())
+            result.put("complete", complete)
             val version = setupManager.getInstalledVersion()
             if (version != null) {
                 result.put("version", version)
             } else {
                 result.put("version", org.json.JSONObject.NULL)
             }
+            result.put("phase", state.phase)
+            result.put("progress", state.progress)
+            if (state.error != null) {
+                result.put("error", state.error)
+            } else {
+                result.put("error", org.json.JSONObject.NULL)
+            }
             invoke.resolve(result)
         } catch (e: Exception) {
+            android.util.Log.e("ProotPlugin", "isSetupComplete: failed", e)
             invoke.reject("Failed to check setup status: ${e.message}")
         }
     }
 
     @Command
+    fun resetSetup(invoke: Invoke) {
+        try {
+            android.util.Log.i("ProotPlugin", "resetSetup: cleaning up failed setup")
+            val setupManager = SetupManager(activity)
+            setupManager.resetSetup()
+            invoke.resolve()
+        } catch (e: Exception) {
+            android.util.Log.e("ProotPlugin", "resetSetup: failed", e)
+            invoke.reject("Failed to reset setup: ${e.message}")
+        }
+    }
+
+    @Command
     fun setupRootfs(invoke: Invoke) {
+        android.util.Log.i("ProotPlugin", "setupRootfs: starting setup thread")
         Thread({
             try {
                 val setupManager = SetupManager(activity)
@@ -313,9 +341,10 @@ class ProotPlugin(private val activity: android.app.Activity) : Plugin(activity)
                     }
                     trigger("setup-progress", payload)
                 }
+                android.util.Log.i("ProotPlugin", "setupRootfs: setup complete, resolving invoke")
                 invoke.resolve()
             } catch (e: Exception) {
-                android.util.Log.e("SetupManager", "Setup failed", e)
+                android.util.Log.e("ProotPlugin", "setupRootfs: setup failed", e)
                 val payload = JSObject().apply {
                     put("stage", SetupStage.FAILED.name)
                     put("percent", 0)

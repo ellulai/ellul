@@ -64,22 +64,14 @@ import { initDebugLog, dbg } from './application/audit/DebugLog';
 
 initDebugLog();
 
-// On Android, the engine passes the vault encryption key via env var (preferred,
-// avoids piped stdin which forces fork() in libuv) or stdin fallback.
+// On Android, the engine passes the vault encryption key via env var.
+// stdin is inherited (not piped) so readFileSync(0) would block forever.
 if (process.env.ELLUL_PLATFORM === 'android') {
   const envKey = process.env.ELLUL_VAULT_KEY;
   if (envKey && /^[0-9a-f]{64}$/.test(envKey)) {
     setVaultKey(envKey);
     delete process.env.ELLUL_VAULT_KEY;
     console.log('[shield] Vault encryption key loaded from env');
-  } else {
-    try {
-      const key = fs.readFileSync(0, 'utf8').trim();
-      if (/^[0-9a-f]{64}$/.test(key)) {
-        setVaultKey(key);
-        console.log('[shield] Vault encryption key loaded from stdin');
-      }
-    } catch {}
   }
 }
 

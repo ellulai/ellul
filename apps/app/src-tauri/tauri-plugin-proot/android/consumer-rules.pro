@@ -9,6 +9,8 @@
 -keep class ai.ellul.plugins.proot.UpdateProgress { <fields>; }
 -keep class ai.ellul.plugins.proot.UpdateStage { *; }
 -keep class ai.ellul.plugins.proot.SetupStage { *; }
+-keep class ai.ellul.plugins.proot.SetupProgress { <fields>; }
+-keep class ai.ellul.plugins.proot.SetupState { <fields>; }
 -keep class ai.ellul.plugins.proot.ProotService$ServiceStatusData { <fields>; }
 -keep class ai.ellul.plugins.proot.ProotService$BatteryState { *; }
 -keep class ai.ellul.plugins.proot.PowerController$BatteryAction { *; }
@@ -22,10 +24,8 @@
 -keep class org.bouncycastle.pqc.crypto.crystals.dilithium.** { *; }
 -dontwarn org.bouncycastle.**
 
-# zstd-jni — JNI native bridge
--keepclasseswithmembernames class com.github.luben.zstd.** { native <methods>; }
--keep class com.github.luben.zstd.ZstdInputStream { *; }
--keep class com.github.luben.zstd.ZstdOutputStream { *; }
+# zstd-jni — JNI native code accesses fields (srcPos, dstPos etc.) via GetFieldID
+-keep class com.github.luben.zstd.** { *; }
 
 # Apache Commons Compress — tar parsing + ServiceLoader codec discovery
 -keep class org.apache.commons.compress.archivers.tar.TarArchiveInputStream { *; }

@@ -44,6 +44,6 @@ android {
 dependencies {
     implementation(project(":tauri-android"))
     implementation("org.apache.commons:commons-compress:1.27.1")
-    implementation("com.github.luben:zstd-jni:1.5.6-9@aar")
+    implementation("com.github.luben:zstd-jni:1.5.7-9@aar")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 }

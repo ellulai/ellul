@@ -97,65 +97,122 @@ function LocalProvisioningScreen({ onBack, onComplete }: { onBack: () => void; o
   const [stage, setStage] = useState<LocalStage>("checking");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const startedRef = useRef(false);
+  const [runKey, setRunKey] = useState(0);
+  const cancelledRef = useRef(false);
 
   useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
+    cancelledRef.current = false;
 
     const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
     if (!invoke) { setStage("failed"); setError("Tauri not available"); return; }
 
-    let cancelled = false;
-    let eventUnlisten: (() => void) | null = null;
+    const dbg = (msg: string, ...args: any[]) => console.log(`[proot-setup] ${msg}`, ...args);
 
     const engine = getLocalEngine();
+    const SETUP_TIMEOUT_MS = 10 * 60 * 1000;
+    const HEALTH_TIMEOUT_ITERS = 60;
 
-    const runProot = async () => {
-      const ti = (window as any).__TAURI_INTERNALS__;
-      if (ti?.transformCallback) {
-        try {
-          const handlerId = ti.transformCallback((event: { payload: { stage: string; percent: number } }) => {
-            if (cancelled) return;
-            const s = event.payload.stage?.toLowerCase() as LocalStage;
-            if (s && LOCAL_STAGE_KEYS[s]) { setStage(s); setProgress(event.payload.percent ?? 0); }
-          });
-          const unlistenId = await ti.invoke("plugin:event|listen", {
-            event: "proot://setup-progress",
-            target: { kind: "Any" },
-            handler: handlerId,
-          });
-          eventUnlisten = () => { try { ti.invoke("plugin:event|unlisten", { event: unlistenId }); } catch {} };
-        } catch {}
+    const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+    const pollSetupUntilDone = async (startedAt: number) => {
+      let pollCount = 0;
+      while (!cancelledRef.current) {
+        await sleep(1500);
+        const elapsed = Date.now() - startedAt;
+        if (elapsed > SETUP_TIMEOUT_MS) {
+          dbg("pollSetup: timed out after", elapsed, "ms");
+          throw new Error("Installation timed out. Please free up storage and try again.");
+        }
+        let status: any;
+        try { status = await invoke("plugin:proot|proot_setup_status"); } catch (e) {
+          dbg("pollSetup: status poll failed, retrying", e);
+          continue;
+        }
+        pollCount++;
+        if (pollCount % 5 === 1) dbg("pollSetup:", status);
+        if (status?.complete === true) { dbg("pollSetup: complete"); return; }
+        if (status?.phase === "failed" || status?.error) {
+          dbg("pollSetup: failed", status.error);
+          throw new Error(status.error || "Installation failed");
+        }
+        const phase = (status?.phase as string)?.toLowerCase();
+        if (phase === "extracting") { setStage("extracting"); setProgress(status.progress ?? 0); }
+        else if (phase === "initializing") { setStage("initializing"); setProgress(0); }
       }
+    };
 
-      setStage("checking");
-      const status = await invoke("plugin:proot|proot_setup_status");
-      if (status?.complete !== true) {
-        setStage("downloading"); setProgress(0);
-        await invoke("plugin:proot|proot_setup_start");
-      }
-      if (cancelled) return;
-
-      setStage("starting"); setProgress(0);
-      await invoke("plugin:proot|proot_start");
-
+    const waitForHealthy = async (): Promise<boolean> => {
       setStage("health"); setProgress(0);
-      for (let i = 0; i < 60 && !cancelled; i++) {
-        await new Promise((r) => setTimeout(r, 2000));
+      dbg("waitForHealthy: starting health check loop");
+      for (let i = 0; i < HEALTH_TIMEOUT_ITERS && !cancelledRef.current; i++) {
+        await sleep(2000);
         try {
           const healthList = await invoke("plugin:proot|proot_health") as Array<{ name: string; healthy: boolean }>;
           const coreServices = healthList.filter((s) => ["sovereign-shield", "file-api", "agent-bridge"].includes(s.name));
           const allHealthy = coreServices.length > 0 && coreServices.every((s: { healthy: boolean }) => s.healthy);
-          setProgress(Math.min(Math.round(((i + 1) / 60) * 100), allHealthy ? 100 : 95));
-          if (allHealthy) break;
-        } catch {}
+          setProgress(Math.min(Math.round(((i + 1) / HEALTH_TIMEOUT_ITERS) * 100), allHealthy ? 100 : 95));
+          if (i % 5 === 0) dbg(`waitForHealthy: iter=${i}`, healthList.map((s) => `${s.name}:${s.healthy}`).join(" "));
+          if (allHealthy) { dbg("waitForHealthy: all healthy at iter", i); return true; }
+        } catch (e) {
+          if (i % 5 === 0) dbg("waitForHealthy: health poll error at iter", i, e);
+        }
+      }
+      dbg("waitForHealthy: timed out");
+      return false;
+    };
+
+    const runProot = async () => {
+      dbg("runProot: checking setup status");
+      setStage("checking"); setProgress(0);
+      let status: any;
+      try { status = await invoke("plugin:proot|proot_setup_status"); } catch (e: any) {
+        dbg("runProot: status check failed", e);
+        throw new Error("Could not check setup status: " + (e?.message ?? ""));
+      }
+      dbg("runProot: initial status", status);
+
+      if (status?.complete !== true) {
+        if (status?.phase === "failed" || status?.error) {
+          dbg("runProot: previous setup failed, resetting");
+          try { await invoke("plugin:proot|proot_setup_reset"); } catch (e) { dbg("runProot: reset error (non-fatal)", e); }
+        }
+
+        setStage("extracting"); setProgress(0);
+        const setupStartedAt = Date.now();
+        dbg("runProot: starting setup (fire-and-forget)");
+
+        invoke("plugin:proot|proot_setup_start").then(() => {
+          dbg("runProot: setup_start resolved");
+        }).catch((err: any) => {
+          dbg("runProot: setup_start rejected", err);
+          if (!cancelledRef.current) {
+            setStage("failed");
+            setError(typeof err === "string" ? err : err?.message ?? "Installation failed");
+          }
+        });
+
+        await pollSetupUntilDone(setupStartedAt);
+      }
+      if (cancelledRef.current) return;
+
+      dbg("runProot: starting workspace");
+      setStage("starting"); setProgress(0);
+      await invoke("plugin:proot|proot_start");
+
+      if (cancelledRef.current) return;
+
+      const allHealthy = await waitForHealthy();
+      if (cancelledRef.current) return;
+      if (!allHealthy) {
+        throw new Error("Services did not start within 2 minutes. Please try again.");
       }
     };
 
     const runLima = async () => {
+      dbg("runLima: checking status");
       setStage("checking");
       const st = await invoke("lima_status") as { installed: boolean; vmState: string; templateExists: boolean; provisioned: boolean };
+      dbg("runLima: status", st);
       if (!st.installed) throw new Error("Lima is not installed. Install with: brew install lima");
       if (!st.templateExists) throw new Error("Lima template not found. Run the ellul installer first.");
 
@@ -164,34 +221,28 @@ function LocalProvisioningScreen({ onBack, onComplete }: { onBack: () => void; o
         await invoke("lima_setup");
         await invoke("plugin:shield|shield_reload_http");
       }
-      if (cancelled) return;
+      if (cancelledRef.current) return;
 
-      setStage("health"); setProgress(0);
-      let allHealthy = false;
-      for (let i = 0; i < 90 && !cancelled; i++) {
-        await new Promise((r) => setTimeout(r, 2000));
-        try {
-          const healthList = await invoke("lima_health") as Array<{ name: string; healthy: boolean }>;
-          allHealthy = healthList.length > 0 && healthList.every((s: { healthy: boolean }) => s.healthy);
-          setProgress(Math.min(Math.round(((i + 1) / 90) * 100), allHealthy ? 100 : 95));
-          if (allHealthy) break;
-        } catch {}
-      }
+      const allHealthy = await waitForHealthy();
+      if (cancelledRef.current) return;
       if (!allHealthy) throw new Error("Services did not become healthy within timeout");
     };
 
     const run = async () => {
+      dbg("run: engine=", engine);
       try {
         if (engine === "lima") await runLima();
         else await runProot();
 
-        if (cancelled) return;
+        if (cancelledRef.current) return;
 
+        dbg("run: complete");
         setStage("ready"); setProgress(100);
-        await new Promise((r) => setTimeout(r, 500));
+        await sleep(500);
         onComplete();
       } catch (e: any) {
-        if (!cancelled) {
+        if (!cancelledRef.current) {
+          dbg("run: failed", e);
           setStage("failed");
           setError(typeof e === "string" ? e : e?.message ?? "Setup failed");
         }
@@ -199,17 +250,15 @@ function LocalProvisioningScreen({ onBack, onComplete }: { onBack: () => void; o
     };
 
     run();
-    return () => { cancelled = true; startedRef.current = false; eventUnlisten?.(); };
-  }, []);
+    return () => { cancelledRef.current = true; };
+  }, [runKey]);
 
   const handleRetry = () => {
-    startedRef.current = false;
     setStage("checking");
     setProgress(0);
     setError(null);
-    startedRef.current = false;
-    // Force re-run by remounting
-    window.location.reload();
+    cancelledRef.current = true;
+    setTimeout(() => setRunKey((k) => k + 1), 50);
   };
 
   const stageLabel = useMemo(() => {
@@ -218,7 +267,7 @@ function LocalProvisioningScreen({ onBack, onComplete }: { onBack: () => void; o
     try { return t(key as any); } catch { return stage; }
   }, [stage, t]);
 
-  const showProgress = stage === "downloading" || stage === "extracting" || stage === "provisioning" || stage === "health";
+  const showProgress = stage === "downloading" || stage === "extracting" || stage === "provisioning" || stage === "health" || stage === "initializing";
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-10 bg-background/95 backdrop-blur-sm p-4">
@@ -251,9 +300,17 @@ function LocalProvisioningScreen({ onBack, onComplete }: { onBack: () => void; o
                   </div>
                 </div>
               )}
-              <p className="text-center text-cream/60 text-sm">
+              <p className="text-center text-cream/60 text-sm mb-4">
                 {t("wait")}
               </p>
+              <div className="flex justify-center">
+                <button
+                  onClick={() => { cancelledRef.current = true; onBack(); }}
+                  className="px-4 py-2 rounded-lg text-sm text-cream/45 hover:text-cream/75 transition-colors"
+                >
+                  {t("back")}
+                </button>
+              </div>
             </>
           ) : (
             <>

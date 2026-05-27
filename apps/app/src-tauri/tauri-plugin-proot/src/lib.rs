@@ -70,6 +70,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::proot_fetch,
             commands::proot_setup_status,
             commands::proot_setup_start,
+            commands::proot_setup_reset,
             commands::proot_switch_to_local,
             commands::proot_tunnel_start,
             commands::proot_tunnel_stop,
