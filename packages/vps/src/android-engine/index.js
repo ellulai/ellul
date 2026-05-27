@@ -418,8 +418,6 @@ function startService(svc) {
     ELLUL_DISABLE_SESSION_VAULT: "1",
   };
 
-  // Pass GitHub App client ID to shield for device flow auth.
-  // Read from config file (written by rootfs build or provisioning).
   if (!env.GITHUB_APP_CLIENT_ID) {
     try {
       const ghClientId = fs.readFileSync(path.join(VAULT, "etc/ellul/github-app-client-id"), "utf8").trim();

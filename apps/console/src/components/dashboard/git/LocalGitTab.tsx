@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { API_URL } from "@/lib/api";
 import { ProviderLogo } from "./ProviderCard";
 
 interface LocalGitTabProps {
@@ -103,17 +102,19 @@ export function LocalGitTab({ app }: LocalGitTabProps) {
   const startDeviceFlow = async () => {
     setDeviceFlowError(null);
     try {
-      const res = await fetch(`${API_URL}/api/git/device-flow/start`, {
+      const res = await fetch("/_auth/git/device-flow/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: "github" }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Device flow start failed");
+      }
       const data = await res.json();
       setDeviceFlow(data);
       startPolling(data.ref, data.interval);
-    } catch {
-      setDeviceFlowError(t("deviceFlowStartFailed"));
+    } catch (e: any) {
+      setDeviceFlowError(e?.message || t("deviceFlowStartFailed"));
     }
   };
 
@@ -129,7 +130,7 @@ export function LocalGitTab({ app }: LocalGitTabProps) {
 
     const poll = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/git/device-flow/poll`, {
+        const res = await fetch("/_auth/git/device-flow/poll", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ref }),
@@ -137,23 +138,6 @@ export function LocalGitTab({ app }: LocalGitTabProps) {
         const data = await res.json();
 
         if (data.status === "authorized") {
-          const storeRes = await fetch("/_auth/git/credentials", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              provider: "github",
-              token: data.accessToken,
-              username: data.username,
-              avatarUrl: data.avatarUrl,
-            }),
-          });
-
-          if (!storeRes.ok) {
-            setDeviceFlow(null);
-            setDeviceFlowError(t("deviceFlowStoreFailed"));
-            return;
-          }
-
           setConnection({
             connected: true,
             provider: "github",
