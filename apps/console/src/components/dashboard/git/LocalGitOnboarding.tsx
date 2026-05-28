@@ -12,6 +12,7 @@ import {
   Globe,
   Check,
   LogOut,
+  Copy,
 } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { ProviderLogo } from "./ProviderCard";
@@ -54,6 +55,7 @@ export function LocalGitOnboarding({ onSelectRepo }: LocalGitOnboardingProps) {
     interval: number;
   } | null>(null);
   const [deviceFlowError, setDeviceFlowError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [repos, setRepos] = useState<Repo[]>([]);
@@ -222,10 +224,20 @@ export function LocalGitOnboarding({ onSelectRepo }: LocalGitOnboardingProps) {
         ) : (
           <div className="rounded-lg border border-sodium/20 bg-sodium/5 p-4 space-y-3">
             <p className="text-sm text-cream/80">{t("deviceFlowPrompt")}</p>
-            <div className="flex items-center justify-center">
+            <div className="flex items-center justify-center gap-2">
               <code className="text-2xl font-mono font-bold text-sodium tracking-[0.2em] px-4 py-2 rounded-lg bg-cream/[0.04] border border-cream/[0.08]">
                 {deviceFlow.userCode}
               </code>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(deviceFlow.userCode);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="p-2 rounded-md bg-cream/[0.04] border border-cream/[0.08] hover:bg-cream/[0.08] transition-colors"
+              >
+                {copied ? <Check className="h-4 w-4 text-sodium" /> : <Copy className="h-4 w-4 text-cream/50" />}
+              </button>
             </div>
             <div className="flex items-center justify-center gap-2">
               <Loader2 className="h-3.5 w-3.5 animate-spin text-cream/45" />

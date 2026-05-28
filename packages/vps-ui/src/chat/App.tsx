@@ -443,6 +443,16 @@ export function App() {
   // Same-origin agent auth
   const { fetchToken } = useAgentAuth(tChat);
   const [authError, setAuthError] = useState<string | null>(null);
+  // Debug: log initial config at mount for Android triage
+  useEffect(() => {
+    console.debug("[chat-dbg] App mount", {
+      config: window.__ELLUL_CONFIG__,
+      origin: window.location.origin,
+      href: window.location.href,
+      isAndroid: IS_ANDROID,
+      userAgent: navigator.userAgent.slice(0, 80),
+    });
+  }, []);
 
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("connecting");
   const [systemHealthState, setSystemHealthState] = useState<"green" | "yellow" | "red">("green");
@@ -454,6 +464,7 @@ export function App() {
     if (thread.lastSession) {
       let s = thread.lastSession === "main" ? "opencode" : thread.lastSession;
       if (_DISABLED.has(s)) s = preferredSessionRef.current;
+      console.debug("[chat-dbg] restoreSessionFromThread", { lastSession: thread.lastSession, resolved: s });
       setCurrentSession(s as SessionId);
     }
   }, []);
@@ -628,9 +639,10 @@ export function App() {
 
   // Connect to the orchestration WebSocket (F.3b.a)
   const connect = useCallback(async () => {
-    if (wsRpcRef.current) return;
-    if (connectingRef.current) return;
+    if (wsRpcRef.current) { console.debug("[chat-dbg] connect: already connected"); return; }
+    if (connectingRef.current) { console.debug("[chat-dbg] connect: already connecting"); return; }
     connectingRef.current = true;
+    console.debug("[chat-dbg] connect: starting WS connection");
 
     const thisConnectId = ++connectIdRef.current;
 
@@ -640,6 +652,7 @@ export function App() {
 
     intentionalCloseRef.current = false;
     const result = await fetchToken();
+    console.debug("[chat-dbg] connect: fetchToken result", "error" in result ? { error: result.error, code: result.code } : { tokenLen: result.token?.length });
 
     if (thisConnectId !== connectIdRef.current) {
       connectingRef.current = false;
@@ -672,6 +685,7 @@ export function App() {
     setAuthError(null);
 
     const wsUrl = getBridgeWsUrl(result.token);
+    console.debug("[chat-dbg] connect: WS URL", wsUrl.replace(/\?.*/, "?<token>"));
 
     try {
       const client = createWsRpcClient({ url: wsUrl });
@@ -709,6 +723,7 @@ export function App() {
         }
       });
       client.onStateChange((state) => {
+        console.debug("[chat-dbg] WS state change:", state);
         if (state === "open") {
           if (graceTimerRef.current) {
             clearTimeout(graceTimerRef.current);
@@ -897,6 +912,7 @@ export function App() {
     const cleanup = listenForMessages((msg) => {
       switch (msg.type) {
         case "set_project": {
+          console.debug("[chat-dbg] set_project received", { project: msg.project, projectId: (msg as any).projectId });
           setActiveProject(msg.project);
           setActiveProjectId(
             typeof msg.projectId === "string" && msg.projectId.length > 0
@@ -915,17 +931,19 @@ export function App() {
         }
         case "set_session":
           if (msg.session) {
+            console.debug("[chat-dbg] set_session received", { session: msg.session, prev: preferredSessionRef.current, hasActiveThread: !!activeThreadIdRef.current });
             preferredSessionRef.current = msg.session as SessionId;
+            setSelectedAdapter(msg.session as string);
+            if (!activeThreadIdRef.current) {
+              setCurrentSession(msg.session as SessionId);
+            }
           }
           break;
         case "set_theme":
           applyTheme(msg.mode);
           break;
         case "auth_complete":
-          // Parent has re-established auth (e.g. after passkey re-auth).
-          // Force-close the stale connection so connect() doesn't no-op
-          // on the wsRpcRef guard — the old session is dead even if the
-          // WebSocket hasn't received its close frame yet.
+          console.debug("[chat-dbg] auth_complete received, reconnecting WS");
           setAuthError(null);
           if (wsRpcRef.current) {
             intentionalCloseRef.current = true;
@@ -1029,7 +1047,7 @@ export function App() {
         }
       }
     });
-    // Notify parent we're ready
+    console.debug("[chat-dbg] App: sending ready to parent, __ELLUL_CONFIG__:", window.__ELLUL_CONFIG__);
     sendToParent({ type: "ready" });
     return cleanup;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1129,6 +1147,7 @@ export function App() {
   const handleSelectThread = useCallback((threadId: string) => {
     if (threadId === activeThreadIdRef.current) return;
     const thread = threads.find((t) => t.id === threadId);
+    console.debug("[chat-dbg] handleSelectThread", { threadId, lastSession: thread?.lastSession, threadCount: threads.length });
     if (thread) restoreSessionFromThread(thread);
     setActiveThreadId(threadId);
     activeThreadIdRef.current = threadId;
@@ -1149,12 +1168,13 @@ export function App() {
   }, [dispatchCommand, newCommandId]);
 
   const handleCreateThread = useCallback(async (session: string) => {
+    console.debug("[chat-dbg] handleCreateThread", { session, activeProject, activeProjectId, preferredSession: preferredSessionRef.current });
     setCurrentSession(session as SessionId);
     setShowThreadPicker(false);
 
-    if (!activeProject) return;
+    if (!activeProject) { console.debug("[chat-dbg] handleCreateThread: no activeProject, aborting"); return; }
     const provider = providerForSession(session);
-    if (!provider) return;
+    if (!provider) { console.debug("[chat-dbg] handleCreateThread: no provider for session", session); return; }
     const client = wsRpcRef.current;
     if (!client) return;
 
@@ -1226,6 +1246,7 @@ export function App() {
     if (creatingThreadRef.current) return;
     autoCreatedForProjectRef.current = activeProjectId;
     creatingThreadRef.current = true;
+    console.debug("[chat-dbg] auto-create thread", { preferredSession: preferredSessionRef.current, activeProjectId, bootstrapComplete, threadCount: threads.length });
     void handleCreateThread(preferredSessionRef.current).finally(() => {
       creatingThreadRef.current = false;
     });
@@ -1669,16 +1690,18 @@ export function App() {
         return;
       }
       const threadId = activeThreadIdRef.current;
-      if (!threadId) return;
+      if (!threadId) { console.debug("[chat-dbg] onSendComposer: no active thread"); return; }
       const client = wsRpcRef.current;
       if (!client) {
+        console.debug("[chat-dbg] onSendComposer: no WS client");
         setActiveThreadError(threadId as ThreadIdBrand, tChat("errors.notConnected"));
         return;
       }
       const sendCtx = composerRef.current?.getSendContext();
-      if (!sendCtx) return;
+      if (!sendCtx) { console.debug("[chat-dbg] onSendComposer: no sendCtx"); return; }
       const trimmed = sendCtx.prompt.trim();
       if (!trimmed) return;
+      console.debug("[chat-dbg] onSendComposer", { threadId: threadId.slice(0, 8), provider: sendCtx.selectedProvider, model: sendCtx.selectedModel });
 
       const promptForRetry = sendCtx.prompt;
       const messageId = newMessageIdValue();

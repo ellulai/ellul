@@ -40,10 +40,15 @@ function resolveParentOrigin(): string | null {
 }
 
 const PARENT_ORIGIN = resolveParentOrigin();
+console.debug("[chat-dbg] postMessage init", { PARENT_ORIGIN, href: typeof window !== "undefined" ? window.location.href : "ssr" });
 
 function onMessage(event: MessageEvent) {
-  if (!isOriginTrusted(event.origin)) return;
+  if (!isOriginTrusted(event.origin)) {
+    console.debug("[chat-dbg] postMessage DROPPED (untrusted origin)", event.origin, event.data?.type);
+    return;
+  }
   if (!event.data || typeof event.data.type !== "string") return;
+  console.debug("[chat-dbg] postMessage RECV", event.data.type, event.origin);
   handler?.(event.data as IncomingMessage);
 }
 
@@ -60,7 +65,8 @@ export function listenForMessages(fn: MessageHandler): () => void {
 // Send a message to the parent dashboard. Drops silently if not embedded or
 // the embedder didn't supply a trusted parentOrigin.
 export function sendToParent(msg: OutgoingMessage): void {
-  if (window.parent === window) return;
-  if (!PARENT_ORIGIN) return;
+  if (window.parent === window) { console.debug("[chat-dbg] sendToParent: top-level window, skipping"); return; }
+  if (!PARENT_ORIGIN) { console.debug("[chat-dbg] sendToParent: no PARENT_ORIGIN, dropping", msg.type); return; }
+  console.debug("[chat-dbg] sendToParent", msg.type, PARENT_ORIGIN);
   window.parent.postMessage(msg, PARENT_ORIGIN);
 }

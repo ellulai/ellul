@@ -22,6 +22,7 @@ export function useAgentAuth(t?: (key: string) => string) {
 
     pendingRef.current = (async () => {
       try {
+        console.debug("[chat-dbg] useAgentAuth: fetching token from /_auth/agent/authorize");
         const res = await fetch("/_auth/agent/authorize", {
           method: "POST",
           credentials: "include",
@@ -29,6 +30,7 @@ export function useAgentAuth(t?: (key: string) => string) {
         });
 
         const data = await res.json();
+        console.debug("[chat-dbg] useAgentAuth: response", { status: res.status, ok: res.ok, hasToken: !!data.token, error: data.error });
 
         if (!res.ok) {
           if (data.error === "No session" || data.reason?.includes("pop")) {
@@ -39,6 +41,7 @@ export function useAgentAuth(t?: (key: string) => string) {
 
         return { token: data.token };
       } catch (err) {
+        console.debug("[chat-dbg] useAgentAuth: network error", err);
         return {
           error: err instanceof Error ? err.message : (t?.("agentAuth.networkError") ?? "Network error"),
           code: "network_error",
