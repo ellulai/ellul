@@ -143,7 +143,6 @@ function MockVpsBridgeProvider({ children }: { children: ReactNode }) {
 
 function LocalBridgeProvider({ children }: { children: ReactNode }) {
   const hasTauri = typeof window !== "undefined" && !!(window as any).__TAURI_INTERNALS__?.invoke;
-  console.debug("[chat-dbg] LocalBridgeProvider mount", { hasTauri });
   const [ready, setReady] = useState(hasTauri);
   const [error, setError] = useState<string | null>(null);
   const jwtRef = useRef<string | null>(null);
@@ -175,7 +174,6 @@ function LocalBridgeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const send = useCallback(async <T = unknown,>(type: string, data: Record<string, unknown> = {}): Promise<T> => {
-    console.debug("[chat-dbg] LocalBridgeProvider.send", { type, hasTauri });
     if (hasTauri) {
       const invoke = (window as any).__TAURI_INTERNALS__.invoke;
       if (type === "code_api_proxy") {

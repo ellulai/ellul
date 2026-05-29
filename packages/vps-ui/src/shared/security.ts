@@ -26,15 +26,9 @@ export function getCodeWsUrl(): string {
 }
 
 export function isOriginTrusted(origin: string): boolean {
-  if (!origin || origin === "null") {
-    console.debug("[chat-dbg] isOriginTrusted REJECT: empty/null origin");
-    return false;
-  }
+  if (!origin || origin === "null") return false;
   const config = getConfig();
-  if (!config) {
-    console.debug("[chat-dbg] isOriginTrusted REJECT: no __ELLUL_CONFIG__");
-    return false;
-  }
+  if (!config) return false;
   let host: string;
   let protocol: string;
   try {
@@ -42,22 +36,9 @@ export function isOriginTrusted(origin: string): boolean {
     host = url.hostname;
     protocol = url.protocol;
   } catch {
-    console.debug("[chat-dbg] isOriginTrusted REJECT: invalid URL", origin);
     return false;
   }
   const zone = config.platformZone;
-  const isLocalhost = host === "localhost" || host.endsWith(".localhost");
-  if (protocol !== "https:" && !(protocol === "http:" && isLocalhost)) {
-    console.debug("[chat-dbg] isOriginTrusted REJECT: protocol", { origin, protocol, host, zone });
-    return false;
-  }
-  // Android proot / BYOS / Tauri: trust localhost and *.localhost origins
-  // (e.g. http://localhost:8443, https://tauri.localhost). Protocol check
-  // above already verified http+localhost or https.
-  if (isLocalhost) return true;
-  const trusted = host === zone || host.endsWith(`.${zone}`);
-  if (!trusted) {
-    console.debug("[chat-dbg] isOriginTrusted REJECT: zone mismatch", { origin, host, zone });
-  }
-  return trusted;
+  if (protocol !== "https:" && !(protocol === "http:" && host === "localhost")) return false;
+  return host === zone || host.endsWith(`.${zone}`);
 }

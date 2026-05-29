@@ -109,23 +109,19 @@ export function TabEditor({
     exchangeCodeFetchedRef.current = true;
 
     if (isLocalDomain(serverDomain)) {
-      console.debug("[chat-dbg] TabEditor: requesting code session (local)", { serverDomain });
       send<{ codeSessionId: string }>("get_code_session")
         .then((result) => {
-          console.debug("[chat-dbg] TabEditor: get_code_session result", { codeSessionId: result.codeSessionId?.slice(0, 8) });
           if (!result.codeSessionId) { setChatExchangeCode("error"); return; }
           setChatExchangeCode(result.codeSessionId);
         })
-        .catch((err) => { console.debug("[chat-dbg] TabEditor: get_code_session FAILED", err); setChatExchangeCode("error"); });
+        .catch(() => setChatExchangeCode("error"));
     } else {
-      console.debug("[chat-dbg] TabEditor: requesting exchange code (remote)", { serverDomain });
       send<{ code: string }>("get_exchange_code")
         .then((result) => {
-          console.debug("[chat-dbg] TabEditor: get_exchange_code result", { codeLen: result.code?.length });
           if (!result.code) { setChatExchangeCode("error"); return; }
           setChatExchangeCode(result.code);
         })
-        .catch((err) => { console.debug("[chat-dbg] TabEditor: get_exchange_code FAILED", err); setChatExchangeCode("error"); });
+        .catch(() => setChatExchangeCode("error"));
     }
   }, [ready, codeToken, send, serverDomain]);
 
@@ -159,11 +155,7 @@ export function TabEditor({
   // rather than throwing a postMessage origin mismatch.
   const chatOrigin = getIframeBaseUrl(serverDomain, isTauriApp());
   const sendToIframe = useCallback((msg: Record<string, unknown>) => {
-    if (!chatReadyRef.current) {
-      console.debug("[chat-dbg] TabEditor: sendToIframe DROPPED (not ready)", msg.type);
-      return;
-    }
-    console.debug("[chat-dbg] TabEditor: sendToIframe", msg.type, chatOrigin);
+    if (!chatReadyRef.current) return;
     iframeRef.current?.contentWindow?.postMessage(msg, chatOrigin);
   }, [chatOrigin]);
 
@@ -227,13 +219,9 @@ export function TabEditor({
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       const o = event.origin;
-      if (!isValidServerOrigin(o) && !o.endsWith(".sslip.io")) {
-        console.debug("[chat-dbg] TabEditor: postMessage DROPPED (untrusted origin)", o, event.data?.type);
-        return;
-      }
+      if (!isValidServerOrigin(o) && !o.endsWith(".sslip.io")) return;
       const data = event.data;
       if (!data || typeof data.type !== "string") return;
-      console.debug("[chat-dbg] TabEditor: postMessage RECV from iframe", data.type, o);
 
       switch (data.type) {
         case "gate_request":
@@ -248,7 +236,6 @@ export function TabEditor({
           break;
         }
         case "ready":
-          console.debug("[chat-dbg] TabEditor: iframe ready, sending initial state", { currentWorkbenchSession, wireDirectory, wireProjectId });
           chatReadyRef.current = true;
           clearTimeout(loadTimerRef.current);
           setChatLoaded(true);
@@ -371,9 +358,6 @@ export function TabEditor({
   const chatSrc = chatExchangeCode && chatExchangeCode !== "error"
     ? `${chatOrigin}/_auth/chat?${isLocal ? '_code_session' : '_shield_code'}=${encodeURIComponent(chatExchangeCode)}&parentOrigin=${encodeURIComponent(window.location.origin)}&locale=${encodeURIComponent(initialLocaleRef.current)}`
     : null;
-  if (chatSrc && chatSrc !== prevChatSrc) {
-    console.debug("[chat-dbg] TabEditor: iframe URL built", { chatOrigin, isLocal, parentOrigin: window.location.origin, authParam: isLocal ? "_code_session" : "_shield_code" });
-  }
 
   useEffect(() => {
     if (chatSrc && chatSrc !== prevChatSrc) {
