@@ -44,9 +44,15 @@ import { expandHomePath } from "../../shared/pathExpansion";
 import { ServerSettingsService, ServerSettingsError, type CodexSettings } from "../../shared/serverSettings";
 import { logEvent } from "../../shared/event-log";
 import { safeCwd } from "../../shared/config";
+import { IS_ANDROID } from "@vps/shared/platform";
 
 const PROVIDER = "codex" as const;
-const PROVIDER_PROBE_TIMEOUT_MS = 8_000;
+// codex app-server responds to `initialize` in ~1s once warm, but on Android
+// the proot + engine stdio-proxy adds latency AND the first probe fires during
+// the cold-boot I/O storm (187MB binary cache copy, opencode DB migration, all
+// services starting). 8s is too tight there → spurious "timed out". Give the
+// constrained device ample headroom; cloud keeps the snappy 8s.
+const PROVIDER_PROBE_TIMEOUT_MS = IS_ANDROID ? 90_000 : 8_000;
 const ELLUL_CLIENT_NAME = "ellul_desktop";
 const ELLUL_CLIENT_TITLE = "Ellul Desktop";
 const ELLUL_CLIENT_VERSION = "1.0.0";
@@ -408,6 +414,13 @@ function accountProbeStatus(account: CodexAppServerProviderSnapshot["account"]):
     ...(authLabel ? { label: authLabel } : {}),
   } satisfies ServerProvider["auth"];
 
+  // An account profile present = signed in. requiresOpenaiAuth is a
+  // descriptor of ChatGPT accounts (true even for a valid login — codex's
+  // own `codex login` reports "Successfully logged in" while account/read
+  // still returns requiresOpenaiAuth:true), NOT a "needs auth" flag, so it
+  // must only gate the no-account case. (An earlier attempt to gate on it
+  // even with an account present created a sign-in loop: login succeeds →
+  // re-check still sees requiresOpenaiAuth:true → back to "not signed in".)
   if (account.account) {
     return { status: "ready", auth };
   }
@@ -416,7 +429,7 @@ function accountProbeStatus(account: CodexAppServerProviderSnapshot["account"]):
     return {
       status: "error",
       auth: { status: "unauthenticated" },
-      message: "Codex CLI is not authenticated. Run `codex login` and try again.",
+      message: "Codex is not signed in. Sign in to continue.",
     };
   }
 

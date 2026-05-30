@@ -12,11 +12,7 @@ import * as crypto from 'crypto';
 import { SANDBOX_ID_RE, isSandboxId } from '@ellul.ai/types';
 import { ALL_LOCALES, DEFAULT_LOCALE } from '@ellul.ai/i18n-consts/locales';
 import { PORT, ROOT_DIR, HOME, PATHS, DEPLOYMENT_MODEL } from './config';
-
-const CONSOLE_ORIGIN = (() => {
-  try { return fs.readFileSync('/etc/ellul/console-origin', 'utf8').trim(); }
-  catch { return ''; }
-})();
+import { frameAncestorsValue } from './frame-ancestors';
 import {
   getTree,
   getFileContent,
@@ -76,7 +72,7 @@ import {
   handleGetIntegrations,
   handleInvalidateIntegrations,
 } from './application/integrations/IntegrationsHandler';
-import { verifyForwardAuthHmac, refreshInternalToken } from './auth';
+import { verifyForwardAuthHmac, refreshInternalToken, verifyTenantBearer } from './auth';
 import { getCurrentTier as getTierFromService } from './application/platform/Tier';
 import { killProcessesOnPorts, restartServices } from './application/platform/Processes';
 import {
@@ -334,7 +330,12 @@ const server = http.createServer(async (req, res) => {
     hasForwardAuth = verifyForwardAuthHmac(headers);
   }
 
-  if (!hasInternalJwt && !hasForwardAuth) {
+  // B2B tenant mode: the injected per-sandbox agent token presented as
+  // `Authorization: Bearer` — the same token the bridge accepts. No-op (false)
+  // on first-party servers, so the shield envelope is unaffected.
+  const hasTenantBearer = verifyTenantBearer(headers['authorization']);
+
+  if (!hasInternalJwt && !hasForwardAuth && !hasTenantBearer) {
     res.writeHead(401);
     res.end(JSON.stringify({ error: 'Authentication required' }));
     return;
@@ -374,6 +375,93 @@ const server = http.createServer(async (req, res) => {
 
   try {
     // ============================================
+    // B2B Sandbox-as-a-Service file push/read
+    //   PUT /workspace/{projectId}/{path}  — write (creates dirs on first push)
+    //   GET /workspace/{projectId}/{path}  — read back
+    // projectId maps to ~/projects/{projectId} (== the bridge's PROJECTS_DIR),
+    // so files land exactly where the agent runs. Auth: the global gate above
+    // (tenant Bearer | internal JWT | forward-auth). Traversal-safe.
+    // ============================================
+    if ((req.method === 'PUT' || req.method === 'GET') && pathname.startsWith('/workspace/')) {
+      const rest = pathname.slice('/workspace/'.length);
+      const firstSlash = rest.indexOf('/');
+      if (firstSlash <= 0 || firstSlash === rest.length - 1) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Path must be /workspace/{projectId}/{path}' }));
+        return;
+      }
+      let projectId: string;
+      let relSegments: string[];
+      try {
+        projectId = decodeURIComponent(rest.slice(0, firstSlash));
+        relSegments = rest.slice(firstSlash + 1).split('/').filter(Boolean).map(decodeURIComponent);
+      } catch {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Invalid path encoding' }));
+        return;
+      }
+      const SAFE_SEG = /^[a-zA-Z0-9._-]+$/;
+      if (!SAFE_SEG.test(projectId) || projectId === '.' || projectId === '..') {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Invalid projectId' }));
+        return;
+      }
+      if (
+        relSegments.length === 0 ||
+        relSegments.some((s) => s === '.' || s === '..' || s.includes('\0'))
+      ) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Invalid file path' }));
+        return;
+      }
+      const projectDir = path.join(ROOT_DIR, projectId);
+      const target = path.join(projectDir, ...relSegments);
+      if (target !== projectDir && !target.startsWith(projectDir + path.sep)) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Path traversal rejected' }));
+        return;
+      }
+
+      if (req.method === 'GET') {
+        try {
+          const data = fs.readFileSync(target);
+          res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': data.length });
+          res.end(data);
+        } catch {
+          res.writeHead(404);
+          res.end(JSON.stringify({ error: 'Not found' }));
+        }
+        return;
+      }
+
+      // PUT — buffer (size-capped) then write, creating the project dir + parents.
+      const MAX_BYTES = 64 * 1024 * 1024; // 64 MB / file
+      const chunks: Buffer[] = [];
+      let total = 0;
+      let tooLarge = false;
+      for await (const chunk of req) {
+        const b = chunk as Buffer;
+        total += b.length;
+        if (total > MAX_BYTES) {
+          tooLarge = true;
+          break;
+        }
+        chunks.push(b);
+      }
+      if (tooLarge) {
+        res.writeHead(413);
+        res.end(JSON.stringify({ error: 'File too large' }));
+        return;
+      }
+      const body = Buffer.concat(chunks);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, body);
+      res.writeHead(200);
+      res.end(JSON.stringify({ ok: true, path: `${projectId}/${relSegments.join('/')}`, bytes: body.length }));
+      return;
+    }
+
+    // ============================================
     // Code Browser SPA (VPS-served iframe)
     // ============================================
 
@@ -386,7 +474,7 @@ const server = http.createServer(async (req, res) => {
         "img-src 'self' data:",
         "font-src 'self' data:",
         "connect-src 'self' wss:",
-        `frame-ancestors 'self' ${CONSOLE_ORIGIN}`,
+        `frame-ancestors ${frameAncestorsValue()}`,
         "base-uri 'self'",
         "form-action 'none'",
         "object-src 'none'",
@@ -551,13 +639,31 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      // Android: file-api can't fork() (zygote seccomp -> spawn ENOSYS); route
+      // read-only git via the in-proot engine using `sh -c`. Non-Android unchanged.
+      const { IS_ANDROID: STATUS_IS_ANDROID } = await import('@vps/shared/platform');
       const { exec } = await import('child_process');
-      const runCmd = (cmd: string): Promise<string> =>
-        new Promise((resolve) => {
+      const runCmd = async (cmd: string): Promise<string> => {
+        if (STATUS_IS_ANDROID) {
+          const { engineRun } = await import('./application/engine-spawn');
+          try {
+            // Engine spawns from /home/dev (chdir/fork ENOSYS in proot) — inject
+            // repo dir via `git -C`, never a cwd. All cmds here begin with `git `.
+            const androidCmd = cmd.startsWith('git ')
+              ? `git -C ${JSON.stringify(path.resolve(repoRoot!))} ${cmd.slice('git '.length)}`
+              : cmd;
+            const { stdout } = await engineRun('sh', ['-c', androidCmd], {});
+            return stdout.trim();
+          } catch {
+            return '';
+          }
+        }
+        return new Promise<string>((resolve) => {
           exec(cmd, { cwd: repoRoot!, timeout: 5000 }, (err, stdout) => {
             resolve(err ? '' : stdout.trim());
           });
         });
+      };
 
       const statusOutput = await runCmd('git status --porcelain');
       const diffOutput = await runCmd('git diff --stat');
@@ -638,7 +744,6 @@ const server = http.createServer(async (req, res) => {
       }
 
       // Build git diff command based on status (or commit sha)
-      const { execFile } = await import('child_process');
       const diffSha = parsedUrl.query.sha as string | undefined;
       if (diffSha && !/^[0-9a-f]{7,40}$/.test(diffSha)) {
         res.writeHead(400);
@@ -654,11 +759,25 @@ const server = http.createServer(async (req, res) => {
       }
       gitArgs.push('--', diffPath);
 
-      const diffResult = await new Promise<string>((resolve) => {
-        execFile('git', gitArgs, { cwd: diffProjectDir, timeout: 10_000 }, (err, stdout) => {
-          resolve(err ? '' : stdout);
+      // Android: delegate this READ-ONLY git diff to the in-proot engine (no fork).
+      const { IS_ANDROID: DIFF_IS_ANDROID } = await import('@vps/shared/platform');
+      let diffResult: string;
+      if (DIFF_IS_ANDROID) {
+        const { engineRun } = await import('./application/engine-spawn');
+        try {
+          // Engine spawns from /home/dev — inject repo dir via `git -C`, no cwd.
+          ({ stdout: diffResult } = await engineRun('git', ['-C', path.resolve(diffProjectDir), ...gitArgs], {}));
+        } catch {
+          diffResult = '';
+        }
+      } else {
+        const { execFile } = await import('child_process');
+        diffResult = await new Promise<string>((resolve) => {
+          execFile('git', gitArgs, { cwd: diffProjectDir, timeout: 10_000 }, (err, stdout) => {
+            resolve(err ? '' : stdout);
+          });
         });
-      });
+      }
 
       // Return 200 with diff content (may be empty for edge cases)
       res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -690,6 +809,8 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      // Android: delegate this READ-ONLY search to the in-proot engine (no fork).
+      const { IS_ANDROID: SEARCH_IS_ANDROID } = await import('@vps/shared/platform');
       const { execFile: execFileSearch } = await import('child_process');
 
       // Check if git repo exists for git grep
@@ -698,30 +819,45 @@ const server = http.createServer(async (req, res) => {
       const searchResults: Array<{ file: string; line: number; content: string }> = [];
       let truncated = false;
 
-      try {
-        const output = await new Promise<string>((resolve, reject) => {
-          if (hasGit) {
-            // git grep: fixed string, case insensitive, skip binary, max results
-            const args = ['grep', '-n', '-i', '-I', '-F', `--max-count=${searchLimit}`, '-e', searchQuery];
-            if (searchGlob) args.push('--', searchGlob);
-            execFileSearch('git', args, { cwd: searchDir, timeout: 10_000, maxBuffer: 5 * 1024 * 1024 }, (err, stdout) => {
-              // git grep returns exit code 1 for no matches — not an error
-              resolve(stdout || '');
-            });
-          } else {
-            // Fallback: grep
-            const args = ['-rn', '-i', '-F', '--binary-files=without-match'];
-            // Exclude ignored directories
+      // Build the search command (git grep when a repo exists, else plain grep).
+      // git grep / grep exit 1 on no-match — engineRun returns stdout regardless,
+      // and the execFile callbacks below already ignore the error and use stdout.
+      const searchBin = hasGit ? 'git' : 'grep';
+      const searchArgs: string[] = hasGit
+        ? (() => {
+            const a = ['grep', '-n', '-i', '-I', '-F', `--max-count=${searchLimit}`, '-e', searchQuery];
+            if (searchGlob) a.push('--', searchGlob);
+            return a;
+          })()
+        : (() => {
+            const a = ['-rn', '-i', '-F', '--binary-files=without-match'];
             for (const pattern of ['node_modules', '.git', '.next', 'dist', 'build', '__pycache__', '.cache', '.turbo', 'venv', 'coverage']) {
-              args.push(`--exclude-dir=${pattern}`);
+              a.push(`--exclude-dir=${pattern}`);
             }
-            if (searchGlob) args.push(`--include=${searchGlob}`);
-            args.push('-e', searchQuery, '.');
-            execFileSearch('grep', args, { cwd: searchDir, timeout: 10_000, maxBuffer: 5 * 1024 * 1024 }, (err, stdout) => {
+            if (searchGlob) a.push(`--include=${searchGlob}`);
+            a.push('-e', searchQuery, '.');
+            return a;
+          })();
+
+      try {
+        let output: string;
+        if (SEARCH_IS_ANDROID) {
+          const { engineRun } = await import('./application/engine-spawn');
+          // Engine spawns from /home/dev (chdir/fork ENOSYS in proot). git grep
+          // accepts `-C <dir>`; plain grep has its trailing `.` swapped for the
+          // absolute search dir so it doesn't depend on the process cwd.
+          const absSearchDir = path.resolve(searchDir);
+          const androidSearchArgs = hasGit
+            ? ['-C', absSearchDir, ...searchArgs]
+            : searchArgs.map((a) => (a === '.' ? absSearchDir : a));
+          ({ stdout: output } = await engineRun(searchBin, androidSearchArgs, {}));
+        } else {
+          output = await new Promise<string>((resolve) => {
+            execFileSearch(searchBin, searchArgs, { cwd: searchDir, timeout: 10_000, maxBuffer: 5 * 1024 * 1024 }, (err, stdout) => {
               resolve(stdout || '');
             });
-          }
-        });
+          });
+        }
 
         if (output) {
           const lines = output.split('\n');
@@ -795,16 +931,25 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      const { execFile: execBlame } = await import('child_process');
+      // Android: delegate this READ-ONLY git blame to the in-proot engine (no fork).
+      const { IS_ANDROID: BLAME_IS_ANDROID } = await import('@vps/shared/platform');
       try {
-        const output = await new Promise<string>((resolve, reject) => {
-          execBlame('git', ['blame', '--line-porcelain', '--', blamePath], {
-            cwd: blameDir, timeout: 15_000, maxBuffer: 10 * 1024 * 1024,
-          }, (err, stdout) => {
-            if (err) reject(err);
-            else resolve(stdout);
+        let output: string;
+        if (BLAME_IS_ANDROID) {
+          const { engineRun } = await import('./application/engine-spawn');
+          // Engine spawns from /home/dev — inject repo dir via `git -C`, no cwd.
+          ({ stdout: output } = await engineRun('git', ['-C', path.resolve(blameDir), 'blame', '--line-porcelain', '--', blamePath], {}));
+        } else {
+          const { execFile: execBlame } = await import('child_process');
+          output = await new Promise<string>((resolve, reject) => {
+            execBlame('git', ['blame', '--line-porcelain', '--', blamePath], {
+              cwd: blameDir, timeout: 15_000, maxBuffer: 10 * 1024 * 1024,
+            }, (err, stdout) => {
+              if (err) reject(err);
+              else resolve(stdout);
+            });
           });
-        });
+        }
 
         // Parse porcelain output
         const lines: Array<{ sha: string; author: string; summary: string; date: string; lineNumber: number; content: string }> = [];
@@ -866,17 +1011,26 @@ const server = http.createServer(async (req, res) => {
         }
       }
 
-      const { execFile: execLog } = await import('child_process');
+      // Android: delegate this READ-ONLY git log to the in-proot engine (no fork).
+      const { IS_ANDROID: LOG_IS_ANDROID } = await import('@vps/shared/platform');
       try {
         const args = ['log', `--format=%H%n%s%n%an%n%aI`, `-${logLimit}`];
         if (logPath) { args.push('--follow', '--', logPath); }
 
-        const output = await new Promise<string>((resolve, reject) => {
-          execLog('git', args, { cwd: logDir, timeout: 10_000 }, (err, stdout) => {
-            if (err) reject(err);
-            else resolve(stdout);
+        let output: string;
+        if (LOG_IS_ANDROID) {
+          const { engineRun } = await import('./application/engine-spawn');
+          // Engine spawns from /home/dev — inject repo dir via `git -C`, no cwd.
+          ({ stdout: output } = await engineRun('git', ['-C', path.resolve(logDir), ...args], {}));
+        } else {
+          const { execFile: execLog } = await import('child_process');
+          output = await new Promise<string>((resolve, reject) => {
+            execLog('git', args, { cwd: logDir, timeout: 10_000 }, (err, stdout) => {
+              if (err) reject(err);
+              else resolve(stdout);
+            });
           });
-        });
+        }
 
         // Parse: 4 lines per commit
         const commits: Array<{ sha: string; message: string; author: string; date: string }> = [];
@@ -3116,13 +3270,31 @@ const server = http.createServer(async (req, res) => {
       const tree = getTree(appPath);
 
       // Get git status for the app
+      // Android: file-api can't fork() (zygote seccomp -> spawn ENOSYS); route
+      // read-only git via the in-proot engine using `sh -c`. Non-Android unchanged.
+      const { IS_ANDROID: APPSTATUS_IS_ANDROID } = await import('@vps/shared/platform');
       const { exec } = await import('child_process');
-      const runCmd = (cmd: string): Promise<string> =>
-        new Promise((resolve) => {
+      const runCmd = async (cmd: string): Promise<string> => {
+        if (APPSTATUS_IS_ANDROID) {
+          const { engineRun } = await import('./application/engine-spawn');
+          try {
+            // Engine spawns from /home/dev (chdir/fork ENOSYS in proot) — inject
+            // repo dir via `git -C`, never a cwd. All cmds here begin with `git `.
+            const androidCmd = cmd.startsWith('git ')
+              ? `git -C ${JSON.stringify(path.resolve(appPath))} ${cmd.slice('git '.length)}`
+              : cmd;
+            const { stdout } = await engineRun('sh', ['-c', androidCmd], {});
+            return stdout.trim();
+          } catch {
+            return '';
+          }
+        }
+        return new Promise<string>((resolve) => {
           exec(cmd, { cwd: appPath, timeout: 5000 }, (err, stdout) => {
             resolve(err ? '' : stdout.trim());
           });
         });
+      };
 
       const statusOutput = await runCmd('git status --porcelain');
       const modified: Array<{ status: string; file: string }> = [];

@@ -915,9 +915,19 @@ run_daemon() {
       log "update-identity: enforcer restart scheduled (2s)"
     fi
 
+    # Backoff when the control plane is unreachable (API down or Neon
+    # quota-blocked): a fleet of enforcers must not hammer a dead endpoint
+    # every tick, nor re-blow a freshly reset quota in a thundering herd.
+    # Linear ramp after 2 failures, capped at 300s. SIGUSR1 still interrupts
+    # the wait below, so recovery stays instant the moment a push arrives.
+    _SLEEP_INTERVAL=\$HEARTBEAT_INTERVAL
+    if [ "\$CONSECUTIVE_FAILURES" -gt 2 ]; then
+      _SLEEP_INTERVAL=\$((HEARTBEAT_INTERVAL * CONSECUTIVE_FAILURES))
+      [ "\$_SLEEP_INTERVAL" -gt 300 ] && _SLEEP_INTERVAL=300
+    fi
     # Interruptible sleep: SIGUSR1 interrupts wait immediately (zero latency)
     WAKEUP=0
-    sleep \$HEARTBEAT_INTERVAL &
+    sleep \$_SLEEP_INTERVAL &
     SLEEP_PID=\$!
     wait \$SLEEP_PID 2>/dev/null
     if [ \$WAKEUP -eq 1 ]; then

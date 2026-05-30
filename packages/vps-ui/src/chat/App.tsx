@@ -443,7 +443,6 @@ export function App() {
   // Same-origin agent auth
   const { fetchToken } = useAgentAuth(tChat);
   const [authError, setAuthError] = useState<string | null>(null);
-
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("connecting");
   const [systemHealthState, setSystemHealthState] = useState<"green" | "yellow" | "red">("green");
   const [queueByThread, setQueueByThread] = useState<Record<string, { position: number; etaMs: number }>>({});
@@ -916,16 +915,16 @@ export function App() {
         case "set_session":
           if (msg.session) {
             preferredSessionRef.current = msg.session as SessionId;
+            setSelectedAdapter(msg.session as string);
+            if (!activeThreadIdRef.current) {
+              setCurrentSession(msg.session as SessionId);
+            }
           }
           break;
         case "set_theme":
           applyTheme(msg.mode);
           break;
         case "auth_complete":
-          // Parent has re-established auth (e.g. after passkey re-auth).
-          // Force-close the stale connection so connect() doesn't no-op
-          // on the wsRpcRef guard — the old session is dead even if the
-          // WebSocket hasn't received its close frame yet.
           setAuthError(null);
           if (wsRpcRef.current) {
             intentionalCloseRef.current = true;
@@ -1029,7 +1028,6 @@ export function App() {
         }
       }
     });
-    // Notify parent we're ready
     sendToParent({ type: "ready" });
     return cleanup;
     // eslint-disable-next-line react-hooks/exhaustive-deps

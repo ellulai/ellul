@@ -417,7 +417,7 @@ class SetupManager(private val context: Context) {
         File(vaultDir, "etc/ellul/allowed-origins").writeText("http://localhost:8443")
         File(vaultDir, "etc/ellul/dev-domain").writeText("localhost")
         File(vaultDir, "etc/ellul/preview-origins.json").writeText("""{"origins":["http://localhost:8443"],"patterns":[]}""")
-        File(vaultDir, "etc/ellul/github-app-client-id").writeText("Ov23li7SC1uOYjjxAr7a")
+        File(vaultDir, "etc/ellul/github-app-client-id").writeText("Iv23liiZtAgZf871LUxs")
 
         val vaultKey = ByteArray(32).also { SecureRandom().nextBytes(it) }
         val vaultKeyHex = vaultKey.joinToString("") { "%02x".format(it) }

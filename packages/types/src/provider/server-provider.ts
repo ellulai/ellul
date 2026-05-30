@@ -59,6 +59,15 @@ export const ServerProviderSkill = Schema.Struct({
 });
 export type ServerProviderSkill = typeof ServerProviderSkill.Type;
 
+// BYOK credential form field the console renders (e.g. an API-key paste box).
+export const ServerProviderCredentialField = Schema.Struct({
+  key: TrimmedNonEmptyString,
+  label: TrimmedNonEmptyString,
+  placeholder: Schema.optional(TrimmedNonEmptyString),
+  secret: Schema.optional(Schema.Boolean),
+});
+export type ServerProviderCredentialField = typeof ServerProviderCredentialField.Type;
+
 export const ServerProvider = Schema.Struct({
   provider: ProviderKind,
   enabled: Schema.Boolean,
@@ -73,6 +82,11 @@ export const ServerProvider = Schema.Struct({
     Schema.withDecodingDefault(Effect.succeed([])),
   ),
   skills: Schema.Array(ServerProviderSkill).pipe(Schema.withDecodingDefault(Effect.succeed([]))),
+  // BYOK provider auth (additive, optional → backward-compatible). Whether this
+  // provider accepts a pasted API key, and the field spec the console renders.
+  // Populated by the bridge for tenant /ws; absent on other surfaces.
+  acceptsApiKey: Schema.optional(Schema.Boolean),
+  credentialFields: Schema.optional(Schema.Array(ServerProviderCredentialField)),
 });
 export type ServerProvider = typeof ServerProvider.Type;
 

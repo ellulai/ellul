@@ -15,6 +15,7 @@ import { runScopeCheck } from '../application/gates/GateScopeCheck';
 import { getScopeConfusionDenialStats } from '@vps/shared/cross-project-scope';
 import { recordExposure } from '../application/audit/Exposure';
 import { CONSOLE_ORIGIN, APP_ZONE } from '../config';
+import { IS_ANDROID } from '@vps/shared/platform';
 import {
   createShieldedNamespace,
   applyWhitelist,
@@ -1309,6 +1310,10 @@ export function registerWorkflowRoutes(app: Hono): void {
       if (typeof vpsConfirmToken !== 'string' || !/^[0-9a-f]{64}$/.test(vpsConfirmToken)) {
         return c.json({ success: false, error: 'vpsConfirmToken has invalid shape' }, 400);
       }
+    }
+
+    if (IS_ANDROID) {
+      return c.json({ success: true });
     }
 
     let apiUrl: string;

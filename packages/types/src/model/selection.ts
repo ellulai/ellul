@@ -65,7 +65,7 @@ export const ModelSelection = Schema.Union([
 export type ModelSelection = typeof ModelSelection.Type;
 
 export const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderKind, string> = {
-  codex: "gpt-5.4",
+  codex: "gpt-5.5",
   claudeAgent: "claude-opus-4-7",
   cursor: "auto",
   // Must exist in opencode-zen's connected list; gpt-5 is paid-only.

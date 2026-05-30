@@ -20,6 +20,7 @@ import {
   type RpcServerFrame,
 } from "./envelope";
 import { gatePopChallenge, gateWsUpgrade } from "./auth-middleware";
+import { isTenantMode } from "@vps/shared/tenant-token";
 import { ORCHESTRATION_RPC_ROUTER, type RouterEntry } from "./router";
 import {
   registerSessionConnection,
@@ -103,8 +104,12 @@ function attachConnection<R, E>(
     } catch {}
   };
 
-  popChallengeTimer = setInterval(scheduleChallenge, POP_CHALLENGE_INTERVAL_MS);
-  if (popChallengeTimer.unref) popChallengeTimer.unref();
+  // PoP is sovereign-shield-session-bound; tenant mode (headless M2M) has no
+  // shield, so skip challenges entirely rather than send ones no client answers.
+  if (!isTenantMode()) {
+    popChallengeTimer = setInterval(scheduleChallenge, POP_CHALLENGE_INTERVAL_MS);
+    if (popChallengeTimer.unref) popChallengeTimer.unref();
+  }
 
   ws.on("message", (raw) => {
     const text = raw.toString();

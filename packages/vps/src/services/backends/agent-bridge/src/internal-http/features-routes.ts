@@ -36,8 +36,8 @@ const VALID_FEATURES = new Set(['gbrain', 'gstack']);
 const PLAN_FILE = '/etc/ellul/plan';
 const GBRAIN_ELIGIBLE_PLANS = new Set(['pro']);
 
-const VALID_PROVIDERS = ['anthropic', 'openai', 'google', 'openrouter', 'xai'] as const;
-type ProviderId = typeof VALID_PROVIDERS[number];
+export const VALID_PROVIDERS = ['anthropic', 'openai', 'google', 'openrouter', 'xai'] as const;
+export type ProviderId = typeof VALID_PROVIDERS[number];
 
 const PROVIDER_ENV_KEYS: Record<ProviderId, string> = {
   anthropic: 'ANTHROPIC_API_KEY',
@@ -96,7 +96,7 @@ function readEnvFile(path: string): Record<string, string> {
   return env;
 }
 
-function getConnectedProviders(): Record<ProviderId, { connected: boolean }> {
+export function getConnectedProviders(): Record<ProviderId, { connected: boolean }> {
   const cliEnv = readEnvFile(CLI_ENV_FILE);
 
   let zcEnv: Record<string, unknown> = {};
@@ -159,14 +159,14 @@ function getConnectorStatus(): Record<string, ConnectorInfo> {
   };
 }
 
-const API_KEY_RE = /^[A-Za-z0-9_\-+/=.]+$/;
-const API_KEY_MAX_LEN = 512;
+export const API_KEY_RE = /^[A-Za-z0-9_\-+/=.]+$/;
+export const API_KEY_MAX_LEN = 512;
 
 function shellSingleQuote(value: string): string {
   return "'" + value.replace(/'/g, "'\\''") + "'";
 }
 
-function saveConnectorKey(provider: ProviderId, apiKey: string): void {
+export function saveConnectorKey(provider: ProviderId, apiKey: string): void {
   const cliVar = PROVIDER_ENV_KEYS[provider];
   if (cliVar) {
     let lines: string[] = [];
@@ -204,7 +204,7 @@ function saveConnectorKey(provider: ProviderId, apiKey: string): void {
   }
 }
 
-function removeConnectorKey(provider: ProviderId): void {
+export function removeConnectorKey(provider: ProviderId): void {
   const cliVar = PROVIDER_ENV_KEYS[provider];
   if (cliVar) {
     try {

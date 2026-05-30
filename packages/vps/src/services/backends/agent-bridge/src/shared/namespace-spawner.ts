@@ -33,7 +33,7 @@ import { randomBytes } from "crypto";
 import { writeFileSync, unlinkSync } from "fs";
 
 import { logEvent } from "./event-log";
-import { capabilities } from "@vps/shared/platform";
+import { capabilities, IS_ANDROID } from "@vps/shared/platform";
 
 export const NAMESPACE_PROJECT_ENV = "ELLUL_NS_PROJECT";
 
@@ -288,7 +288,7 @@ function inspectCommandShape(command: ChildProcess.Command): {
 // configuration (Claude SDK `sandbox.enabled: false`, codex
 // `sandbox: 'danger-full-access'`) is how adapters avoid hitting that
 // floor; the kernel filter is the floor itself.
-export const NamespaceChildProcessSpawnerLive = Layer.effect(
+const _VpsNamespaceChildProcessSpawnerLive = Layer.effect(
   ChildProcessSpawner.ChildProcessSpawner,
   Effect.gen(function* () {
     const inner = yield* ChildProcessSpawner.ChildProcessSpawner;
@@ -558,3 +558,11 @@ export const NamespaceChildProcessSpawnerLive = Layer.effect(
     });
   }),
 ).pipe(Layer.provide(NodeChildProcessSpawner.layer));
+
+// Android proot: the bridge (grandchild) can't fork/exec — delegate ALL
+// adapter spawns to the engine (PID 1's direct child) via a TCP stdio proxy.
+export const NamespaceChildProcessSpawnerLive: Layer.Layer<
+  ChildProcessSpawner.ChildProcessSpawner
+> = IS_ANDROID
+  ? (require("./android-engine-spawner") as { AndroidEngineChildProcessSpawnerLive: Layer.Layer<ChildProcessSpawner.ChildProcessSpawner> }).AndroidEngineChildProcessSpawnerLive
+  : _VpsNamespaceChildProcessSpawnerLive;

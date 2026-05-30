@@ -21,6 +21,7 @@ import * as fs from "fs";
 import type { Readable, Writable } from "stream";
 
 import { logEvent, serializeError } from "../../shared/event-log";
+import { isTenantMode } from "@vps/shared/tenant-token";
 
 // ── Constants (mirror daemon.h) ───────────────────────────
 
@@ -144,6 +145,10 @@ export interface NsdChildProcess extends EventEmitter {
  * helper executable. Cheap; safe to call from a hot path.
  */
 export function isNsdClientEnabled(): boolean {
+  // B2B tenant sandboxes MUST run daemon-less — the Incus micro-VM is the
+  // isolation boundary, not the host namespace daemon. Hard-disable here so a
+  // stray nsd-enabled flag can never pull a tenant bridge into daemon mode.
+  if (isTenantMode()) return false;
   try {
     fs.accessSync(FEATURE_FLAG_PATH, fs.constants.R_OK);
     fs.accessSync(MANIFEST_PUB_PATH, fs.constants.R_OK);

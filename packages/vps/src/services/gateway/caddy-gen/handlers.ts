@@ -281,6 +281,49 @@ function frameAncestorsDirective(consoleOrigin: string, extra?: string[]): strin
 }
 
 // scope: "ai" (code+main), "app" (dev only), "all" (direct/LE).
+/**
+ * B2B Sandbox-as-a-Service handlers. Routes the two tenant hostnames straight to
+ * agent-bridge + file-api with NO sovereign-shield forward_auth — both
+ * self-authenticate the injected per-sandbox agent token (@vps/shared/tenant-token).
+ * CORS is permissive because auth is a Bearer / `?_agent_token=` (no cookies), so
+ * the customer's browser (arbitrary origin) can reach them. mainDomain → bridge
+ * (serverUrl, WS at /ws), codeDomain → file-api (fileApiUrl, PUT/GET /workspace).
+ */
+export function generateTenantHandlers(mainDomain: string, codeDomain: string): string {
+  return [
+    `    # agent-bridge (serverUrl) — WS at /ws?_agent_token=, bridge self-auths`,
+    `    @bridge host ${mainDomain}`,
+    `    handle @bridge {`,
+    `        @bridgePreflight method OPTIONS`,
+    `        handle @bridgePreflight {`,
+    `            header Access-Control-Allow-Origin "*"`,
+    `            header Access-Control-Allow-Methods "GET, POST, OPTIONS"`,
+    `            header Access-Control-Allow-Headers "Authorization, Content-Type"`,
+    `            header Access-Control-Max-Age "86400"`,
+    `            respond 204`,
+    `        }`,
+    `        header Access-Control-Allow-Origin "*"`,
+    `        reverse_proxy ${UPSTREAM_HOST}:${AGENT_BRIDGE_PORT} {`,
+    `            flush_interval -1`,
+    `        }`,
+    `    }`,
+    `    # file-api (fileApiUrl) — PUT/GET /workspace/{projectId}/{path}, tenant Bearer`,
+    `    @files host ${codeDomain}`,
+    `    handle @files {`,
+    `        @filesPreflight method OPTIONS`,
+    `        handle @filesPreflight {`,
+    `            header Access-Control-Allow-Origin "*"`,
+    `            header Access-Control-Allow-Methods "GET, PUT, POST, DELETE, OPTIONS"`,
+    `            header Access-Control-Allow-Headers "Authorization, Content-Type"`,
+    `            header Access-Control-Max-Age "86400"`,
+    `            respond 204`,
+    `        }`,
+    `        header Access-Control-Allow-Origin "*"`,
+    `        reverse_proxy ${UPSTREAM_HOST}:${FILE_API_PORT}`,
+    `    }`,
+  ].join("\n");
+}
+
 export function generateCaddyHandlers(scope: "ai" | "app" | "all", opts: HandlerOptions): string {
   const { consoleOrigin, extraFrameAncestors } = opts;
   const CONSOLE_ORIGIN = consoleOrigin;

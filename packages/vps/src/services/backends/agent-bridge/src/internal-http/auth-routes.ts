@@ -118,6 +118,10 @@ interface AuthSession {
   exitEmitted: boolean;
   readonly listeners: Set<(event: StreamEvent) => void>;
   readonly startedAt: number;
+  /** mtime (ms) of the tool's credential file at session start, or 0 if
+   *  absent. Success requires a NEWER write (real login), so a stale
+   *  credential file can't trigger a false success. */
+  readonly authBaselineMtime: number;
   ttlTimer: NodeJS.Timeout | null;
   authPollTimer: NodeJS.Timeout | null;
   /** Set once the PTY scrape extracts the OAT from `claude setup-token`
@@ -239,7 +243,11 @@ function startSession(tool: AuthTool): AuthSession {
   const entry = commands[tool];
   const id = randomBytes(12).toString("hex");
   const usePty = !IS_ANDROID || NEEDS_PTY.has(tool);
-  dlog("startSession.spawn", { id, tool, cmd: entry.cmd, android: IS_ANDROID, usePty });
+  // Snapshot the credential file's mtime BEFORE the login spawns, so a stale
+  // file can't trigger a false success — only a newer write counts (see
+  // freshAuthWritten / AUTH_PROBES).
+  const authBaselineMtime = authFileMtime(tool);
+  dlog("startSession.spawn", { id, tool, cmd: entry.cmd, android: IS_ANDROID, usePty, authBaselineMtime });
   const spawnEnv = {
     ...process.env,
     TERM: "xterm-256color",
@@ -268,6 +276,7 @@ function startSession(tool: AuthTool): AuthSession {
     exitEmitted: false,
     listeners: new Set(),
     startedAt: Date.now(),
+    authBaselineMtime,
     ttlTimer: null,
     authPollTimer: null,
     capturedOat: null,
@@ -430,29 +439,47 @@ function writeSessionInput(id: string, data: string): { ok: boolean; reason?: st
 // saves the token, the cache flips authed → poll succeeds → session
 // terminates with synthetic exit:0 → modal fires onSuccess.
 
+// Relative path (under $HOME) of the credential file each CLI writes on a
+// successful login. null = not file-based (claude scrapes the OAT instead).
+const AUTH_FILE_BY_TOOL: Record<AuthTool, string | null> = {
+  claude: null,
+  codex: ".codex/auth.json",
+  cursor: ".config/cursor/auth.json",
+  grok: ".grok/auth.json",
+  gh: ".config/gh/hosts.yml",
+  npm: ".npmrc",
+};
+
+function authFileMtime(tool: AuthTool): number {
+  const rel = AUTH_FILE_BY_TOOL[tool];
+  if (!rel) return 0;
+  const home = process.env.HOME ?? "/home/dev";
+  try {
+    return fs.statSync(path.join(home, rel)).mtimeMs;
+  } catch {
+    return 0;
+  }
+}
+
+// Require a FRESH credential write, not mere existence. A stale auth.json
+// from a prior (now-invalid) login persists on disk — codex even reports it
+// with `requiresOpenaiAuth: true`. existsSync() fired a false success the
+// instant `codex login` started, SIGTERM-ing it before it could print the
+// device code (the user never got to authenticate). Comparing against the
+// mtime captured at session start means the poll only succeeds once the CLI
+// actually rewrites the file as part of a real login.
+function freshAuthWritten(session: AuthSession | undefined, tool: AuthTool): boolean {
+  if (!session) return false;
+  return authFileMtime(tool) > session.authBaselineMtime;
+}
+
 const AUTH_PROBES: Record<AuthTool, (session?: AuthSession) => boolean> = {
   claude: () => getClaudeOatBridgeModule().authStateCache.isAuthed(),
-  codex: () => {
-    const home = process.env.HOME ?? "/home/dev";
-    return fs.existsSync(path.join(home, ".codex", "auth.json"));
-  },
-  cursor: () => {
-    // cursor-agent CLI writes JWT to ~/.config/cursor/auth.json.
-    const home = process.env.HOME ?? "/home/dev";
-    return fs.existsSync(path.join(home, ".config", "cursor", "auth.json"));
-  },
-  grok: () => {
-    const home = process.env.HOME ?? "/home/dev";
-    return fs.existsSync(path.join(home, ".grok", "auth.json"));
-  },
-  gh: () => {
-    const home = process.env.HOME ?? "/home/dev";
-    return fs.existsSync(path.join(home, ".config", "gh", "hosts.yml"));
-  },
-  npm: () => {
-    const home = process.env.HOME ?? "/home/dev";
-    return fs.existsSync(path.join(home, ".npmrc"));
-  },
+  codex: (s) => freshAuthWritten(s, "codex"),
+  cursor: (s) => freshAuthWritten(s, "cursor"),
+  grok: (s) => freshAuthWritten(s, "grok"),
+  gh: (s) => freshAuthWritten(s, "gh"),
+  npm: (s) => freshAuthWritten(s, "npm"),
 };
 
 function startAuthFilePolling(session: AuthSession): void {

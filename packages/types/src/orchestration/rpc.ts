@@ -28,6 +28,8 @@ export const ELLUL_WS_METHODS = {
   getProviders: "ellul.getProviders",
   refreshProvider: "ellul.refreshProvider",
   subscribeProviders: "ellul.subscribeProviders",
+  submitApiKey: "ellul.submitApiKey",
+  revokeAuth: "ellul.revokeAuth",
 } as const;
 
 export const EllulZenModel = Schema.Struct({
@@ -56,6 +58,28 @@ export const EllulProvidersStreamItem = Schema.Struct({
   providers: Schema.Array(ServerProvider),
 });
 export type EllulProvidersStreamItem = typeof EllulProvidersStreamItem.Type;
+
+// BYOK provider auth (api-key, tenant /ws). `provider` is a ProviderKind (agent);
+// the bridge maps it to the underlying LLM key. `credentials` carries the field(s)
+// advertised by getProviders (v1: { apiKey }).
+export const EllulSubmitApiKeyInput = Schema.Struct({
+  provider: ProviderKind,
+  credentials: Schema.Record(Schema.String, Schema.String),
+});
+export type EllulSubmitApiKeyInput = typeof EllulSubmitApiKeyInput.Type;
+
+export const EllulRevokeAuthInput = Schema.Struct({
+  provider: ProviderKind,
+});
+export type EllulRevokeAuthInput = typeof EllulRevokeAuthInput.Type;
+
+export class EllulProviderAuthError extends Schema.TaggedErrorClass<EllulProviderAuthError>()(
+  "EllulProviderAuthError",
+  {
+    message: TrimmedNonEmptyString,
+    cause: Schema.optional(Schema.Defect),
+  },
+) {}
 
 export const OrchestrationSubscribeThreadInput = Schema.Struct({
   threadId: ThreadId,

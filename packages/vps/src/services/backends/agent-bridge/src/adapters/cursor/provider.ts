@@ -35,6 +35,7 @@ import {
   NAMESPACE_SOFT_HINT_MB_ENV,
 } from "../../shared/namespace-spawner";
 import { computeWorkloadSliceBudget } from "@vps/shared/memory-budget";
+import { IS_ANDROID } from "@vps/shared/platform";
 import {
   inventoryCacheKeyForBinary,
   loadInventoryCacheFromDisk,
@@ -901,7 +902,10 @@ export function getCursorFallbackModels(
   return providerModelsFromSettings([], PROVIDER, cursorSettings.customModels, EMPTY_CAPABILITIES);
 }
 
-const ABOUT_TIMEOUT_MS = 8_000;
+// `cursor-agent about` is a Node CLI (launcher → node + index.js). On Android
+// the proot + engine stdio-proxy + cold-boot I/O load make 8s too tight,
+// yielding a spurious "installed but timed out". Give the device headroom.
+const ABOUT_TIMEOUT_MS = IS_ANDROID ? 30_000 : 8_000;
 
 function stripAnsi(text: string): string {
   // eslint-disable-next-line no-control-regex

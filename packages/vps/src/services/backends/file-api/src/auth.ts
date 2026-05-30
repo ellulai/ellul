@@ -6,6 +6,7 @@
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { PATHS, TIERS, type SecurityTier } from './config';
+import { isTenantMode, verifyTenantAgentToken } from '@vps/shared/tenant-token';
 
 // using the file-api internal token as key. This prevents localhost auth bypass
 
@@ -86,4 +87,14 @@ export function getServerId(): string | null {
   } catch {
     return null;
   }
+}
+
+// B2B tenant mode: accept the injected per-sandbox agent token as a plain
+// `Authorization: Bearer` credential — the same token the bridge accepts on
+// `?_agent_token=`. Returns false on first-party servers (tenant mode off), so
+// the shield forward-auth / internal-JWT envelope is unaffected.
+export function verifyTenantBearer(authHeader: string | undefined): boolean {
+  if (!isTenantMode()) return false;
+  if (!authHeader?.startsWith('Bearer ')) return false;
+  return verifyTenantAgentToken(authHeader.slice(7).trim());
 }

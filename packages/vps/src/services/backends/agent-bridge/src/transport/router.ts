@@ -6,6 +6,9 @@ import {
   ClientOrchestrationCommand,
   ELLUL_WS_METHODS,
   EllulRefreshProviderInput,
+  EllulSubmitApiKeyInput,
+  EllulRevokeAuthInput,
+  EllulProviderAuthError,
   ORCHESTRATION_WS_METHODS,
   OrchestrationGetFullThreadDiffError,
   OrchestrationGetFullThreadDiffInput,
@@ -21,6 +24,7 @@ import {
   type OrchestrationReplayEventsResult,
   type OrchestrationShellStreamItem,
   type OrchestrationThreadStreamItem,
+  type ServerProvider,
 } from "@ellul.ai/types";
 import { Effect, FileSystem, Option, Path, Schema, Stream } from "effect";
 import { clamp } from "effect/Number";
@@ -35,6 +39,19 @@ import { enrichOrchestrationEvents, isThreadDetailEvent, toShellStreamEvent } fr
 import { handleDispatchCommand } from "./handlers/dispatch-command";
 import { handleGetZenModels } from "./handlers/get-zen-models";
 import { ProviderRegistry } from "../shared/ProviderRegistry";
+import {
+  saveConnectorKey,
+  removeConnectorKey,
+  getConnectedProviders,
+  API_KEY_RE,
+  API_KEY_MAX_LEN,
+} from "../internal-http/features-routes";
+import {
+  resolveApiKeySubmission,
+  resolveRevoke,
+  enrichProvidersForTenant,
+} from "../shared/provider-credentials";
+import { isTenantMode } from "@vps/shared/tenant-token";
 
 type EnvelopeServices =
   | OrchestrationEngineService
@@ -241,11 +258,23 @@ const streamSubscribeThread: StreamHandler = (payload) =>
 
 const unaryGetZenModels: UnaryHandler = () => handleGetZenModels();
 
+// Tenant-mode provider enrichment: advertise acceptsApiKey + credentialFields and
+// reflect BYOK key presence in auth.status (the agent's native probe — e.g. claude's
+// OAuth snapshot — does NOT reflect a pasted api key). No-op on first-party surfaces,
+// so the human-facing getProviders is unchanged (additive-only constraint).
+function enrichForTenant(providers: ReadonlyArray<ServerProvider>): ServerProvider[] {
+  const tenantMode = isTenantMode();
+  return enrichProvidersForTenant(providers, {
+    tenantMode,
+    connected: tenantMode ? getConnectedProviders() : {},
+  });
+}
+
 const unaryGetProviders: UnaryHandler = () =>
   Effect.gen(function* () {
     const registry = yield* ProviderRegistry;
     const providers = yield* registry.getProviders;
-    return { providers } satisfies EllulGetProvidersResult;
+    return { providers: enrichForTenant(providers) } satisfies EllulGetProvidersResult;
   });
 
 const unaryRefreshProvider: UnaryHandler = (payload) =>
@@ -259,18 +288,51 @@ const unaryRefreshProvider: UnaryHandler = (payload) =>
     ),
   );
 
+const unarySubmitApiKey: UnaryHandler = (payload) =>
+  decodeInput(EllulSubmitApiKeyInput, payload, "Invalid submitApiKey payload").pipe(
+    Effect.flatMap(({ provider, credentials }) =>
+      Effect.gen(function* () {
+        const resolved = resolveApiKeySubmission(provider, credentials, {
+          re: API_KEY_RE,
+          maxLen: API_KEY_MAX_LEN,
+        });
+        if (!resolved.ok) return yield* new EllulProviderAuthError({ message: resolved.error });
+        // Persist (writes ~/.ellul-cli-env + ~/.zeroclaw/ellul.json for THIS sandbox),
+        // then re-probe deterministically and return the refreshed, enriched providers.
+        yield* Effect.sync(() => saveConnectorKey(resolved.providerId, resolved.apiKey));
+        const registry = yield* ProviderRegistry;
+        const providers = yield* registry.refresh(provider);
+        return { providers: enrichForTenant(providers) } satisfies EllulGetProvidersResult;
+      }),
+    ),
+  );
+
+const unaryRevokeAuth: UnaryHandler = (payload) =>
+  decodeInput(EllulRevokeAuthInput, payload, "Invalid revokeAuth payload").pipe(
+    Effect.flatMap(({ provider }) =>
+      Effect.gen(function* () {
+        const resolved = resolveRevoke(provider);
+        if (!resolved.ok) return yield* new EllulProviderAuthError({ message: resolved.error });
+        yield* Effect.sync(() => removeConnectorKey(resolved.providerId));
+        const registry = yield* ProviderRegistry;
+        const providers = yield* registry.refresh(provider);
+        return { providers: enrichForTenant(providers) } satisfies EllulGetProvidersResult;
+      }),
+    ),
+  );
+
 const streamSubscribeProviders: StreamHandler = () =>
   Effect.gen(function* () {
     const registry = yield* ProviderRegistry;
     const initial = yield* registry.getProviders;
     const initialStream: Stream.Stream<EllulProvidersStreamItem, never> = Stream.make({
       kind: "snapshot" as const,
-      providers: initial,
+      providers: enrichForTenant(initial),
     });
     const liveStream: Stream.Stream<EllulProvidersStreamItem, never> = registry.streamChanges.pipe(
       Stream.map(
         (providers) =>
-          ({ kind: "snapshot" as const, providers }) satisfies EllulProvidersStreamItem,
+          ({ kind: "snapshot" as const, providers: enrichForTenant(providers) }) satisfies EllulProvidersStreamItem,
       ),
     );
     return Stream.concat(initialStream, liveStream) as Stream.Stream<unknown, unknown>;
@@ -316,5 +378,13 @@ export const ORCHESTRATION_RPC_ROUTER: Record<string, RouterEntry> = {
   [ELLUL_WS_METHODS.subscribeProviders]: {
     kind: "stream",
     handler: streamSubscribeProviders,
+  },
+  [ELLUL_WS_METHODS.submitApiKey]: {
+    kind: "unary",
+    handler: unarySubmitApiKey,
+  },
+  [ELLUL_WS_METHODS.revokeAuth]: {
+    kind: "unary",
+    handler: unaryRevokeAuth,
   },
 };

@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as net from 'net';
 import * as os from 'os';
-import { spawn as cpSpawn, type ChildProcess } from 'child_process';
+import { engineSpawn, type EngineChild } from '../engine-spawn';
 import { getAppPath, HOME } from '../../config';
 import { readSpec } from '@vps/shared/preview-spec';
 import type { PreviewPlatform, UnitStatus, UnitResult, FailedUnit, FrameworkDropinOpts } from './PreviewPlatform';
@@ -23,7 +23,7 @@ function log(level: string, msg: string, ctx?: Record<string, unknown>): void {
 // ── Process tracking ─────────────────────────────────────────────────
 
 interface TrackedProcess {
-  child: ChildProcess;
+  child: EngineChild;
   port: number;
   logRing: string[];
   startedAt: number;
@@ -43,6 +43,17 @@ interface CrashRecord {
 const CRASH_WINDOW_MS = 60_000;
 const CRASH_BACKOFF_SCHEDULE = [5_000, 15_000, 60_000];
 const crashHistory = new Map<string, CrashRecord>();
+
+// Runtime-OOM-loop breaker. On a memory-constrained device the dev server can
+// start fine then get SIGKILL'd by the lowmemorykiller ~30s later; the exit is
+// code=null signal=SIGKILL, which recordCrash's `code!==null` guard skips — so
+// the reconciler restarts it forever, thrashing memory every ~30s and starving
+// everything else (agent turns, the WebView). After OOM_LOOP_LIMIT SIGKILLs in
+// OOM_LOOP_WINDOW_MS, back off hard so memory stabilizes.
+const OOM_LOOP_WINDOW_MS = 5 * 60_000;
+const OOM_LOOP_LIMIT = 4;
+const OOM_LOOP_BACKOFF_MS = 10 * 60_000;
+const oomKills = new Map<string, number[]>();
 
 function recordCrash(appDir: string, code: number | null, signal: string | null): void {
   const now = Date.now();
@@ -124,6 +135,61 @@ function ensureNetShim(): void {
   }
 }
 
+// ── process.cwd() (no OS chdir in proot) ─────────────────────────────
+// The engine spawns from its own cwd (/home/dev) — it cannot chdir() into the
+// project dir (chdir/fork are ENOSYS under proot). The project dir is injected at
+// the Node layer by the engine's #!node launcher (NODE_LAUNCH): when ELLUL_FAKE_CWD
+// is set it patches process.cwd() to return that dir AFTER node bootstrap, so next/
+// vite see the project as cwd. No --require preload is used here — that would call
+// uv_cwd in loadPreloadModules before the launcher runs and crash (ENOSYS). The
+// net-shim is instead loaded via _ELLUL_LAUNCH_REQUIRE (cwd-safe, post-patch).
+
+// ── Dev-command resolution (avoid `sh -c` shebang exec) ──────────────
+// The dev binary (next/vite/etc) is a `#!/usr/bin/env node` shebang script in
+// node_modules/.bin. Running it via `sh -c "next dev …"` makes sh exec the
+// shebang, which under proot tries to exec `/usr/bin/env` — unavailable — so the
+// spawn fails as "spawn ENOSYS" (git works only because `git` is a real ELF
+// binary sh execs directly). Instead, resolve the binary to its real path and
+// hand it to the engine as the spawn `cmd`: the engine's adapter.spawn already
+// shebang-resolves `#!node` scripts to `node + the cwd launcher`, bypassing
+// `/usr/bin/env` AND `sh` entirely — the exact path cursor/grok/claude take.
+// Returns null for anything with shell syntax we can't safely tokenize (the
+// caller then falls back to `sh -c`).
+function resolveDevCommand(
+  startCmd: string,
+  appPath: string,
+): { cmd: string; args: string[] } | null {
+  // Bail on shell metacharacters — those genuinely need a shell.
+  if (/[|&;<>(){}$`*?\[\]\\'"]/.test(startCmd)) return null;
+  const tokens = startCmd.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return null;
+  const [bin, ...rest] = tokens;
+  // Resolve the binary against the app's node_modules/.bin (where PATH points),
+  // then PATH. Only rewrite when we find a real shebang script — otherwise the
+  // engine's own shebang sniff on a bare name would not find the file.
+  const candidates = [
+    path.join(appPath, 'node_modules', '.bin', bin!),
+    ...(process.env.PATH || '').split(':').filter(Boolean).map(d => path.join(d, bin!)),
+  ];
+  for (const c of candidates) {
+    try {
+      if (!fs.existsSync(c)) continue;
+      const fd = fs.openSync(c, 'r');
+      const hb = Buffer.alloc(64);
+      const n = fs.readSync(fd, hb, 0, 64, 0);
+      fs.closeSync(fd);
+      const head = hb.subarray(0, n).toString('utf8');
+      if (head.startsWith('#!')) {
+        // A real shebang script the engine can resolve to its interpreter.
+        return { cmd: c, args: rest };
+      }
+      // A real binary — engine execs it directly, also fine.
+      return { cmd: c, args: rest };
+    } catch { /* try next candidate */ }
+  }
+  return null;
+}
+
 // ── Dynamic memory budget ────────────────────────────────────────────
 
 export function computeAndroidBudget(): {
@@ -185,9 +251,9 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
 
     const old = processes.get(appDir);
     if (old && !old.child.killed && old.child.exitCode === null) {
-      const pid = old.child.pid;
-      if (pid) { try { process.kill(-pid, 'SIGTERM'); } catch {} }
-      else { try { old.child.kill('SIGTERM'); } catch {} }
+      // Engine owns the process; closing the proxy socket via kill() reaps it.
+      // No process.kill(-pid) group-kill (the child isn't ours to signal).
+      try { old.child.kill('SIGTERM'); } catch {}
       processes.delete(appDir);
     }
 
@@ -213,20 +279,55 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
 
     ensureNetShim();
 
-    log('info', 'android: spawning dev server', { appDirectory: appDir, startCmd, port });
+    // Resolve the dev binary to a real path so the engine spawns it directly
+    // (its adapter.spawn shebang-resolves #!node → node + cwd launcher). Falls
+    // back to `sh -c` for shell-syntax commands. `sh -c "next dev"` is what hit
+    // "spawn ENOSYS": sh exec'd the #!/usr/bin/env node shebang and proot has no
+    // /usr/bin/env. See resolveDevCommand().
+    const resolved = resolveDevCommand(startCmd, appPath);
+    const spawnCmd = resolved ? resolved.cmd : 'sh';
+    const spawnArgs = resolved ? resolved.args : ['-c', startCmd];
 
-    const child = cpSpawn('sh', ['-c', startCmd], {
-      cwd: appPath,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      detached: true,
+    log('info', 'android: spawning dev server', {
+      appDirectory: appDir, startCmd, port, spawnCmd, resolved: !!resolved,
+    });
+
+    // Spawn is delegated to the in-proot engine (file-api can't fork() inside
+    // the Android zygote sandbox — see engine-spawn.ts). The returned EngineChild
+    // is backed by the engine's per-spawn proxy socket; the engine owns the OS
+    // process, so there is no detached process group to manage here.
+    //
+    // NO cwd is passed: a foreign cwd forces the engine's chdir/fork path, which
+    // is ENOSYS under proot. The project dir is injected without an OS chdir via
+    // ELLUL_FAKE_CWD, consumed by the engine's #!node launcher (NODE_LAUNCH) which
+    // patches process.cwd to the project dir AFTER node bootstrap.
+    //
+    // We do NOT use NODE_OPTIONS=--require: node resolves --require paths via
+    // process.cwd() inside loadPreloadModules, BEFORE any user code runs — and
+    // uv_cwd is ENOSYS in this proot/seccomp context, so the preload itself
+    // crashes ("ENOSYS: uv_cwd" at loadPreloadModules) before the launcher can
+    // patch cwd. Instead the net-shim is loaded via _ELLUL_LAUNCH_REQUIRE, which
+    // the launcher require()s AFTER patching process.cwd (cwd-safe).
+    //
+    // The cwd-shim is no longer injected here — the launcher patches cwd directly.
+    //
+    // NOTE: _ELLUL_LAUNCH_REQUIRE / ELLUL_FAKE_CWD are only consumed when the dev
+    // command resolved to a #!node script (resolveDevCommand → the engine's #!node
+    // branch builds the launcher). When resolveDevCommand returns null (shell-syntax
+    // `sh -c` fallback) there is no launcher, so neither var is honored and Vite's
+    // os.networkInterfaces shim is absent — an acceptable degraded path. next/vite
+    // and the common dev binaries all resolve, so the typical case is covered.
+    const child = await engineSpawn(spawnCmd, spawnArgs, {
       env: {
-        ...process.env,
+        ...(process.env as Record<string, string>),
         PORT: String(port),
         HOST: '0.0.0.0',
         NODE_ENV: 'development',
         HOME: process.env.HOME || '/home/dev',
+        ELLUL_FAKE_CWD: appPath,
+        _ELLUL_LAUNCH_REQUIRE: NET_SHIM_PATH,
         PATH: `${appPath}/node_modules/.bin:${process.env.PATH}`,
-        NODE_OPTIONS: `--require ${NET_SHIM_PATH}${process.env.NODE_OPTIONS ? ' ' + process.env.NODE_OPTIONS : ''}`,
+        ...(process.env.NODE_OPTIONS ? { NODE_OPTIONS: process.env.NODE_OPTIONS } : {}),
       },
     });
 
@@ -247,10 +348,28 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
     child.on('exit', (code, signal) => {
       log('info', 'android: dev server exited', { appDirectory: appDir, code, signal });
       const uptime = Date.now() - tracked.startedAt;
-      if (code !== 0 && code !== null && uptime < CRASH_WINDOW_MS) {
+      if (signal === 'SIGKILL') {
+        // OOM-kill (lowmemorykiller). Track the loop; trip a hard backoff once
+        // it's clearly unviable so the reconciler stops restarting it.
+        const now = Date.now();
+        const kills = (oomKills.get(appDir) ?? []).filter(t => now - t < OOM_LOOP_WINDOW_MS);
+        kills.push(now);
+        oomKills.set(appDir, kills);
+        if (kills.length >= OOM_LOOP_LIMIT) {
+          const rec = crashHistory.get(appDir) ?? { times: [], backoffUntil: 0 };
+          rec.backoffUntil = now + OOM_LOOP_BACKOFF_MS;
+          crashHistory.set(appDir, rec);
+          log('warn', 'android: dev server OOM-loop — pausing auto-restart', {
+            appDirectory: appDir,
+            oomKillsInWindow: kills.length,
+            backoffMs: OOM_LOOP_BACKOFF_MS,
+          });
+        }
+      } else if (code !== 0 && code !== null && uptime < CRASH_WINDOW_MS) {
         recordCrash(appDir, code, signal);
       } else if (code === 0) {
         clearCrashHistory(appDir);
+        oomKills.delete(appDir);
       }
     });
 
@@ -266,12 +385,9 @@ export class AndroidPreviewPlatform implements PreviewPlatform {
       return { ok: true };
     }
     const sig = opts.mode === 'immediate' ? 'SIGKILL' : 'SIGTERM';
-    const pid = tracked.child.pid;
-    if (pid) {
-      try { process.kill(-pid, sig); } catch {}
-    } else {
-      try { tracked.child.kill(sig); } catch {}
-    }
+    // Engine owns the process; kill() closes the proxy socket and the engine
+    // reaps the child. No process.kill(-pid) group-kill is possible here.
+    try { tracked.child.kill(sig); } catch {}
     processes.delete(appDir);
     clearCrashHistory(appDir);
     return { ok: true };

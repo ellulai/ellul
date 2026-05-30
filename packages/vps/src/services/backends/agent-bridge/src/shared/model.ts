@@ -5,7 +5,7 @@
 import type { ClaudeAgentEffort, ModelCapabilities, ProviderKind } from "@ellul.ai/types";
 
 export const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderKind, string> = {
-  codex: "gpt-5.4",
+  codex: "gpt-5.5",
   claudeAgent: "claude-opus-4-7",
   cursor: "cursor-default",
   opencode: "anthropic/claude-sonnet-4-5",

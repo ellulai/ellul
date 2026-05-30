@@ -47,6 +47,10 @@ const CADDY_DIRS = [
   path.join(VAULT, "var/log/caddy"),
 ];
 
+// heapMB: hard V8 old-space ceiling per service. Android devices are
+// RAM-constrained (~1.5GB shared with the OS + Chromium WebView). Capping
+// each service keeps total node RSS bounded so no single service can balloon
+// into the kernel OOM killer (which would take down the WebView renderer).
 const SERVICES = [
   {
     name: "sovereign-shield",
@@ -54,17 +58,34 @@ const SERVICES = [
     port: 3005,
     healthPath: "/_auth/health",
     pipeVaultKey: true,
+    heapMB: 96,
   },
   {
     name: "file-api",
     bundle: "file-api.js",
     port: 3002,
     healthPath: "/health",
+    heapMB: 128,
   },
   {
     name: "agent-bridge",
     bundle: "agent-bridge.js",
     port: 7700,
+    heapMB: 256,
+  },
+  {
+    // OpenCode runs as an engine-managed Bun server (the bridge can't fork it
+    // as a grandchild, but the engine — PID 1's direct child — can). Bun.serve
+    // works in proot; the binary is the rootfs-installed one (the /usr/local/bin
+    // wrapper points at a path the engine never populates). Port must be free —
+    // killStaleListeners covers :4100 since it's in SERVICES.
+    name: "opencode",
+    // Launch via the #!node wrapper (runs the Bun binary through the ld-linux
+    // loader — Bun's JSC needs it in proot). startService shebang-resolves the
+    // wrapper to NODE since proot can't exec /usr/bin/env directly.
+    command: "/usr/local/bin/opencode",
+    args: ["serve", "--port", "4100", "--hostname", "127.0.0.1"],
+    port: 4100,
   },
   {
     name: "caddy",
@@ -357,7 +378,8 @@ writeFileSync(process.argv[3], JSON.stringify({ version: 3, algorithm: "X25519+M
   } catch {}
 
   fs.writeFileSync(CWD_SHIM_PATH, CWD_SHIM);
-  log("wrote node cwd shim");
+  fs.writeFileSync(NODE_LAUNCH_PATH, NODE_LAUNCH);
+  log("wrote node cwd shim + launcher");
 
   generateCaddyfile();
 }
@@ -395,8 +417,30 @@ function startService(svc) {
       log(`SKIP ${svc.name}: binary not found at ${svc.command}`);
       return null;
     }
+    if (svc.requiresBinary && !fs.existsSync(svc.requiresBinary)) {
+      log(`SKIP ${svc.name}: required binary not found at ${svc.requiresBinary}`);
+      return null;
+    }
     cmd = svc.command;
     cmdArgs = svc.args || [];
+    // proot can't exec `/usr/bin/env`, so a shebang service script (the opencode
+    // bash wrapper) fails with exit 126 if spawned directly. Resolve the shebang
+    // to its interpreter — the same thing adapter.spawn does. Both bash and node
+    // run fine in proot.
+    try {
+      const _fd = fs.openSync(cmd, "r");
+      const _hb = Buffer.alloc(64);
+      const _n = fs.readSync(_fd, _hb, 0, 64, 0);
+      fs.closeSync(_fd);
+      const _head = _hb.subarray(0, _n).toString("utf8");
+      if (_head.startsWith("#!/usr/bin/env node") || _head.startsWith("#!/usr/bin/node")) {
+        cmdArgs = [cmd, ...cmdArgs];
+        cmd = NODE;
+      } else if (_head.startsWith("#!/bin/bash") || _head.startsWith("#!/usr/bin/env bash") || _head.startsWith("#!/bin/sh")) {
+        cmdArgs = [cmd, ...cmdArgs];
+        cmd = "/bin/bash";
+      }
+    } catch {}
   } else {
     bundlePath = path.join(SERVICES_DIR, svc.name, "current", svc.bundle);
     if (!fs.existsSync(bundlePath)) {
@@ -418,6 +462,13 @@ function startService(svc) {
     ELLUL_DISABLE_SESSION_VAULT: "1",
   };
 
+  // Bound the V8 heap on RAM-constrained Android. --max-semi-space-size keeps
+  // the young generation small so GC runs more often and peak RSS stays low.
+  if (svc.heapMB) {
+    const heapOpts = `--max-old-space-size=${svc.heapMB} --max-semi-space-size=16`;
+    env.NODE_OPTIONS = env.NODE_OPTIONS ? `${env.NODE_OPTIONS} ${heapOpts}` : heapOpts;
+  }
+
   if (!env.GITHUB_APP_CLIENT_ID) {
     try {
       const ghClientId = fs.readFileSync(path.join(VAULT, "etc/ellul/github-app-client-id"), "utf8").trim();
@@ -431,7 +482,18 @@ function startService(svc) {
     if (svc.name === "agent-bridge" && nodeMajor < 22 && fs.existsSync("/usr/lib/node-sqlite-polyfill.js")) {
       env.NODE_OPTIONS = (env.NODE_OPTIONS ? env.NODE_OPTIONS + " " : "") + "--require /usr/lib/node-sqlite-polyfill.js";
     }
+    // Android proot: grandchild spawns are handled by the bridge's
+    // AndroidEngineChildProcessSpawner which delegates to the engine's
+    // adapter.spawn RPC. No preload injection needed.
+    //
+    // OpenCode runs as an engine-managed `opencode serve` on :4100 (see
+    // SERVICES). Point the bridge at it as an external server.
+    if (svc.name === "agent-bridge") {
+      env.OPENCODE_EXTERNAL_SERVER_URL = "http://127.0.0.1:4100";
+    }
   }
+
+  if (svc.extraEnv) Object.assign(env, svc.extraEnv);
 
   const health = getServiceHealth(svc.name);
   health.startedAt = Date.now();
@@ -631,66 +693,189 @@ const CWD_SHIM = `'use strict';
 if (process.env._ELLUL_ENTRY) require(process.env._ELLUL_ENTRY);
 `;
 
-const OPENCODE_WRAPPER = `#!/bin/bash
-set -euo pipefail
-REAL_OPENCODE="/usr/local/libexec/ellul/opencode"
-[ -x "$REAL_OPENCODE" ] || { echo "opencode: binary not found at $REAL_OPENCODE" >&2; exit 127; }
-PARENT_TMPDIR="\${TMPDIR:-/tmp}"
-RUN_TMPDIR="$(mktemp -d "\${PARENT_TMPDIR%/}/opencode-run.XXXXXXXXXX")"
-chmod 700 "$RUN_TMPDIR"
-BUN_INSTALL_DIR="\${HOME:-/root}/.cache/opencode-bun"
-mkdir -p "$BUN_INSTALL_DIR"
-WRAPPER_SHA="$(sha256sum "$0" 2>/dev/null | cut -c1-12)"
-cleanup() { rm -rf "$RUN_TMPDIR" 2>/dev/null || true; }
-trap cleanup EXIT
-GLIBC_LD="/lib/ld-linux-aarch64.so.1"
-GLIBC_LIBPATH="/lib/aarch64-linux-gnu"
-if [ "\${ELLUL_PLATFORM:-}" = "android" ] && [ -x "$GLIBC_LD" ]; then
-  TMPDIR="$RUN_TMPDIR" BUN_TMPDIR="$RUN_TMPDIR" BUN_INSTALL="$BUN_INSTALL_DIR" ELLUL_OPENCODE_WRAPPER_SHA="$WRAPPER_SHA" "$GLIBC_LD" --library-path "$GLIBC_LIBPATH" "$REAL_OPENCODE" "$@" &
-else
-  TMPDIR="$RUN_TMPDIR" BUN_TMPDIR="$RUN_TMPDIR" BUN_INSTALL="$BUN_INSTALL_DIR" ELLUL_OPENCODE_WRAPPER_SHA="$WRAPPER_SHA" "$REAL_OPENCODE" "$@" &
-fi
-CHILD_PID=$!
-trap 'kill -TERM "$CHILD_PID" 2>/dev/null || true' INT TERM
-wait "$CHILD_PID"
-EXIT_CODE=$?
-while [ "$EXIT_CODE" -ge 128 ] && kill -0 "$CHILD_PID" 2>/dev/null; do
-  wait "$CHILD_PID"
-  EXIT_CODE=$?
-done
-trap - INT TERM
-exit "$EXIT_CODE"
+// Generic node-CLI launcher for proot. Adapter CLIs (cursor, grok, claude, and
+// any #!node tool) call process.cwd() during startup; proot's getcwd is broken
+// in the app's seccomp context (uv_cwd ENOSYS), which crashes them. We can't fix
+// it with NODE_OPTIONS=--require because node resolves the require path via
+// cwd() during loadPreloadModules — BEFORE the shim loads. The only reliable fix
+// is to make the shim the ABSOLUTE main module (bootstrap of an absolute main
+// makes no cwd call), patch process.cwd, then hand off to the real entry. This
+// is exactly how the engine's own services launch (CWD_SHIM + _ELLUL_ENTRY); the
+// launcher generalizes it to adapter CLIs whose real entry is in _ELLUL_LAUNCH_MAIN.
+const NODE_LAUNCH_PATH = "/usr/lib/ellul-node-launch.js";
+const NODE_LAUNCH = `'use strict';
+require('${CWD_SHIM_PATH}');
+var main = process.env._ELLUL_LAUNCH_MAIN;
+if (!main) { process.stderr.write('ellul-node-launch: _ELLUL_LAUNCH_MAIN unset\\n'); process.exit(2); }
+// ELLUL_FAKE_CWD: a dev server (next/vite) must see process.cwd() === the PROJECT
+// dir, not the HOME fallback. The engine spawns from /home/dev (no chdir — fork/
+// chdir are ENOSYS under proot), so override cwd at the Node layer to the project.
+// Unset (cursor/grok/claude) → keep CWD_SHIM's existing _cwd-or-HOME behavior.
+if (process.env.ELLUL_FAKE_CWD) {
+  var _fakeCwd = process.env.ELLUL_FAKE_CWD;
+  process.cwd = function cwd() { return _fakeCwd; };
+}
+// _ELLUL_LAUNCH_REQUIRE: colon-separated ABSOLUTE module paths — the cwd-SAFE
+// replacement for NODE_OPTIONS=--require. node resolves --require paths via cwd()
+// inside loadPreloadModules BEFORE any user code runs (uv_cwd ENOSYS → crash);
+// requiring them HERE runs after process.cwd is patched, so it never calls uv_cwd.
+if (process.env._ELLUL_LAUNCH_REQUIRE) {
+  var _reqs = process.env._ELLUL_LAUNCH_REQUIRE.split(':');
+  for (var _i = 0; _i < _reqs.length; _i++) {
+    var _r = _reqs[_i];
+    if (!_r) continue;
+    try { require(_r); } catch (e) { process.stderr.write('ellul-node-launch: require failed: ' + _r + ': ' + (e && e.message) + '\\n'); }
+  }
+}
+// Re-shape argv so the launched program sees argv[1]=its own entry (not the launcher).
+process.argv = [process.argv[0], main].concat(process.argv.slice(2));
+require(main);
+`;
+
+// OpenCode (Bun) wrapper. Node, not bash: shell mkdir/mktemp are ENOSYS under
+// this proot ("mkdir: cannot create directory: Function not implemented"), but
+// fs.mkdirSync/fs.mkdtempSync work. The two things Bun actually needs (learned
+// from the original working bash wrapper that served for 14+ min on 2026-05-29):
+//   (1) a FRESH, private per-run TMPDIR (a shared /tmp gave Bun "unknown error");
+//       created here via fs.mkdtempSync (no shell).
+//   (2) run through the rootfs glibc ld-linux loader on Android so the kernel
+//       execs Bun natively (proot's ptrace breaks Bun's JSC signal handlers).
+// REAL is probed across install locations so a path rename never breaks it.
+const OPENCODE_WRAPPER = `#!/usr/bin/env node
+const { spawn } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+const LD = "/lib/ld-linux-aarch64.so.1";
+const LIBPATH = "/lib/aarch64-linux-gnu";
+let REAL = ["/usr/local/libexec/ellul/opencode", "/opt/ellul/bin/opencode"].find((p) => { try { return fs.existsSync(p); } catch { return false; } });
+if (!REAL) { try { const vs = fs.readdirSync("/opt/ellul/bin").filter((f) => f.startsWith("opencode-v")).sort(); if (vs.length) REAL = "/opt/ellul/bin/" + vs[vs.length - 1]; } catch {} }
+if (!REAL) { process.stderr.write("opencode: binary not found (libexec / /opt/ellul/bin)\\n"); process.exit(127); }
+const home = process.env.HOME || "/home/dev";
+const bunInstall = home + "/.cache/opencode-bun";
+try { fs.mkdirSync(bunInstall, { recursive: true }); } catch {}
+const parentTmp = process.env.TMPDIR || "/tmp";
+try { fs.mkdirSync(parentTmp, { recursive: true }); } catch {}
+let runTmp;
+try { runTmp = fs.mkdtempSync(path.join(parentTmp, "opencode-run.")); } catch { runTmp = parentTmp; }
+const env = Object.assign({}, process.env, {
+  HOME: home,
+  TMPDIR: runTmp,
+  BUN_TMPDIR: runTmp,
+  BUN_INSTALL: bunInstall,
+});
+const useLD = process.env.ELLUL_PLATFORM === "android" && fs.existsSync(LD);
+const cmd = useLD ? LD : REAL;
+const fullArgs = useLD ? ["--library-path", LIBPATH, REAL, ...process.argv.slice(2)] : process.argv.slice(2);
+const child = spawn(cmd, fullArgs, { stdio: "inherit", env });
+const cleanup = () => { try { fs.rmSync(runTmp, { recursive: true, force: true }); } catch {} };
+child.on("close", (code) => { cleanup(); process.exit(code == null ? 0 : code); });
+child.on("error", (e) => { cleanup(); process.stderr.write("opencode wrapper: " + e.message + "\\n"); process.exit(1); });
+process.on("SIGTERM", () => { try { child.kill("SIGTERM"); } catch {} });
+process.on("SIGINT", () => { try { child.kill("SIGINT"); } catch {} });
 `;
 
 function ensureOpencodeWrapper() {
+  // Pre-create dirs the wrapper/binary needs (fs.mkdirSync works in proot,
+  // shell mkdir does not).
+  for (const d of ["/tmp", "/root/.cache/opencode-bun", "/home/dev/.cache/opencode-bun"]) {
+    try { fs.mkdirSync(d, { recursive: true }); } catch {}
+  }
   const p = "/usr/local/bin/opencode";
   try {
-    if (fs.existsSync(p) && fs.readFileSync(p, "utf8").includes("REAL_OPENCODE")) return;
+    if (fs.existsSync(p) && fs.readFileSync(p, "utf8") === OPENCODE_WRAPPER) return;
   } catch {}
   fs.writeFileSync(p, OPENCODE_WRAPPER, { mode: 0o755 });
   log("cli: wrote opencode wrapper");
 }
 
-function canExecSync() {
-  try { execSyncRaw("true", { stdio: "pipe", timeout: 3000 }); return true; } catch { return false; }
+// Download a file using Node.js https/http (no curl dependency).
+function download(url, dest, maxRedirects = 5) {
+  return new Promise((resolve, reject) => {
+    const mod = url.startsWith("https") ? https : http;
+    const get = (u, remaining) => {
+      mod.get(u, (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && remaining > 0) {
+          res.resume();
+          return get(res.headers.location, remaining - 1);
+        }
+        if (res.statusCode !== 200) {
+          res.resume();
+          return reject(new Error(`HTTP ${res.statusCode} for ${u}`));
+        }
+        const ws = fs.createWriteStream(dest);
+        res.pipe(ws);
+        ws.on("finish", () => ws.close(resolve));
+        ws.on("error", reject);
+      }).on("error", reject);
+    };
+    get(url, maxRedirects);
+  });
+}
+
+// Async spawn — uses child_process.spawn (works in proot, unlike spawnSync).
+function spawnAsync(cmd, args, opts = {}) {
+  return new Promise((resolve, reject) => {
+    const { timeout = 120_000, env } = opts;
+    const child = spawn(cmd, args, { stdio: ["ignore", "pipe", "pipe"], env: env || process.env });
+    let stderr = "";
+    child.stderr.on("data", (d) => { stderr += d.toString().slice(-500); });
+    const timer = setTimeout(() => { child.kill(); reject(new Error(`${cmd} timed out after ${timeout}ms`)); }, timeout);
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      if (code !== 0) reject(new Error(`${cmd} exited ${code}: ${stderr.trim().slice(-200)}`));
+      else resolve();
+    });
+    child.on("error", (e) => { clearTimeout(timer); reject(e); });
+  });
+}
+
+// Pure Node.js tar.gz extraction — no external binaries (proot ENOSYS).
+function extractTarGz(archive, destDir, opts = {}) {
+  const zlib = require("zlib");
+  const buf = zlib.gunzipSync(fs.readFileSync(archive));
+  const strip = opts.stripComponents || 0;
+  const only = opts.files ? new Set(opts.files) : null;
+  let offset = 0;
+  while (offset + 512 <= buf.length) {
+    const header = buf.subarray(offset, offset + 512);
+    if (header.every((b) => b === 0)) break;
+    let name = header.subarray(0, 100).toString("utf8").replace(/\0.*$/, "");
+    const prefix = header.subarray(345, 500).toString("utf8").replace(/\0.*$/, "");
+    if (prefix) name = prefix + "/" + name;
+    const sizeOctal = header.subarray(124, 136).toString("utf8").replace(/\0.*$/, "").trim();
+    const size = parseInt(sizeOctal, 8) || 0;
+    const typeFlag = String.fromCharCode(header[156]);
+    offset += 512;
+    if (strip > 0) {
+      const parts = name.split("/");
+      name = parts.slice(strip).join("/");
+    }
+    if (!name || name === "./" || name === "/") { offset += Math.ceil(size / 512) * 512; continue; }
+    if (only && !only.has(name.replace(/\/$/, ""))) { offset += Math.ceil(size / 512) * 512; continue; }
+    const dest = path.join(destDir, name);
+    if (typeFlag === "5" || name.endsWith("/")) {
+      fs.mkdirSync(dest, { recursive: true });
+    } else if (typeFlag === "0" || typeFlag === "\0" || typeFlag === "") {
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.writeFileSync(dest, buf.subarray(offset, offset + size));
+      fs.chmodSync(dest, 0o755);
+    }
+    offset += Math.ceil(size / 512) * 512;
+  }
 }
 
 function ensureCliTools() {
-  if (!canExecSync()) {
-    log("cli: execSync unavailable (fork blocked), skipping tool install");
-    ensureOpencodeWrapper();
-    return;
-  }
   const tools = [
     {
       name: "opencode",
-      check: "/usr/local/libexec/ellul/opencode",
-      install() {
+      check: "/opt/ellul/bin/opencode",
+      async install() {
         const url = `https://github.com/anomalyco/opencode/releases/download/v${CLI_VERSIONS.opencode}/opencode-linux-arm64.tar.gz`;
-        run("mkdir -p /usr/local/libexec/ellul");
-        run(`curl -fsSL --retry 3 --connect-timeout 15 --max-time 120 "${url}" -o /tmp/opencode.tar.gz`);
-        run("tar -xzf /tmp/opencode.tar.gz -C /usr/local/libexec/ellul");
-        fs.chmodSync("/usr/local/libexec/ellul/opencode", 0o755);
+        const dest = "/opt/ellul/bin";
+        fs.mkdirSync(dest, { recursive: true });
+        await download(url, "/tmp/opencode.tar.gz");
+        extractTarGz("/tmp/opencode.tar.gz", dest);
+        fs.chmodSync(path.join(dest, "opencode"), 0o755);
         try { fs.unlinkSync("/tmp/opencode.tar.gz"); } catch {}
         ensureOpencodeWrapper();
       },
@@ -698,10 +883,10 @@ function ensureCliTools() {
     {
       name: "lazygit",
       check: "/usr/local/bin/lazygit",
-      install() {
+      async install() {
         const url = `https://github.com/jesseduffield/lazygit/releases/download/v${CLI_VERSIONS.lazygit}/lazygit_${CLI_VERSIONS.lazygit}_Linux_arm64.tar.gz`;
-        run(`curl -fsSL --retry 3 --connect-timeout 15 --max-time 60 "${url}" -o /tmp/lazygit.tar.gz`);
-        run("tar -xzf /tmp/lazygit.tar.gz -C /tmp lazygit");
+        await download(url, "/tmp/lazygit.tar.gz");
+        extractTarGz("/tmp/lazygit.tar.gz", "/tmp", { files: ["lazygit"] });
         fs.copyFileSync("/tmp/lazygit", "/usr/local/bin/lazygit");
         fs.chmodSync("/usr/local/bin/lazygit", 0o755);
         try { fs.unlinkSync("/tmp/lazygit.tar.gz"); fs.unlinkSync("/tmp/lazygit"); } catch {}
@@ -710,11 +895,11 @@ function ensureCliTools() {
     {
       name: "cursor-agent",
       check: "/usr/local/bin/cursor-agent",
-      install() {
+      async install() {
         const url = `https://downloads.cursor.com/lab/${CLI_VERSIONS.cursorAgent}/linux/arm64/agent-cli-package.tar.gz`;
-        run(`curl -fsSL --retry 3 --connect-timeout 15 --max-time 120 "${url}" -o /tmp/cursor.tar.gz`);
-        run("mkdir -p /usr/local/lib/cursor-agent");
-        run("tar -xzf /tmp/cursor.tar.gz -C /usr/local/lib/cursor-agent --strip-components=1");
+        fs.mkdirSync("/usr/local/lib/cursor-agent", { recursive: true });
+        await download(url, "/tmp/cursor.tar.gz");
+        extractTarGz("/tmp/cursor.tar.gz", "/usr/local/lib/cursor-agent", { stripComponents: 1 });
         fs.chmodSync("/usr/local/lib/cursor-agent/cursor-agent", 0o755);
         try { fs.symlinkSync("/usr/local/lib/cursor-agent/cursor-agent", "/usr/local/bin/cursor-agent"); } catch {}
         try { fs.unlinkSync("/tmp/cursor.tar.gz"); } catch {}
@@ -724,9 +909,8 @@ function ensureCliTools() {
       name: "claude-code",
       check: "/usr/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe",
       install() {
-        run(`npm install -g --no-audit --no-fund @anthropic-ai/claude-code@${CLI_VERSIONS.claudeCode}`, {
-          timeout: 300_000,
-          env: { ...process.env, HOME: "/root" },
+        return spawnAsync(process.execPath, ["/usr/lib/node_modules/npm/bin/npm-cli.js", "install", "-g", "--no-audit", "--no-fund", `@anthropic-ai/claude-code@${CLI_VERSIONS.claudeCode}`], {
+          timeout: 300_000, env: { ...process.env, HOME: "/root" },
         });
       },
     },
@@ -734,19 +918,23 @@ function ensureCliTools() {
       name: "codex",
       check: "/usr/lib/node_modules/@openai/codex",
       install() {
-        run(`npm install -g --no-audit --no-fund @openai/codex@${CLI_VERSIONS.codex}`, {
-          timeout: 300_000,
-          env: { ...process.env, HOME: "/root" },
+        return spawnAsync(process.execPath, ["/usr/lib/node_modules/npm/bin/npm-cli.js", "install", "-g", "--no-audit", "--no-fund", `@openai/codex@${CLI_VERSIONS.codex}`], {
+          timeout: 300_000, env: { ...process.env, HOME: "/root" },
         });
       },
     },
     {
       name: "grok",
       check: "/home/dev/.grok/bin/grok",
-      install() {
-        run("curl -fsSL https://x.ai/cli/install.sh | bash", {
-          env: { ...process.env, HOME: "/home/dev" },
-        });
+      async install() {
+        const url = "https://github.com/xai-org/grok-cli/releases/latest/download/grok-linux-arm64.tar.gz";
+        const grokDir = "/home/dev/.grok/bin";
+        fs.mkdirSync(grokDir, { recursive: true });
+        await download(url, "/tmp/grok.tar.gz");
+        extractTarGz("/tmp/grok.tar.gz", grokDir);
+        const grokBin = path.join(grokDir, "grok");
+        if (fs.existsSync(grokBin)) fs.chmodSync(grokBin, 0o755);
+        try { fs.unlinkSync("/tmp/grok.tar.gz"); } catch {}
       },
     },
   ];
@@ -754,28 +942,30 @@ function ensureCliTools() {
   ensureOpencodeWrapper();
 
   let installed = 0;
+  const pending = [];
   for (const tool of tools) {
     if (fs.existsSync(tool.check)) continue;
     log(`cli: ${tool.name} missing, installing...`);
-    try {
-      tool.install();
-      installed++;
-      log(`cli: ${tool.name} installed`);
-    } catch (e) {
-      log(`cli: ${tool.name} install failed (non-fatal): ${e.message}`);
-    }
+    pending.push(
+      tool.install().then(() => { installed++; log(`cli: ${tool.name} installed`); })
+        .catch((e) => { log(`cli: ${tool.name} install failed (non-fatal): ${e.message}`); })
+    );
   }
-  if (installed > 0) log(`cli: installed ${installed} missing tool(s)`);
-  else log("cli: all tools present");
+  if (pending.length === 0) { log("cli: all tools present"); return Promise.resolve(); }
+  return Promise.all(pending).then(() => {
+    if (installed > 0) log(`cli: installed ${installed} missing tool(s)`);
+  });
 }
 
 function prepareCliTools() {
   const CACHE = "/tmp/.ellul-cli-cache";
   fs.mkdirSync(CACHE, { recursive: true });
+  // Only cache self-contained binaries. claude (Bun stub) is disabled on
+  // Android, and cursor-agent is a bash launcher that needs its sibling
+  // node/index.js — both break when copied to the bare cache dir, so they run
+  // from their real install paths instead (see DEFAULT_CURSOR_BINARY).
   const elfs = [
-    { name: "claude", src: "/usr/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe" },
     { name: "codex", src: "/usr/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-arm64/vendor/aarch64-unknown-linux-musl/bin/codex" },
-    { name: "cursor-agent", src: "/usr/local/bin/cursor-agent" },
     { name: "grok", src: "/home/dev/.grok/bin/grok" },
   ];
   for (const { name, src } of elfs) {
@@ -784,6 +974,11 @@ function prepareCliTools() {
       if (!fs.existsSync(src)) continue;
       const srcMtime = fs.statSync(src).mtimeMs;
       if (fs.existsSync(dst) && fs.statSync(dst).mtimeMs >= srcMtime) continue;
+      // A stale dest owned by a different uid makes copyFileSync fail with
+      // EACCES (proot fakes root, but the real kernel write check uses the app
+      // uid). Remove it first — unlink only needs write on the CACHE dir, which
+      // we own — so the cache always refreshes to a working binary.
+      try { fs.unlinkSync(dst); } catch {}
       fs.copyFileSync(src, dst);
       fs.chmodSync(dst, 0o755);
       log(`cli-cache: ${src} -> ${dst}`);
@@ -791,6 +986,29 @@ function prepareCliTools() {
       log(`cli-cache failed ${name}: ${e.message}`);
     }
   }
+  ensureCodexConfig();
+}
+
+// proot is a ptrace syscall emulator, not real namespaces, so codex's bundled
+// bubblewrap (needs CAP_SETUID in an unprivileged userns) dies — e.g. it kills
+// skills/list during the provider probe. danger-full-access skips bwrap: proot
+// IS the sandbox boundary, matching the thread-start override in
+// adapters/codex/session-runtime.ts. Merge (don't clobber) so other settings
+// survive, and force the value if a wrong one is present.
+function ensureCodexConfig() {
+  const cfg = "/home/dev/.codex/config.toml";
+  try {
+    fs.mkdirSync(path.dirname(cfg), { recursive: true });
+    let body = "";
+    try { body = fs.readFileSync(cfg, "utf8"); } catch {}
+    let next = body;
+    for (const [key, val] of [["sandbox_mode", '"danger-full-access"'], ["approval_policy", '"never"']]) {
+      const re = new RegExp(`^\\s*${key}\\s*=.*$`, "m");
+      const line = `${key} = ${val}`;
+      next = re.test(next) ? next.replace(re, line) : (next ? next.replace(/\s*$/, "") + "\n" + line + "\n" : line + "\n");
+    }
+    if (next !== body) { fs.writeFileSync(cfg, next); log(`codex config: sandbox_mode=danger-full-access -> ${cfg}`); }
+  } catch (e) { log(`codex config failed: ${e.message}`); }
 }
 
 const RPC_PORT = 7710;
@@ -812,8 +1030,14 @@ function startRpcServer() {
             sock.write(JSON.stringify({ jsonrpc: "2.0", id: req.id, error: { code: -32600, message: "unauthorized" } }) + "\n");
             return;
           }
-          const result = handleRpc(req.method, req.params || {});
-          sock.write(JSON.stringify({ jsonrpc: "2.0", id: req.id, result }) + "\n");
+          const resultOrPromise = handleRpc(req.method, req.params || {});
+          if (resultOrPromise && typeof resultOrPromise.then === "function") {
+            resultOrPromise
+              .then((result) => { try { sock.write(JSON.stringify({ jsonrpc: "2.0", id: req.id, result }) + "\n"); } catch {} })
+              .catch((e) => { try { sock.write(JSON.stringify({ jsonrpc: "2.0", id: req.id, error: { code: -32603, message: e.message } }) + "\n"); } catch {} });
+          } else {
+            sock.write(JSON.stringify({ jsonrpc: "2.0", id: req.id, result: resultOrPromise }) + "\n");
+          }
         } catch (e) {
           sock.write(JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32603, message: e.message } }) + "\n");
         }
@@ -826,7 +1050,7 @@ function startRpcServer() {
   });
 }
 
-function handleRpc(method, params) {
+async function handleRpc(method, params) {
   switch (method) {
     case "tunnel.start":
     case "tunnel.stop":
@@ -857,6 +1081,133 @@ function handleRpc(method, params) {
         return { ok: true, restarted: !!svc };
       }
       return { ok: false, error: "unknown service" };
+    }
+    // ── adapter.spawn: stdio-proxied adapter process manager ──
+    // Bridge (proot grandchild) can't fork/exec. Engine (direct proot child)
+    // spawns adapter binaries and opens a per-spawn TCP port that transparently
+    // pipes the child's stdin/stdout to the bridge. Bridge connects to the TCP
+    // port and gets raw stdio access as if it spawned the binary locally.
+    case "adapter.spawn": {
+      const { cmd, args: spawnArgs = [], env: spawnEnv = {}, cwd: spawnCwd } = params;
+      if (!cmd) throw new Error("adapter.spawn: cmd required");
+
+      // Resolve shebang: proot can't exec /usr/bin/env. Spawn the interpreter directly.
+      let finalCmd = cmd;
+      let finalArgs = spawnArgs;
+      // Extra env injected for the cwd launcher (_ELLUL_LAUNCH_MAIN). node CLIs
+      // (cursor, grok, claude, any #!node tool) call process.cwd() during
+      // startup, which is uv_cwd ENOSYS under proot's app-seccomp context. We
+      // launch them through NODE_LAUNCH_PATH — the cwd shim AS THE ABSOLUTE MAIN
+      // MODULE (no cwd call during its bootstrap), which patches process.cwd
+      // and then require()s the real entry from _ELLUL_LAUNCH_MAIN. (NODE_OPTIONS
+      // =--require can't fix this: node resolves the require path via cwd() in
+      // loadPreloadModules, before the shim loads.)
+      const launchExtraEnv = {};
+      try {
+        // Read ONLY the first 512 bytes for the shebang — never the whole file.
+        // codex/opencode binaries are 100-190MB; readFileSync(whole) blocked the
+        // engine's (synchronous) event loop ~8s per spawn AND spiked memory by
+        // the binary's size — stalling the stdio proxy mid-probe so the
+        // app-server exited ("process exited with code 0").
+        const _fd = fs.openSync(cmd, "r");
+        const _hb = Buffer.alloc(512);
+        const _n = fs.readSync(_fd, _hb, 0, 512, 0);
+        fs.closeSync(_fd);
+        const head = _hb.subarray(0, _n).toString("utf8");
+        if (head.startsWith("#!/usr/bin/env node") || head.startsWith("#!/usr/bin/node")) {
+          finalCmd = NODE;
+          finalArgs = [NODE_LAUNCH_PATH, ...spawnArgs];
+          launchExtraEnv._ELLUL_LAUNCH_MAIN = cmd;
+        } else if (head.startsWith("#!/bin/bash") || head.startsWith("#!/usr/bin/env bash")) {
+          // Adapter CLIs like cursor-agent are bash wrappers that exec a sibling
+          // bundled `node` on their own index.js (which then hits uv_cwd ENOSYS).
+          // Detect that shape (realpath dir has node + index.js) and launch the
+          // bundled node through the cwd launcher instead of running the wrapper.
+          let real = cmd;
+          try { real = fs.realpathSync(cmd); } catch {}
+          const dir = path.dirname(real);
+          const sibNode = path.join(dir, "node");
+          const sibIndex = path.join(dir, "index.js");
+          if (fs.existsSync(sibNode) && fs.existsSync(sibIndex)) {
+            // Preserve any node exec-flags the wrapper passes (e.g. cursor's
+            // --use-system-ca). They MUST precede the launcher on node's argv.
+            let wrapperBody = "";
+            try { wrapperBody = fs.readFileSync(real, "utf8"); } catch {}
+            const nodeFlags = [];
+            if (wrapperBody.includes("--use-system-ca")) nodeFlags.push("--use-system-ca");
+            finalCmd = sibNode;
+            finalArgs = [...nodeFlags, NODE_LAUNCH_PATH, ...spawnArgs];
+            launchExtraEnv._ELLUL_LAUNCH_MAIN = sibIndex;
+          } else {
+            finalCmd = "/bin/bash";
+            finalArgs = [cmd, ...spawnArgs];
+          }
+        }
+      } catch {}
+
+      // Resolve cwd from ELLUL_NS_PROJECT (on VPS the namespace script does chdir)
+      let resolvedCwd = spawnCwd || undefined;
+      if (!resolvedCwd && spawnEnv.ELLUL_NS_PROJECT && spawnEnv.ELLUL_NS_PROJECT !== "__host__") {
+        resolvedCwd = `/home/dev/projects/${spawnEnv.ELLUL_NS_PROJECT}`;
+        try { fs.mkdirSync(resolvedCwd, { recursive: true }); } catch {}
+      }
+
+      log(`adapter.spawn: ${finalCmd} ${finalArgs.slice(0, 4).join(" ")} cwd=${resolvedCwd || "inherited"}`);
+
+      // Spawn with piped stdio
+      const child = spawn(finalCmd, finalArgs, {
+        stdio: ["pipe", "pipe", "pipe"],
+        env: { ...process.env, ...spawnEnv, ...launchExtraEnv },
+        // No cwd option — Android seccomp blocks fork() when cwd is set
+        // (libuv falls back from posix_spawn to fork). Instead we chdir
+        // the child via a wrapper or let the adapter handle cwd via env.
+      });
+      const pid = child.pid;
+      if (!pid) throw new Error("adapter.spawn: spawn returned no pid");
+
+      // Open a per-spawn TCP proxy: bridge connects and gets stdin/stdout piped
+      const proxyServer = net.createServer({ allowHalfOpen: true }, (sock) => {
+        // Bridge connected — pipe stdin/stdout. CRITICAL: do NOT merge stderr
+        // into this socket. The bridge's AndroidEngineSpawner reads it as the
+        // child's STDOUT (stderr is a separate empty stream there), so any
+        // stderr bytes interleaved here corrupt stdio JSON protocols — codex
+        // app-server ("Failed to decode wire message"), cursor ACP, and
+        // `--format json` probes. Route the child's stderr to the engine log.
+        // end:false — do NOT propagate the bridge's write-side close to the
+        // child's stdin as EOF. Persistent stdio servers (codex app-server,
+        // cursor acp) exit on stdin EOF; when the bridge's JSON-RPC client
+        // finishes sending its probe requests its socket write-side closes, and
+        // with end:true that EOF'd codex's stdin → codex exited mid-probe and
+        // the exit raced the response read ("process exited with code 0"). The
+        // child is still terminated deterministically by sock 'close' → kill.
+        sock.pipe(child.stdin, { end: false });
+        child.stdout.pipe(sock, { end: false });
+        child.stderr.on("data", (d) => { try { process.stderr.write(d); } catch {} });
+        child.on("close", () => { try { sock.end(); } catch {} });
+        sock.on("close", () => { try { child.kill(); } catch {} });
+        sock.on("error", () => { try { child.kill(); } catch {} });
+      });
+      proxyServer.maxConnections = 1;
+
+      // Listen on dynamic port
+      await new Promise((resolve, reject) => {
+        proxyServer.listen(0, "127.0.0.1", () => resolve());
+        proxyServer.on("error", reject);
+      });
+      const proxyPort = proxyServer.address().port;
+
+      // Cleanup when child exits
+      child.on("close", (code, signal) => {
+        log(`adapter.spawn: pid=${pid} exited code=${code} signal=${signal} proxy=${proxyPort}`);
+        try { proxyServer.close(); } catch {}
+      });
+      child.on("error", (e) => {
+        log(`adapter.spawn: pid=${pid} error: ${e.message}`);
+        try { proxyServer.close(); } catch {}
+      });
+
+      log(`adapter.spawn: pid=${pid} proxyPort=${proxyPort}`);
+      return { ok: true, pid, proxyPort };
     }
     default:
       throw new Error(`unknown method: ${method}`);
@@ -902,6 +1253,17 @@ async function main() {
   await killStaleListeners();
   startConsoleProxy();
 
+  // Start the adapter.spawn RPC BEFORE the services. The agent-bridge spawns
+  // adapters (codex/cursor probes) the moment it boots; if :7710 isn't
+  // listening yet those probes fail with ECONNREFUSED ("Engine RPC failed").
+  startRpcServer();
+
+  // The opencode service `command` is /usr/local/bin/opencode (the wrapper).
+  // ensureCliTools() (which writes it) runs async AFTER this loop, so without
+  // this the opencode service SKIPs on "binary not found" at boot and never
+  // recovers. Write the wrapper synchronously first — it's idempotent.
+  ensureOpencodeWrapper();
+
   for (const svc of SERVICES) {
     startService(svc);
   }
@@ -915,12 +1277,13 @@ async function main() {
     writeHealthMarker();
   }
 
-  startRpcServer();
-
   // CLI tools are not critical for service startup — install in background.
-  // execSync uses fork() which may ENOSYS on Android; failures are non-fatal.
+  // Uses Node.js APIs (fs/https/zlib) instead of shell commands to avoid
+  // proot ENOSYS on fork/exec of mkdir/curl/gzip binaries.
   setTimeout(() => {
-    try { ensureCliTools(); } catch (e) { log(`cli install failed: ${e.message}`); }
+    ensureCliTools()
+      .then(() => prepareCliTools())
+      .catch((e) => { log(`cli install failed: ${e.message}`); });
   }, 5000);
 
   // Keep alive

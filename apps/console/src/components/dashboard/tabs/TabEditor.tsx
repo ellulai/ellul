@@ -114,14 +114,14 @@ export function TabEditor({
           if (!result.codeSessionId) { setChatExchangeCode("error"); return; }
           setChatExchangeCode(result.codeSessionId);
         })
-        .catch(() => setChatExchangeCode("error"));
+        .catch(() => { setChatExchangeCode("error"); });
     } else {
       send<{ code: string }>("get_exchange_code")
         .then((result) => {
           if (!result.code) { setChatExchangeCode("error"); return; }
           setChatExchangeCode(result.code);
         })
-        .catch(() => setChatExchangeCode("error"));
+        .catch(() => { setChatExchangeCode("error"); });
     }
   }, [ready, codeToken, send, serverDomain]);
 

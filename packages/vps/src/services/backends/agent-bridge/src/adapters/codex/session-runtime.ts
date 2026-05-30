@@ -219,6 +219,17 @@ function makeCodexServerNotification<M extends CodexRpc.ServerNotificationMethod
   return { method, params } as CodexServerNotification;
 }
 
+// codex bumped its model line (gpt-5.4 → gpt-5.5); stale per-thread selections
+// and the old default still carry gpt-5.4, which the current codex rejects
+// ("Unknown model gpt-5.4 is used") and then silently aborts the turn with no
+// reply. Remap retired slugs to the current model so existing threads and any
+// stale UI selection keep working without an app rebuild.
+const RETIRED_CODEX_MODELS: Record<string, string> = {
+  "gpt-5.4": "gpt-5.5",
+  "gpt-5.4-mini": "gpt-5.5",
+  "gpt-5-codex": "gpt-5.5",
+};
+
 function normalizeCodexModelSlug(
   model: string | undefined | null,
   preferredId?: string,
@@ -227,10 +238,11 @@ function normalizeCodexModelSlug(
   if (!normalized) {
     return undefined;
   }
-  if (preferredId?.endsWith("-codex") && preferredId !== normalized) {
+  const current = RETIRED_CODEX_MODELS[normalized] ?? normalized;
+  if (preferredId?.endsWith("-codex") && preferredId !== current) {
     return preferredId;
   }
-  return normalized;
+  return current;
 }
 
 function readResumeCursorThreadId(

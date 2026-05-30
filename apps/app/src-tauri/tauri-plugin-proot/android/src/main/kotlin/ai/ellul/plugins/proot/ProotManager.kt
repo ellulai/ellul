@@ -31,6 +31,7 @@ class ProotManager(private val context: Context) {
     private var prootBin = File(nativeLibDir, "libproot.so")
     private val libDir = File(appDir, "lib")
     private val logDir = File(appDir, "logs")
+    private val nativeRuntime = NativeAdapterRuntime(rootfsDir, appDir)
 
     fun extractProotBinary() {
         if (prootBin.exists() && prootBin.canExecute()) {
@@ -147,6 +148,68 @@ class ProotManager(private val context: Context) {
         startLogStreaming(proc)
 
         Log.i(TAG, "proot process started (pid viewable in logcat)")
+
+        // Native Adapter Runtime Host — control plane for running adapters
+        // natively (outside proot), bypassing proot's getcwd/io_uring limits.
+        // Guarded: never throws into start(); never touches provisioning.
+        try { nativeRuntime.start() } catch (e: Throwable) { Log.e(TAG, "nativeRuntime.start: ${e.message}") }
+    }
+
+    private fun verifyNativeCodex() {
+        Thread {
+            try {
+                Thread.sleep(15_000) // let startup/provisioning settle (avoid mem pressure)
+                val memAvailKb = try {
+                    File("/proc/meminfo").readLines()
+                        .firstOrNull { it.startsWith("MemAvailable") }
+                        ?.filter { it.isDigit() }?.toLongOrNull() ?: 0L
+                } catch (e: Throwable) { 0L }
+                if (memAvailKb in 1 until 220_000) {
+                    Log.w(TAG, "verifyNativeCodex: low mem ${memAvailKb}kB — skipping (safety)")
+                    return@Thread
+                }
+                val codex = File(rootfsDir,
+                    "usr/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-arm64/vendor/aarch64-unknown-linux-musl/bin/codex")
+                val home = File(rootfsDir, "home/dev")
+                val logFile = File(logDir, "native-codex-verify.log")
+                if (!codex.exists()) {
+                    Log.w(TAG, "verifyNativeCodex: codex binary missing at ${codex.absolutePath}")
+                    return@Thread
+                }
+                val egressPort = NativeEgressProxy.ensureStarted()
+                Log.i(TAG, "verifyNativeCodex: launching native codex (no proot), mem=${memAvailKb}kB egress=$egressPort")
+                val pb = ProcessBuilder(
+                    codex.absolutePath, "exec", "-m", "gpt-5.5",
+                    "--skip-git-repo-check", "reply with only the word pineapple",
+                )
+                pb.environment().apply {
+                    put("HOME", home.absolutePath)
+                    put("CODEX_HOME", File(home, ".codex").absolutePath)
+                    put("USER", "dev")
+                    put("PATH", "/usr/local/bin:/usr/bin:/bin:/system/bin")
+                    put("TMPDIR", "${appDir.absolutePath}/tmp")
+                    // TLS trust store: native musl has no Android cert store; point at the rootfs CA bundle.
+                    put("SSL_CERT_FILE", File(rootfsDir, "etc/ssl/certs/ca-certificates.crt").absolutePath)
+                    put("SSL_CERT_DIR", File(rootfsDir, "etc/ssl/certs").absolutePath)
+                    if (egressPort > 0) {
+                        val proxy = "http://127.0.0.1:$egressPort"
+                        put("HTTPS_PROXY", proxy); put("https_proxy", proxy)
+                        put("HTTP_PROXY", proxy); put("http_proxy", proxy)
+                        put("ALL_PROXY", proxy); put("all_proxy", proxy)
+                    }
+                }
+                if (home.isDirectory) pb.directory(home)
+                pb.redirectErrorStream(true)
+                pb.redirectOutput(logFile)
+                pb.redirectInput(File("/dev/null"))
+                val proc = pb.start()
+                val done = proc.waitFor(90, TimeUnit.SECONDS)
+                if (!done) { try { proc.destroyForcibly() } catch (e: Throwable) {} }
+                Log.i(TAG, "verifyNativeCodex: done=$done exit=${if (done) proc.exitValue() else -1} log=${logFile.absolutePath}")
+            } catch (e: Throwable) {
+                Log.e(TAG, "verifyNativeCodex: ${e.message}")
+            }
+        }.apply { isDaemon = true; name = "native-codex-verify"; start() }
     }
 
     fun stop() {
@@ -176,6 +239,12 @@ class ProotManager(private val context: Context) {
 
     fun isRunning(): Boolean = prootProcess?.isAlive == true
 
+    // OpenCode (Bun binary) cannot run on Android — seccomp blocks io_uring
+    // in ALL app-spawned processes. The agent-bridge's opencode adapter uses
+    // external server mode (OPENCODE_EXTERNAL_SERVER_URL) instead. Other
+    // adapters (codex, cursor, claude) use Node.js/native binaries that work
+    // inside proot via the engine's adapter.spawn TCP stdio proxy.
+
     private fun linkGlobalNodeModules() {
         val globalModules = File(rootfsDir, "usr/lib/node_modules")
         if (!globalModules.exists()) return
@@ -204,6 +273,10 @@ class ProotManager(private val context: Context) {
         "--bind=/sys",
         "--bind=${vaultDir.absolutePath}:/root/ellul-vault",
         "--bind=${projectsDir.absolutePath}:/home/dev/projects",
+        // Spoof an old kernel so glibc/coreutils/Rust-std (swc) take the legacy
+        // syscall path (openat/fstatat/faccessat) this proot handles, instead of
+        // openat2/statx/faccessat2 which ENOSYS in the app's zygote-seccomp context.
+        "--kernel-release=4.19.0",
         "-w", "/home/dev",
         "-0",
         "/usr/local/bin/ellul-engine-android"
@@ -222,7 +295,13 @@ class ProotManager(private val context: Context) {
         "LD_LIBRARY_PATH" to "$nativeLibDir:${libDir.absolutePath}",
         "PROOT_LOADER" to "$nativeLibDir/libproot-loader.so",
         "PROOT_TMP_DIR" to "${appDir.absolutePath}/tmp",
-        "PROOT_NO_SECCOMP" to "1",
+        // PROOT_NO_SECCOMP intentionally NOT set: proot's seccomp-bpf acceleration
+        // must be ON so its chdir/getcwd cancellation works. proot cancels those
+        // syscalls via an avoider syscall; only with accel on does proot's
+        // SIGSYS-suppression fire and let the exit handler post the emulated cwd.
+        // With PROOT_NO_SECCOMP=1, chdir() returns ENOSYS and preview/relative
+        // paths break (next can't find app/). Verified on-device 2026-05-30:
+        // accel ON → engine boots healthy, chdir works, `next dev` serves.
         "UV_USE_IO_URING" to "0",
     )
 

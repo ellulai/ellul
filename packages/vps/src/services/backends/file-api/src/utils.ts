@@ -6,6 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
+import { IS_ANDROID } from '@vps/shared/platform';
 import { BINARY_EXTENSIONS, MAX_FILE_SIZE, IGNORED_PATTERNS } from './config';
 
 // Safely read a file, returning null on error.
@@ -36,10 +37,18 @@ export function safeReadDir(dirPath: string): string[] {
 }
 
 // Safely execute a command, returning result object.
+// Android: file-api runs inside proot and cannot fork()/exec() (zygote seccomp
+// turns spawn into ENOSYS), and execSync is synchronous so it can't delegate to
+// the async in-proot engine. Callers here are read-only git *summary* info
+// (getGitStatus, getProjectInfo) whose live equivalents are served by the async
+// engineRun-backed endpoints. Return a no-op failure rather than throwing.
 export function safeExec(
   cmd: string,
   options: { cwd?: string; timeout?: number } = {}
 ): { success: boolean; output: string; error?: string } {
+  if (IS_ANDROID) {
+    return { success: false, output: '', error: 'safeExec disabled on Android (no fork in proot)' };
+  }
   try {
     const output = execSync(cmd, {
       encoding: 'utf8',

@@ -3,7 +3,8 @@
 
 // Caddyfile generator. Shared by provisioning (caddy.ts) + runtime CLI (ellul-caddy-gen).
 
-import { generateCaddyHandlers } from "./handlers";
+import { generateCaddyHandlers, generateTenantHandlers } from "./handlers";
+import { isTenantMode } from "@vps/shared/tenant-token";
 
 export interface CaddyfileOptions {
   /** "proxied" = Cloudflare origin certs + AOP mTLS. "direct" = Let's Encrypt ACME. "localhost" = internal TLS for self-hosted. */
@@ -25,6 +26,13 @@ export interface CaddyfileOptions {
   canDeploy?: boolean;
   /** Use unprivileged high ports (8443/8080) instead of 443/80. Localhost model only. */
   highPorts?: boolean;
+  /**
+   * B2B Sandbox-as-a-Service tenant mode. Routes srv→agent-bridge, code→file-api
+   * with no sovereign-shield forward_auth (both self-auth the injected agent
+   * token). Only meaningful in proxied deployments. Set by the caller from
+   * isTenantMode() (presence of /etc/ellul/agent-token).
+   */
+  tenantMode?: boolean;
 }
 
 interface TlsConfig {
@@ -141,6 +149,9 @@ export function generateCaddyfileContent(opts: CaddyfileOptions): string {
     consoleOrigin,
     customDomain,
   } = opts;
+  // B2B tenant mode: explicit override wins, else auto-detect from the injected
+  // agent token. Safe in tests/first-party (no token file → false → unchanged).
+  const tenantMode = opts.tenantMode ?? isTenantMode();
   const replace = (text: string) => replaceDomains(text, mainDomain, codeDomain, devDomain);
   // If a custom domain is active on this VPS, allow it as a frame-ancestor on
   // the code viewer + preview + main handlers so a page on the customer's domain
@@ -175,6 +186,24 @@ export function generateCaddyfileContent(opts: CaddyfileOptions): string {
     sites.push({
       addresses,
       handlers: configJs + "\n" + replace(generateCaddyHandlers("all", handlerOpts)),
+    });
+  } else if (tenantMode) {
+    // B2B tenant sandbox: srv → agent-bridge, code → file-api, NO shield
+    // forward_auth (both self-auth the injected per-sandbox agent token). Reuses
+    // the same CF origin cert + AOP mTLS as first-party, so no new cert/DNS.
+    const tenantTls: SiteBlock["tls"] = {
+      cert: "/etc/caddy/origin.crt",
+      key: "/etc/caddy/origin.key",
+      clientAuth: CF_AOP_CA,
+    };
+    const tenantAddresses = [`${mainDomain}:443`, `${codeDomain}:443`];
+    if (opts.originTag) {
+      tenantAddresses.push(`o-${opts.originTag}.${platformZone}:443`);
+    }
+    sites.push({
+      addresses: tenantAddresses,
+      tls: tenantTls,
+      handlers: generateTenantHandlers(mainDomain, codeDomain),
     });
   } else {
     // Two site blocks: platform-zone (srv + code) and app-zone (dev preview)

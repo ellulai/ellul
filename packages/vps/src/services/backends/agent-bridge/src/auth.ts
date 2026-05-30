@@ -6,7 +6,13 @@
  *
  * UNIFIED AUTH: All tiers require agent token validated via sovereign-shield.
  * Sovereign-shield is the single source of truth for all tier/auth logic.
+ *
+ * B2B EXCEPTION: in tenant mode (Sandbox-as-a-Service) there is no shield — a
+ * single injected static token is validated directly (see @vps/shared/tenant-token).
  */
+
+import { randomUUID } from 'crypto';
+import { isTenantMode, verifyTenantAgentToken } from '@vps/shared/tenant-token';
 
 export interface AgentTokenResult {
   valid: boolean;
@@ -18,6 +24,13 @@ export interface AgentTokenResult {
  * Returns { valid, sessionId } — sessionId is the shield session for PoP challenges.
  */
 export async function validateAgentToken(token: string): Promise<AgentTokenResult> {
+  // B2B tenant mode: validate against the injected per-sandbox token, no shield.
+  // A fresh synthetic sessionId per connection keeps the connection registry
+  // collision-free across browser tabs; PoP is disabled in tenant mode.
+  if (isTenantMode()) {
+    if (verifyTenantAgentToken(token)) return { valid: true, sessionId: `tenant-${randomUUID()}` };
+    return { valid: false };
+  }
   try {
     const res = await fetch('http://127.0.0.1:3005/_auth/agent/validate', {
       method: 'POST',

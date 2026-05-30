@@ -14,6 +14,7 @@ import { IS_ANDROID } from '@vps/shared/platform';
 import { previewPlatform, type FrameworkDropinOpts } from './PreviewPlatform';
 import { isSandboxId } from '@ellul.ai/types';
 import { HOME, ROOT_DIR, getAppPath } from '../../config';
+import { frameAncestorOrigins } from '../../frame-ancestors';
 import {
   PREVIEW_PORT_MIN,
   PREVIEW_PORT_MAX,
@@ -757,14 +758,10 @@ async function writeCaddyDevRouteImpl(port: number, companions: CompanionEntry[]
 `)
     .join('');
 
-  // frame-ancestors: 'self' + platform console + optional customer custom domain.
-  const frameAncestors: string[] = ["'self'"];
-  try {
-    const consoleOrigin = fs.readFileSync('/etc/ellul/console-origin', 'utf8').trim();
-    if (consoleOrigin) frameAncestors.push(consoleOrigin);
-  } catch {
-    // console-origin file missing — no fallback, frame-ancestors stays 'self' only
-  }
+  // frame-ancestors: 'self' + the framing allowlist (tenant console-origins, else
+  // the singular console-origin) + optional customer custom domain. The list comes
+  // from the single source in ../../frame-ancestors so file-api stays the only emitter.
+  const frameAncestors: string[] = ["'self'", ...frameAncestorOrigins()];
   try {
     const customDomain = fs.readFileSync('/etc/ellul/custom-domain', 'utf8').trim();
     if (customDomain) frameAncestors.push(`https://${customDomain}`);

@@ -107,9 +107,10 @@ export const DEFAULT_CODEX_BINARY = IS_ANDROID
   ? "/tmp/.ellul-cli-cache/codex"
   : "/home/dev/.node/bin/codex";
 export const DEFAULT_OPENCODE_BINARY = "/usr/local/bin/opencode";
-export const DEFAULT_CURSOR_BINARY = IS_ANDROID
-  ? "/tmp/.ellul-cli-cache/cursor-agent"
-  : "/usr/local/bin/cursor-agent";
+// cursor-agent is a bash launcher that execs its sibling `node` + `index.js`,
+// so it MUST run from its real install dir — the /tmp cli-cache copy is
+// divorced from those siblings and fails. Use the real path on Android too.
+export const DEFAULT_CURSOR_BINARY = "/usr/local/bin/cursor-agent";
 
 // Claude Agent SDK spawns `claude` via Node's child_process.spawn directly —
 // bypasses our Effect ChildProcessSpawner layer. The adapter points
@@ -148,7 +149,13 @@ export const defaultServerSettings: ServerSettings = {
       customModels: [],
     },
     claudeAgent: {
-      enabled: true,
+      // BLOCKED on Android: the claude-code native binary is Bun 1.3.13 which
+      // bus-errors (SIGTRAP/SIGABRT) under Android proot, AND the Claude Agent
+      // SDK spawns it via raw child_process (bypassing the engine spawn proxy)
+      // so the grandchild bridge can't fork it anyway. Disabled to avoid
+      // spawning a crashing 136MB binary on every probe. Re-enable once
+      // upstream Bun/claude-code runs on Android.
+      enabled: !IS_ANDROID,
       launcherPath: DEFAULT_CLAUDE_LAUNCHER,
       claudePath: DEFAULT_CLAUDE_BINARY,
       customModels: [],
@@ -157,9 +164,13 @@ export const defaultServerSettings: ServerSettings = {
       lite: { hotWindowMs: 30_000 },
     },
     opencode: {
+      // On Android the engine runs `opencode serve` as a managed service on a
+      // free port and exposes it via OPENCODE_EXTERNAL_SERVER_URL; the bridge
+      // uses external-server mode. (Bun.serve works fine in proot — the earlier
+      // failure was just a port-in-use, not a Bun limitation.)
       enabled: true,
       binaryPath: DEFAULT_OPENCODE_BINARY,
-      serverUrl: "",
+      serverUrl: process.env.OPENCODE_EXTERNAL_SERVER_URL || "",
       serverPassword: "",
       customModels: [],
     },

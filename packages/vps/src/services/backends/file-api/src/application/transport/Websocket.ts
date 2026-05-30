@@ -5,6 +5,8 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { exec } from 'child_process';
+import { IS_ANDROID } from '@vps/shared/platform';
+import { engineRun } from '../engine-spawn';
 import { ROOT_DIR, DEBOUNCE_MS, IGNORED_PATTERNS } from '../../config';
 import { safeReadFile, safeStat, safeReadDir } from '../../utils';
 import { getTree, getActiveProject, getActiveApp } from '../files/Files';
@@ -161,6 +163,21 @@ function run(
   cmd: string,
   cwd: string,
 ): Promise<{ stdout?: string; error?: string; stderr?: string }> {
+  // Android: file-api can't fork() (zygote seccomp -> spawn ENOSYS). Delegate to
+  // the in-proot engine, which spawns from its OWN cwd (/home/dev) — passing a
+  // foreign cwd would force the engine's chdir/fork path, also ENOSYS. Inject the
+  // repo dir into the git command itself via `git -C <absoluteDir>` and pass NO
+  // cwd. All callers here run read-only git (status/diff-stat) — no
+  // write/credential git passes through.
+  if (IS_ANDROID) {
+    const absDir = path.resolve(cwd);
+    const androidCmd = cmd.startsWith('git ')
+      ? `git -C ${JSON.stringify(absDir)} ${cmd.slice('git '.length)}`
+      : cmd;
+    return engineRun('sh', ['-c', androidCmd], {})
+      .then(({ stdout }) => ({ stdout: stdout.trim() }))
+      .catch((err: Error) => ({ error: err.message }));
+  }
   return new Promise((resolve) => {
     exec(cmd, { cwd, timeout: 5000 }, (err, stdout, stderr) => {
       if (err) resolve({ error: err.message, stderr });

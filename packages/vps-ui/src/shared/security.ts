@@ -39,6 +39,11 @@ export function isOriginTrusted(origin: string): boolean {
     return false;
   }
   const zone = config.platformZone;
-  if (protocol !== "https:" && !(protocol === "http:" && host === "localhost")) return false;
+  const isLocalhost = host === "localhost" || host.endsWith(".localhost");
+  if (protocol !== "https:" && !(protocol === "http:" && isLocalhost)) return false;
+  // Android proot / BYOS / Tauri: trust localhost and *.localhost origins
+  // (e.g. http://localhost:8443, https://tauri.localhost). Protocol check
+  // above already verified http+localhost or https.
+  if (isLocalhost) return true;
   return host === zone || host.endsWith(`.${zone}`);
 }

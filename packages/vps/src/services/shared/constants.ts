@@ -119,6 +119,13 @@ export const PREVIEW_LIMITS = {
   // Soft threshold: evict LRU when MemAvailable below N% of physical.
   PRESSURE_EVICT_THRESHOLD_PERCENT: 15,
   PRESSURE_CRITICAL_FLOOR_MB: 128,
+  // Android-only hard floor: below this % MemAvailable the reconciler may evict
+  // EVEN the actively-viewed preview, skipping the 2-tick confirm + full
+  // startup grace. Android has no cgroup memory caps, so one ballooning
+  // dev-server can thrash the device until the kernel OOM-kills the WebView
+  // renderer (whole-app crash). A re-startable preview is the better loss.
+  PRESSURE_CRITICAL_PERCENT: 8,
+  PRESSURE_CRITICAL_STARTUP_GRACE_MS: 20 * 1000,
   // 90s covers Next/Turbopack cold, JVM warmup, Maven/Gradle dep resolve, Rails.
   // Override via PREVIEW_PORT_BIND_TIMEOUT_MS env.
   PORT_BIND_TIMEOUT_MS: 90 * 1000,

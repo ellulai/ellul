@@ -12,6 +12,7 @@ import {
   PREVIEW_LIMITS,
   resolvePreviewIdleEvictMs,
 } from '@vps/shared/constants';
+import { IS_ANDROID } from '@vps/shared/platform';
 import { isOomImminent } from './PreviewPressure';
 
 // Which app is currently selected in the UI? Reading the PREVIEW_FILE
@@ -210,6 +211,14 @@ export async function reconcileOnce(log: ReconcilerLog): Promise<ReconcileReport
   // Two-tick confirmation + startup-grace period to avoid evicting
   // Post-mortem 2026-04-19: a Next.js first-compile hit ~85% RAM
   const pressure = readMemoryPressure();
+  // Android has no cgroup memory caps, so a single ballooning dev-server can
+  // thrash a low-RAM device until the kernel OOM-kills the WebView renderer
+  // (whole-app crash). When MemAvailable is critically low there, evict
+  // aggressively — including the actively-viewed preview, and without the
+  // usual 2-tick confirm / full startup grace. A re-startable preview is a
+  // strictly better thing to lose than the app.
+  const criticalAndroid =
+    IS_ANDROID && pressure.memAvailablePercent < PREVIEW_LIMITS.PRESSURE_CRITICAL_PERCENT;
   // Pressure eviction is *expensive*: killing a warm preview forfeits
   if (isOomImminent(pressure, {
     ramTightPercent: PREVIEW_LIMITS.PRESSURE_EVICT_THRESHOLD_PERCENT,
@@ -221,14 +230,18 @@ export async function reconcileOnce(log: ReconcilerLog): Promise<ReconcileReport
   }
   const PRESSURE_CONFIRM_TICKS = 2;
   const PRESSURE_STARTUP_GRACE_MS = 120_000;
-  if (consecutivePressureTicks >= PRESSURE_CONFIRM_TICKS) {
+  if (consecutivePressureTicks >= PRESSURE_CONFIRM_TICKS || criticalAndroid) {
     const now = Date.now();
-    // Never evict the preview the user is currently viewing. It's the
-    // time they navigate to it we just re-start it. 2026-04-20 report.
+    // Never evict the preview the user is currently viewing — UNLESS we're in
+    // Android critical-pressure mode, where protecting the renderer wins.
+    // 2026-04-20 report: normally we just re-start it when they navigate back.
+    const graceMs = criticalAndroid
+      ? PREVIEW_LIMITS.PRESSURE_CRITICAL_STARTUP_GRACE_MS
+      : PRESSURE_STARTUP_GRACE_MS;
     const activeDirectory = readActivePreviewDirectory();
     const candidates = lruOrder()
-      .filter(r => now - r.startedAt >= PRESSURE_STARTUP_GRACE_MS)
-      .filter(r => r.directory !== activeDirectory);
+      .filter(r => now - r.startedAt >= graceMs)
+      .filter(r => criticalAndroid || r.directory !== activeDirectory);
     const victim = candidates[0];
     if (victim) {
       try {
@@ -260,7 +273,7 @@ export async function reconcileOnce(log: ReconcilerLog): Promise<ReconcileReport
     } else if (lruOrder().length > 0) {
       // Pressure is real but we decided to spare every tracked preview.
       const tracked = lruOrder();
-      const allInGrace = tracked.every(r => now - r.startedAt < PRESSURE_STARTUP_GRACE_MS);
+      const allInGrace = tracked.every(r => now - r.startedAt < graceMs);
       log('info',
         allInGrace
           ? 'reconciler: deferring pressure eviction — all previews inside startup grace'

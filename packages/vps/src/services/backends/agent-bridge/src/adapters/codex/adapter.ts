@@ -1366,7 +1366,15 @@ const makeCodexAdapter = Effect.fn("makeCodexAdapter")(function* (
 
         const existing = sessions.get(input.threadId);
         if (existing && !existing.stopped) {
-          yield* Effect.suspend(() => stopSessionInternal(existing));
+          // Reuse a live session instead of restarting it. The orchestration's
+          // ensureSessionForThread sometimes calls startSession even when a live
+          // session exists (its read model can lose the thread→session binding,
+          // taking the "NEW path"); stopping+recreating here kills a codex that
+          // is mid-turn or that just produced a reply — dropping the response
+          // before it propagates. codex supports in-session model/turn changes,
+          // so reuse is safe; genuine provider switches stop the session
+          // explicitly upstream (ensureSessionForThread) before re-starting.
+          return yield* existing.runtime.getSession;
         }
 
         const codexSettings = yield* serverSettingsService.getSettings.pipe(
@@ -1642,6 +1650,7 @@ const makeCodexAdapter = Effect.fn("makeCodexAdapter")(function* (
     if (session.stopped) {
       return;
     }
+    try { process.stderr.write(`[cx-sess] stopSessionInternal threadId=${session.threadId} — closing scope (kills codex)\n`); } catch {}
     session.stopped = true;
     sessions.delete(session.threadId);
     yield* session.runtime.close.pipe(Effect.ignore);
